@@ -1,0 +1,51 @@
+namespace Tests is
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class ARITHMETIC_TESTS is
+        init() is si
+
+        @Test()
+        Dividing__signed__should_round_towards_zero() is
+            are_equal(-3b, -7b / 2b)
+            are_equal(-3s, -7s / 2s)
+            are_equal(-3, -7 / 2)
+            are_equal(-3L, -7L / 2L)
+            are_equal(-3w, -7w / 2w)
+        si
+
+        @Test()
+        Taking_the_remainder__signed__should_keep_the_sign_of_the_dividend() is
+            are_equal(-1b, -7b % 2b)
+            are_equal(-1s, -7s % 2s)
+            are_equal(-1, -7 % 2)
+            are_equal(-1L, -7L % 2L)
+            are_equal(-1w, -7w % 2w)
+        si
+
+        @Test()
+        Dividing__unsigned__should_treat_the_operands_as_unsigned() is
+            are_equal(100ub, 201ub / 2ub)
+            are_equal(30000us, 60001us / 2us)
+            are_equal(2000000000u, 4000000000u / 2u)
+            are_equal(9000000000000000000ul, 18000000000000000000ul / 2ul)
+            are_equal(cast uword(2000000000u), cast uword(4000000000u) / cast uword(2))
+        si
+
+        @Test()
+        Taking_the_remainder__unsigned__should_treat_the_operands_as_unsigned() is
+            are_equal(1ub, 201ub % 2ub)
+            are_equal(1us, 60001us % 2us)
+            are_equal(3u, 4000000000u % 7u)
+            are_equal(4ul, 18000000000000000000ul % 7ul)
+            are_equal(cast uword(3), cast uword(4000000000u) % cast uword(7))
+        si
+
+        @Test()
+        Taking_the_remainder__char__should_answer_as_the_number_it_holds() is
+            are_equal(1c, 65c % 2c)
+        si
+    si
+si

@@ -60,6 +60,7 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: char, b: char) -> char pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: char, b: char) -> char pure
     @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: char, b: char) -> char pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem") %(a: char, b: char) -> char pure
     @INTRINSIC_ATTRIBUTE("compare.order") <>(a: char, b: char) -> int pure
 
     @INTRINSIC_ATTRIBUTE("arithmetic.not") \(a: byte) -> byte pure
@@ -68,6 +69,7 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: byte, b: byte) -> byte pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: byte, b: byte) -> byte pure
     @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: byte, b: byte) -> byte pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem") %(a: byte, b: byte) -> byte pure
     @INTRINSIC_ATTRIBUTE("compare.order") <>(a: byte, b: byte) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: byte, b: int) -> byte pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shr") >>(a: byte, b: int) -> byte pure
@@ -80,7 +82,8 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.add") +(a: ubyte, b: ubyte) -> ubyte pure
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: ubyte, b: ubyte) -> ubyte pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: ubyte, b: ubyte) -> ubyte pure
-    @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: ubyte, b: ubyte) -> ubyte pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.div_un") /(a: ubyte, b: ubyte) -> ubyte pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem_un") %(a: ubyte, b: ubyte) -> ubyte pure
     @INTRINSIC_ATTRIBUTE("compare.uorder") <>(a: ubyte, b: ubyte) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: ubyte, b: int) -> ubyte pure
     @INTRINSIC_ATTRIBUTE("arithmetic.ushr") >>(a: ubyte, b: int) -> ubyte pure
@@ -95,6 +98,7 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: short, b: short) -> short pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: short, b: short) -> short pure
     @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: short, b: short) -> short pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem") %(a: short, b: short) -> short pure
     @INTRINSIC_ATTRIBUTE("compare.order") <>(a: short, b: short) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: short, b: int) -> short pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shr") >>(a: short, b: int) -> short pure
@@ -107,7 +111,8 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.add") +(a: ushort, b: ushort) -> ushort pure
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: ushort, b: ushort) -> ushort pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: ushort, b: ushort) -> ushort pure
-    @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: ushort, b: ushort) -> ushort pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.div_un") /(a: ushort, b: ushort) -> ushort pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem_un") %(a: ushort, b: ushort) -> ushort pure
     @INTRINSIC_ATTRIBUTE("compare.uorder") <>(a: ushort, b: ushort) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: ushort, b: int) -> ushort pure
     @INTRINSIC_ATTRIBUTE("arithmetic.ushr") >>(a: ushort, b: int) -> ushort pure
@@ -135,7 +140,8 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.add") +(a: uint, b: uint) -> uint pure
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: uint, b: uint) -> uint pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: uint, b: uint) -> uint pure
-    @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: uint, b: uint) -> uint pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.div_un") /(a: uint, b: uint) -> uint pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem_un") %(a: uint, b: uint) -> uint pure
     @INTRINSIC_ATTRIBUTE("compare.uorder") <>(a: uint, b: uint) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: uint, b: int) -> uint pure
     @INTRINSIC_ATTRIBUTE("arithmetic.ushr") >>(a: uint, b: int) -> uint pure
@@ -163,7 +169,8 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.add") +(a: ulong, b: ulong) -> ulong pure
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: ulong, b: ulong) -> ulong pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: ulong, b: ulong) -> ulong pure
-    @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: ulong, b: ulong) -> ulong pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.div_un") /(a: ulong, b: ulong) -> ulong pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem_un") %(a: ulong, b: ulong) -> ulong pure
     @INTRINSIC_ATTRIBUTE("compare.uorder") <>(a: ulong, b: ulong) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: ulong, b: int) -> ulong pure
     @INTRINSIC_ATTRIBUTE("arithmetic.ushr") >>(a: ulong, b: int) -> ulong pure
@@ -178,6 +185,7 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: word, b: word) -> word pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: word, b: word) -> word pure
     @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: word, b: word) -> word pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem") %(a: word, b: word) -> word pure
     @INTRINSIC_ATTRIBUTE("compare.order") <>(a: word, b: word) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: word, b: int) -> word pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shr") >>(a: word, b: int) -> word pure
@@ -190,7 +198,8 @@ namespace Ghul.Intrinsics.Staging is
     @INTRINSIC_ATTRIBUTE("arithmetic.not") \(a: uword) -> uword pure
     @INTRINSIC_ATTRIBUTE("arithmetic.sub") -(a: uword, b: uword) -> uword pure
     @INTRINSIC_ATTRIBUTE("arithmetic.mul") *(a: uword, b: uword) -> uword pure
-    @INTRINSIC_ATTRIBUTE("arithmetic.div") /(a: uword, b: uword) -> uword pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.div_un") /(a: uword, b: uword) -> uword pure
+    @INTRINSIC_ATTRIBUTE("arithmetic.rem_un") %(a: uword, b: uword) -> uword pure
     @INTRINSIC_ATTRIBUTE("compare.uorder") <>(a: uword, b: uword) -> int pure
     @INTRINSIC_ATTRIBUTE("arithmetic.shl") <<(a: uword, b: int) -> uword pure
     @INTRINSIC_ATTRIBUTE("arithmetic.ushr") >>(a: uword, b: int) -> uword pure
