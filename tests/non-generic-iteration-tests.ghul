@@ -1,0 +1,71 @@
+namespace Tests is
+    use Ghul
+
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // A consumer written in another language reads a pipe through the
+    // non-generic IEnumerable and IEnumerator, which carry bodies of
+    // their own. ghul source cannot name either, so these go through
+    // reflection, which is also how such a consumer finds them.
+    @TestClass()
+    class NonGenericIterationShould is
+        _iterable: System.Type
+        _enumerator: System.Type
+
+        init() is
+            _iterable = System.Type.get_type("System.Collections.IEnumerable")!
+            _enumerator = System.Type.get_type("System.Collections.IEnumerator")!
+        si
+
+        _cursor(source: object) -> object =>
+            _iterable.get_method("GetEnumerator")!.invoke(source, [])!
+
+        _drain(source: object) -> string is
+            let cursor = _cursor(source)
+            let move_next = _enumerator.get_method("MoveNext")!
+            let current = _enumerator.get_property("Current")!
+
+            let parts = LIST[string]()
+
+            while cast bool(move_next.invoke(cursor, [])!) do
+                parts.add("{current.get_value(cursor)}")
+            od
+
+            parts |> join(",")
+        si
+
+        @Test()
+        read_a_pipe_declaring_the_trait_itself() is
+            are_equal("2,4,6", _drain([1, 2, 3] |> map(x => x * 2)))
+        si
+
+        @Test()
+        read_a_pipe_inheriting_the_trait_from_a_base() is
+            are_equal("2,4", _drain([1, 2, 3, 4] |> filter(x => x % 2 == 0)))
+        si
+
+        @Test()
+        read_a_pipe_of_a_reference_element() is
+            are_equal("ONE,TWO", _drain(["one", "two"] |> map(s => s.to_upper())))
+        si
+
+        @Test()
+        read_a_value_element_through_the_non_generic_current() is
+            let cursor = _cursor([7, 8] |> map(x => x + 1))
+            let move_next = _enumerator.get_method("MoveNext")!
+            let current = _enumerator.get_property("Current")!
+
+            assert cast bool(move_next.invoke(cursor, [])!)
+            are_equal(8, cast int(current.get_value(cursor)!))
+            assert cast bool(move_next.invoke(cursor, [])!)
+            are_equal(9, cast int(current.get_value(cursor)!))
+            is_false(cast bool(move_next.invoke(cursor, [])!))
+        si
+    si
+si
