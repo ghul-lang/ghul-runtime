@@ -188,5 +188,40 @@ namespace Tests is
             are_equal("a", result[1])
             are_equal("b", result[2])
         si
+
+        @Test()
+        Reduce_OverTuples_TakesTheRunningValueThenOneParameterPerElement() is
+            let pairs = [(1, 2), (3, 4)]
+
+            are_equal(14, pairs |> reduce(0, (total, a, b) => total + a * b))
+        si
+
+        @Test()
+        Reduce_OverTuples_StillTakesTheTupleAsOneParameter() is
+            let pairs = [(1, 2), (3, 4)]
+
+            are_equal(4, pairs |> reduce(0, (total, pair) => total + pair.`0))
+        si
+
+        @Test()
+        Reduce_OverTuples_TakesANamedFunction() is
+            let pairs = [(1, 2), (3, 4)]
+
+            are_equal(14, pairs |> reduce(0, weigh))
+        si
+
+        @Test()
+        Reduce_WithAMapper_TakesAnNaryAccumulator() is
+            let pairs = [(1, "a"), (2, "b")]
+
+            are_equal("1a2b!", pairs |> reduce("", (text, n, s) => "{text}{n}{s}", text => "{text}!"))
+        si
+
+        @Test()
+        Reduce_OverScalars_IsUnchanged() is
+            are_equal(10, [1, 2, 3, 4] |> reduce(0, (total, n) => total + n))
+        si
+
+        weigh(total: int, a: int, b: int) -> int static => total + a * b
     si
 si

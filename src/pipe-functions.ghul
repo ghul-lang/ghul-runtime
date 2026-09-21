@@ -76,7 +76,7 @@ namespace Ghul.Pipes is
     zip[T,U,TOut](source: Iterable[T], other: Iterable[U], mapper: (T,U) -> TOut pure) -> Pipe[TOut] pure =>
         ZIP_MAP_PIPE[T,U,TOut](source, other, mapper)
 
-    reduce[T,TRunning](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T) -> TRunning pure) -> TRunning pure is
+    reduce[T..,TRunning](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure) -> TRunning pure is
         let running mut = seed
 
         for element in source do
@@ -86,7 +86,7 @@ namespace Ghul.Pipes is
         return running
     si
 
-    reduce[T,TRunning,TOut](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T) -> TRunning pure, mapper: (TRunning) -> TOut pure) -> TOut pure is
+    reduce[T..,TRunning,TOut](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure, mapper: (TRunning) -> TOut pure) -> TOut pure is
         let running mut = seed
 
         for element in source do
