@@ -59,6 +59,73 @@ namespace Tests is
         si
 
         @Test()
+        Sum_DirectCallOnArray_AddsEveryElement() is
+            are_equal(10, Ghul.Pipes.sum([1, 2, 3, 4]))
+        si
+
+        @Test()
+        Sum_SingleElement_IsThatElement() is
+            are_equal(7, Ghul.Pipes.sum([7]))
+        si
+
+        // Addition has an identity, so the total of nothing is zero
+        // rather than an absent value. This is the one place sum and
+        // product differ from min and max.
+        @Test()
+        Sum_EmptySource_ReturnsZero() is
+            let empty: int[] = []
+
+            are_equal(0, Ghul.Pipes.sum(empty))
+        si
+
+        @Test()
+        Sum_ChainedWithThreadFirst_SeesTheMappedElements() is
+            are_equal(30, [1, 2, 3, 4] |> map(i => i * i) |> sum())
+        si
+
+        @Test()
+        Sum_Double_TotalsAsDouble() is
+            are_equal(4.0, Ghul.Pipes.sum([1.5, 2.5]))
+        si
+
+        @Test()
+        Sum_Decimal_TotalsAsDecimal() is
+            are_equal(4.0m, Ghul.Pipes.sum([1.5m, 2.5m]))
+        si
+
+        @Test()
+        Sum_Long_TotalsAsLong() is
+            are_equal(3L, Ghul.Pipes.sum([1L, 2L]))
+        si
+
+        @Test()
+        Sum_BigInt_TotalsAsBigInt() is
+            are_equal(3n, Ghul.Pipes.sum([1n, 2n]))
+        si
+
+        @Test()
+        Product_DirectCallOnArray_MultipliesEveryElement() is
+            are_equal(24, Ghul.Pipes.product([1, 2, 3, 4]))
+        si
+
+        @Test()
+        Product_EmptySource_ReturnsOne() is
+            let empty: int[] = []
+
+            are_equal(1, Ghul.Pipes.product(empty))
+        si
+
+        @Test()
+        Product_SourceContainingZero_IsZero() is
+            are_equal(0, Ghul.Pipes.product([3, 0, 5]))
+        si
+
+        @Test()
+        Product_ChainedWithThreadFirst_SeesTheFilteredElements() is
+            are_equal(8, [1, 2, 3, 4] |> filter(i => i % 2 == 0) |> product())
+        si
+
+        @Test()
         CollectList_DirectCallOnArray_ReturnsSameElements() is
             let result = Ghul.Pipes.collect_list([1, 2, 3])
 
