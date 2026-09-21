@@ -6,6 +6,14 @@ namespace Ghul.Pipes is
 
     use Collections
 
+    use System.Numerics.INumber
+
+    // The arithmetic operators on a bounded type parameter are reachable
+    // only once imported by name, and each comes from the interface that
+    // declares it rather than from the bound.
+    use System.Numerics.IAdditionOperators.`+
+    use System.Numerics.IMultiplyOperators.`*
+
     // A pipe is a cursor over its source that rewinds itself at its end:
     // driven part way it carries on from wherever the last consumer
     // stopped, whoever that consumer was, and once it has run out the
@@ -115,6 +123,33 @@ namespace Ghul.Pipes is
         fi
 
         return MAYBE[T]()
+    si
+
+    // Addition and multiplication each have an identity, so the total of
+    // nothing is that identity rather than an absent value: `sum` and
+    // `product` return `T` where `min` and `max` return `MAYBE[T]`, which
+    // is what lets a total be used without unwrapping it first. The bound
+    // is what makes `T.zero` and `T.one` reachable as well as the
+    // operators. As with `min` and `max`, these are free functions
+    // because `Pipe[T]` cannot bound its own `T`.
+    sum[T: INumber[T]](source: Iterable[T]) -> T pure is
+        let total mut = T.zero
+
+        for value in source do
+            total = total + value
+        od
+
+        return total
+    si
+
+    product[T: INumber[T]](source: Iterable[T]) -> T pure is
+        let running mut = T.one
+
+        for value in source do
+            running = running * value
+        od
+
+        return running
     si
 
     // A pipe is an iterator that is also iterable, so it can be walked
