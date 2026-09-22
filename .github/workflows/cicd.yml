@@ -55,12 +55,6 @@ jobs:
   build:
     name: Build package
     runs-on: ubuntu-latest
-
-    # The organization hands workflows a read-only token by default, so the
-    # push to its package feed has to ask for packages: write itself.
-    permissions:
-      contents: read
-      packages: write
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0-noble
 
@@ -149,6 +143,11 @@ jobs:
     name: Publish beta NuGet package
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
+    # The organization hands workflows a read-only token by default, so the
+    # push to its package feed has to ask for packages: write itself.
+    permissions:
+      contents: read
+      packages: write
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0-noble
 
@@ -175,6 +174,11 @@ jobs:
     # Don't need to check the branch here, as push only happens on main
     name: Publish NuGet package
     runs-on: ubuntu-latest
+    # The organization hands workflows a read-only token by default, so the
+    # push to its package feed has to ask for packages: write itself.
+    permissions:
+      contents: read
+      packages: write
     if: ${{ github.event_name == 'push' }}
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0-noble
