@@ -207,7 +207,7 @@ namespace Tests is
 
         @Test()
         CollectMap_ComputedPairs_BuildsMapFromKeysAndValues() is
-            let squares = [1, 2, 3] |> map(n => n * n) |> collect_list()
+            let squares = [1, 2, 3] |> map(n => n * n) |> collect_mutable()
             let result = squares |> map(q => ("k{q}", q)) |> collect_map()
 
             are_equal(9, result["k9"])

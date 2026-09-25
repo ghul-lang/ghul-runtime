@@ -126,6 +126,22 @@ namespace Tests is
         si
 
         @Test()
+        Collect_ThreadFirstChain_ReturnsArray() is
+            let result: int[] = [1, 2, 3] |> map(n => n * 2) |> collect()
+
+            is_true(result =~ [2, 4, 6])
+        si
+
+        @Test()
+        CollectMutable_DirectCallOnArray_ReturnsSameElements() is
+            let result = Ghul.Pipes.collect_mutable([1, 2, 3])
+
+            result.add(4)
+
+            CollectionAssert.are_equal(LIST[int]([1, 2, 3, 4]), result)
+        si
+
+        @Test()
         CollectList_DirectCallOnArray_ReturnsSameElements() is
             let result = Ghul.Pipes.collect_list([1, 2, 3])
 
@@ -159,7 +175,7 @@ namespace Tests is
         FreeFunctionOnExistingPipe_FiltersIt() is
             let source = pipe([1, 2, 3, 4, 5])
 
-            let result = source |> filter(i => i > 2) |> collect_list()
+            let result = source |> filter(i => i > 2) |> collect_mutable()
 
             CollectionAssert.are_equal(LIST[int]([3, 4, 5]), result)
         si
@@ -168,21 +184,21 @@ namespace Tests is
         SortBy_ThreadFirstChain_ReturnsAscendingByKey() is
             let source = ["ccc", "a", "bb"]
 
-            let result = source |> sort_by(s => s.length) |> collect_list()
+            let result = source |> sort_by(s => s.length) |> collect_mutable()
 
             CollectionAssert.are_equal(LIST[string](["a", "bb", "ccc"]), result)
         si
 
         @Test()
         Sort_ThreadFirstChain_ReturnsAscending() is
-            let result = [2, 1, 4, 3] |> sort() |> collect_list()
+            let result = [2, 1, 4, 3] |> sort() |> collect_mutable()
 
             CollectionAssert.are_equal(LIST[int]([1, 2, 3, 4]), result)
         si
 
         @Test()
         SortDescending_ThreadFirstChain_ReturnsDescending() is
-            let result = [2, 1, 4, 3] |> sort_descending() |> collect_list()
+            let result = [2, 1, 4, 3] |> sort_descending() |> collect_mutable()
 
             CollectionAssert.are_equal(LIST[int]([4, 3, 2, 1]), result)
         si

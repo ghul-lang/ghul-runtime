@@ -96,13 +96,18 @@ namespace Ghul.Pipes is
         return mapper(running)
     si
 
-    collect[T](source: Iterable[T]) -> List[T] pure =>
-        collect_list(source)
+    collect[T](source: Iterable[T]) -> T[] pure =>
+        collect_mutable(source).to_array()
 
+    // the same as collect, which is the name to use
     collect_array[T](source: Iterable[T]) -> T[] pure =>
-        collect_list(source).to_array()
+        collect(source)
 
-    collect_list[T](source: Iterable[T]) -> LIST[T] pure is
+    // the same as collect_mutable, which is the name to use
+    collect_list[T](source: Iterable[T]) -> LIST[T] pure =>
+        collect_mutable(source)
+
+    collect_mutable[T](source: Iterable[T]) -> LIST[T] pure is
         let result = LIST[T]()
 
         for element in source do
@@ -416,14 +421,14 @@ namespace Ghul.Pipes is
     si
 
     reverse[T](source: Iterable[T]) -> Pipe[T] pure =>
-        let list = collect_list(source) in
+        let list = collect_mutable(source) in
         LIST_REVERSE_PIPE(list)
 
     sort[T: Ghul.Comparable[T]](source: Iterable[T]) -> Pipe[T] pure =>
         _sort_ascending(source)
 
     _sort_ascending[T](source: Iterable[T]) -> Pipe[T] pure is
-        let list = collect_list(source)
+        let list = collect_mutable(source)
 
         list.sort()
 
@@ -431,7 +436,7 @@ namespace Ghul.Pipes is
     si
 
     sort[T](source: Iterable[T], comparer: IComparer[T]) -> Pipe[T] pure is
-        let list = collect_list(source)
+        let list = collect_mutable(source)
 
         list.sort(comparer)
 
@@ -445,7 +450,7 @@ namespace Ghul.Pipes is
         _sort_descending(source)
 
     _sort_descending[T](source: Iterable[T]) -> Pipe[T] pure is
-        let list = collect_list(source)
+        let list = collect_mutable(source)
 
         list.sort()
 

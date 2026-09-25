@@ -543,7 +543,7 @@ namespace Tests is
 
             let sorted = pipe |> sort(ReverseIntComparer())
 
-            sorted |> collect_list()
+            sorted |> collect_mutable()
 
             assert_are_equal([6, 5, 4, 3, 2, 1], sorted)
         si
