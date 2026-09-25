@@ -99,12 +99,11 @@ namespace Ghul.Pipes is
     collect[T](source: Iterable[T]) -> T[] pure =>
         collect_mutable(source).to_array()
 
+    // the same as collect, which is the name to use
     collect_array[T](source: Iterable[T]) -> T[] pure =>
-        collect_mutable(source).to_array()
+        collect(source)
 
-    // the same as collect_mutable, which is the name to use: collect and
-    // collect_array also return lists, and what this one adds is that its
-    // result can be changed
+    // the same as collect_mutable, which is the name to use
     collect_list[T](source: Iterable[T]) -> LIST[T] pure =>
         collect_mutable(source)
 

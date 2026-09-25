@@ -126,6 +126,13 @@ namespace Tests is
         si
 
         @Test()
+        Collect_ThreadFirstChain_ReturnsArray() is
+            let result: int[] = [1, 2, 3] |> map(n => n * 2) |> collect()
+
+            is_true(result =~ [2, 4, 6])
+        si
+
+        @Test()
         CollectMutable_DirectCallOnArray_ReturnsSameElements() is
             let result = Ghul.Pipes.collect_mutable([1, 2, 3])
 
