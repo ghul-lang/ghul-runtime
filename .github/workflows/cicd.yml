@@ -47,7 +47,7 @@ jobs:
     # prerelease so they never collide with a real release.
     - name: Determine the version
       id: version
-      uses: degory/create-version@v1.0.0
+      uses: ghul-lang/create-version@v1.0.0
       with:
         version: ${{ github.event.inputs.version }}
         prerelease: ${{ github.event_name == 'pull_request' && format('beta.{0}', github.run_number) || '' }}
@@ -143,6 +143,11 @@ jobs:
     name: Publish beta NuGet package
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
+    # The organization hands workflows a read-only token by default, so the
+    # push to its package feed has to ask for packages: write itself.
+    permissions:
+      contents: read
+      packages: write
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0-noble
 
@@ -160,7 +165,7 @@ jobs:
         path: nupkg
 
     - name: Publish package to GitHub
-      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/ghul-lang/index.json --skip-duplicate --no-symbols
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -169,6 +174,11 @@ jobs:
     # Don't need to check the branch here, as push only happens on main
     name: Publish NuGet package
     runs-on: ubuntu-latest
+    # The organization hands workflows a read-only token by default, so the
+    # push to its package feed has to ask for packages: write itself.
+    permissions:
+      contents: read
+      packages: write
     if: ${{ github.event_name == 'push' }}
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0-noble
@@ -186,7 +196,7 @@ jobs:
         path: nupkg
 
     - name: Publish package to GitHub
-      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/ghul-lang/index.json --skip-duplicate --no-symbols
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
