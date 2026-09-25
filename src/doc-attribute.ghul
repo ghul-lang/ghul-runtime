@@ -1,0 +1,14 @@
+namespace Ghul.Internal is
+    use System
+
+    // Attribute the compiler emits on a type or member declared with a
+    // `///` doc comment. Carries the comment's text, Markdown with the
+    // leading `///` stripped from each line, so an editor can show the
+    // documentation of a symbol imported from a compiled assembly.
+    // Compiler-emitted; not user-facing — user code never spells this
+    // name.
+    class DOC_ATTRIBUTE(text: string public): Attribute is
+        init(..) is
+        si
+    si
+si
