@@ -96,8 +96,8 @@ namespace Ghul.Pipes is
         return mapper(running)
     si
 
-    collect[T](source: Iterable[T]) -> List[T] pure =>
-        collect_mutable(source)
+    collect[T](source: Iterable[T]) -> T[] pure =>
+        collect_mutable(source).to_array()
 
     collect_array[T](source: Iterable[T]) -> T[] pure =>
         collect_mutable(source).to_array()
