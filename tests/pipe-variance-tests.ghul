@@ -1,0 +1,51 @@
+namespace Tests is
+    use Ghul
+
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    use Ghul.Pipes
+
+    class VARIANCE_ANIMAL is
+        name: string
+
+        init(name: string) is
+            self.name = name
+        si
+    si
+
+    class VARIANCE_CAT: VARIANCE_ANIMAL is
+        init(name: string) is
+            super.init(name)
+        si
+    si
+
+    @TestClass()
+    class PipeVarianceShould is
+        init() is si
+
+        names(animals: Pipe[VARIANCE_ANIMAL]) -> string =>
+            animals |> map(animal => animal.name) |> join(",")
+
+        @Test()
+        Pipe_OfSubclass_IsAcceptedWhereAPipeOfTheBaseIsExpected() is
+            let cats: Pipe[VARIANCE_CAT] = [VARIANCE_CAT("tom"), VARIANCE_CAT("felix")] |> map(cat => cat)
+
+            are_equal("tom,felix", names(cats))
+        si
+
+        @Test()
+        Pipe_OfReferenceType_IsAssignableToAPipeOfObject() is
+            is_true((typeof Pipe[object]).is_assignable_from(typeof Pipe[string]))
+        si
+
+        @Test()
+        Pipe_OfValueType_IsNotAssignableToAPipeOfObject() is
+            is_false((typeof Pipe[object]).is_assignable_from(typeof Pipe[int]))
+        si
+    si
+si
