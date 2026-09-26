@@ -4,13 +4,17 @@ namespace Ghul.Pipes is
     // An unbounded arithmetic sequence: `start`, `start + step`, and so on.
     // Nothing bounds it, so a chain over one is bounded by a stage that
     // stops pulling.
+    /// An unbounded arithmetic sequence of `int`s starting at `start` and
+    /// advancing by `step` each time.
     class COUNT_PIPE: Pipe[int] is
         _start: int
         _step: int
         _started: bool
 
+        /// The current value in the sequence.
         current: int
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[int] => self
 
         init(start: int, step: int) is
@@ -20,6 +24,7 @@ namespace Ghul.Pipes is
             current = start
         si
 
+        /// Advances to the next value; never ends.
         move_next() -> bool is
             if _started then
                 current = current + _step
@@ -30,24 +35,31 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Restores the sequence to `start`.
         reset() is
             _started = false
             current = _start
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Has no effect.
         dispose() is
         si
     si
 
+    /// An unbounded arithmetic sequence of `long`s starting at `start` and
+    /// advancing by `step` each time.
     class LONG_COUNT_PIPE: Pipe[long] is
         _start: long
         _step: long
         _started: bool
 
+        /// The current value in the sequence.
         current: long
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[long] => self
 
         init(start: long, step: long) is
@@ -57,6 +69,7 @@ namespace Ghul.Pipes is
             current = start
         si
 
+        /// Advances to the next value; never ends.
         move_next() -> bool is
             if _started then
                 current = current + _step
@@ -67,13 +80,16 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Restores the sequence to `start`.
         reset() is
             _started = false
             current = _start
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Has no effect.
         dispose() is
         si
     si

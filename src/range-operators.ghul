@@ -13,17 +13,21 @@ namespace Ghul.Intrinsics is
     // against a length - and it is not iterable, so the type system
     // declines `for i in 1..<1 do` rather than needing a rule.
 
+    /// The range from `from` up to but not including `to` elements back from the end.
     ..<(from: int, to: int) -> System.Range pure =>
         System.Range(System.Index(from, false), System.Index(to, true))
 
+    /// The range from `from` elements back from the end, up to but not including `to` elements back from the end.
     ..<<(from: int, to: int) -> System.Range pure =>
         System.Range(System.Index(from, true), System.Index(to, true))
 
     // An inclusive end k back from the end is an exclusive end at k - 1
     // back, so the endpoint moves rather than the range growing.
+    /// The range from `from` through the element `to` places back from the end.
     ::<(from: int, to: int) -> System.Range pure =>
         System.Range(System.Index(from, false), _inclusive_end(to))
 
+    /// The range from `from` elements back from the end, through the element `to` places back from the end.
     ::<<(from: int, to: int) -> System.Range pure =>
         System.Range(System.Index(from, true), _inclusive_end(to))
 

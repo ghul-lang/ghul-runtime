@@ -8,6 +8,8 @@ namespace Ghul.Pipes is
     // `iterator` is always `self` and a reset does nothing: forwarding
     // one to the iterator would ask a .NET enumerator to rewind, which
     // it is permitted to reject.
+    /// Adapts a bare `Iterator[T]` to `Pipe[T]`, sharing the cursor with
+    /// whoever else holds it.
     class ITERATOR_PIPE[T]: Pipe[T] is
         _iterator: Iterator[T]
 
@@ -17,17 +19,23 @@ namespace Ghul.Pipes is
             _iterator = iterator
         si
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
+        /// The element at the underlying iterator's current position.
         current: T => _iterator.current
 
+        /// Advances the underlying iterator.
         move_next() -> bool => _iterator.move_next()
 
+        /// Has no effect: there's no owning source to take a fresh cursor from.
         reset() is
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si
 
@@ -35,5 +43,6 @@ namespace Ghul.Pipes is
     // drive it. Deliberately not an overload of `pipe`: a `Pipe[T]` is
     // both iterable and an iterator, so overloading on the two would be
     // ambiguous at every call site a pipe reaches.
+    /// Lifts a bare `Iterator[T]` into a `Pipe[T]` so the combinators can drive it.
     cursor[T](source: Iterator[T]) -> Pipe[T] pure => ITERATOR_PIPE[T](source)
 si

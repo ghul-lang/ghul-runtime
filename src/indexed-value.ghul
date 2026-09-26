@@ -1,16 +1,23 @@
 namespace Ghul.Pipes is
+    /// An element paired with its position in the source sequence, produced by the `index` combinator.
     struct INDEXED_VALUE[T] is
+        /// The position, as the first positional element.
         `0: int
+        /// The value, as the second positional element.
         `1: T
 
+        /// The position of `value` in the source sequence.
         index: int pure => `0
+        /// The value at `index`.
         value: T pure => `1
 
+        /// Creates an indexed value pairing `value` with its `index`.
         init(index: int, value: T) pure is
             `0 = index
             `1 = value
         si
 
+        /// Renders as `(index,value)`.
         to_string() -> string => "({`0},{`1})"
     si
 si

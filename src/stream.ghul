@@ -11,8 +11,12 @@ namespace Ghul.Pipes is
     // State and output are decoupled: state can be any shape (tuple,
     // index cursor, accumulator) and is never seen by callers of a
     // `stream`-produced `Pipe[T]`.
+    /// One step of a state-stepping sequence: either the sequence is over,
+    /// or the next element together with the state to feed into the next step.
     union STREAM[T, S] is
+        /// The sequence is over.
         DONE
+        /// The yielded element, and the state to advance with on the next call.
         YIELD(value: T, state: S)
     si
 
@@ -25,13 +29,16 @@ namespace Ghul.Pipes is
     // The mutable state cursor lives on the class; the user's
     // `advance` is a pure `S -> STREAM[T, S]` — no recursion, no
     // closure-per-step allocation.
+    /// Drives a state-stepping `advance` function through the `Pipe[T]` surface.
     class STREAM_PIPE[T, S]: Pipe[T] is
         _initial: S
         _state:   S
         _advance: S -> STREAM[T, S]
 
+        /// The most recently yielded element.
         current: T
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
         init(initial: S, advance: S -> STREAM[T, S]) is
@@ -42,6 +49,8 @@ namespace Ghul.Pipes is
             _advance = advance
         si
 
+        /// Calls `advance` with the current state; on `YIELD` advances and
+        /// returns true, on `DONE` rewinds and returns false.
         move_next() -> bool is
             let step = _advance(_state)
 
@@ -56,12 +65,15 @@ namespace Ghul.Pipes is
             fi
         si
 
+        /// Restores the initial state, so the next pull starts the sequence over.
         reset() is
             _state = _initial
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Has no effect.
         dispose() is
         si
     si
@@ -73,6 +85,9 @@ namespace Ghul.Pipes is
     // than one part, and the pack marker lets the step take it spread
     // out - `(previous, current) => ...` - rather than as one bound
     // tuple parameter.
+    /// Builds a `Pipe[T]` from an initial state and a step function that
+    /// returns `STREAM.DONE` to end the sequence or `STREAM.YIELD` to
+    /// produce the next element and state.
     stream[T, S..](initial: S, advance: S.. -> STREAM[T, S]) -> Pipe[T] is
         return STREAM_PIPE[T, S](initial, advance)
     si

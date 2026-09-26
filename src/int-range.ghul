@@ -1,24 +1,35 @@
 namespace Ghul is
     use Collections
 
+    /// Implemented by a range type, giving its two endpoints.
     trait Range[T] is
+        /// The first element.
         from: T
+        /// The upper bound.
         to: T
     si
 
+    /// Implemented by an iterator that can be rewound to its starting point.
     trait Resettable is
+        /// Rewinds to the starting point, so the next read starts again.
         @IL.name("Reset")
         reset()
     si
 
+    /// The half-open range of `int` from `from` up to but not including `to`, produced by `..`.
     struct INT_RANGE: Range[int], Iterable[int], Iterator[int], Resettable is
+        /// This range, as its own iterator.
         iterator: Iterator[int] => self
 
+        /// The first element.
         from: int
+        /// The exclusive upper bound.
         to: int
 
+        /// The element the range is currently at.
         current: int
 
+        /// Creates a range from `from` up to but not including `to`.
         init(from: int, to: int) is
             self.from = from
             self.to = to
@@ -26,15 +37,18 @@ namespace Ghul is
             current = from - 1
         si
 
+        /// Advances to the next element, and returns whether one was reached.
         move_next() -> bool is
             current = current + 1
             return current < to
         si
 
+        /// Rewinds to `from`, as though the range had not been read yet.
         reset() is
             current = from - 1
         si
 
+        /// Renders as `from..to`, with the current element appended once the range has started.
         to_string() -> string =>
             (
                 let result =
@@ -53,18 +67,25 @@ namespace Ghul is
                     fi
             ).to_string()
 
+        /// Has no effect; the range holds no resource to release.
         dispose() is
         si
     si
 
+    /// The closed range of `int` from `from` to `to`, including both, produced by `::`.
     struct INT_RANGE_INCLUSIVE: Range[int], Iterable[int], Iterator[int], Resettable is
+        /// This range, as its own iterator.
         iterator: Iterator[int] => self
 
+        /// The first element.
         from: int
+        /// The last element.
         to: int
 
+        /// The element the range is currently at.
         current: int
 
+        /// Creates a range from `from` to `to`, including both.
         init(from: int, to: int) is
             self.from = from
             self.to = to
@@ -72,15 +93,18 @@ namespace Ghul is
             current = from - 1
         si
 
+        /// Advances to the next element, and returns whether one was reached.
         move_next() -> bool is
             current = current + 1
             return current <= to
         si
 
+        /// Rewinds to `from`, as though the range had not been read yet.
         reset() is
             current = from - 1
         si
 
+        /// Renders as `from::to`, with the current element appended once the range has started.
         to_string() -> string =>
             (
                 let result =
@@ -98,6 +122,7 @@ namespace Ghul is
                     fi
             ).to_string()
 
+        /// Has no effect; the range holds no resource to release.
         dispose() is
         si
     si

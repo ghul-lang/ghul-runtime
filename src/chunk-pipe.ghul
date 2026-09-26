@@ -1,9 +1,13 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `source`'s elements grouped into lists of `size`, with a final
+    /// shorter list when `source`'s count isn't a multiple of `size`.
     class CHUNK_PIPE[T]: Pipe[LIST[T]] is
+        /// This pipe, as its own iterator.
         iterator: Iterator[LIST[T]] => self
 
+        /// The most recently produced chunk.
         current: LIST[T]
 
         _source: Iterable[T]
@@ -18,6 +22,7 @@ namespace Ghul.Pipes is
         // on its own instead.
         _done: bool
 
+        /// Throws if `size` isn't positive.
         init(source: Iterable[T], size: int) is
             assert size > 0 else "chunk size must be positive"
 
@@ -27,6 +32,8 @@ namespace Ghul.Pipes is
             _done = false
         si
 
+        /// Pulls up to `size` elements from the source into the next chunk;
+        /// rewinds once the source runs out.
         move_next() -> bool is
             if _done then
                 reset()
@@ -55,11 +62,13 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Rewinds the source and clears the exhaustion flag.
         reset() is
             _iterator = rewind(_iterator, pending())
             _done = false
         si
 
+        /// The placeholder cursor installed after a rewind, created once and reused.
         pending() -> PENDING_CURSOR[T] is
             if let p = _pending then
                 return p
@@ -72,8 +81,10 @@ namespace Ghul.Pipes is
             return p
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si
 si

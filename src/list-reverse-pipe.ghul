@@ -1,12 +1,15 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `list`'s elements in reverse order.
     class LIST_REVERSE_PIPE[T]: Pipe[T] is
         _list: List[T]
         _index: int
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
+        /// The element at the cursor's current position.
         current: T => _list[_index]
 
         init(list: List[T]) is
@@ -16,6 +19,7 @@ namespace Ghul.Pipes is
             _index = list.count
         si
 
+        /// Steps backward through `list`; rewinds once it reaches the start.
         move_next() -> bool is
             if _index > 0 then
                 _index = _index - 1
@@ -28,12 +32,15 @@ namespace Ghul.Pipes is
             return false
         si
 
+        /// Rewinds to just past the last element.
         reset() is
             _index = _list.count
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Has no effect.
         dispose() is
         si
     si

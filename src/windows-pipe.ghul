@@ -1,9 +1,13 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// Overlapping lists of `size` consecutive elements of `source`,
+    /// sliding one element at a time.
     class WINDOWS_PIPE[T]: Pipe[LIST[T]] is
+        /// This pipe, as its own iterator.
         iterator: Iterator[LIST[T]] => self
 
+        /// The most recently produced window.
         current: LIST[T]
 
         _source: Iterable[T]
@@ -14,6 +18,7 @@ namespace Ghul.Pipes is
 
         _buffer: LIST[T]
 
+        /// Throws if `size` isn't positive.
         init(source: Iterable[T], size: int) is
             assert size > 0 else "window size must be positive"
 
@@ -23,6 +28,8 @@ namespace Ghul.Pipes is
             _buffer = LIST[T]()
         si
 
+        /// Fills the buffer to `size` elements and drops the oldest one
+        /// after producing the window; rewinds once the source can't fill it.
         move_next() -> bool is
             while _buffer.count < _size /\ _iterator.move_next() do
                 _buffer.add(_iterator.current)
@@ -41,11 +48,13 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Rewinds the source and clears the buffer.
         reset() is
             _iterator = rewind(_iterator, pending())
             _buffer = LIST[T]()
         si
 
+        /// The placeholder cursor installed after a rewind, created once and reused.
         pending() -> PENDING_CURSOR[T] is
             if let p = _pending then
                 return p
@@ -58,8 +67,10 @@ namespace Ghul.Pipes is
             return p
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si
 si

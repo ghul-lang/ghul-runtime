@@ -6,14 +6,17 @@ namespace Ghul.Coroutines is
 
     // An awaitable that parks the calling coroutine on the current
     // scheduler until `run` gives it its next turn.
+    /// An awaitable that parks the calling coroutine on the current scheduler until `run` gives it its next turn.
     pause() -> PAUSE => SCHEDULER.current.pause()
 
     // An awaitable that parks the calling coroutine on the current
     // scheduler until the given number of milliseconds has passed.
+    /// An awaitable that parks the calling coroutine on the current scheduler until `milliseconds` have passed.
     sleep(milliseconds: int) -> SLEEP => SCHEDULER.current.sleep(milliseconds)
 
     // Resumes parked coroutines on the current scheduler until none
     // remain.
+    /// Resumes parked coroutines on the current scheduler until none remain.
     run() is
         SCHEDULER.current.run()
     si
@@ -24,6 +27,7 @@ namespace Ghul.Coroutines is
     // already knows the coroutine is waiting. A coroutine awaiting
     // anything else, a task for instance, is resumed through the
     // scheduler's inbox instead, which `run` waits on.
+    /// Marks an awaiter that parks its own continuation on the scheduler directly, rather than through the scheduler's inbox.
     trait SchedulerAwaiter open is
     si
 
@@ -51,6 +55,7 @@ namespace Ghul.Coroutines is
     // post and resumes the coroutine on its own thread like any other.
     // Where the thread cannot block waiting for the post, such an
     // await is reported as an error instead.
+    /// Drives coroutines on one thread. Calling a coroutine starts it on the caller's stack until it suspends; `run` then resumes parked coroutines one at a time until none remain.
     class SCHEDULER is
         _current: SCHEDULER? static
 
@@ -74,6 +79,7 @@ namespace Ghul.Coroutines is
         si
 
         // The scheduler coroutines park on, created on first use.
+        /// The scheduler coroutines park on, created on first use if none has been installed.
         current: SCHEDULER static is
             if !_current? then
                 _current = SCHEDULER()
@@ -86,25 +92,30 @@ namespace Ghul.Coroutines is
 
         // An awaitable that parks the calling coroutine until `run`
         // gives it its next turn.
+        /// An awaitable that parks the calling coroutine until `run` gives it its next turn.
         pause() -> PAUSE => PAUSE(_ready)
 
         // An awaitable that parks the calling coroutine until the
         // given number of milliseconds has passed.
+        /// An awaitable that parks the calling coroutine until `milliseconds` have passed.
         sleep(milliseconds: int) -> SLEEP => SLEEP(self, now + cast long(milliseconds))
 
         // Parks a coroutine until its deadline. Reached by `sleep`'s
         // awaiter.
+        /// Parks a coroutine until `deadline` passes, then calls `resume`. Called by `sleep`'s awaiter.
         sleep_until(deadline: long, resume: () -> void) is
             _sleepers.add(SLEEPER(deadline, resume))
         si
 
         // The clock deadlines are measured against, in milliseconds.
+        /// The clock deadlines are measured against, in milliseconds.
         now: long static => System.Environment.tick_count64
 
         // Queues a continuation to run from the next `run`. Reached
         // by a channel, a lock or a completing coroutine waking
         // whatever waits on it, so the waiter resumes from `run`
         // rather than nested inside the waker's call.
+        /// Queues `continuation` to run from the next `run`, rather than nested inside the caller.
         schedule(continuation: () -> void) is
             _ready.enqueue(continuation)
         si
@@ -114,6 +125,7 @@ namespace Ghul.Coroutines is
         // completes it, and all the wrapper does is post the
         // continuation for `run` to resume. Reached by the coroutine
         // builders.
+        /// Wraps `continuation` from an await this scheduler doesn't own, so it only posts back to the scheduler's inbox for `run` to resume. Called by the coroutine builders.
         external(continuation: () -> void) -> () -> void is
             _outstanding = _outstanding + 1
 
@@ -129,6 +141,7 @@ namespace Ghul.Coroutines is
         // Starts a coroutine on this scheduler and returns its handle.
         // The body has already run to its first suspension when this
         // returns.
+        /// Starts a coroutine on this scheduler and returns its handle. The body has already run to its first suspension by the time this returns.
         spawn[T](body: SCHEDULER -> COROUTINE[T]) -> COROUTINE[T] is
             let previous = current
             current = self
@@ -140,6 +153,7 @@ namespace Ghul.Coroutines is
             yrt
         si
 
+        /// Starts a value-less coroutine on this scheduler and returns its handle, with the body already run to its first suspension.
         spawn(body: SCHEDULER -> COROUTINE) -> COROUTINE is
             let previous = current
             current = self
@@ -160,6 +174,7 @@ namespace Ghul.Coroutines is
         // per pass rather than holding the queue. Every pass then looks
         // at the sleepers, which is what keeps a coroutine whose
         // deadline has come from waiting on one that never finishes.
+        /// Resumes parked coroutines until none remain, waiting for the next deadline or the next inbox post whenever no coroutine is ready.
         run() is
             let previous = current
             current = self
@@ -276,6 +291,7 @@ namespace Ghul.Coroutines is
     // The awaitable `pause()` returns. Its awaiter is itself: never
     // completed, and registering a continuation parks it on the
     // scheduler's ready queue.
+    /// The awaitable `pause()` returns. Never completes on its own; registering a continuation parks it on the scheduler's ready queue.
     struct PAUSE: ICriticalNotifyCompletion, SchedulerAwaiter is
         _ready: Collections.Queue[() -> void]
 
@@ -283,17 +299,22 @@ namespace Ghul.Coroutines is
             _ready = ready
         si
 
+        /// Returns itself as its own awaiter, as the awaiter pattern requires.
         get_awaiter() -> PAUSE => self
 
+        /// Whether the await has already completed. Always false: pausing only ends when `run` gives the coroutine its next turn.
         is_completed: bool => false
 
+        /// Called after completion by the compiler's async lowering; pausing has no result to return.
         get_result() is
         si
 
+        /// Queues `continuation` on the scheduler's ready queue. Called by the compiler's async lowering when the coroutine awaits a pause.
         on_completed(continuation: () -> void) is
             _ready.enqueue(continuation)
         si
 
+        /// The same as `on_completed`. The async lowering calls this one when the execution context doesn't need to flow.
         unsafe_on_completed(continuation: () -> void) is
             _ready.enqueue(continuation)
         si
@@ -302,6 +323,7 @@ namespace Ghul.Coroutines is
     // The awaitable `sleep(ms)` returns; its awaiter is itself.
     // Completed once the deadline has passed; otherwise registering a
     // continuation parks it on the scheduler until it does.
+    /// The awaitable `sleep(ms)` returns. Completes once its deadline has passed; otherwise registering a continuation parks it on the scheduler until then.
     struct SLEEP: ICriticalNotifyCompletion, SchedulerAwaiter is
         _scheduler: SCHEDULER
         _deadline: long
@@ -311,23 +333,29 @@ namespace Ghul.Coroutines is
             _deadline = deadline
         si
 
+        /// Returns itself as its own awaiter, as the awaiter pattern requires.
         get_awaiter() -> SLEEP => self
 
+        /// Whether the deadline has passed.
         is_completed: bool => _deadline <= SCHEDULER.now
 
+        /// Called after completion by the compiler's async lowering; sleeping has no result to return.
         get_result() is
         si
 
+        /// Parks the continuation on the scheduler until the deadline passes. Called by the compiler's async lowering when the coroutine awaits a sleep.
         on_completed(continuation: () -> void) is
             _scheduler.sleep_until(_deadline, continuation)
         si
 
+        /// The same as `on_completed`. The async lowering calls this one when the execution context doesn't need to flow.
         unsafe_on_completed(continuation: () -> void) is
             _scheduler.sleep_until(_deadline, continuation)
         si
     si
 
     // A coroutine parked until its deadline, and how to resume it.
+    /// A coroutine parked until its deadline, and how to resume it.
     class SLEEPER(deadline: long, resume: () -> void) is si
 
     // The handle to a coroutine producing a value. Completed when the
@@ -338,10 +366,15 @@ namespace Ghul.Coroutines is
     // the scheduler it parked on, whichever one completed the
     // callee. Reading `value` before completion is an error, and
     // either route rethrows a failed coroutine's own exception.
+    /// The handle to a coroutine producing a value of type `T`. Completed when the body returns or throws; awaiting it parks the caller until then and yields the result. Reading `value` before completion is an error, and either route rethrows a failed coroutine's own exception.
     @System.Runtime.CompilerServices.AsyncMethodBuilder(typeof(COROUTINE_BUILDER[_]))
     class COROUTINE[T]: ICriticalNotifyCompletion, SchedulerAwaiter is
+        /// The coroutine's failure, if it failed.
         exception: System.Exception?
+
+        /// Whether the coroutine has finished, successfully or not.
         completed: bool
+
         _value: Ghul.MAYBE[T]
         _waiters: Collections.LIST[WAITER[bool]]
 
@@ -351,6 +384,7 @@ namespace Ghul.Coroutines is
 
         // The coroutine's result. Reading before completion is an
         // error; a failure rethrows its exception.
+        /// The coroutine's result. Reading before completion is an error, and reading after a failure rethrows its exception.
         value: T is
             if let e = exception then
                 ExceptionDispatchInfo.capture(e).`throw()
@@ -358,22 +392,28 @@ namespace Ghul.Coroutines is
             return _value!
         si
 
+        /// Returns itself as its own awaiter, as the awaiter pattern requires.
         get_awaiter() -> COROUTINE[T] => self
 
+        /// Whether the coroutine has completed.
         is_completed: bool => completed
 
+        /// Returns the coroutine's result, called by the compiler's async lowering once the await completes.
         get_result() -> T => value
 
+        /// Parks the continuation until the coroutine completes. Called by the compiler's async lowering when another coroutine awaits this handle.
         on_completed(continuation: () -> void) is
             _wait(continuation)
         si
 
+        /// The same as `on_completed`. The async lowering calls this one when the execution context doesn't need to flow.
         unsafe_on_completed(continuation: () -> void) is
             _wait(continuation)
         si
 
         // Records a successful outcome. Reached by the builder; the
         // public spelling keeps a hand-written builder possible.
+        /// Records a successful outcome and wakes everything waiting on it.
         complete(value: T) is
             _value = Ghul.MAYBE[T](value)
             completed = true
@@ -381,6 +421,7 @@ namespace Ghul.Coroutines is
         si
 
         // Records a failure.
+        /// Records a failure and wakes everything waiting on it.
         fail(e: System.Exception) is
             exception = e
             completed = true
@@ -409,43 +450,55 @@ namespace Ghul.Coroutines is
 
     // The handle to a coroutine producing no value. Awaiting it parks
     // the caller until the coroutine completes.
+    /// The handle to a coroutine producing no value. Awaiting it parks the caller until the coroutine completes.
     @System.Runtime.CompilerServices.AsyncMethodBuilder(typeof(COROUTINE_BUILDER))
     class COROUTINE: ICriticalNotifyCompletion, SchedulerAwaiter is
+        /// The coroutine's failure, if it failed.
         exception: System.Exception?
+
+        /// Whether the coroutine has finished, successfully or not.
         completed: bool
+
         _waiters: Collections.LIST[WAITER[bool]]
 
         init() is
             _waiters = Collections.LIST[WAITER[bool]]()
         si
 
+        /// Returns itself as its own awaiter, as the awaiter pattern requires.
         get_awaiter() -> COROUTINE => self
 
+        /// Whether the coroutine has completed.
         is_completed: bool => completed
 
         // Rethrows a failed coroutine's exception; nothing otherwise.
+        /// Rethrows a failed coroutine's own exception; a successful completion has no result. Called by the compiler's async lowering once the await completes.
         get_result() is
             if let e = exception then
                 ExceptionDispatchInfo.capture(e).`throw()
             fi
         si
 
+        /// Parks the continuation until the coroutine completes. Called by the compiler's async lowering when another coroutine awaits this handle.
         on_completed(continuation: () -> void) is
             _wait(continuation)
         si
 
+        /// The same as `on_completed`. The async lowering calls this one when the execution context doesn't need to flow.
         unsafe_on_completed(continuation: () -> void) is
             _wait(continuation)
         si
 
         // Records completion. Reached by the builder; the public
         // spelling keeps a hand-written builder possible.
+        /// Records completion and wakes everything waiting on it.
         complete() is
             completed = true
             _wake()
         si
 
         // Records a failure.
+        /// Records a failure and wakes everything waiting on it.
         fail(e: System.Exception) is
             exception = e
             completed = true
@@ -477,6 +530,7 @@ namespace Ghul.Coroutines is
     // from `start`, records the outcome, and materialises the handle
     // lazily - `task` is read once, after `start` returns, whichever
     // order the body completed in.
+    /// The builder the compiler drives for a function that returns `COROUTINE[T]`.
     class COROUTINE_BUILDER[T] is
         _result: Ghul.MAYBE[T]
         _exception: System.Exception?
@@ -486,12 +540,15 @@ namespace Ghul.Coroutines is
         init() is
         si
 
+        /// Creates a fresh builder. Called by the compiler's async lowering to start a `COROUTINE[T]`-returning function.
         create() -> COROUTINE_BUILDER[T] static => COROUTINE_BUILDER[T]()
 
+        /// Runs the state machine's first step. Called by the compiler's async lowering to start the coroutine's body.
         start[A: IAsyncStateMachine](state_machine: A ref) is
             state_machine!.move_next()
         si
 
+        /// The coroutine handle, created and filled in on first read. Read by the compiler's async lowering once the body has run to its first suspension.
         task: COROUTINE[T] is
             if !_coroutine? then
                 let handle = COROUTINE[T]()
@@ -502,6 +559,7 @@ namespace Ghul.Coroutines is
             return _coroutine
         si
 
+        /// Records the coroutine's result. Called by the compiler's async lowering when the body returns a value.
         set_result(v: T) is
             _result = Ghul.MAYBE[T](v)
             _done = true
@@ -510,6 +568,7 @@ namespace Ghul.Coroutines is
             fi
         si
 
+        /// Records the coroutine's failure. Called by the compiler's async lowering when the body throws.
         set_exception(e: System.Exception) is
             _exception = e
             _done = true
@@ -531,6 +590,7 @@ namespace Ghul.Coroutines is
         // An awaiter the scheduler owns is handed the continuation as
         // it is; anything else is handed one that posts it back to the
         // scheduler, so the coroutine resumes from `run`.
+        /// Registers the state machine's resumption with `awaiter`, routing it through the scheduler's inbox unless the awaiter already belongs to the scheduler. Called by the compiler's async lowering for an `await` on an ordinary awaiter.
         await_on_completed[A: INotifyCompletion](awaiter: A ref, state_machine: IAsyncStateMachine) is
             if isa SchedulerAwaiter(awaiter!) then
                 awaiter.on_completed(state_machine.move_next)
@@ -539,6 +599,7 @@ namespace Ghul.Coroutines is
             fi
         si
 
+        /// The same as `await_on_completed`, for an awaiter that implements `ICriticalNotifyCompletion`.
         await_unsafe_on_completed[A: ICriticalNotifyCompletion](awaiter: A ref, state_machine: IAsyncStateMachine) is
             if isa SchedulerAwaiter(awaiter!) then
                 awaiter.unsafe_on_completed(state_machine.move_next)
@@ -550,6 +611,7 @@ namespace Ghul.Coroutines is
 
     // The builder async functions returning the value-less
     // COROUTINE drive.
+    /// The builder the compiler drives for a function that returns `COROUTINE`.
     class COROUTINE_BUILDER is
         _exception: System.Exception?
         _done: bool
@@ -558,12 +620,15 @@ namespace Ghul.Coroutines is
         init() is
         si
 
+        /// Creates a fresh builder. Called by the compiler's async lowering to start a `COROUTINE`-returning function.
         create() -> COROUTINE_BUILDER static => COROUTINE_BUILDER()
 
+        /// Runs the state machine's first step. Called by the compiler's async lowering to start the coroutine's body.
         start[A: IAsyncStateMachine](state_machine: A ref) is
             state_machine!.move_next()
         si
 
+        /// The coroutine handle, created and filled in on first read. Read by the compiler's async lowering once the body has run to its first suspension.
         task: COROUTINE is
             if !_coroutine? then
                 let handle = COROUTINE()
@@ -574,6 +639,7 @@ namespace Ghul.Coroutines is
             return _coroutine
         si
 
+        /// Records that the coroutine completed. Called by the compiler's async lowering when the body falls through or returns.
         set_result() is
             _done = true
             if let handle = _coroutine then
@@ -581,6 +647,7 @@ namespace Ghul.Coroutines is
             fi
         si
 
+        /// Records the coroutine's failure. Called by the compiler's async lowering when the body throws.
         set_exception(e: System.Exception) is
             _exception = e
             _done = true
@@ -602,6 +669,7 @@ namespace Ghul.Coroutines is
         // An awaiter the scheduler owns is handed the continuation as
         // it is; anything else is handed one that posts it back to the
         // scheduler, so the coroutine resumes from `run`.
+        /// Registers the state machine's resumption with `awaiter`, routing it through the scheduler's inbox unless the awaiter already belongs to the scheduler. Called by the compiler's async lowering for an `await` on an ordinary awaiter.
         await_on_completed[A: INotifyCompletion](awaiter: A ref, state_machine: IAsyncStateMachine) is
             if isa SchedulerAwaiter(awaiter!) then
                 awaiter.on_completed(state_machine.move_next)
@@ -610,6 +678,7 @@ namespace Ghul.Coroutines is
             fi
         si
 
+        /// The same as `await_on_completed`, for an awaiter that implements `ICriticalNotifyCompletion`.
         await_unsafe_on_completed[A: ICriticalNotifyCompletion](awaiter: A ref, state_machine: IAsyncStateMachine) is
             if isa SchedulerAwaiter(awaiter!) then
                 awaiter.unsafe_on_completed(state_machine.move_next)
@@ -623,6 +692,7 @@ namespace Ghul.Coroutines is
     // value is buffered until a receiver takes it. Receiving an empty
     // channel parks the calling coroutine until a send arrives, and
     // is the usual way coroutines hand work to one another.
+    /// A message channel between coroutines. Sending never parks; receiving from an empty channel parks the caller until a value arrives.
     class CHANNEL[T] is
         _values: Collections.Queue[T]
         _waiters: Collections.Queue[WAITER[TICKET[T]]]
@@ -637,6 +707,7 @@ namespace Ghul.Coroutines is
         // so it resumes from `run` rather than nested inside this
         // call, and no later receiver can take the value from under
         // it.
+        /// Delivers `v`, handing it directly to a parked receiver if there is one, otherwise buffering it.
         send(v: T) is
             if _waiters.count > 0 then
                 let waiter = _waiters.dequeue()
@@ -649,18 +720,22 @@ namespace Ghul.Coroutines is
 
         // An awaitable yielding the next value, parking the caller
         // when none has arrived yet.
+        /// An awaitable yielding the next value, parking the caller when none has arrived yet.
         receive() -> RECEIVE[T] => RECEIVE[T](self, TICKET[T]())
 
         // The number of values buffered and not yet received.
+        /// The number of values buffered and not yet received.
         buffered_count: int => _values.count
 
         // Takes the oldest buffered value. Reached by `receive`'s
         // awaiter; an empty queue here means the awaiter has already
         // established one is present.
+        /// Takes the oldest buffered value. Called by `receive`'s awaiter once it has confirmed one is present.
         take_next() -> T => _values.dequeue()
 
         // Parks a receiver until a send arrives, which will fill its
-        // ticket. Reached by `receive`'s awaiter.
+        // ticket. Called by `receive`'s awaiter.
+        /// Parks a receiver until a send fills `ticket`. Called by `receive`'s awaiter.
         wait_for_next(ticket: TICKET[T], resume: () -> void) is
             _waiters.enqueue(WAITER[TICKET[T]](ticket, resume))
         si
@@ -669,6 +744,7 @@ namespace Ghul.Coroutines is
     // A parked coroutine: what it is waiting for, and how to resume
     // it. The scheduler is the one current when it parked, so a wake
     // from wherever the waker runs queues it back where it belongs.
+    /// A parked coroutine: what it is waiting for, and how to resume it.
     class WAITER[T](ticket: T, resume: () -> void) is
         _scheduler: SCHEDULER
 
@@ -676,13 +752,16 @@ namespace Ghul.Coroutines is
             _scheduler = SCHEDULER.current
         si
 
+        /// Resumes the parked coroutine on the scheduler it parked on.
         wake() is
             _scheduler.schedule(resume)
         si
     si
 
     // Where a send leaves the value for a receiver that was parked.
+    /// Where a send leaves the value for a receiver that was parked.
     class TICKET[T] is
+        /// The delivered value, once a send has filled it.
         value: Ghul.MAYBE[T] public
 
         init() is
@@ -693,6 +772,7 @@ namespace Ghul.Coroutines is
     // itself. Completed when a value is buffered; otherwise
     // registering a continuation parks it on the channel until a
     // send arrives, and the value comes back through the ticket.
+    /// The awaitable `channel.receive()` returns. Completed when a value is already buffered; otherwise registering a continuation parks it on the channel until a send arrives.
     struct RECEIVE[T]: ICriticalNotifyCompletion, SchedulerAwaiter is
         _channel: CHANNEL[T]
         _ticket: TICKET[T]
@@ -702,17 +782,22 @@ namespace Ghul.Coroutines is
             _ticket = ticket
         si
 
+        /// Returns itself as its own awaiter, as the awaiter pattern requires.
         get_awaiter() -> RECEIVE[T] => self
 
+        /// Whether a value is already buffered on the channel.
         is_completed: bool => _channel.buffered_count > 0
 
+        /// Returns the received value, called by the compiler's async lowering once the await completes.
         get_result() -> T =>
             if let v = _ticket.value then v else _channel.take_next() fi
 
+        /// Parks the continuation on the channel until a send arrives. Called by the compiler's async lowering when a coroutine awaits an empty channel.
         on_completed(continuation: () -> void) is
             _channel.wait_for_next(_ticket, continuation)
         si
 
+        /// The same as `on_completed`. The async lowering calls this one when the execution context doesn't need to flow.
         unsafe_on_completed(continuation: () -> void) is
             _channel.wait_for_next(_ticket, continuation)
         si
@@ -723,6 +808,7 @@ namespace Ghul.Coroutines is
     // Every waiter is served in the order it arrived, and a released
     // permit goes straight to the first of them rather than back into
     // the pool, so a later caller cannot overtake it.
+    /// A counting lock between coroutines. `acquire` takes a permit, parking the caller until one is free; `release` returns one.
     class SEMAPHORE is
         _permits: int
         _waiters: Collections.Queue[WAITER[GRANT]]
@@ -733,13 +819,16 @@ namespace Ghul.Coroutines is
         si
 
         // An awaitable that yields once the caller holds a permit.
+        /// An awaitable that yields once the caller holds a permit.
         acquire() -> ACQUIRE => ACQUIRE(self, GRANT())
 
         // The number of permits not currently held.
+        /// The number of permits not currently held.
         available: int => _permits
 
         // Returns a permit, handing it to the first parked waiter if
         // there is one.
+        /// Returns a permit, handing it directly to the first parked waiter if there is one.
         release() is
             if _waiters.count > 0 then
                 let waiter = _waiters.dequeue()
@@ -752,17 +841,20 @@ namespace Ghul.Coroutines is
 
         // Takes a free permit. Reached by `acquire`'s awaiter, which
         // has already established one is free.
+        /// Takes a free permit. Called by `acquire`'s awaiter once it has confirmed one is free.
         take_permit() is
             _permits = _permits - 1
         si
 
         // Parks a waiter until a release grants it a permit.
+        /// Parks a waiter until a release grants `grant` a permit.
         wait_for_permit(grant: GRANT, resume: () -> void) is
             _waiters.enqueue(WAITER[GRANT](grant, resume))
         si
     si
 
     // A lock one coroutine holds at a time.
+    /// A lock one coroutine holds at a time.
     class MUTEX: SEMAPHORE is
         init() is
             super.init(1)
@@ -771,7 +863,9 @@ namespace Ghul.Coroutines is
 
     // Where a release records that a parked waiter now holds the
     // permit it was waiting for.
+    /// Where a release records that a parked waiter now holds the permit it was waiting for.
     class GRANT is
+        /// Whether the release has already granted this waiter its permit.
         granted: bool public
 
         init() is
@@ -782,6 +876,7 @@ namespace Ghul.Coroutines is
     // itself. Completed when a permit is free, taking it; otherwise
     // registering a continuation parks it until a release grants
     // one.
+    /// The awaitable `semaphore.acquire()` returns. Completed when a permit is already free, taking it; otherwise registering a continuation parks it until a release grants one.
     struct ACQUIRE: ICriticalNotifyCompletion, SchedulerAwaiter is
         _semaphore: SEMAPHORE
         _grant: GRANT
@@ -791,20 +886,25 @@ namespace Ghul.Coroutines is
             _grant = grant
         si
 
+        /// Returns itself as its own awaiter, as the awaiter pattern requires.
         get_awaiter() -> ACQUIRE => self
 
+        /// Whether a permit is already free.
         is_completed: bool => _semaphore.available > 0
 
+        /// Takes the permit if it wasn't already granted while parked. Called by the compiler's async lowering once the await completes.
         get_result() is
             if !_grant.granted then
                 _semaphore.take_permit()
             fi
         si
 
+        /// Parks the continuation until a release grants this waiter a permit.
         on_completed(continuation: () -> void) is
             _semaphore.wait_for_permit(_grant, continuation)
         si
 
+        /// The same as `on_completed`. The async lowering calls this one when the execution context doesn't need to flow.
         unsafe_on_completed(continuation: () -> void) is
             _semaphore.wait_for_permit(_grant, continuation)
         si
