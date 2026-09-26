@@ -78,22 +78,36 @@ namespace Ghul.Pipes is
     /// result is the nth element of each row in turn. Stops at the shortest
     /// row, so a ragged input is read as its rectangular part.
     transpose[T](rows: Iterable[Iterable[T]]) -> Pipe[LIST[T]] is
-        let materialised = rows |> map(row => row |> collect_list()) |> collect_list()
+        let indexed = LIST[List[T]]()
 
-        if materialised.count == 0 then
+        for row in rows do
+            if isa List[T](row) then
+                indexed.add(row)
+            else
+                indexed.add(row |> collect_mutable())
+            fi
+        od
+
+        if indexed.count == 0 then
             return
         fi
 
-        let width mut = materialised[0].count
+        let width mut = indexed[0].count
 
-        for row in materialised do
+        for row in indexed do
             if row.count < width then
                 width = row.count
             fi
         od
 
         for column in 0..width do
-            yield materialised |> map(row => row[column]) |> collect_list()
+            let column_values = LIST[T](indexed.count)
+
+            for row in indexed do
+                column_values.add(row[column])
+            od
+
+            yield column_values
         od
     si
 
@@ -101,7 +115,7 @@ namespace Ghul.Pipes is
     /// order of the input's own positions, which is lexicographic when the
     /// input is sorted.
     permutations[T](source: Iterable[T]) -> Pipe[LIST[T]] is
-        let items = source |> collect_list()
+        let items = source |> collect_mutable()
 
         if items.count == 0 then
             yield LIST[T]()
