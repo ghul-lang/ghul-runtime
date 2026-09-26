@@ -3,12 +3,12 @@ namespace Ghul.Pipes is
 
     /// `source`'s elements grouped into lists of `size`, with a final
     /// shorter list when `source`'s count isn't a multiple of `size`.
-    class CHUNK_PIPE[T]: Pipe[LIST[T]] is
+    class CHUNK_PIPE[T]: Pipe[List[T]] is
         /// This pipe, as its own iterator.
-        iterator: Iterator[LIST[T]] => self
+        iterator: Iterator[List[T]] => self
 
         /// The most recently produced chunk.
-        current: LIST[T]
+        current: List[T]
 
         _source: Iterable[T]
         _iterator: Iterator[T]
