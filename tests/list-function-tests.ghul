@@ -1,0 +1,115 @@
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Coverage for sum_by, last, group, transpose and permutations.
+    @TestClass()
+    class ListFunctionsShould is
+        init() is
+        si
+
+        @Test()
+        SumBy_SumsTheProjection() is
+            are_equal(20, Ghul.Pipes.sum_by([1, 2, 3, 4], n => n * 2))
+        si
+
+        @Test()
+        SumBy_OfNothing_IsZero() is
+            are_equal(0, Ghul.Pipes.sum_by(empty`[int](), n => n))
+        si
+
+        @Test()
+        Last_ReturnsTheFinalElement() is
+            are_equal(MAYBE(3), Ghul.Pipes.last([1, 2, 3]))
+        si
+
+        @Test()
+        Last_OfNothing_IsAbsent() is
+            are_equal(MAYBE[int](), Ghul.Pipes.last(empty`[int]()))
+        si
+
+        @Test()
+        Group_GathersAdjacentEquals() is
+            let runs =
+                Ghul.Pipes.group([1, 1, 2, 3, 3, 3])
+                    |> map(run => run |> join(""))
+                    |> collect_list()
+
+            CollectionAssert.are_equal(LIST(["11", "2", "333"]), runs)
+        si
+
+        @Test()
+        Group_SeparatesEqualsThatAreNotAdjacent() is
+            let runs =
+                Ghul.Pipes.group([1, 2, 1])
+                    |> map(run => run.count)
+                    |> collect_list()
+
+            CollectionAssert.are_equal(LIST([1, 1, 1]), runs)
+        si
+
+        @Test()
+        Group_OfNothing_YieldsNothing() is
+            are_equal(0, Ghul.Pipes.group(empty`[int]()) |> count())
+        si
+
+        @Test()
+        Group_ReadTwice_YieldsTheSameRuns() is
+            let runs = Ghul.Pipes.group([1, 1, 2])
+
+            are_equal(2, runs |> count())
+            are_equal(2, runs |> count())
+        si
+
+        @Test()
+        Transpose_ExchangesRowsAndColumns() is
+            let rows = LIST([LIST([1, 2, 3]), LIST([4, 5, 6])])
+
+            let columns =
+                Ghul.Pipes.transpose(rows)
+                    |> map(column => column |> join(""))
+                    |> collect_list()
+
+            CollectionAssert.are_equal(LIST(["14", "25", "36"]), columns)
+        si
+
+        @Test()
+        Transpose_RaggedRows_StopsAtTheShortest() is
+            let rows = LIST([LIST([1, 2, 3]), LIST([4, 5])])
+
+            are_equal(2, Ghul.Pipes.transpose(rows) |> count())
+        si
+
+        @Test()
+        Transpose_OfNothing_YieldsNothing() is
+            are_equal(0, Ghul.Pipes.transpose(LIST[LIST[int]]()) |> count())
+        si
+
+        @Test()
+        Permutations_ProducesEveryOrdering() is
+            let orderings =
+                Ghul.Pipes.permutations([1, 2, 3])
+                    |> map(one => one |> join(""))
+                    |> collect_list()
+
+            CollectionAssert.are_equal(
+                LIST(["123", "132", "213", "231", "312", "321"]), orderings)
+        si
+
+        @Test()
+        Permutations_OfNothing_YieldsTheEmptyOrdering() is
+            are_equal(1, Ghul.Pipes.permutations(empty`[int]()) |> count())
+        si
+
+        @Test()
+        Permutations_CountIsFactorial() is
+            are_equal(24, Ghul.Pipes.permutations([1, 2, 3, 4]) |> count())
+        si
+    si
+si

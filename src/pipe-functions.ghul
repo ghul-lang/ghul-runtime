@@ -63,6 +63,68 @@ namespace Ghul.Pipes is
     chunk[T](source: Iterable[T], size: int) -> Pipe[LIST[T]] pure =>
         CHUNK_PIPE[T](source, size)
 
+    // Runs of adjacent equals, which is a different question from `group_by`:
+    // that one gathers every element sharing a key wherever it appears, this
+    // one only ever joins neighbours.
+    /// `source`'s elements as runs of adjacent equal ones, comparing with `=~`.
+    /// A new run starts wherever an element differs from the one before it.
+    group[T](source: Iterable[T]) -> Pipe[LIST[T]] pure =>
+        GROUP_PIPE[T](source)
+
+    // Both of these read the whole source before yielding anything, so
+    // neither is lazy in its input; they are pipes because that is what
+    // the combinators consume, not because they stream.
+    /// `rows` with its rows and columns exchanged, so the nth element of the
+    /// result is the nth element of each row in turn. Stops at the shortest
+    /// row, so a ragged input is read as its rectangular part.
+    transpose[T](rows: Iterable[Iterable[T]]) -> Pipe[LIST[T]] is
+        let materialised = rows |> map(row => row |> collect_list()) |> collect_list()
+
+        if materialised.count == 0 then
+            return
+        fi
+
+        let width mut = materialised[0].count
+
+        for row in materialised do
+            if row.count < width then
+                width = row.count
+            fi
+        od
+
+        for column in 0..width do
+            yield materialised |> map(row => row[column]) |> collect_list()
+        od
+    si
+
+    /// Every ordering of `source`'s elements, each as a list. Produced in the
+    /// order of the input's own positions, which is lexicographic when the
+    /// input is sorted.
+    permutations[T](source: Iterable[T]) -> Pipe[LIST[T]] is
+        let items = source |> collect_list()
+
+        if items.count == 0 then
+            yield LIST[T]()
+
+            return
+        fi
+
+        for index in 0..items.count do
+            let rest = LIST[T](items)
+
+            rest.remove_at(index)
+
+            for tail in permutations(rest) do
+                let whole = LIST[T]()
+
+                whole.add(items[index])
+                whole.add_range(tail)
+
+                yield whole
+            od
+        od
+    si
+
     /// The elements of `source` as overlapping runs of `size` consecutive elements,
     /// each starting one place after the last.
     windows[T](source: Iterable[T], size: int) -> Pipe[LIST[T]] pure =>
@@ -369,6 +431,25 @@ namespace Ghul.Pipes is
         od
 
         throw InvalidOperationException("no matching element found")
+    si
+
+    // Walks the whole source: a pipe is a cursor, so there is no
+    // counting it and jumping to the end.
+    /// The final element of `source`, or absent if it has none.
+    last[T](source: Iterable[T]) -> MAYBE[T] pure is
+        let it = source.iterator
+
+        if !it.move_next() then
+            return MAYBE[T]()
+        fi
+
+        let found mut = it.current
+
+        while it.move_next() do
+            found = it.current
+        od
+
+        return MAYBE(found)
     si
 
     /// The first element of `source`, or absent if it has none.
