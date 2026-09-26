@@ -3,12 +3,12 @@ namespace Ghul.Pipes is
 
     /// Overlapping lists of `size` consecutive elements of `source`,
     /// sliding one element at a time.
-    class WINDOWS_PIPE[T]: Pipe[LIST[T]] is
+    class WINDOWS_PIPE[T]: Pipe[List[T]] is
         /// This pipe, as its own iterator.
-        iterator: Iterator[LIST[T]] => self
+        iterator: Iterator[List[T]] => self
 
         /// The most recently produced window.
-        current: LIST[T]
+        current: List[T]
 
         _source: Iterable[T]
         _iterator: Iterator[T]

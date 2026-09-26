@@ -3,12 +3,12 @@ namespace Ghul.Pipes is
 
     /// `source`'s elements as runs of adjacent equal ones: a new run
     /// begins wherever an element is not `=~` to the one before it.
-    class GROUP_PIPE[T]: Pipe[LIST[T]] is
+    class GROUP_PIPE[T]: Pipe[List[T]] is
         /// This pipe, as its own iterator.
-        iterator: Iterator[LIST[T]] => self
+        iterator: Iterator[List[T]] => self
 
         /// The most recently produced run.
-        current: LIST[T]
+        current: List[T]
 
         _source: Iterable[T]
         _iterator: Iterator[T]

@@ -58,26 +58,26 @@ namespace Ghul.Pipes is
     memo[T](source: Iterable[T]) -> Pipe[T] pure =>
         MEMO_PIPE[T](source)
 
-    /// The elements of `source` grouped into consecutive lists of `size` elements each,
-    /// with the last one shorter if `source`'s length doesn't divide evenly.
-    chunk[T](source: Iterable[T], size: int) -> Pipe[LIST[T]] pure =>
+    /// The elements of `source` grouped into consecutive read-only lists of `size`
+    /// elements each, with the last one shorter if `source`'s length doesn't divide evenly.
+    chunk[T](source: Iterable[T], size: int) -> Pipe[List[T]] pure =>
         CHUNK_PIPE[T](source, size)
 
     // Runs of adjacent equals, which is a different question from `group_by`:
     // that one gathers every element sharing a key wherever it appears, this
     // one only ever joins neighbours.
-    /// `source`'s elements as runs of adjacent equal ones, comparing with `=~`.
-    /// A new run starts wherever an element differs from the one before it.
-    group[T](source: Iterable[T]) -> Pipe[LIST[T]] pure =>
+    /// `source`'s elements as runs of adjacent equal ones, each a read-only list, comparing
+    /// with `=~`. A new run starts wherever an element differs from the one before it.
+    group[T](source: Iterable[T]) -> Pipe[List[T]] pure =>
         GROUP_PIPE[T](source)
 
     // Both of these read the whole source before yielding anything, so
     // neither is lazy in its input; they are pipes because that is what
     // the combinators consume, not because they stream.
-    /// `rows` with its rows and columns exchanged, so the nth element of the
-    /// result is the nth element of each row in turn. Stops at the shortest
-    /// row, so a ragged input is read as its rectangular part.
-    transpose[T](rows: Iterable[Iterable[T]]) -> Pipe[LIST[T]] is
+    /// `rows` with its rows and columns exchanged, each column a read-only list, so the
+    /// nth element of the result is the nth element of each row in turn. Stops at the
+    /// shortest row, so a ragged input is read as its rectangular part.
+    transpose[T](rows: Iterable[Iterable[T]]) -> Pipe[List[T]] is
         let indexed = LIST[List[T]]()
 
         for row in rows do
@@ -111,10 +111,10 @@ namespace Ghul.Pipes is
         od
     si
 
-    /// Every ordering of `source`'s elements, each as a list. Produced in the
-    /// order of the input's own positions, which is lexicographic when the
+    /// Every ordering of `source`'s elements, each as a read-only list. Produced in
+    /// the order of the input's own positions, which is lexicographic when the
     /// input is sorted.
-    permutations[T](source: Iterable[T]) -> Pipe[LIST[T]] is
+    permutations[T](source: Iterable[T]) -> Pipe[List[T]] is
         let items = source |> collect_mutable()
 
         if items.count == 0 then
@@ -139,9 +139,9 @@ namespace Ghul.Pipes is
         od
     si
 
-    /// The elements of `source` as overlapping runs of `size` consecutive elements,
-    /// each starting one place after the last.
-    windows[T](source: Iterable[T], size: int) -> Pipe[LIST[T]] pure =>
+    /// The elements of `source` as overlapping read-only lists of `size` consecutive
+    /// elements, each starting one place after the last.
+    windows[T](source: Iterable[T], size: int) -> Pipe[List[T]] pure =>
         WINDOWS_PIPE[T](source, size)
 
     /// The elements of `source` followed by the elements of `right`.
@@ -237,9 +237,16 @@ namespace Ghul.Pipes is
         return result
     si
 
-    /// A map built from `source`, with `key_selector` and `value_selector` producing
-    /// each entry's key and value. Throws if `key_selector` produces the same key twice.
-    collect_map[T..,K,V](source: Iterable[T], key_selector: T.. -> K pure, value_selector: T.. -> V pure) -> MAP[K,V] pure is
+    /// A read-only map built from `source`, with `key_selector` and `value_selector`
+    /// producing each entry's key and value. Throws if `key_selector` produces the same
+    /// key twice. `collect_mutable_map` gives back a mutable `MAP` instead.
+    collect_map[T..,K,V](source: Iterable[T], key_selector: T.. -> K pure, value_selector: T.. -> V pure) -> Map[K,V] pure =>
+        collect_mutable_map(source, key_selector, value_selector)
+
+    /// A mutable map built from `source`, with `key_selector` and `value_selector`
+    /// producing each entry's key and value. Throws if `key_selector` produces the same
+    /// key twice.
+    collect_mutable_map[T..,K,V](source: Iterable[T], key_selector: T.. -> K pure, value_selector: T.. -> V pure) -> MAP[K,V] pure is
         let result = MAP[K,V]()
 
         for element in source do
@@ -252,9 +259,15 @@ namespace Ghul.Pipes is
     // A map from a sequence of key and value pairs, as a map literal is
     // written: `[("a", 1), ("b", 2)] |> collect_map()`. A key given
     // twice throws, as adding it to the map twice would.
-    /// A map built from a sequence of key and value pairs, as a map literal is
-    /// written: `[("a", 1), ("b", 2)] |> collect_map()`. Throws if the same key appears twice.
-    collect_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure is
+    /// A read-only map built from a sequence of key and value pairs, as a map literal is
+    /// written: `[("a", 1), ("b", 2)] |> collect_map()`. Throws if the same key appears
+    /// twice. `collect_mutable_map` gives back a mutable `MAP` instead.
+    collect_map[K, V](source: Iterable[(K, V)]) -> Map[K, V] pure =>
+        collect_mutable_map(source)
+
+    /// A mutable map built from a sequence of key and value pairs. Throws if the same
+    /// key appears twice.
+    collect_mutable_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure is
         let result = MAP[K, V]()
 
         for (key, value) in source do
@@ -264,9 +277,9 @@ namespace Ghul.Pipes is
         return result
     si
 
-    /// Splits `source` into the elements `predicate` accepts and the elements it doesn't,
-    /// each keeping `source`'s order.
-    partition[T..](source: Iterable[T], predicate: T.. -> bool pure) -> (LIST[T], LIST[T]) pure is
+    /// Splits `source` into two read-only lists, of the elements `predicate` accepts and
+    /// the elements it doesn't, each keeping `source`'s order.
+    partition[T..](source: Iterable[T], predicate: T.. -> bool pure) -> (List[T], List[T]) pure is
         let matching = LIST[T]()
         let non_matching = LIST[T]()
 
@@ -281,17 +294,19 @@ namespace Ghul.Pipes is
         return (matching, non_matching)
     si
 
-    /// Groups the elements of `source` into a map keyed by `key_selector`, each entry
-    /// holding every element with that key, in order.
-    group_by[T..,K](source: Iterable[T], key_selector: T.. -> K pure) -> MAP[K, LIST[T]] pure is
-        let result = MAP[K, LIST[T]]()
+    /// Groups the elements of `source` into a read-only map keyed by `key_selector`,
+    /// each entry a read-only list of every element with that key, in order.
+    group_by[T..,K](source: Iterable[T], key_selector: T.. -> K pure) -> Map[K, List[T]] pure is
+        let result = MAP[K, List[T]]()
+        let groups = MAP[K, LIST[T]]()
 
         for element in source do
             let key = key_selector(element)
             let group: LIST[T] mut
 
-            if !result.try_get_value(key, group ref) then
+            if !groups.try_get_value(key, group ref) then
                 group = LIST[T]()
+                groups.add(key, group)
                 result.add(key, group)
             fi
 
