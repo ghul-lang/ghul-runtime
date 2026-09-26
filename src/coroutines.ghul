@@ -59,7 +59,7 @@ namespace Ghul.Coroutines is
     class SCHEDULER is
         _current: SCHEDULER? static
 
-        _ready: Collections.Queue[() -> void]
+        _ready: Collections.QUEUE[() -> void]
         _sleepers: Collections.LIST[SLEEPER]
 
         // Continuations of awaits the scheduler does not own, posted
@@ -72,7 +72,7 @@ namespace Ghul.Coroutines is
         _outstanding: int
 
         init() is
-            _ready = Collections.Queue[() -> void]()
+            _ready = Collections.QUEUE[() -> void]()
             _sleepers = Collections.LIST[SLEEPER]()
             _posted = System.Collections.Concurrent.ConcurrentQueue[() -> void]()
             _signal = System.Threading.ManualResetEventSlim(false)
@@ -293,9 +293,9 @@ namespace Ghul.Coroutines is
     // scheduler's ready queue.
     /// The awaitable `pause()` returns. Never completes on its own; registering a continuation parks it on the scheduler's ready queue.
     struct PAUSE: ICriticalNotifyCompletion, SchedulerAwaiter is
-        _ready: Collections.Queue[() -> void]
+        _ready: Collections.QUEUE[() -> void]
 
-        init(ready: Collections.Queue[() -> void]) is
+        init(ready: Collections.QUEUE[() -> void]) is
             _ready = ready
         si
 
@@ -694,12 +694,12 @@ namespace Ghul.Coroutines is
     // is the usual way coroutines hand work to one another.
     /// A message channel between coroutines. Sending never parks; receiving from an empty channel parks the caller until a value arrives.
     class CHANNEL[T] is
-        _values: Collections.Queue[T]
-        _waiters: Collections.Queue[WAITER[TICKET[T]]]
+        _values: Collections.QUEUE[T]
+        _waiters: Collections.QUEUE[WAITER[TICKET[T]]]
 
         init() is
-            _values = Collections.Queue[T]()
-            _waiters = Collections.Queue[WAITER[TICKET[T]]]()
+            _values = Collections.QUEUE[T]()
+            _waiters = Collections.QUEUE[WAITER[TICKET[T]]]()
         si
 
         // Delivers a value. A parked receiver, if any, is handed the
@@ -811,11 +811,11 @@ namespace Ghul.Coroutines is
     /// A counting lock between coroutines. `acquire` takes a permit, parking the caller until one is free; `release` returns one.
     class SEMAPHORE is
         _permits: int
-        _waiters: Collections.Queue[WAITER[GRANT]]
+        _waiters: Collections.QUEUE[WAITER[GRANT]]
 
         init(permits: int) is
             _permits = permits
-            _waiters = Collections.Queue[WAITER[GRANT]]()
+            _waiters = Collections.QUEUE[WAITER[GRANT]]()
         si
 
         // An awaitable that yields once the caller holds a permit.
