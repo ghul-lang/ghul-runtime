@@ -5,9 +5,12 @@ namespace Ghul is
     // null for one that cannot be. The sink receives the value itself, so
     // a host can show it in whatever form suits it: the text `$` or
     // `inspect` writes, or a Renderable's representations.
+    /// Implemented by a host that shows a value the way it shows a cell's value, such as a REPL or a notebook.
     trait DisplaySink open is
+        /// Shows `value`, under `id` if `update` is to be able to replace it later.
         show(value: object?, id: string?)
 
+        /// Shows `value` in place of what `show` displayed under `id`.
         update(value: object?, id: string)
     si
 
@@ -15,6 +18,7 @@ namespace Ghul is
     // host installs its own while it runs code, and takes it out again
     // when it is done, so code still running afterwards writes to standard
     // output rather than reaching a front end that has gone.
+    /// Holds the `DisplaySink` a host has installed for the process, if any.
     class DISPLAY_SINKS is
         _current: DisplaySink? static
         _lock: object static
@@ -23,6 +27,7 @@ namespace Ghul is
             _lock = object()
         si
 
+        /// The sink currently installed, or absent if no host has installed one.
         current: DisplaySink? static is
             System.Threading.Monitor.enter(_lock)
 
@@ -33,6 +38,7 @@ namespace Ghul is
             yrt
         si
 
+        /// Installs `sink` to receive every value shown from here on.
         install(sink: DisplaySink) static is
             System.Threading.Monitor.enter(_lock)
 
@@ -48,6 +54,7 @@ namespace Ghul is
         // the code it runs uses installs through this: function values
         // cross between the two, where a type implementing DisplaySink
         // from the host's copy would not.
+        /// Installs a sink built from `show` and `update`, and returns it so it can be passed to `remove`.
         install(show: (object?, string?) -> void, update: (object?, string) -> void) -> DisplaySink static is
             let sink = _FUNCTION_DISPLAY_SINK(show, update)
 
@@ -57,6 +64,7 @@ namespace Ghul is
         si
 
         // Takes `sink` out, if it is still the one installed.
+        /// Removes `sink`, if it is still the one installed.
         remove(sink: DisplaySink) static is
             System.Threading.Monitor.enter(_lock)
 
@@ -83,6 +91,7 @@ namespace Ghul is
     // Shows a value now, while the code goes on running: through the sink
     // a host installed, or with no host, as a line of standard output
     // holding what `inspect` writes for it.
+    /// Shows `value` now, through the installed sink, or as a line of standard output if none is installed.
     display(value: object?) is
         if let sink = DISPLAY_SINKS.current then
             sink.show(value, null)
@@ -92,6 +101,7 @@ namespace Ghul is
     si
 
     // Shows a value now, under an id update_display can replace it by.
+    /// Shows `value` now, under `id`, so `update_display` can later replace it.
     display(value: object?, id: string) is
         if let sink = DISPLAY_SINKS.current then
             sink.show(value, id)
@@ -103,6 +113,7 @@ namespace Ghul is
     // Shows a value in place of what display(value, id) showed under the
     // same id. With no host there is nothing to replace, so the value is
     // written as another line.
+    /// Shows `value` in place of what `display` showed under `id`.
     update_display(value: object?, id: string) is
         if let sink = DISPLAY_SINKS.current then
             sink.update(value, id)

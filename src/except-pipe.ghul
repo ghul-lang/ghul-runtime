@@ -1,6 +1,8 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `source`'s elements that aren't in `excluded`, with duplicates
+    /// dropped after their first occurrence.
     class EXCEPT_PIPE[T]: FilterPipeBase[T] is
         _excluded: SET[T]
         _seen: SET[T]
@@ -11,6 +13,8 @@ namespace Ghul.Pipes is
             _seen = SET[T]()
         si
 
+        /// Rejects an element that's in `excluded` or already seen, and
+        /// accepts it otherwise.
         should_include() -> bool is
             if _excluded.contains(current) \/ _seen.contains(current) then
                 return false
@@ -21,6 +25,7 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Rewinds the source and clears the set of elements seen so far.
         reset() is
             super.reset()
             _seen.clear()

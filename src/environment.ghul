@@ -14,17 +14,24 @@ namespace Ghul is
     // a tuple's element names don't survive being read back from another
     // assembly's metadata, and every real consumer of this trait is in a
     // different assembly from ghul-runtime by construction.
+    /// A live view of a string-keyed environment: reading a key that isn't set gives an absent value, and writing null removes the key.
     trait Environment: Iterable[KeyValuePair[string, string]] is
+        /// Reads or writes the value for `key`, absent if it isn't set.
         [key: string]: string?, = value
 
+        /// Whether `key` is currently set.
         contains_key(key: string) -> bool
 
+        /// Removes `key`, and returns whether it was set.
         remove(key: string) -> bool
 
+        /// The keys currently set.
         keys: Iterable[string]
 
+        /// The values of the keys currently set.
         values: Iterable[string]
 
+        /// A snapshot of every key and value, as an ordinary `Map`.
         to_map() -> Map[string, string]
     si
 
@@ -39,6 +46,7 @@ namespace Ghul is
     // System.Environment.get_environment_variables() at the moment it is
     // asked for, which is the same snapshot .NET's own Dictionary-backed
     // collections take.
+    /// The live process environment, backed by `System.Environment`.
     class ENVIRONMENT: Environment is
         _instance: ENVIRONMENT static
 
@@ -49,16 +57,20 @@ namespace Ghul is
         init() is
         si
 
+        /// The process environment.
         instance: ENVIRONMENT static => _instance
 
+        /// Reads or writes `key` in the process environment directly, with no snapshot behind it.
         [key: string]: string? =>
             System.Environment.get_environment_variable(key),
             = value is
                 System.Environment.set_environment_variable(key, value)
             si
 
+        /// Whether `key` is currently set in the process environment.
         contains_key(key: string) -> bool => self[key]?
 
+        /// Removes `key` from the process environment, and returns whether it was set.
         remove(key: string) -> bool is
             if !contains_key(key) then
                 return false
@@ -82,6 +94,7 @@ namespace Ghul is
             return result
         si
 
+        /// The keys set in the process environment, as of when this is read.
         keys: Iterable[string] is
             let result = LIST[string]()
 
@@ -92,6 +105,7 @@ namespace Ghul is
             return result
         si
 
+        /// The values of the keys set in the process environment, as of when this is read.
         values: Iterable[string] is
             let result = LIST[string]()
 
@@ -102,8 +116,10 @@ namespace Ghul is
             return result
         si
 
+        /// Iterates a snapshot of the process environment taken when this is read.
         iterator: Iterator[KeyValuePair[string, string]] => _snapshot().iterator
 
+        /// A snapshot of the process environment as an ordinary `Map`.
         to_map() -> Map[string, string] is
             let result = MAP[string, string]()
 

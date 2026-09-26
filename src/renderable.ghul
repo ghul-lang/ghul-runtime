@@ -20,7 +20,9 @@ namespace Ghul is
     //
     // Open because a type chooses its representations by implementing
     // this, which downstream assemblies have to be able to do.
+    /// Implemented by a type that can be shown in a medium other than text, such as an image or a chart.
     trait Renderable open is
+        /// Every representation of this value, best first, each as a MIME type and its content.
         representations() -> Collections.Iterable[(mime: string, content: ubyte[])] pure
     si
 si

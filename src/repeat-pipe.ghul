@@ -3,13 +3,17 @@ namespace Ghul.Pipes is
 
     // One value, yielded `count` times, or without end when `count` is
     // negative. A count of zero yields nothing.
+    /// `value`, yielded `count` times, or without end when `count` is
+    /// negative; a count of zero yields no elements.
     class REPEAT_PIPE[T]: Pipe[T] is
         _value: T
         _count: int
         _remaining: int
 
+        /// Always `value`.
         current: T => _value
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
         init(value: T, count: int) is
@@ -18,6 +22,8 @@ namespace Ghul.Pipes is
             _remaining = count
         si
 
+        /// Advances to the next repetition; rewinds once `count`
+        /// repetitions have been yielded.
         move_next() -> bool is
             if _remaining < 0 then
                 return true
@@ -34,12 +40,15 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Restores the remaining count to `count`.
         reset() is
             _remaining = _count
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Has no effect.
         dispose() is
         si
     si

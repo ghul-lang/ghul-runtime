@@ -1,6 +1,7 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `source`'s elements with every one after its first occurrence dropped.
     class DISTINCT_PIPE[T]: FilterPipeBase[T] is
         _seen: SET[T]
 
@@ -9,6 +10,7 @@ namespace Ghul.Pipes is
             _seen = SET[T]()
         si
 
+        /// Accepts an element the first time it's seen and rejects it afterwards.
         should_include() -> bool is
             if _seen.contains(current) then
                 return false
@@ -19,6 +21,7 @@ namespace Ghul.Pipes is
             return true
         si
 
+        /// Rewinds the source and clears the set of elements seen so far.
         reset() is
             super.reset()
             _seen.clear()

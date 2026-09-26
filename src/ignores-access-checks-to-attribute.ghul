@@ -8,10 +8,13 @@ namespace System.Runtime.CompilerServices is
     // to a REPL cell for each earlier cell of the session, whose
     // assembly-private definitions a cell can use as if the session were
     // one file; user code never spells this name.
+    /// Applied to an assembly, lets it reach the non-public types and members of the named assembly.
     @suppress("non-upper-snake-case-name")
     class IgnoresAccessChecksToAttribute: Attribute is
+        /// The name of the assembly whose non-public members become reachable.
         assembly_name: string
 
+        /// Creates the attribute naming `assembly_name` as the one to reach into.
         init(assembly_name: string) is
             self.assembly_name = assembly_name
         si

@@ -1,14 +1,18 @@
 namespace Ghul is
+    /// A single mutable value of type `T`, held on the heap.
     class BOX[T] is
+        /// The value being held.
         value: T public
 
         init() is
         si
 
+        /// Creates a box holding `value`.
         init(value: T) is
             self.value = value
         si
 
+        /// `value`'s own text.
         to_string() -> string => "{value}"
     si
 si

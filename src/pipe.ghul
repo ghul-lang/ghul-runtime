@@ -29,6 +29,9 @@ namespace Ghul.Pipes is
     // source, installs it as the stage's cursor so every later pull goes
     // straight to it, and forwards itself. One per stage, made the first
     // time the stage runs out and kept for every rewind after.
+    /// The cursor a pipe stage uses between the end of one pass and the first
+    /// pull of the next. The first `move_next` call takes a fresh iterator
+    /// from the source and installs it as the stage's own cursor.
     class PENDING_CURSOR[T]: Iterator[T] is
         _source: Iterable[T]
         _install: (Iterator[T]) -> void
@@ -38,8 +41,11 @@ namespace Ghul.Pipes is
             _install = install
         si
 
+        /// Always throws: this cursor never holds an element of its own.
         current: T => throw InvalidOperationException("no current element")
 
+        /// Takes a fresh iterator from the source, installs it as the
+        /// stage's cursor, and asks that iterator to move.
         move_next() -> bool is
             let it = _source.iterator
 
@@ -48,9 +54,11 @@ namespace Ghul.Pipes is
             return it.move_next()
         si
 
+        /// Has no effect.
         reset() is
         si
 
+        /// Has no effect.
         dispose() is
         si
     si
@@ -59,6 +67,8 @@ namespace Ghul.Pipes is
     // place, which rewinds whatever it draws from in turn, and stays the
     // cursor. Any other iterator is released, and `pending` takes its
     // place until the next pull.
+    /// Rewinds `cursor` in place if it's itself a pipe; otherwise disposes
+    /// it and returns `pending` for the stage to use until its next pull.
     rewind[T](cursor: Iterator[T], pending: PENDING_CURSOR[T]) -> Iterator[T] is
         if isa Pipe[T](cursor) then
             cursor.reset()
@@ -78,6 +88,7 @@ namespace Ghul.Pipes is
     // an `isa` check) to `Pipe[T]`. For state-stepping producers,
     // use `stream(initial, advance)` (see `stream.ghul`).
 
+    /// `source` as a `Pipe[T]`, unchanged if it already is one.
     pipe[T](source: Iterable[T]) -> Pipe[T] pure is
         if isa Pipe[T](source) then
             return cast Pipe[T](source)
@@ -89,6 +100,7 @@ namespace Ghul.Pipes is
     // T can't carry a bound inside Pipe[T] itself, so min/max are free
     // functions rather than trait members - min_by/max_by don't have
     // that problem, since the key type is a fresh per-call parameter.
+    /// The least element of `values`, or absent when `values` is empty.
     min[T: Ghul.Comparable[T]](values: Iterable[T]) -> MAYBE[T] pure is
         let it = values.iterator
 
@@ -107,6 +119,7 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
+    /// The greatest element of `values`, or absent when `values` is empty.
     max[T: Ghul.Comparable[T]](values: Iterable[T]) -> MAYBE[T] pure is
         let it = values.iterator
 
@@ -132,6 +145,7 @@ namespace Ghul.Pipes is
     // is what makes `T.zero` and `T.one` reachable as well as the
     // operators. As with `min` and `max`, these are free functions
     // because `Pipe[T]` cannot bound its own `T`.
+    /// The total of `source`'s elements, or `T.zero` when it's empty.
     sum[T: INumber[T]](source: Iterable[T]) -> T pure is
         let total mut = T.zero
 
@@ -142,6 +156,7 @@ namespace Ghul.Pipes is
         return total
     si
 
+    /// The product of `source`'s elements, or `T.one` when it's empty.
     product[T: INumber[T]](source: Iterable[T]) -> T pure is
         let running mut = T.one
 
@@ -156,12 +171,18 @@ namespace Ghul.Pipes is
     // by `for` and passed to the combinators in this namespace. The
     // combinators are the free functions above, called with `|>`; a pipe
     // carries no methods of its own beyond the iterator protocol.
+    /// A cursor over a sequence that can be driven directly, or chained
+    /// with the combinators in `Ghul.Pipes` through `|>`.
     trait Pipe[T]: Iterable[T], Iterator[T] is
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string =>
             $(self)
 
+        /// Has no effect by default; a stage that holds a resource overrides
+        /// it to release that resource.
         dispose() is
         si
     si

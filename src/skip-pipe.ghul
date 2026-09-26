@@ -1,6 +1,7 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `source`'s elements after the first `skip_count` of them.
     class SKIP_PIPE[T]: FilterPipeBase[T] is
         _initial_skip_count: int
         _skip_count: int
@@ -11,14 +12,18 @@ namespace Ghul.Pipes is
             _skip_count = skip_count
         si
 
+        /// Counts down towards the point where elements start being included.
         have_moved() is
             _skip_count = _skip_count - 1
         si
 
+        /// Always continues.
         should_continue() -> bool => true
 
+        /// Accepts an element once `skip_count` elements have been skipped.
         should_include() -> bool => _skip_count < 0
 
+        /// Rewinds the source and restores the skip count to `skip_count`.
         reset() is
             super.reset()
             _skip_count = _initial_skip_count

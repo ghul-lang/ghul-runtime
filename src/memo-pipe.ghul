@@ -8,6 +8,8 @@ namespace Ghul.Pipes is
     // source's iterator is dropped once the source is exhausted, since
     // nothing will ask it for more. Rewinding never reaches the source:
     // a fresh pass replays the cache.
+    /// A pipe that pulls its upstream once and replays the cached elements
+    /// on every later pass.
     class MEMO_PIPE[T]: Pipe[T] is
         _iterator: Iterator[T]?
         _cache: LIST[T]
@@ -20,10 +22,15 @@ namespace Ghul.Pipes is
             _cache = LIST[T]()
         si
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
+        /// The most recently produced element.
         current: T => _cache[_at - 1]
 
+        /// Advances within the cache while there's more of it, otherwise
+        /// pulls and caches the next source element; rewinds once the
+        /// source is exhausted.
         move_next() -> bool is
             if _at < _cache.count then
                 _at = _at + 1
@@ -47,12 +54,16 @@ namespace Ghul.Pipes is
             return false
         si
 
+        /// Rewinds to the start of the cache without touching the source.
         reset() is
             _at = 0
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the source's iterator, if it hasn't already been
+        /// exhausted and dropped.
         dispose() is
             if let it = _iterator then
                 it.dispose()

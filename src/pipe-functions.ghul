@@ -16,66 +16,93 @@ namespace Ghul.Pipes is
     // concrete adaptor class it builds, so the adaptor classes stay an
     // implementation detail invisible to a chain's static type.
 
+    /// The elements of `source` that `predicate` accepts, in order.
     filter[T..](source: Iterable[T], predicate: T.. -> bool pure) -> Pipe[T] pure =>
         FilterPipe[T](source, predicate)
 
+    /// The elements of `source`, each transformed by `mapper`.
     map[T..,U](source: Iterable[T], mapper: T.. -> U pure) -> Pipe[U] pure =>
         MAP_PIPE[T,U](source, mapper)
 
+    /// The elements of the sequences `mapper` produces for each element of
+    /// `source`, concatenated in order.
     flat_map[T..,U](source: Iterable[T], mapper: T.. -> Iterable[U] pure) -> Pipe[U] pure =>
         FLAT_MAP_PIPE[T,U](source, mapper)
 
+    /// The elements of `source` after the first `count` of them.
     skip[T](source: Iterable[T], count: int) -> Pipe[T] pure =>
         SKIP_PIPE[T](source, count)
 
+    /// The first `count` elements of `source`, or all of them when there are fewer.
     take[T](source: Iterable[T], count: int) -> Pipe[T] pure =>
         TAKE_PIPE[T](source, count)
 
+    /// The elements of `source` from the first one `predicate` rejects onward.
     skip_while[T..](source: Iterable[T], predicate: T.. -> bool pure) -> Pipe[T] pure =>
         SKIP_WHILE_PIPE[T](source, predicate)
 
+    /// The elements of `source` up to but not including the first one `predicate` rejects.
     take_while[T..](source: Iterable[T], predicate: T.. -> bool pure) -> Pipe[T] pure =>
         TAKE_WHILE_PIPE[T](source, predicate)
 
+    /// The elements of `source` with duplicates removed, keeping each one's first occurrence.
     distinct[T](source: Iterable[T]) -> Pipe[T] pure =>
         DISTINCT_PIPE[T](source)
 
+    /// The elements of `source` unchanged, calling `action` on each as it passes through.
     peek[T..](source: Iterable[T], action: T.. -> void) -> Pipe[T] pure =>
         PEEK_PIPE[T](source, action)
 
+    /// The elements of `source`, cached on the first pass so a later pass replays them
+    /// without reading `source` again.
     memo[T](source: Iterable[T]) -> Pipe[T] pure =>
         MEMO_PIPE[T](source)
 
+    /// The elements of `source` grouped into consecutive lists of `size` elements each,
+    /// with the last one shorter if `source`'s length doesn't divide evenly.
     chunk[T](source: Iterable[T], size: int) -> Pipe[LIST[T]] pure =>
         CHUNK_PIPE[T](source, size)
 
+    /// The elements of `source` as overlapping runs of `size` consecutive elements,
+    /// each starting one place after the last.
     windows[T](source: Iterable[T], size: int) -> Pipe[LIST[T]] pure =>
         WINDOWS_PIPE[T](source, size)
 
+    /// The elements of `source` followed by the elements of `right`.
     cat[T](source: Iterable[T], right: Iterable[T]) -> Pipe[T] pure =>
         CAT_PIPE[T](source, right)
 
+    /// The elements of `source` and `right` combined, with duplicates removed.
     union_with[T](source: Iterable[T], right: Iterable[T]) -> Pipe[T] pure =>
         distinct(cat(source, right))
 
+    /// The elements of `source` that also appear in `right`, with duplicates removed.
     intersect_with[T](source: Iterable[T], right: Iterable[T]) -> Pipe[T] pure =>
         INTERSECT_PIPE[T](source, right)
 
+    /// The elements of `source` that don't appear in `right`, with duplicates removed.
     except[T](source: Iterable[T], right: Iterable[T]) -> Pipe[T] pure =>
         EXCEPT_PIPE[T](source, right)
 
+    /// The elements of `source` paired with their position, counting from 0.
     index[T](source: Iterable[T]) -> Pipe[INDEXED_VALUE[T]] pure =>
         INDEX_PIPE[T](source, 0)
 
+    /// The elements of `source` paired with their position, counting from `index`.
     index[T](source: Iterable[T], index: int) -> Pipe[INDEXED_VALUE[T]] pure =>
         INDEX_PIPE[T](source, index)
 
+    /// The elements of `source` and `other` paired up, stopping when either runs out.
     zip[T,U](source: Iterable[T], other: Iterable[U]) -> Pipe[(T,U)] pure =>
         ZIP_PIPE[T,U](source, other)
 
+    /// The elements of `source` and `other` combined pairwise by `mapper`,
+    /// stopping when either runs out.
     zip[T,U,TOut](source: Iterable[T], other: Iterable[U], mapper: (T,U) -> TOut pure) -> Pipe[TOut] pure =>
         ZIP_MAP_PIPE[T,U,TOut](source, other, mapper)
 
+    /// Folds `source` into a single value, starting from `seed` and combining
+    /// it with each element in turn through `accumulator`.
     reduce[T..,TRunning](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure) -> TRunning pure is
         let running mut = seed
 
@@ -86,6 +113,8 @@ namespace Ghul.Pipes is
         return running
     si
 
+    /// Folds `source` into a single value, starting from `seed` and combining it
+    /// with each element in turn through `accumulator`, then transforms the result with `mapper`.
     reduce[T..,TRunning,TOut](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure, mapper: (TRunning) -> TOut pure) -> TOut pure is
         let running mut = seed
 
@@ -96,17 +125,21 @@ namespace Ghul.Pipes is
         return mapper(running)
     si
 
+    /// The elements of `source`, collected into an array.
     collect[T](source: Iterable[T]) -> T[] pure =>
         collect_mutable(source).to_array()
 
     // the same as collect, which is the name to use
+    /// The same as `collect`. Use `collect` instead.
     collect_array[T](source: Iterable[T]) -> T[] pure =>
         collect(source)
 
     // the same as collect_mutable, which is the name to use
+    /// The same as `collect_mutable`. Use `collect_mutable` instead.
     collect_list[T](source: Iterable[T]) -> LIST[T] pure =>
         collect_mutable(source)
 
+    /// The elements of `source`, collected into a mutable list.
     collect_mutable[T](source: Iterable[T]) -> LIST[T] pure is
         let result = LIST[T]()
 
@@ -117,6 +150,7 @@ namespace Ghul.Pipes is
         return result
     si
 
+    /// The elements of `source`, collected into a set, with duplicates removed.
     collect_set[T](source: Iterable[T]) -> SET[T] pure is
         let result = SET[T]()
 
@@ -127,6 +161,8 @@ namespace Ghul.Pipes is
         return result
     si
 
+    /// A map built from `source`, with `key_selector` and `value_selector` producing
+    /// each entry's key and value. Throws if `key_selector` produces the same key twice.
     collect_map[T..,K,V](source: Iterable[T], key_selector: T.. -> K pure, value_selector: T.. -> V pure) -> MAP[K,V] pure is
         let result = MAP[K,V]()
 
@@ -140,6 +176,8 @@ namespace Ghul.Pipes is
     // A map from a sequence of key and value pairs, as a map literal is
     // written: `[("a", 1), ("b", 2)] |> collect_map()`. A key given
     // twice throws, as adding it to the map twice would.
+    /// A map built from a sequence of key and value pairs, as a map literal is
+    /// written: `[("a", 1), ("b", 2)] |> collect_map()`. Throws if the same key appears twice.
     collect_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure is
         let result = MAP[K, V]()
 
@@ -150,6 +188,8 @@ namespace Ghul.Pipes is
         return result
     si
 
+    /// Splits `source` into the elements `predicate` accepts and the elements it doesn't,
+    /// each keeping `source`'s order.
     partition[T..](source: Iterable[T], predicate: T.. -> bool pure) -> (LIST[T], LIST[T]) pure is
         let matching = LIST[T]()
         let non_matching = LIST[T]()
@@ -165,6 +205,8 @@ namespace Ghul.Pipes is
         return (matching, non_matching)
     si
 
+    /// Groups the elements of `source` into a map keyed by `key_selector`, each entry
+    /// holding every element with that key, in order.
     group_by[T..,K](source: Iterable[T], key_selector: T.. -> K pure) -> MAP[K, LIST[T]] pure is
         let result = MAP[K, LIST[T]]()
 
@@ -183,6 +225,8 @@ namespace Ghul.Pipes is
         return result
     si
 
+    /// The element of `source` with the smallest key `key_selector` produces, or absent
+    /// if `source` has none. Keeps the first element reached when several share the smallest key.
     min_by[T..,K: Ghul.Comparable[K]](source: Iterable[T], key_selector: T.. -> K pure) -> MAYBE[T] pure is
         let it = source.iterator
 
@@ -205,6 +249,8 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
+    /// The element of `source` with the largest key `key_selector` produces, or absent
+    /// if `source` has none. Keeps the first element reached when several share the largest key.
     max_by[T..,K: Ghul.Comparable[K]](source: Iterable[T], key_selector: T.. -> K pure) -> MAYBE[T] pure is
         let it = source.iterator
 
@@ -227,6 +273,7 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
+    /// The number of elements in `source`.
     count[T](source: Iterable[T]) -> int pure is
         if isa Bag[T](source) then
             return source.count
@@ -247,6 +294,7 @@ namespace Ghul.Pipes is
     si
 
     // How many elements satisfy the predicate.
+    /// The number of elements in `source` that `predicate` accepts.
     count[T..](source: Iterable[T], predicate: T.. -> bool pure) -> int pure is
         let it = source.iterator
         let result mut = 0
@@ -260,6 +308,7 @@ namespace Ghul.Pipes is
         return result
     si
 
+    /// The first element of `source` that `predicate` accepts, or absent if none does.
     find[T..](source: Iterable[T], predicate: T.. -> bool pure) -> MAYBE[T] pure is
         let it = source.iterator
 
@@ -274,6 +323,7 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
+    /// The first present result of applying `mapper` to the elements of `source`, in order.
     find_map[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> MAYBE[U] pure is
         let it = source.iterator
 
@@ -289,6 +339,7 @@ namespace Ghul.Pipes is
         return MAYBE[U]()
     si
 
+    /// The first element of `source` that `predicate` accepts. Throws if none does.
     find_or_throw[T](source: Iterable[T], predicate: T -> bool pure) -> T pure is
         let it = source.iterator
 
@@ -303,6 +354,8 @@ namespace Ghul.Pipes is
         throw InvalidOperationException("no matching element found")
     si
 
+    /// The first present result of applying `mapper` to the elements of `source`.
+    /// Throws if none is present.
     find_map_or_throw[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> U pure is
         let it = source.iterator
 
@@ -318,6 +371,7 @@ namespace Ghul.Pipes is
         throw InvalidOperationException("no matching element found")
     si
 
+    /// The first element of `source`, or absent if it has none.
     first[T](source: Iterable[T]) -> MAYBE[T] pure is
         let it = source.iterator
 
@@ -328,6 +382,8 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
+    /// The result of `mapper` applied to the first element of `source`, or absent
+    /// if `source` has no elements or that result is absent.
     first_map[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> MAYBE[U] pure is
         let it = source.iterator
 
@@ -343,6 +399,7 @@ namespace Ghul.Pipes is
         return MAYBE[U]()
     si
 
+    /// The first element of `source`. Throws if it has none.
     first_or_throw[T](source: Iterable[T]) -> T pure is
         let it = source.iterator
 
@@ -353,6 +410,8 @@ namespace Ghul.Pipes is
         throw InvalidOperationException("no element found")
     si
 
+    /// The result of `mapper` applied to the first element of `source`, if present.
+    /// Throws if `source` has no elements or that result is absent.
     first_map_or_throw[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> U pure is
         let it = source.iterator
 
@@ -368,6 +427,7 @@ namespace Ghul.Pipes is
         throw InvalidOperationException("no matching element found")
     si
 
+    /// The one element of `source`. Throws if it holds none or more than one.
     only[T](source: Iterable[T]) -> T pure is
         let it = source.iterator
 
@@ -384,6 +444,7 @@ namespace Ghul.Pipes is
         fi
     si
 
+    /// Whether `predicate` accepts any element of `source`.
     any[T..](source: Iterable[T], predicate: T.. -> bool pure) -> bool pure is
         let it = source.iterator
 
@@ -398,6 +459,7 @@ namespace Ghul.Pipes is
         return false
     si
 
+    /// Whether `predicate` accepts every element of `source`.
     all[T..](source: Iterable[T], predicate: T.. -> bool pure) -> bool pure is
         let it = source.iterator
 
@@ -412,6 +474,7 @@ namespace Ghul.Pipes is
         return true
     si
 
+    /// Calls `action` on each element of `source`, in order.
     each[T..](source: Iterable[T], action: T.. -> void) is
         let it = source.iterator
 
@@ -420,10 +483,12 @@ namespace Ghul.Pipes is
         od
     si
 
+    /// The elements of `source` in reverse order.
     reverse[T](source: Iterable[T]) -> Pipe[T] pure =>
         let list = collect_mutable(source) in
         LIST_REVERSE_PIPE(list)
 
+    /// The elements of `source` sorted in ascending order.
     sort[T: Ghul.Comparable[T]](source: Iterable[T]) -> Pipe[T] pure =>
         _sort_ascending(source)
 
@@ -435,6 +500,7 @@ namespace Ghul.Pipes is
         return pipe(list)
     si
 
+    /// The elements of `source` sorted according to `comparer`.
     sort[T](source: Iterable[T], comparer: IComparer[T]) -> Pipe[T] pure is
         let list = collect_mutable(source)
 
@@ -443,9 +509,11 @@ namespace Ghul.Pipes is
         return pipe(list)
     si
 
+    /// The elements of `source` sorted according to `compare`.
     sort[T](source: Iterable[T], compare: (T, T) -> int pure) -> Pipe[T] pure =>
         sort(source, FUNCTION_COMPARER[T](compare))
 
+    /// The elements of `source` sorted in descending order.
     sort_descending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Pipe[T] pure =>
         _sort_descending(source)
 
@@ -457,9 +525,11 @@ namespace Ghul.Pipes is
         return LIST_REVERSE_PIPE(list)
     si
 
+    /// The elements of `source` sorted in ascending order of the key `key_selector` produces.
     sort_by[T..,K: Ghul.Comparable[K]](source: Iterable[T], key_selector: T.. -> K pure) -> Pipe[T] pure =>
         _sort_by(source, key_selector, false)
 
+    /// The elements of `source` sorted in descending order of the key `key_selector` produces.
     sort_by_descending[T..,K: Ghul.Comparable[K]](source: Iterable[T], key_selector: T.. -> K pure) -> Pipe[T] pure =>
         _sort_by(source, key_selector, true)
 
@@ -483,6 +553,8 @@ namespace Ghul.Pipes is
         return pipe(result)
     si
 
+    /// Writes the text of each element of `source` into `into`, separated by `separator`,
+    /// and returns `into`.
     append_to[T](source: Iterable[T], into: StringBuilder, separator: string) -> StringBuilder is
         let it = source.iterator
         let seen_any mut = false
@@ -500,9 +572,11 @@ namespace Ghul.Pipes is
         return into
     si
 
+    /// Writes the text of each element of `source` into `into`, separated by `", "`, and returns `into`.
     append_to[T](source: Iterable[T], into: StringBuilder) -> StringBuilder =>
         append_to(source, into, ", ")
 
+    /// The elements of `source` joined into a string, separated by `separator`.
     join[T](source: Iterable[T], separator: string) -> string pure =>
         let result = StringBuilder() in
         append_to(source, result, separator)
@@ -511,6 +585,7 @@ namespace Ghul.Pipes is
     // The elements of a sequence in brackets, as `[1, 2, 3]`, up to the
     // display element limit, whatever to_string its type declares. It is
     // how a pipe reads as text.
+    /// The elements of `source` in brackets, as `[1, 2, 3]`, up to the display element limit.
     render_elements[T](source: Iterable[T]) -> string pure is
         let state = DISPLAY_STATE()
 
@@ -519,6 +594,7 @@ namespace Ghul.Pipes is
         return state.to_string()
     si
 
+    /// The elements of `source` joined into a string, separated by `", "`.
     join[T](source: Iterable[T]) -> string pure =>
         join(source, ", ")
 
@@ -537,24 +613,32 @@ namespace Ghul.Pipes is
     // collection, or another slice. An array is handed to `ArraySegment[T]`,
     // which is the same thing in the shape .NET already understands.
 
+    /// The part of `source` from `r`'s start up to but not including its end. Nothing is copied,
+    /// so a later change to `source` shows through.
     slice[T](source: T[], r: INT_RANGE) -> List[T] pure =>
         System.ArraySegment[T](source, r.from, r.to - r.from)
 
+    /// The same as the `INT_RANGE` overload, with `r`'s end included.
     slice[T](source: T[], r: INT_RANGE_INCLUSIVE) -> List[T] pure =>
         System.ArraySegment[T](source, r.from, r.to - r.from + 1)
 
+    /// The part of `source` from `r`'s start up to but not including its end. Nothing is copied,
+    /// so a later change to `source` shows through, and the result can be sliced again.
     slice[T](source: List[T], r: INT_RANGE) -> List[T] pure =>
         LIST_SLICE[T](source, r.from, r.to - r.from)
 
+    /// The same as the `INT_RANGE` overload, with `r`'s end included.
     slice[T](source: List[T], r: INT_RANGE_INCLUSIVE) -> List[T] pure =>
         LIST_SLICE[T](source, r.from, r.to - r.from + 1)
 
     // `string` is not a `List[char]`, so it takes its own overload, and
     // returns a string rather than a slice: a substring is what a caller
     // wants back, and .NET has no non-copying one to hand out.
+    /// The substring of `source` from `r`'s start up to but not including its end.
     slice(source: string, r: INT_RANGE) -> string pure =>
         source.substring(r.from, r.to - r.from)
 
+    /// The same as the `INT_RANGE` overload, with `r`'s end included.
     slice(source: string, r: INT_RANGE_INCLUSIVE) -> string pure =>
         source.substring(r.from, r.to - r.from + 1)
 
@@ -562,18 +646,24 @@ namespace Ghul.Pipes is
     // `System.Range`, whose endpoints are only resolvable against a
     // length - which is here, where the source is known.
 
+    /// The part of `source` that `r` selects, resolving `r`'s from-the-end
+    /// endpoints against `source`'s length.
     slice[T](source: T[], r: System.Range) -> List[T] pure is
         let (offset, count) = r.get_offset_and_length(source.count)
 
         return System.ArraySegment[T](source, offset, count)
     si
 
+    /// The part of `source` that `r` selects, resolving `r`'s from-the-end
+    /// endpoints against `source`'s length.
     slice[T](source: List[T], r: System.Range) -> List[T] pure is
         let (offset, count) = r.get_offset_and_length(source.count)
 
         return LIST_SLICE[T](source, offset, count)
     si
 
+    /// The substring of `source` that `r` selects, resolving `r`'s from-the-end
+    /// endpoints against `source`'s length.
     slice(source: string, r: System.Range) -> string pure is
         let (offset, count) = r.get_offset_and_length(source.length)
 
@@ -589,23 +679,29 @@ namespace Ghul.Pipes is
     // `start`, `start + step`, and so on. The step defaults to 1 and may
     // be negative; a step of 0 repeats `start`, which `repeat` says more
     // directly.
+    /// An unbounded sequence counting up from `start` in steps of 1.
     from(start: int) -> Pipe[int] pure =>
         COUNT_PIPE(start, 1)
 
+    /// An unbounded sequence counting from `start` in steps of `step`, which can be negative.
     from(start: int, step: int) -> Pipe[int] pure =>
         COUNT_PIPE(start, step)
 
+    /// The same as `from`, over `long` values.
     from(start: long) -> Pipe[long] pure =>
         LONG_COUNT_PIPE(start, 1L)
 
+    /// The same as `from`, over `long` values.
     from(start: long, step: long) -> Pipe[long] pure =>
         LONG_COUNT_PIPE(start, step)
 
     // `value`, without end.
+    /// `value`, repeated without end.
     repeat[T](value: T) -> Pipe[T] pure =>
         REPEAT_PIPE[T](value, -1)
 
     // `value`, `count` times. A count of zero or less yields nothing.
+    /// `value`, repeated `count` times. Yields no elements when `count` is zero or less.
     repeat[T](value: T, count: int) -> Pipe[T] pure =>
         REPEAT_PIPE[T](value, if count < 0 then 0 else count fi)
 si

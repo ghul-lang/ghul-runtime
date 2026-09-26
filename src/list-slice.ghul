@@ -8,11 +8,13 @@ namespace Ghul.Pipes is
     //
     // Bounds are checked where the slice is taken rather than at a later read,
     // so an out-of-range slice fails at the point the mistake was made.
+    /// A view onto `count` elements of `source` starting at `from`, produced by a range index. Not a copy.
     class LIST_SLICE[T]: List[T] is
         _source: List[T]
         _from: int
         _count: int
 
+        /// Creates a slice of `count` elements of `source` starting at `from`; throws if it doesn't fit within `source`.
         init(source: List[T], from: int, count: int) is
             if from < 0 \/ count < 0 \/ from + count > source.count then
                 throw
@@ -26,6 +28,7 @@ namespace Ghul.Pipes is
             _count = count
         si
 
+        /// The element at `i` within the slice.
         [i: int]: T is
             if i < 0 \/ i >= _count then
                 throw System.ArgumentOutOfRangeException("i", "{i} is not within a slice of {_count}")
@@ -34,17 +37,21 @@ namespace Ghul.Pipes is
             return _source[_from + i]
         si
 
+        /// The number of elements in the slice.
         count: int => _count
 
+        /// Iterates the slice's elements in order.
         iterator: Iterator[T] => LIST_SLICE_ITERATOR[T](_source, _from, _count)
     si
 
+    /// Iterates the elements of a `LIST_SLICE`.
     class LIST_SLICE_ITERATOR[T]: Iterator[T] is
         _source: List[T]
         _from: int
         _count: int
         _index: int
 
+        /// Creates an iterator over `count` elements of `source` starting at `from`.
         init(source: List[T], from: int, count: int) is
             _source = source
             _from = from
@@ -53,18 +60,22 @@ namespace Ghul.Pipes is
             reset()
         si
 
+        /// The element the iterator is currently at.
         current: T => _source[_from + _index]
 
+        /// Advances to the next element, and returns whether one was reached.
         move_next() -> bool is
             _index = _index + 1
 
             return _index < _count
         si
 
+        /// Rewinds to before the first element, so the next read starts again.
         reset() is
             _index = -1
         si
 
+        /// Has no effect; the iterator holds no resource to release.
         dispose() is
         si
     si

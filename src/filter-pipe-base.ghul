@@ -1,13 +1,17 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// Base for pipe stages that decide, element by element, whether to
+    /// pull from the source and whether to include what they pull.
     class FilterPipeBase[T]: Pipe[T] is
         _source: Iterable[T]
         _iterator: Iterator[T]
         _pending: PENDING_CURSOR[T]?
 
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
+        /// The element at the cursor's current position.
         current: T => _iterator.current
 
         init(source: Iterable[T]) is
@@ -15,6 +19,10 @@ namespace Ghul.Pipes is
             _iterator = source.iterator
         si
 
+        /// Pulls from the source while `should_pull` allows it and
+        /// `should_continue` doesn't stop it, returning the first element
+        /// `should_include` accepts; rewinds once the source is exhausted
+        /// or the pass stops.
         move_next() -> bool is
             while should_pull() /\ _iterator.move_next() do
                 have_moved()
@@ -37,18 +45,25 @@ namespace Ghul.Pipes is
         // stage that has yielded its quota stops without pulling the
         // element it would have discarded, leaving it for whoever reads
         // the source next.
+        /// Whether to pull another element from the source at all.
         should_pull() -> bool => true
 
+        /// Called after each successful pull from the source, before
+        /// `should_continue` and `should_include` are asked.
         have_moved() is si
 
+        /// Whether to keep going after this pull rather than stopping the pass here.
         should_continue() -> bool => true
 
+        /// Whether the element just pulled belongs in this stage's output.
         should_include() -> bool
 
+        /// Rewinds the source.
         reset() is
             _iterator = rewind(_iterator, pending())
         si
 
+        /// The placeholder cursor installed after a rewind, created once and reused.
         pending() -> PENDING_CURSOR[T] is
             if let p = _pending then
                 return p
@@ -61,8 +76,10 @@ namespace Ghul.Pipes is
             return p
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si
 si

@@ -1,9 +1,12 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `mapper` applied to each element of `source`, in order.
     class MAP_PIPE[TFrom,TTo]: Pipe[TTo] is
+        /// This pipe, as its own iterator.
         iterator: Iterator[TTo] => self
 
+        /// The most recently produced element.
         current: TTo
 
         _source: Iterable[TFrom]
@@ -18,6 +21,8 @@ namespace Ghul.Pipes is
             _mapper = mapper
         si
 
+        /// Advances the source and maps its current element; rewinds when
+        /// the source is exhausted.
         move_next() -> bool is
             if _iterator.move_next() then
                 current = _mapper(_iterator.current)
@@ -29,10 +34,12 @@ namespace Ghul.Pipes is
             return false
         si
 
+        /// Rewinds the source.
         reset() is
             _iterator = rewind(_iterator, pending())
         si
 
+        /// The placeholder cursor installed after a rewind, created once and reused.
         pending() -> PENDING_CURSOR[TFrom] is
             if let p = _pending then
                 return p
@@ -45,8 +52,10 @@ namespace Ghul.Pipes is
             return p
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si
 si

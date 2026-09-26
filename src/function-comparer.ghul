@@ -1,13 +1,16 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// An `IComparer[T]` that orders by calling `comparer`.
     class FUNCTION_COMPARER[T]: IComparer[T] is
         _comparer: (T, T) -> int
 
+        /// Creates a comparer that orders by calling `comparer`.
         init(comparer: (T, T) -> int) is
             _comparer = comparer
         si
 
+        /// Compares `x` and `y` by calling the wrapped function.
         compare(x: T, y: T) -> int is
             return _comparer(x, y)
         si

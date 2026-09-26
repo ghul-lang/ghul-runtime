@@ -1,15 +1,19 @@
 namespace Collections is
+    /// Iterates the elements of a list from last to first.
     class LIST_REVERSE_ITERATOR[T]: Iterator[T] is
         _list: List[T]
         _index: int
 
+        /// The element the iterator is currently at.
         current: T => _list[_index]
 
+        /// Creates an iterator over `list`'s elements from last to first.
         init(list: List[T]) is
             _list = list
             reset()
         si
 
+        /// Moves to the previous element, and returns whether one was reached.
         move_next() -> bool is
             let result = _index > 0
 
@@ -20,19 +24,24 @@ namespace Collections is
             return result
         si
 
+        /// Rewinds to after the last element, so the next read starts again.
         reset() is
             _index = _list.count
         si
 
+        /// Has no effect; the iterator holds no resource to release.
         dispose() is
         si
     si
 
+    /// A view of a list's elements in reverse order.
     class LIST_REVERSE_ITERABLE[T]: Iterable[T] is
         _list: List[T]
 
+        /// Iterates `list`'s elements from last to first.
         iterator: Iterator[T] => LIST_REVERSE_ITERATOR(_list)
 
+        /// Creates a reversed view of `list`.
         init(list: List[T]) is
             _list = list
         si

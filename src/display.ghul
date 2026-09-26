@@ -48,20 +48,26 @@ namespace Ghul is
     // limit and the cycle check.
     // Open because a type controls how it is rendered by implementing
     // this, which downstream assemblies have to be able to do.
+    /// Implemented by a type that controls how `$` and `inspect` render it.
     trait Displayable open is
+        /// Writes this value's rendering to `state`.
         display(state: DISPLAY_STATE)
     si
 
     // How a value is rendered: CLEAN as `$` renders it, for program
     // output and interpolation, and DETAILED as `inspect` does, with the
     // strings and characters inside a value quoted.
+    /// How a value is rendered: `CLEAN` for `$`, `DETAILED` for `inspect`.
     enum DisplayMode is
+        /// The plain rendering `$` uses.
         CLEAN,
+        /// The detailed rendering `inspect` uses, with strings and characters quoted.
         DETAILED
     si
 
     // A value rendered in the detailed mode. The overloads mirror `$`'s,
     // so a string and a sequence resolve the same way they do there.
+    /// Renders `value` the way `inspect` shows it: like `$`, but with a string or character inside another value quoted.
     inspect(value: object?) -> string pure is
         let state = DISPLAY_STATE(DisplayMode.DETAILED, DISPLAY_STATE.default_max_elements)
 
@@ -70,8 +76,10 @@ namespace Ghul is
         return state.to_string()
     si
 
+    /// Returns `value` unchanged; a string already renders as itself.
     inspect(value: string) -> string pure => value
 
+    /// Renders `values` as a sequence, the way `inspect` shows one.
     inspect[T](values: Collections.Iterable[T]) -> string pure is
         let state = DISPLAY_STATE(DisplayMode.DETAILED, DISPLAY_STATE.default_max_elements)
 
@@ -85,7 +93,9 @@ namespace Ghul is
     // private: the surface is `append` and `render`, so how the text is
     // accumulated stays free to change - to write straight to a stream,
     // or to carry an indent - without any implementation noticing.
+    /// Holds the buffer, the element budget and the cycle-tracking set an implementation of `Displayable` writes into.
     class DISPLAY_STATE is
+        /// The default limit on how many elements of a sequence are rendered.
         default_max_elements: int static => 100
 
         _cycle_marker: string static => "<cycle>"
@@ -102,9 +112,11 @@ namespace Ghul is
 
         // Clean, as `$` renders, or detailed, as `inspect` does. A
         // `Displayable` can ask, to render itself to match.
+        /// Whether this state renders in the clean mode or the detailed mode.
         mode: DisplayMode
 
         // The most elements of any one sequence rendered.
+        /// The most elements of any one sequence this state renders.
         max_elements: int
 
         _type_info: System.Collections.Concurrent.ConcurrentDictionary[System.Type, _DISPLAY_TYPE_INFO] static
@@ -117,6 +129,7 @@ namespace Ghul is
             self.init(DisplayMode.CLEAN, default_max_elements)
         si
 
+        /// Creates a display state that renders in `mode`, showing up to `max_elements` elements per sequence.
         init(mode: DisplayMode, max_elements: int) is
             _into = StringBuilder()
             _open = Collections.LIST[object]()
@@ -124,18 +137,22 @@ namespace Ghul is
             self.max_elements = max_elements
         si
 
+        /// Appends `text` to the value being rendered.
         append(text: string) is
             _into.append(text)
         si
 
+        /// Appends `c` to the value being rendered.
         append(c: char) is
             _into.append(c)
         si
 
+        /// Returns what has been rendered so far.
         to_string() -> string => _into.to_string()
 
         // Render a value into this state under the same element limit and
         // cycle tracking as everything else in the same render.
+        /// Renders `value` under this state's element limit and cycle tracking.
         render(value: object?) is
             if !value? then
                 append("null")
@@ -425,6 +442,7 @@ namespace Ghul is
         // A type as a ghūl program names it: the built-in names for the
         // types that have one, type arguments in square brackets, a union
         // variant after its union's name, and no namespace otherwise.
+        /// The name a ghūl program would use for `type`.
         type_name(type: System.Type) -> string static is
             if type.is_array then
                 let element = type.get_element_type()
@@ -513,6 +531,7 @@ namespace Ghul is
 
         // Render a value already known to be a sequence, without the
         // reflection `render` would need to discover that for itself.
+        /// Renders `values` as a sequence, preferring a `Displayable` or `to_string()` implementation it declares.
         render_sequence[T](values: Collections.Iterable[T]) is
             // A type that says how it looks says it here too: a static
             // type that happens to be a sequence does not make the
@@ -534,6 +553,7 @@ namespace Ghul is
 
         // Render a sequence as its elements in brackets, whatever its type
         // says about how it looks.
+        /// Renders `values` as its elements in brackets, ignoring how its type says it looks.
         render_elements[T](values: Collections.Iterable[T]) is
             if _is_open(values) then
                 append(_cycle_marker)
@@ -681,6 +701,7 @@ si
 namespace Ghul.Intrinsics is
     use Ghul
 
+    /// Renders `value` for display, as string interpolation and program output use it.
     $(value: object?) -> string pure is
         let state = DISPLAY_STATE()
 
@@ -695,8 +716,10 @@ namespace Ghul.Intrinsics is
     // string renders as its characters. Declared this way it wins for a
     // present string, and an absent one is answered by the object?
     // overload above.
+    /// Returns `value` unchanged; a string already renders as itself.
     $(value: string) -> string pure => value
 
+    /// Renders `values` as a sequence in brackets.
     $[T](values: Collections.Iterable[T]) -> string pure is
         let state = DISPLAY_STATE()
 

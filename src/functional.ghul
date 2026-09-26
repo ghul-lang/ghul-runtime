@@ -11,21 +11,25 @@ namespace Ghul is
     // reading that matches the thread-first operator's direction. The
     // composed function keeps f's own arity: one argument is threaded
     // as it is, several are gathered into the tuple the pack binds to.
+    /// Composes `f` and `g`: applies `f` first, then passes its result to `g`.
     >>[T.., B, C](f: T.. -> B, g: (B) -> C) -> T.. -> C => v => g(f(v))
 
     // Right-to-left composition, the mathematical reading: `f << g`
     // applies g, then f, keeping the second stage's arity.
+    /// Composes `f` and `g`: applies `g` first, then passes its result to `f`.
     <<[T.., B, C](f: (B) -> C, g: T.. -> B) -> T.. -> C => v => f(g(v))
 
     // Reshape a two-argument function into unary functions returning
     // functions, so one argument can be supplied and the rest passed
     // later: `curry(add)(3)` is the function that adds 3.
+    /// `f` reshaped to take its two arguments one at a time: `curry(f)(a)(b)` is `f(a, b)`.
     curry[A, B, C](f: (A, B) -> C) -> (A) -> (B) -> C =>
         a => b => f(a, b)
 
     // The inverse reshape: a function built by currying, or by any
     // step-by-step construction of the same shape, as a plain
     // two-argument function.
+    /// The inverse of `curry`: `f` reshaped to take both arguments at once.
     uncurry[A, B, C](f: (A) -> (B) -> C) -> (A, B) -> C =>
         (a, b) => f(a)(b)
 
@@ -33,12 +37,16 @@ namespace Ghul is
     // arity: `apply(f, x, y)` is `f(x, y)`. The argument pack gathers
     // the arguments, so both the spread spelling and the written-out
     // tuple reach the same formal.
+    /// Calls `f` with `v`, spreading `v`'s elements as separate arguments
+    /// when `f` takes more than one.
     apply[T.., U](f: T.. -> U, v: T..) -> U => f(v)
 
     // A function that answers from a map of the results it has already
     // computed, so repeated calls with the same arguments compute once.
     // The cache is an ordinary MAP, keyed on the tuple the argument
     // pack binds to: single-threaded use.
+    /// `f`, wrapped to remember each call's result and skip calling `f` again for
+    /// arguments already seen. Not safe to call from more than one thread at a time.
     memoize[T.., U](f: T.. -> U) -> T.. -> U is
         let cache mut = MAP[T, U]()
 
@@ -55,6 +63,8 @@ namespace Ghul is
     // A function that calls f, retrying the whole call up to `attempts`
     // times when it throws, and throwing the last failure when every
     // attempt does. The returned function keeps f's own arity.
+    /// `f`, wrapped to call it again on failure until `attempts` calls have been made,
+    /// throwing the last failure if every one of them throws.
     retry[T.., U](f: T.. -> U, attempts: int) -> T.. -> U is
         return v => (
             let n mut = attempts

@@ -1,9 +1,13 @@
 namespace Ghul.Pipes is
     use Collections
 
+    /// `source`'s elements, unchanged, with `action` called on each one as
+    /// it's produced.
     class PEEK_PIPE[T]: Pipe[T] is
+        /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
+        /// The most recently produced element.
         current: T
 
         _source: Iterable[T]
@@ -18,6 +22,8 @@ namespace Ghul.Pipes is
             _action = action
         si
 
+        /// Advances the source and calls `action` on the current element;
+        /// rewinds when the source is exhausted.
         move_next() -> bool is
             if _iterator.move_next() then
                 current = _iterator.current
@@ -31,10 +37,12 @@ namespace Ghul.Pipes is
             return false
         si
 
+        /// Rewinds the source.
         reset() is
             _iterator = rewind(_iterator, pending())
         si
 
+        /// The placeholder cursor installed after a rewind, created once and reused.
         pending() -> PENDING_CURSOR[T] is
             if let p = _pending then
                 return p
@@ -47,8 +55,10 @@ namespace Ghul.Pipes is
             return p
         si
 
+        /// Renders the pipe's elements, in order, as text.
         to_string() -> string => $(self)
 
+        /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si
 si
