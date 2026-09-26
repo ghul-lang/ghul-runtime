@@ -185,7 +185,7 @@ namespace Ghul.Pipes is
     // carries no methods of its own beyond the iterator protocol.
     /// A cursor over a sequence that can be driven directly, or chained
     /// with the combinators in `Ghul.Pipes` through `|>`.
-    trait Pipe[T]: Iterable[T], Iterator[T] is
+    trait Pipe[T: out]: Iterable[T], Iterator[T] is
         /// This pipe, as its own iterator.
         iterator: Iterator[T] => self
 
