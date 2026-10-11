@@ -1,6 +1,6 @@
 {
     "name": "renderable",
-    "targets": ["wasm"],
+    "targets": ["wasm", "llvm"],
     "dependencies": {
         "ghul-runtime": { "path": "../.." },
         "ghul-core": { "git": "https://github.com/ghul-lang/ghul-core", "tag": "v0.45.0" }
