@@ -27,7 +27,7 @@ namespace Ghul.Internal is
             System.Linq.Enumerable.to_array(source)
 
         /// An array holding `source`'s elements in order.
-        @IF.wasm()
+        @IF.source_core()
         @intrinsic("constructor.from_iterable")
         from_iterable[E](source: Iterable[E]) -> E[] static pure =>
             LIST[E](source).to_array()

@@ -273,9 +273,9 @@ namespace Ghul.Coroutines is
         System.Threading.Thread.sleep(milliseconds)
     si
 
-    // A program on the wasm target has one thread, which waits for the
-    // deadline on the clock.
-    @IF.wasm()
+    // A program on a target with a source core library has one thread,
+    // which waits for the deadline on the clock.
+    @IF.source_core()
     _pause_thread(milliseconds: int) is
         let deadline = SCHEDULER.now + cast long(milliseconds)
 
@@ -334,10 +334,10 @@ namespace Ghul.Coroutines is
         si
     si
 
-    // On the wasm target there is no other thread to post from, so a
-    // coroutine awaiting something the scheduler does not own would wait
-    // for ever, and waiting is reported instead.
-    @IF.wasm()
+    // On a target with a source core library there is no other thread to
+    // post from, so a coroutine awaiting something the scheduler does not
+    // own would wait for ever, and waiting is reported instead.
+    @IF.source_core()
     class _INBOX is
         _posted: Collections.Queue[() -> void]
 
