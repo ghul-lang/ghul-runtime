@@ -49,7 +49,7 @@ available on the wasm target is tracked on
 `wasm-tests/` holds programs that build for the wasm target from this
 checkout's sources and run under Node, each a ghul-cli project whose
 `run.expected` is what the same program prints on .NET. Run them with
-`dotnet ghul-test --use-ghul-cli --ghul "dotnet ghul" --target wasm wasm-tests`.
+`dotnet ghul-test wasm-tests`.
 
 `native-aot-tests/` renders values with `$` under the JIT and published with
 Native AOT, where rendering cannot rely on reflection, and checks that both

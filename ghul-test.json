@@ -1,0 +1,12 @@
+{
+    // How the wasm tests are run: each is a ghul-cli project, built for the
+    // wasm target by the ghul-cli the tool manifest pins.
+    "default": "wasm",
+    "configurations": {
+        "wasm": {
+            "build": "ghul-cli",
+            "ghul": "dotnet ghul",
+            "ghul_target": "wasm"
+        }
+    }
+}
