@@ -141,5 +141,13 @@ namespace Tests is
 
             are_equal("eighth", map[_probe_name])
         si
+
+        @Test()
+        Environment_ProcessPath_IsAnExecutableThatExists() is
+            let path = Ghul.ENVIRONMENT.instance.process_path
+
+            is_true(path?)
+            is_true(IO.File.exists(path!))
+        si
     si
 si
