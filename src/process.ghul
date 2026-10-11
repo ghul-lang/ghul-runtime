@@ -1,0 +1,126 @@
+namespace IO is
+    use Collections.Iterable
+
+    /// What running a program with `PROCESS.run` gave: its exit status and
+    /// everything it wrote to standard output and standard error.
+    class PROCESS_RESULT(exit_code: int, output: string, error: string) is
+        /// The program's exit status. A program killed by a signal has 128
+        /// plus the signal's number, as .NET reports it.
+        exit_code: int
+
+        /// Everything the program wrote to standard output.
+        output: string
+
+        /// Everything the program wrote to standard error.
+        error: string
+    si
+
+    /// Runs other programs. The same calls work on .NET and on the llvm
+    /// target; the wasm target cannot start a program, and throws.
+    class PROCESS is
+        /// Runs `file_name` with `arguments` to completion, sharing this
+        /// process's standard input and capturing its standard output and
+        /// standard error. Throws `IO.FileNotFoundException` where there is
+        /// no such program.
+        ///
+        /// - file_name: the program to run; a name with no directory is
+        ///   looked for on the `PATH`
+        /// - arguments: the arguments to pass, each as one argument
+        @IF.dotnet()
+        run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static is
+            let start_info = System.Diagnostics.ProcessStartInfo(file_name)
+
+            for argument in arguments do
+                start_info.argument_list.add(argument)
+            od
+
+            start_info.use_shell_execute = false
+            start_info.redirect_standard_output = true
+            start_info.redirect_standard_error = true
+
+            let process: System.Diagnostics.Process? mut = null
+
+            try
+                process = System.Diagnostics.Process.start(start_info)
+            catch e: System.ComponentModel.Win32Exception
+                throw IO.FileNotFoundException("Could not run {file_name}: {e.message}")
+            yrt
+
+            if let started = process then
+                // Standard error is read alongside standard output, so a
+                // program that fills one pipe while this waits on the other
+                // cannot stop.
+                let error = started.standard_error.read_to_end_async()
+                let output = started.standard_output.read_to_end()
+
+                started.wait_for_exit()
+
+                return PROCESS_RESULT(started.exit_code, output, error.result)
+            fi
+
+            throw Ghul.InvalidOperationException("Could not run {file_name}")
+        si
+
+        /// Runs `file_name` with `arguments` to completion, sharing this
+        /// process's standard input and capturing its standard output and
+        /// standard error. Throws `IO.FileNotFoundException` where there is
+        /// no such program.
+        ///
+        /// - file_name: the program to run; a name with no directory is
+        ///   looked for on the `PATH`
+        /// - arguments: the arguments to pass, each as one argument
+        @IF.llvm()
+        run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static is
+            _begin(file_name)
+
+            for argument in arguments do
+                _add_argument(argument)
+            od
+
+            let exit_code = _run()
+
+            if exit_code == -1 then
+                if _failure() == 1 then
+                    throw IO.FileNotFoundException("Could not run {file_name}: no such program")
+                fi
+
+                throw Ghul.InvalidOperationException("Could not run {file_name}")
+            fi
+
+            return PROCESS_RESULT(exit_code, _output() ?? "", _error() ?? "")
+        si
+
+        /// Throws `Ghul.NotSupportedException`: the wasm target cannot start
+        /// another program.
+        ///
+        /// - file_name: the program that would be run
+        /// - arguments: the arguments that would be passed
+        @IF.wasm()
+        run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static =>
+            throw Ghul.NotSupportedException("Running {file_name}: the wasm target cannot start another program")
+
+        @IF.llvm()
+        @intrinsic("host.process_begin")
+        _begin(file_name: string) static
+
+        @IF.llvm()
+        @intrinsic("host.process_add_argument")
+        _add_argument(argument: string) static
+
+        @IF.llvm()
+        @intrinsic("host.process_run")
+        _run() -> int static
+
+        @IF.llvm()
+        @intrinsic("host.process_failure")
+        _failure() -> int static
+
+        @IF.llvm()
+        @intrinsic("host.process_output")
+        _output() -> string? static
+
+        @IF.llvm()
+        @intrinsic("host.process_error")
+        _error() -> string? static
+    si
+si

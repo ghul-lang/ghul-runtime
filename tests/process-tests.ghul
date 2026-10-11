@@ -1,0 +1,38 @@
+namespace Tests is
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class ProcessShould is
+        init() is
+        si
+
+        @Test()
+        Run_Command_CapturesOutputErrorAndStatus() is
+            let result = IO.PROCESS.run("/bin/sh", ["-c", "printf out; printf err >&2; exit 4"])
+
+            are_equal("out", result.output)
+            are_equal("err", result.error)
+            are_equal(4, result.exit_code)
+        si
+
+        @Test()
+        Run_EachArgument_ReachesTheProgramWhole() is
+            let result = IO.PROCESS.run("printf", ["%s|", "two words", ""])
+
+            are_equal("two words||", result.output)
+            are_equal(0, result.exit_code)
+        si
+
+        @Test()
+        Run_MissingProgram_ThrowsFileNotFound() is
+            try
+                IO.PROCESS.run("ghul-no-such-program", [])
+                fail("expected IO.FileNotFoundException")
+            catch e: IO.FileNotFoundException
+                is_true(e.message.contains("ghul-no-such-program"))
+            yrt
+        si
+    si
+si
