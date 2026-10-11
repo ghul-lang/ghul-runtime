@@ -33,6 +33,16 @@ namespace Ghul is
 
         /// A snapshot of every key and value, as an ordinary `Map`.
         to_map() -> Map[string, string]
+
+        /// Ends the process with `status` as its exit status, after writing
+        /// out what the program has written to standard output.
+        ///
+        /// - status: the process's exit status
+        exit(status: int)
+
+        /// The path of the executable the process is running, or null where
+        /// there is none, as on the wasm target.
+        process_path: string?
     si
 
     // A live view over the process environment - a read reaches
@@ -129,5 +139,15 @@ namespace Ghul is
 
             return result
         si
+
+        /// Ends the process with `status` as its exit status.
+        ///
+        /// - status: the process's exit status
+        exit(status: int) is
+            System.Environment.exit(status)
+        si
+
+        /// The path of the executable the process is running.
+        process_path: string? => System.Environment.process_path
     si
 si
