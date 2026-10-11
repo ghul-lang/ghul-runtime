@@ -29,7 +29,7 @@ namespace Ghul.Pipes is
         si
 
         /// The element at `i` within the slice.
-        [i: int]: T is
+        [i: int]: T pure is
             if i < 0 \/ i >= _count then
                 throw Ghul.ArgumentOutOfRangeException("i", "{i} is not within a slice of {_count}")
             fi
@@ -38,7 +38,7 @@ namespace Ghul.Pipes is
         si
 
         /// The number of elements in the slice.
-        count: int => _count
+        count: int pure => _count
 
         /// Iterates the slice's elements in order.
         iterator: Iterator[T] => LIST_SLICE_ITERATOR[T](_source, _from, _count)
