@@ -57,8 +57,11 @@ guarded(name: string, lock: SEMAPHORE) -> COROUTINE is
     lock.release()
 si
 
-sleeper(name: string, milliseconds: int) -> COROUTINE is
-    await sleep(milliseconds)
+// Sleeps until `deadline`, a time from `SCHEDULER.now`. The deadline is
+// taken by the caller rather than here, so two sleepers wake in the order of
+// their deadlines however long the scheduler takes to start each of them.
+sleeper(name: string, deadline: long) -> COROUTINE is
+    await SLEEP(SCHEDULER.current, deadline)
 
     write_line("{name} woke")
 si
@@ -103,8 +106,10 @@ entry() is
     guarded("right", mutex)
     run()
 
-    sleeper("late", 30)
-    sleeper("early", 10)
+    let base = SCHEDULER.now
+
+    sleeper("late", base + 30L)
+    sleeper("early", base + 10L)
     run()
 
     catches()
