@@ -199,8 +199,14 @@ jobs:
     - name: Restore local .NET tools
       run: dotnet tool restore
 
+    # The tests build with the compiler the tool manifest pins, so a bump
+    # there reaches them too.
     - name: Build and run the wasm tests
-      run: dotnet ghul-test --use-ghul-cli --ghul "dotnet ghul" --target wasm wasm-tests
+      run: |
+        GHUL_COMPILER_VERSION=$(jq -r '.tools["ghul.compiler"].version' .config/dotnet-tools.json)
+        export GHUL_COMPILER_VERSION
+        echo "building the wasm tests with ghul.compiler $GHUL_COMPILER_VERSION"
+        dotnet ghul-test --use-ghul-cli --ghul "dotnet ghul" --target wasm wasm-tests
 
   publish-beta-package:
     # for pull requests, only publish the beta package
