@@ -41,7 +41,8 @@ Under `--target wasm` the runtime is compiled from source together with
 .NET supplies on the other target. `wasm-sources.rsp` lists the files a wasm
 build compiles, one a line, to be passed to the compiler after ghul-core's
 sources. Within those files, `@IF.dotnet()` marks what is compiled only for .NET
-and `@IF.wasm()` what is compiled only for WebAssembly. What is not yet
+and `@IF.source_core()` what is compiled only for a target whose core library
+is compiled from source, WebAssembly and LLVM. What is not yet
 available on the wasm target is tracked on
 [ghul-lang/ghul#3319](https://github.com/ghul-lang/ghul/issues/3319).
 

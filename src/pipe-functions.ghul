@@ -617,7 +617,7 @@ namespace Ghul.Pipes is
         return pipe(list)
     si
 
-    @IF.wasm()
+    @IF.source_core()
     _sort_ascending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure is
         let list = collect_mutable(source)
 
@@ -652,7 +652,7 @@ namespace Ghul.Pipes is
         return LIST_REVERSE_PIPE(list)
     si
 
-    @IF.wasm()
+    @IF.source_core()
     _sort_descending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure is
         let list = collect_mutable(source)
 

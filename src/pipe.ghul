@@ -43,8 +43,8 @@ namespace Ghul.Pipes is
                 return self
             fi
 
-            // The wasm target has one thread.
-            @IF.wasm()
+            // A target with a source core library has one thread.
+            @IF.source_core()
             if !_claimed then
                 _claimed = true
 
