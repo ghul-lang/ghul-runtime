@@ -206,7 +206,7 @@ jobs:
         GHUL_COMPILER_VERSION=$(jq -r '.tools["ghul.compiler"].version' .config/dotnet-tools.json)
         export GHUL_COMPILER_VERSION
         echo "building the wasm tests with ghul.compiler $GHUL_COMPILER_VERSION"
-        dotnet ghul-test --use-ghul-cli --ghul "dotnet ghul" --target wasm wasm-tests
+        dotnet ghul-test wasm-tests
 
   publish-beta-package:
     # for pull requests, only publish the beta package
