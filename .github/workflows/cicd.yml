@@ -208,6 +208,29 @@ jobs:
         echo "building the wasm tests with ghul.compiler $GHUL_COMPILER_VERSION"
         dotnet ghul-test wasm-tests
 
+  # The same programs built for the llvm target and run as native
+  # executables. ghul-cli fetches the ghul-llvm release pinned for the
+  # compiler, as a user's build does; a test that does not pass on llvm yet
+  # leaves the target out of its manifest, with a comment saying why.
+  llvm-tests:
+    name: Run llvm tests
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 15
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Restore local .NET tools
+      run: dotnet tool restore
+
+    - name: Build and run the llvm tests
+      run: |
+        GHUL_COMPILER_VERSION=$(jq -r '.tools["ghul.compiler"].version' .config/dotnet-tools.json)
+        export GHUL_COMPILER_VERSION
+        echo "building the llvm tests with ghul.compiler $GHUL_COMPILER_VERSION"
+        dotnet ghul-test --config llvm wasm-tests
+
   publish-beta-package:
     # for pull requests, only publish the beta package
     name: Publish beta NuGet package

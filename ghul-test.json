@@ -1,12 +1,23 @@
 {
-    // How the wasm tests are run: each is a ghul-cli project, built for the
-    // wasm target by the ghul-cli the tool manifest pins.
+    // How the source-library tests are run: each is a ghul-cli project,
+    // built by the ghul-cli the tool manifest pins. `wasm` runs by default;
+    // `llvm` builds the same projects as native executables, with the
+    // ghul-llvm release ghul-cli fetches for the compiler, each as its own
+    // variant, so an expectation named for the target (`run.llvm.expected`,
+    // `fail.llvm.expected`) records where llvm differs.
     "default": "wasm",
     "configurations": {
-        "wasm": {
+        "projects": {
             "build": "ghul-cli",
-            "ghul": "dotnet ghul",
+            "ghul": "dotnet ghul"
+        },
+        "wasm": {
+            "extends": "projects",
             "ghul_target": "wasm"
+        },
+        "llvm": {
+            "extends": "projects",
+            "build_targets": ["llvm"]
         }
     }
 }
