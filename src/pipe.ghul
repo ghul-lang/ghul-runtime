@@ -91,7 +91,7 @@ namespace Ghul.Pipes is
             let result mut = it.current
 
             while it.move_next() do
-                if Ghul.order(it.current, result) < 0 then
+                if it.current < result then
                     result = it.current
                 fi
             od
@@ -110,7 +110,7 @@ namespace Ghul.Pipes is
             let result mut = it.current
 
             while it.move_next() do
-                if Ghul.order(it.current, result) > 0 then
+                if it.current > result then
                     result = it.current
                 fi
             od
