@@ -511,6 +511,43 @@ namespace Tests is
         si
 
         @Test()
+        Sort_NoComparer_SortsStringsByCodeUnit() is
+            let words = ["banana", "Apple", "apple", "12 - 3", "12 + 3", "_under", "Zebra"]
+
+            let result = words |> sort()
+
+            assert_are_equal(["12 + 3", "12 - 3", "Apple", "Zebra", "_under", "apple", "banana"], result)
+        si
+
+        @Test()
+        SortDescending_NoComparer_SortsStringsByCodeUnit() is
+            let words = ["b", "B", "a", "A"]
+
+            let result = words |> sort_descending()
+
+            assert_are_equal(["b", "a", "B", "A"], result)
+        si
+
+        @Test()
+        SortBy_StringKey_OrdersKeysByCodeUnit() is
+            let words = ["b", "B", "a", "A"]
+
+            let result = words |> sort_by(w => w)
+
+            assert_are_equal(["A", "B", "a", "b"], result)
+        si
+
+        @Test()
+        MinAndMax_Strings_OrderByCodeUnit() is
+            let words = ["b", "B", "a", "A"]
+
+            are_equal(MAYBE[string]("A"), words |> min())
+            are_equal(MAYBE[string]("b"), words |> max())
+            are_equal(MAYBE[string]("A"), words |> min_by(w => w))
+            are_equal(MAYBE[string]("b"), words |> max_by(w => w))
+        si
+
+        @Test()
         Sort_GivenComparer_SortsInComparerOrder() is
             let pipe = [2, 1, 4, 3, 6, 5]
 

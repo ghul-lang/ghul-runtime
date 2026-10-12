@@ -29,3 +29,48 @@ namespace Ghul.Pipes is
         compare(x: T, y: T) -> int => x <> y
     si
 si
+
+namespace Ghul is
+    use Collections
+
+    /// The comparer a sort, `min`, `max` or any other ordering uses where
+    /// none is given: `T`'s own order, except that strings order by UTF-16
+    /// code unit on every target rather than by the current culture.
+    @IF.dotnet()
+    @suppress("cast-may-throw")
+    default_comparer[T: Comparable[T]]() -> Comparer[T] pure =>
+        if typeof(T) == typeof(string) then
+            cast Comparer[T](cast object(System.StringComparer.ordinal))
+        else
+            ComparerBase[T].default
+        fi
+
+    /// The comparer a sort, `min`, `max` or any other ordering uses where
+    /// none is given: `T`'s own order, which for a string is by UTF-16
+    /// code unit.
+    @IF.source_core()
+    default_comparer[T: Comparable[T]]() -> Comparer[T] pure => Ghul.Pipes.COMPARABLE_COMPARER[T]()
+
+    /// Negative where `a` orders before `b`, zero where neither does,
+    /// positive otherwise: `<>`, except that strings order by UTF-16 code
+    /// unit on every target rather than by the current culture.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    @IF.dotnet()
+    @suppress("cast-may-throw")
+    order[T: Comparable[T]](a: T, b: T) -> int pure =>
+        if typeof(T) == typeof(string) then
+            string.compare_ordinal(cast string?(cast object(a)), cast string?(cast object(b)))
+        else
+            ComparerBase[T].default.compare(a, b)
+        fi
+
+    /// Negative where `a` orders before `b`, zero where neither does,
+    /// positive otherwise: `<>`, which for a string is by UTF-16 code unit.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    @IF.source_core()
+    order[T: Comparable[T]](a: T, b: T) -> int pure => a <> b
+si

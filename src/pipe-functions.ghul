@@ -334,7 +334,7 @@ namespace Ghul.Pipes is
             while it.move_next() do
                 let candidate_key = key_selector(it.current)
 
-                if candidate_key < result_key then
+                if Ghul.order(candidate_key, result_key) < 0 then
                     result = it.current
                     result_key = candidate_key
                 fi
@@ -358,7 +358,7 @@ namespace Ghul.Pipes is
             while it.move_next() do
                 let candidate_key = key_selector(it.current)
 
-                if candidate_key > result_key then
+                if Ghul.order(candidate_key, result_key) > 0 then
                     result = it.current
                     result_key = candidate_key
                 fi
@@ -608,20 +608,10 @@ namespace Ghul.Pipes is
     sort[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure =>
         _sort_ascending(source)
 
-    @IF.dotnet()
-    _sort_ascending[T](source: Iterable[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
-
-        list.sort()
-
-        return pipe(list)
-    si
-
-    @IF.source_core()
     _sort_ascending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure is
         let list = collect_mutable(source)
 
-        list.sort(COMPARABLE_COMPARER[T]())
+        list.sort(Ghul.default_comparer[T]())
 
         return pipe(list)
     si
@@ -643,20 +633,10 @@ namespace Ghul.Pipes is
     sort_descending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure =>
         _sort_descending(source)
 
-    @IF.dotnet()
-    _sort_descending[T](source: Iterable[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
-
-        list.sort()
-
-        return LIST_REVERSE_PIPE(list)
-    si
-
-    @IF.source_core()
     _sort_descending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure is
         let list = collect_mutable(source)
 
-        list.sort(COMPARABLE_COMPARER[T]())
+        list.sort(Ghul.default_comparer[T]())
 
         return LIST_REVERSE_PIPE(list)
     si
