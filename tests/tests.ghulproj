@@ -7,6 +7,11 @@
     <IsTestProject>true</IsTestProject>
 
     <GhulCompiler>dotnet ghul-compiler</GhulCompiler>
+
+    <!-- The tests run as the wasm and llvm targets behave, so string order
+         and number and date formats do not depend on the machine's
+         culture. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
