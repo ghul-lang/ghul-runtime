@@ -5,3 +5,6 @@ failed: false
 unwrapped: 5
 as expected: divide by zero
 doubled: 14
+bare: 4
+case: 4
+destructured: 4

@@ -3,6 +3,7 @@
 // rules promise.
 use IO.Std.write_line
 use Ghul
+use Ghul.Result.*
 
 divide(a: int, b: int) -> Ghul.Result[int, string] =>
     if b =~ 0 then
@@ -45,4 +46,33 @@ entry() is
         fi
 
     write_line("doubled: {doubled}")
+
+    // Variant-name scoping: after `use Ghul.Result.*` the bare variant
+    // names work in construction and in patterns.
+    let scoped: Result[int, string] = OK(4)
+
+    if let v: OK = scoped then
+        write_line("bare: {v.value}")
+    fi
+
+    // A case arm's variant binding holds the variant object, so the
+    // payload reads through the field.
+    let named =
+        case scoped
+        when ok: OK then ok.value
+        when failure: ERROR then 0 - 1
+        esac
+
+    write_line("case: {named}")
+
+    // A one-leaf destructure of a single-field variant is accepted and
+    // binds the payload.
+    if let (v): OK = scoped then
+        write_line("destructured: {v}")
+    fi
+
+    // `~>` does not compose with Result: a union value is a present
+    // reference, so the whole Result threads as the operand (parse(s) ~>
+    // double() hands double a Result[int, string] and is a type error).
+    // ERROR propagation needs map/and_then-style combinators instead.
 si
