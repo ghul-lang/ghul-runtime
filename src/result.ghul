@@ -1,0 +1,19 @@
+namespace Ghul is
+    /// The outcome of an operation that either produces a `T` or fails with an `E`.
+    ///
+    /// The OK variant is the default one, so a result reads directly with the
+    /// default-variant forms: `if let value: Result.OK = result then` runs when
+    /// the operation succeeded, `result?` asks whether it did, and `result!`
+    /// produces the value or throws the ERROR payload's absence aside. The
+    /// ERROR variant's payload is read by name: `if let failure: Result.ERROR =
+    /// result then failure.error`.
+    ///
+    /// - T: the type the operation produces when it succeeds
+    /// - E: the type the operation fails with
+    union Result[T, E] is
+        /// The operation succeeded, holding its value.
+        OK(value: T) default
+        /// The operation failed, holding the failure.
+        ERROR(error: E)
+    si
+si

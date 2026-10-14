@@ -1,0 +1,48 @@
+// The Result union: the default variant reads with if let, ? and !, and the
+// ERROR payload reads by name, exactly as the language's default-variant
+// rules promise.
+use IO.Std.write_line
+use Ghul
+
+divide(a: int, b: int) -> Ghul.Result[int, string] =>
+    if b =~ 0 then
+        Result.ERROR("divide by zero")
+    else
+        Result.OK(a / b)
+    fi
+
+entry() is
+    let good = divide(10, 2)
+    let bad = divide(10, 0)
+
+    if let value: Result.OK = good then
+        write_line("ok: {value.value}")
+    fi
+
+    if let failure: Result.ERROR = bad then
+        write_line("failed: {failure.error}")
+    fi
+
+    write_line("present: {good?}")
+    write_line("failed: {bad?}")
+
+    write_line("unwrapped: {good!}")
+
+    let message =
+        if let failure: Result.ERROR = bad then
+            "as expected: {failure.error}"
+        else
+            "unexpected success"
+        fi
+
+    write_line(message)
+
+    let doubled =
+        if let value: Result.OK = divide(21, 3) then
+            value.value * 2
+        else
+            0
+        fi
+
+    write_line("doubled: {doubled}")
+si
