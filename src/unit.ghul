@@ -1,0 +1,25 @@
+namespace Ghul is
+    // Lowercase on purpose: `unit` is spelled the way the built-in types
+    // are, because it fills the same kind of role — the `T` of a
+    // `Result[T, E]` that succeeds without producing anything.
+    /// The type with exactly one value, for operations that succeed
+    /// without producing anything: `Result[unit, E]` rather than a
+    /// second result type with an empty success variant.
+    @suppress("non-upper-snake-case-name")
+    struct unit is
+        /// Constructs the one `unit` value.
+        init() is si
+
+        /// Every `unit` value is equal to every other.
+        =~(other: unit) -> bool pure => true
+
+        /// No `unit` value is less than any other.
+        <>(other: unit) -> int pure => 0
+
+        /// All `unit` values hash the same.
+        get_hash_code() -> int pure => 0
+
+        /// Renders as `()`, the way the unit value habitually reads.
+        to_string() -> string pure => "()"
+    si
+si
