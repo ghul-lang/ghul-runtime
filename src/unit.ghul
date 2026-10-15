@@ -19,7 +19,7 @@ namespace Ghul is
         /// All `unit` values hash the same.
         get_hash_code() -> int pure => 0
 
-        /// Renders as `()`, the way the unit value habitually reads.
-        to_string() -> string pure => "()"
+        /// Renders as `unit`
+        to_string() -> string pure => "unit"
     si
 si
