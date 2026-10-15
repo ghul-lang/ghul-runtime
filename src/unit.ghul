@@ -1,7 +1,7 @@
-namespace Ghul is
+namespace Ghul.Intrinsics is
     // Lowercase on purpose: `unit` is spelled the way the built-in types
-    // are, because it fills the same kind of role — the `T` of a
-    // `Result[T, E]` that succeeds without producing anything.
+    // are, and lives in the namespace every compilation imports without a
+    // `use`, so it is always in scope the way `int` and `string` are.
     /// The type with exactly one value, for operations that succeed
     /// without producing anything: `Result[unit, E]` rather than a
     /// second result type with an empty success variant.

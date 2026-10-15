@@ -5,4 +5,4 @@ defaulted? true
 equal: true
 ordered: false
 hash equal: true
-text: ()
+text: unit
