@@ -2,10 +2,6 @@ namespace Ghul.Intrinsics is
     // Lowercase on purpose: `unit` is spelled the way the built-in types
     // are, and lives in the namespace every compilation imports without a
     // `use`, so it is always in scope the way `int` and `string` are.
-    /// The type with exactly one value, carrying no information beyond
-    /// being there. It fills any position that needs a type but holds
-    /// nothing to distinguish — the success of a `Result[unit, E]` that
-    /// produces no value, for one.
     @suppress("non-upper-snake-case-name")
     struct unit is
         /// Constructs the one `unit` value.
