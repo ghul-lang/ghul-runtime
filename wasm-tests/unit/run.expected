@@ -1,0 +1,8 @@
+good? true
+bad? false
+error: rejected: nope
+defaulted? true
+equal: true
+ordered: false
+hash equal: true
+text: unit

@@ -1,0 +1,35 @@
+// The unit struct: the T of a Result that succeeds without producing a
+// value, with one equality, one ordering and one rendering for it.
+use IO.Std.write_line
+use Ghul
+
+verify(name: string) -> Result[unit, string] =>
+    if name =~ "fine" then
+        Result.OK(unit())
+    else
+        Result.ERROR("rejected: {name}")
+    fi
+
+entry() is
+    let good = verify("fine")
+    let bad = verify("nope")
+
+    write_line("good? {good?}")
+    write_line("bad? {bad?}")
+
+    if let failure: Result.ERROR = bad then
+        write_line("error: {failure.error}")
+    fi
+
+    // `_` stands for the one unit value wherever the type comes from context
+    let by_default: Result[unit, string] = Result.OK(_)
+
+    write_line("defaulted? {by_default?}")
+
+    let defaulted: unit = _
+
+    write_line("equal: {defaulted =~ unit()}")
+    write_line("ordered: {unit() < defaulted}")
+    write_line("hash equal: {unit().get_hash_code() == defaulted.get_hash_code()}")
+    write_line("text: {unit()}")
+si
