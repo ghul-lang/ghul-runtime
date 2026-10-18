@@ -1,0 +1,203 @@
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class JSON_VALUE_SHOULD is
+        init() is si
+
+        @Test()
+        is_null__given_the_null_variant__is_true() is
+            is_true(Json.is_null(Json.Value.NULL))
+        si
+
+        @Test()
+        is_null__given_any_other_variant__is_false() is
+            is_false(Json.is_null(Json.of(true)))
+        si
+
+        @Test()
+        of__wraps_each_scalar() is
+            are_equal(true, Json.as_bool(Json.of(true)))
+            are_equal(3.5, Json.as_number(Json.of(3.5)))
+            are_equal(7.0, Json.as_number(Json.of(7)))
+            are_equal("hi", Json.as_string(Json.of("hi")))
+        si
+
+        @Test()
+        as_bool__given_a_different_variant__is_null() is
+            is_null(Json.as_bool(Json.of(3.5)))
+        si
+
+        @Test()
+        array__given_no_elements__is_empty() is
+            let built = Json.array()
+            are_equal(0, Json.as_array(built)!.count)
+        si
+
+        @Test()
+        array__given_elements__holds_them_in_order() is
+            let built = Json.array([Json.of(1), Json.of(2), Json.of(3)])
+            let items = Json.as_array(built)!
+
+            are_equal(3, items.count)
+            are_equal(2.0, Json.as_number(items[1]))
+        si
+
+        @Test()
+        get__given_a_missing_field__is_null() is
+            let obj = Json.object()
+            is_null(Json.get(obj, "missing"))
+        si
+
+        @Test()
+        set__adds_a_field_once_and_replaces_it_in_place() is
+            let obj = Json.object()
+            Json.set(obj, "name", Json.of("alice"))
+            Json.set(obj, "age", Json.of(30))
+
+            are_equal("alice", Json.as_string(Json.get(obj, "name")!))
+            are_equal(30.0, Json.as_number(Json.get(obj, "age")!))
+
+            Json.set(obj, "name", Json.of("bob"))
+
+            are_equal(2, Json.as_object(obj)!.count)
+            are_equal("bob", Json.as_string(Json.get(obj, "name")!))
+        si
+    si
+
+    @TestClass()
+    class JSON_PARSE_SHOULD is
+        init() is si
+
+        @Test()
+        parse__reads_the_literals() is
+            is_true(Json.is_null(Json.parse("null")))
+            is_true(Json.as_bool(Json.parse("true"))!)
+            is_false(Json.as_bool(Json.parse("false"))!)
+        si
+
+        @Test()
+        parse__reads_numbers_including_an_exponent() is
+            are_equal(42.0, Json.as_number(Json.parse("42"))!)
+            are_equal(-3.5, Json.as_number(Json.parse("-3.5"))!)
+            are_equal(150.0, Json.as_number(Json.parse("1.5e2"))!)
+            are_equal(0.0, Json.as_number(Json.parse("0"))!)
+        si
+
+        @Test()
+        parse__unescapes_a_string() is
+            are_equal("hi there", Json.as_string(Json.parse("\"hi there\""))!)
+            are_equal("line\nbreak", Json.as_string(Json.parse("\"line\\nbreak\""))!)
+            are_equal("quote\"here", Json.as_string(Json.parse("\"quote\\\"here\""))!)
+            are_equal("euro \u20AC", Json.as_string(Json.parse("\"euro \\u20AC\""))!)
+        si
+
+        @Test()
+        parse__reads_an_array() is
+            let items = Json.as_array(Json.parse("[1, 2, 3]"))!
+
+            are_equal(3, items.count)
+            are_equal(2.0, Json.as_number(items[1])!)
+        si
+
+        @Test()
+        parse__reads_nested_objects_and_arrays() is
+            let value = Json.parse(
+                "{{\"items\": [1, {{\"x\": true}}], \"ok\": null}}")
+
+            let items = Json.as_array(Json.get(value, "items")!)!
+
+            are_equal(2, items.count)
+            is_true(Json.as_bool(Json.get(items[1], "x")!)!)
+            is_true(Json.is_null(Json.get(value, "ok")!))
+        si
+
+        @Test()
+        parse__given_trailing_text__throws_naming_the_position() is
+            try
+                Json.parse("1 2")
+                fail("expected a ParseException")
+            catch e: Json.ParseException
+                are_equal(2, e.position)
+            yrt
+        si
+
+        @Test()
+        parse__given_text_that_is_not_json__throws() is
+            try
+                Json.parse("not json")
+                fail("expected a ParseException")
+            catch e: Json.ParseException
+                // Only that it throws is contracted; the position is
+                // wherever the mismatched literal began.
+            yrt
+        si
+    si
+
+    @TestClass()
+    class JSON_WRITE_SHOULD is
+        init() is si
+
+        @Test()
+        write__writes_the_literals() is
+            are_equal("null", Json.write(Json.Value.NULL))
+            are_equal("true", Json.write(Json.of(true)))
+            are_equal("false", Json.write(Json.of(false)))
+        si
+
+        @Test()
+        write__writes_an_integral_number_with_no_decimal_point() is
+            are_equal("42", Json.write(Json.of(42)))
+            are_equal("0", Json.write(Json.of(0)))
+            are_equal("-3.5", Json.write(Json.of(-3.5)))
+        si
+
+        @Test()
+        write__escapes_a_string() is
+            are_equal(
+                "\"line\\nbreak\\ttab\\\"quote\\\\back\"",
+                Json.write(Json.of("line\nbreak\ttab\"quote\\back")))
+
+            are_equal("\"control \\u0001\"", Json.write(Json.of("control \u0001")))
+        si
+
+        @Test()
+        write__does_not_escape_text_outside_ascii() is
+            are_equal("\"euro \u20AC\"", Json.write(Json.of("euro \u20AC")))
+        si
+
+        @Test()
+        write__writes_an_array_and_an_object_compactly() is
+            are_equal(
+                "[1,\"two\",true]",
+                Json.write(Json.array([Json.of(1), Json.of("two"), Json.of(true)])))
+
+            let obj = Json.object()
+            Json.set(obj, "a", Json.of(1))
+            Json.set(obj, "b", Json.array([Json.of(2), Json.of(3)]))
+
+            are_equal("{{\"a\":1,\"b\":[2,3]}}", Json.write(obj))
+        si
+
+        @Test()
+        write__round_trips_what_parse_read() is
+            let text =
+                "{{\"n\":7,\"s\":\"two words\",\"a\":[1,2,3],\"t\":true,\"f\":false,\"z\":null}}"
+
+            are_equal(text, Json.write(Json.parse(text)))
+        si
+
+        @Test()
+        write__throws_for_a_value_that_is_not_finite() is
+            try
+                Json.write(Json.of(double.positive_infinity))
+                fail("expected an ArgumentException")
+            catch e: Ghul.ArgumentException
+            yrt
+        si
+    si
+si

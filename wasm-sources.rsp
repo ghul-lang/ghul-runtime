@@ -41,3 +41,6 @@ src/renderable.ghul
 src/coroutines.ghul
 src/process.ghul
 src/unit.ghul
+src/json_value.ghul
+src/json_parser.ghul
+src/json_writer.ghul

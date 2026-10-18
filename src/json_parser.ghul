@@ -1,0 +1,340 @@
+namespace Json is
+    use Collections.LIST
+    use Collections.KEY_VALUE_PAIR
+    use Text.STRING_BUILDER
+
+    /// Thrown when text given to `parse` is not valid JSON.
+    class ParseException: Ghul.Exception is
+        /// The zero-based character offset into the text where the parser
+        /// gave up.
+        position: int
+
+        /// - message: what was wrong
+        /// - position: where in the text it was found
+        init(message: string, position: int) is
+            super.init(message)
+            self.position = position
+        si
+    si
+
+    /// The JSON value `text` holds. Throws ParseException where `text` is
+    /// not valid JSON, including where it holds a value followed by
+    /// anything but whitespace.
+    ///
+    /// - text: the text to parse
+    parse(text: string) -> Value => _PARSER(text).parse()
+
+    // A single parse of one piece of text, tracking where it has read to.
+    class _PARSER(_text: string) is
+        _pos: int field
+
+        init(.., ) is
+            _pos = 0
+        si
+
+        parse() -> Value is
+            _skip_whitespace()
+
+            let value = _parse_value()
+
+            _skip_whitespace()
+
+            if _pos < _text.length then
+                throw ParseException("unexpected text after the value", _pos)
+            fi
+
+            return value
+        si
+
+        _skip_whitespace() is
+            while _pos < _text.length /\ _is_whitespace(_text[_pos]) do
+                _pos = _pos + 1
+            od
+        si
+
+        _is_whitespace(c: char) -> bool =>
+            c == ' ' \/ c == '\t' \/ c == '\n' \/ c == '\r'
+
+        _is_digit(c: char) -> bool => c >= '0' /\ c <= '9'
+
+        _parse_value() -> Value is
+            if _pos >= _text.length then
+                throw ParseException("unexpected end of input", _pos)
+            fi
+
+            let c = _text[_pos]
+
+            return case c
+            when '{' then _parse_object()
+            when '[' then _parse_array()
+            when '"' then Value.STRING(_parse_string())
+            when 't', 'f' then Value.BOOLEAN(_parse_bool())
+            when 'n' then _parse_null()
+            else
+                if c == '-' \/ _is_digit(c) then
+                    Value.NUMBER(_parse_number())
+                else
+                    throw ParseException("unexpected character '{c}'", _pos)
+                fi
+            esac
+        si
+
+        _parse_null() -> Value is
+            _expect_literal("null")
+            return Value.NULL
+        si
+
+        _parse_bool() -> bool is
+            if _text[_pos] == 't' then
+                _expect_literal("true")
+                return true
+            fi
+
+            _expect_literal("false")
+            return false
+        si
+
+        // Assumes `literal` matches `_text` at `_pos`, having already been
+        // told so by its first character; checks the rest and advances
+        // past it.
+        _expect_literal(literal: string) is
+            let start = _pos
+
+            for i in 0..literal.length do
+                if _pos >= _text.length \/ _text[_pos] != literal[i] then
+                    throw ParseException("expected '{literal}'", start)
+                fi
+
+                _pos = _pos + 1
+            od
+        si
+
+        _parse_number() -> double is
+            let start = _pos
+
+            if _text[_pos] == '-' then
+                _pos = _pos + 1
+            fi
+
+            _require_digit()
+
+            if _text[_pos] == '0' then
+                _pos = _pos + 1
+            else
+                _consume_digits()
+            fi
+
+            if _pos < _text.length /\ _text[_pos] == '.' then
+                _pos = _pos + 1
+                _require_digit()
+                _consume_digits()
+            fi
+
+            if _pos < _text.length /\ (_text[_pos] == 'e' \/ _text[_pos] == 'E') then
+                _pos = _pos + 1
+
+                if _pos < _text.length /\ (_text[_pos] == '+' \/ _text[_pos] == '-') then
+                    _pos = _pos + 1
+                fi
+
+                _require_digit()
+                _consume_digits()
+            fi
+
+            return double.parse(_text.substring(start, _pos - start))
+        si
+
+        _require_digit() is
+            if _pos >= _text.length \/ !_is_digit(_text[_pos]) then
+                throw ParseException("expected a digit", _pos)
+            fi
+        si
+
+        _consume_digits() is
+            while _pos < _text.length /\ _is_digit(_text[_pos]) do
+                _pos = _pos + 1
+            od
+        si
+
+        // Assumes `_text[_pos] == '"'`.
+        _parse_string() -> string is
+            let start = _pos
+            _pos = _pos + 1
+
+            let builder = STRING_BUILDER()
+
+            while _pos < _text.length /\ _text[_pos] != '"' do
+                if _text[_pos] == '\\' then
+                    builder.append(_parse_escape())
+                else
+                    builder.append(_text[_pos])
+                    _pos = _pos + 1
+                fi
+            od
+
+            if _pos >= _text.length then
+                throw ParseException("unterminated string", start)
+            fi
+
+            _pos = _pos + 1   // the closing quote
+
+            return builder.to_string()
+        si
+
+        // Assumes `_text[_pos] == '\\'`; returns the character it escapes
+        // and advances past the whole escape sequence.
+        _parse_escape() -> char is
+            let start = _pos
+            _pos = _pos + 1
+
+            if _pos >= _text.length then
+                throw ParseException("unterminated escape", start)
+            fi
+
+            let escaped = _text[_pos]
+
+            if escaped == 'u' then
+                return _parse_unicode_escape()
+            fi
+
+            _pos = _pos + 1
+
+            return case escaped
+            when '"' then '"'
+            when '\\' then '\\'
+            when '/' then '/'
+            when 'n' then '\n'
+            when 't' then '\t'
+            when 'r' then '\r'
+            when 'b' then '\u0008'
+            when 'f' then '\u000C'
+            else throw ParseException("unknown escape '\\{escaped}'", start)
+            esac
+        si
+
+        // Assumes `_text[_pos] == 'u'`; reads the four hex digits after it
+        // and advances past them.
+        _parse_unicode_escape() -> char is
+            let start = _pos
+
+            if _pos + 4 >= _text.length then
+                throw ParseException("incomplete \\u escape", start)
+            fi
+
+            let code mut = 0
+
+            for i in 1..5 do
+                code = code * 16 + _hex_digit(_text[_pos + i], start)
+            od
+
+            _pos = _pos + 5
+
+            return cast char(code)
+        si
+
+        _hex_digit(c: char, start: int) -> int is
+            if c >= '0' /\ c <= '9' then
+                return cast int(c) - cast int('0')
+            elif c >= 'a' /\ c <= 'f' then
+                return cast int(c) - cast int('a') + 10
+            elif c >= 'A' /\ c <= 'F' then
+                return cast int(c) - cast int('A') + 10
+            fi
+
+            throw ParseException("invalid hex digit in \\u escape", start)
+        si
+
+        // Assumes `_text[_pos] == '['`.
+        _parse_array() -> Value is
+            _pos = _pos + 1
+
+            let items = LIST[Value]()
+
+            _skip_whitespace()
+
+            if _pos < _text.length /\ _text[_pos] == ']' then
+                _pos = _pos + 1
+                return Value.ARRAY(items)
+            fi
+
+            do
+                _skip_whitespace()
+                items.add(_parse_value())
+                _skip_whitespace()
+
+                if _pos >= _text.length then
+                    throw ParseException("unterminated array", _pos)
+                fi
+
+                if _text[_pos] == ',' then
+                    _pos = _pos + 1
+                    continue
+                fi
+
+                if _text[_pos] == ']' then
+                    _pos = _pos + 1
+                    break
+                fi
+
+                throw ParseException("expected ',' or ']'", _pos)
+            od
+
+            return Value.ARRAY(items)
+        si
+
+        // Assumes `_text[_pos] == '{'`.
+        _parse_object() -> Value is
+            _pos = _pos + 1
+
+            let fields = LIST[KEY_VALUE_PAIR[string, Value]]()
+
+            _skip_whitespace()
+
+            if _pos < _text.length /\ _text[_pos] == '}' then
+                _pos = _pos + 1
+                return Value.OBJECT(fields)
+            fi
+
+            do
+                _skip_whitespace()
+
+                if _pos >= _text.length \/ _text[_pos] != '"' then
+                    throw ParseException("expected a field name", _pos)
+                fi
+
+                let name = _parse_string()
+
+                _skip_whitespace()
+
+                if _pos >= _text.length \/ _text[_pos] != ':' then
+                    throw ParseException("expected ':'", _pos)
+                fi
+
+                _pos = _pos + 1
+                _skip_whitespace()
+
+                fields.add(KEY_VALUE_PAIR(name, _parse_value()))
+
+                _skip_whitespace()
+
+                if _pos >= _text.length then
+                    throw ParseException("unterminated object", _pos)
+                fi
+
+                if _text[_pos] == ',' then
+                    _pos = _pos + 1
+                    continue
+                fi
+
+                if _text[_pos] == '}' then
+                    _pos = _pos + 1
+                    break
+                fi
+
+                throw ParseException("expected ',' or '}}'", _pos)
+            od
+
+            return Value.OBJECT(fields)
+        si
+    si
+si

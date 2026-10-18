@@ -1,0 +1,93 @@
+// The JSON value tree: construction, the object field helpers, and the
+// accessors a reader uses to pull typed values back out.
+use Json.Value
+use IO.Std.write_line
+
+entry() is
+    write_line("{Json.is_null(Value.NULL)}")
+    write_line("{Json.is_null(Json.of(true))}")
+
+    write_line("{Json.as_bool(Json.of(true))}")
+    write_line("{Json.as_number(Json.of(3.5))}")
+    write_line("{Json.as_number(Json.of(7))}")
+    write_line("{Json.as_string(Json.of("hi"))}")
+    write_line("{Json.as_bool(Json.of(3.5))}")
+
+    let items = Json.array()
+    let array_items = Json.as_array(items)!
+    array_items.add(Json.of(1))
+    array_items.add(Json.of(2))
+    write_line("{array_items.count}")
+
+    let built = Json.array([Json.of(1), Json.of(2), Json.of(3)])
+    write_line("{Json.as_array(built)!.count}")
+
+    let obj = Json.object()
+    Json.set(obj, "name", Json.of("alice"))
+    Json.set(obj, "age", Json.of(30))
+    write_line("{Json.as_string(Json.get(obj, "name")!)}")
+    write_line("{Json.as_number(Json.get(obj, "age")!)}")
+    write_line("{Json.is_null(Json.get(obj, "missing") ?? Value.NULL)}")
+
+    // Replacing a field keeps its position.
+    Json.set(obj, "name", Json.of("bob"))
+    write_line("{Json.as_object(obj)!.count}")
+    write_line("{Json.as_string(Json.get(obj, "name")!)}")
+
+    write_line("{Json.is_null(Json.parse("null"))}")
+    write_line("{Json.as_bool(Json.parse("true"))}")
+    write_line("{Json.as_bool(Json.parse("false"))}")
+    write_line("{Json.as_number(Json.parse("42"))}")
+    write_line("{Json.as_number(Json.parse("-3.5"))}")
+    write_line("{Json.as_number(Json.parse("1.5e2"))}")
+    write_line("{Json.as_number(Json.parse("0"))}")
+    write_line("{Json.as_string(Json.parse("\"hi there\""))}")
+    write_line("{Json.as_string(Json.parse("\"line\\nbreak\""))}")
+    write_line("{Json.as_string(Json.parse("\"quote\\\"here\""))}")
+    write_line("{Json.as_string(Json.parse("\"euro \\u20AC\""))}")
+
+    let parsed_array = Json.parse("[1, 2, 3]")
+    write_line("{Json.as_array(parsed_array)!.count}")
+    write_line("{Json.as_number(Json.as_array(parsed_array)![1])}")
+
+    let parsed_object = Json.parse("{{\"kind\": \"test\", \"n\": 7}}")
+    write_line("{Json.as_string(Json.get(parsed_object, "kind")!)}")
+    write_line("{Json.as_number(Json.get(parsed_object, "n")!)}")
+
+    let nested = Json.parse("{{\"items\": [1, {{\"x\": true}}], \"ok\": null}}")
+    let nested_items = Json.as_array(Json.get(nested, "items")!)!
+    write_line("{nested_items.count}")
+    write_line("{Json.as_bool(Json.get(nested_items[1], "x")!)}")
+    write_line("{Json.is_null(Json.get(nested, "ok")!)}")
+
+    try
+        Json.parse("not json")
+        write_line("no exception")
+    catch e: Json.ParseException
+        write_line("caught: {e.position}")
+    yrt
+
+    write_line(Json.write(Value.NULL))
+    write_line(Json.write(Json.of(true)))
+    write_line(Json.write(Json.of(false)))
+    write_line(Json.write(Json.of(42)))
+    write_line(Json.write(Json.of(-3.5)))
+    write_line(Json.write(Json.of(0)))
+    write_line(Json.write(Json.of("plain")))
+    write_line(Json.write(Json.of("line\nbreak\ttab\"quote\\back")))
+    write_line(Json.write(Json.of("euro €")))
+    write_line(Json.write(Json.of("control \u0001")))
+    write_line(Json.write(Json.array([Json.of(1), Json.of("two"), Json.of(true)])))
+
+    let written_obj = Json.object()
+    Json.set(written_obj, "a", Json.of(1))
+    Json.set(written_obj, "b", Json.array([Json.of(2), Json.of(3)]))
+    write_line(Json.write(written_obj))
+
+    // Round trip: parsing what was written gives back an equal value, and
+    // writing what was parsed gives back the same compact text.
+    let round_trip_text = "{{\"n\":7,\"s\":\"two words\",\"a\":[1,2,3],\"t\":true,\"f\":false,\"z\":null}}"
+    let round_tripped = Json.parse(round_trip_text)
+    write_line(Json.write(round_tripped))
+    write_line("{Json.write(round_tripped) =~ round_trip_text}")
+si
