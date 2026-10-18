@@ -212,6 +212,34 @@ namespace Tests is
 
     class HOLDER_FIXTURE[T](value: T? public)
 
+    // From_json builds a plain object through a parameterless
+    // constructor and then sets its properties, so a fixture for it
+    // needs one - the same DTO shape the analysis protocol's own
+    // request and response types use.
+    @suppress("field-definite-assignment")
+    class POINT_DTO_FIXTURE is
+        x: int public
+        y: int public
+
+        init() is si
+    si
+
+    @suppress("field-definite-assignment")
+    class PERSON_DTO_FIXTURE is
+        name: string public
+        age: int public
+        nickname: string? public
+
+        init() is si
+    si
+
+    @suppress("field-definite-assignment")
+    class HOLDER_DTO_FIXTURE[T] is
+        value: T? public
+
+        init() is si
+    si
+
     @TestClass()
     class JSON_TO_JSON_SHOULD is
         init() is si
@@ -273,6 +301,110 @@ namespace Tests is
             are_equal(
                 "{{\"value\":null}}",
                 Json.write(Json.to_json(HOLDER_FIXTURE[int](null))))
+        si
+    si
+
+    @TestClass()
+    class JSON_FROM_JSON_SHOULD is
+        init() is si
+
+        @Test()
+        from_json__given_null__is_null() is
+            is_null(Json.from_json(Json.Value.NULL, typeof object))
+        si
+
+        @Test()
+        from_json__reads_a_scalar() is
+            is_true(cast bool(Json.from_json(Json.of(true), typeof bool)!))
+            are_equal(7, cast int(Json.from_json(Json.of(7), typeof int)!))
+            are_equal(1.5, cast double(Json.from_json(Json.of(1.5), typeof double)!))
+            are_equal("hi", cast string(Json.from_json(Json.of("hi"), typeof string)!))
+        si
+
+        @Test()
+        from_json__reads_an_objects_properties() is
+            let point = cast POINT_DTO_FIXTURE(
+                Json.from_json(Json.parse("{{\"x\":3,\"y\":4}}"), typeof POINT_DTO_FIXTURE)!)
+
+            are_equal(3, point.x)
+            are_equal(4, point.y)
+        si
+
+        @Test()
+        from_json__given_a_kind_field__builds_the_named_variant() is
+            let circle = cast ShapeFixture.CIRCLE(
+                Json.from_json(Json.parse("{{\"kind\":\"circle\",\"radius\":1.5}}"), typeof ShapeFixture)!)
+
+            are_equal(1.5, circle.radius)
+
+            let square = cast ShapeFixture.SQUARE(
+                Json.from_json(Json.parse("{{\"kind\":\"square\",\"side\":2}}"), typeof ShapeFixture)!)
+
+            are_equal(2.0, square.side)
+        si
+
+        @Test()
+        from_json__given_a_present_optional_property__reads_its_value() is
+            let person = cast PERSON_DTO_FIXTURE(
+                Json.from_json(
+                    Json.parse("{{\"name\":\"alice\",\"age\":30,\"nickname\":\"al\"}}"),
+                    typeof PERSON_DTO_FIXTURE)!)
+
+            are_equal("alice", person.name)
+            are_equal(30, person.age)
+            are_equal("al", person.nickname)
+        si
+
+        @Test()
+        from_json__given_an_absent_optional_property__is_null() is
+            let person = cast PERSON_DTO_FIXTURE(
+                Json.from_json(
+                    Json.parse("{{\"name\":\"bob\",\"age\":25,\"nickname\":null}}"),
+                    typeof PERSON_DTO_FIXTURE)!)
+
+            is_false(person.nickname?)
+        si
+
+        @Test()
+        from_json__given_a_present_generic_optional_property__reads_its_value() is
+            let holder = cast HOLDER_DTO_FIXTURE[int](
+                Json.from_json(Json.parse("{{\"value\":5}}"), typeof HOLDER_DTO_FIXTURE[int])!)
+
+            are_equal(5, holder.value!)
+        si
+
+        @Test()
+        from_json__given_an_absent_generic_optional_property__is_null() is
+            let holder = cast HOLDER_DTO_FIXTURE[int](
+                Json.from_json(Json.parse("{{\"value\":null}}"), typeof HOLDER_DTO_FIXTURE[int])!)
+
+            is_false(holder.value?)
+        si
+
+        @Test()
+        from_json__round_trips_what_to_json_wrote() is
+            let written = Json.write(Json.to_json(ShapeFixture.SQUARE(3.0)))
+            let read = cast ShapeFixture.SQUARE(Json.from_json(Json.parse(written), typeof ShapeFixture)!)
+
+            are_equal(3.0, read.side)
+        si
+
+        @Test()
+        from_json__given_an_unknown_variant__throws() is
+            try
+                Json.from_json(Json.parse("{{\"kind\":\"triangle\"}}"), typeof ShapeFixture)
+                fail("expected an exception")
+            catch e: Ghul.Exception
+            yrt
+        si
+
+        @Test()
+        from_json__given_a_union_with_no_variant_list__throws() is
+            try
+                Json.from_json(Json.parse("{{\"kind\":\"ok\"}}"), typeof Json.Value)
+                fail("expected an exception")
+            catch e: Ghul.Exception
+            yrt
         si
     si
 si
