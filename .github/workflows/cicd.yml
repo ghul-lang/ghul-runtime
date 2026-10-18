@@ -199,8 +199,15 @@ jobs:
     - name: Restore local .NET tools
       run: dotnet tool restore
 
-    # The tests build with the compiler the tool manifest pins, so a bump
-    # there reaches them too.
+    # The tool manifest's pin is only a local-dev fallback; this repoints at
+    # the latest published ghul.compiler and ghul.cli (which picks the
+    # ghul-llvm release) so the tests build with the newest toolchain
+    # regardless of when the manifest was last bumped.
+    - name: Update local .NET tools to the latest published
+      run: |
+        dotnet tool update --local ghul.compiler
+        dotnet tool update --local ghul.cli
+
     - name: Build and run the wasm tests
       run: |
         GHUL_COMPILER_VERSION=$(jq -r '.tools["ghul.compiler"].version' .config/dotnet-tools.json)
@@ -223,6 +230,11 @@ jobs:
 
     - name: Restore local .NET tools
       run: dotnet tool restore
+
+    - name: Update local .NET tools to the latest published
+      run: |
+        dotnet tool update --local ghul.compiler
+        dotnet tool update --local ghul.cli
 
     - name: Build and run the llvm tests
       run: |
