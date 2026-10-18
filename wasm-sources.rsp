@@ -40,6 +40,7 @@ src/result.ghul
 src/renderable.ghul
 src/coroutines.ghul
 src/process.ghul
+src/union-attributes.ghul
 src/unit.ghul
 src/json_value.ghul
 src/json_parser.ghul
