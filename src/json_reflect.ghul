@@ -70,9 +70,7 @@ namespace Json is
     // for one whose declared type is that carrier - boxing a `Nullable[T]`
     // already gives the same answer with no help needed here.
     _read(property: System.Reflection.PropertyInfo, value: object) -> object? static is
-        let declared = property.property_type
-
-        if declared.is_generic_type /\ declared.get_generic_type_definition() =~ typeof Ghul.MAYBE[_] then
+        if Ghul.MAYBE[object].underlying_type(property.property_type)? then
             let maybe = property.get_value(value)!
             let maybe_type = maybe.get_type()
             let has_value = cast bool(maybe_type.get_property("has_value")!.get_value(maybe))
