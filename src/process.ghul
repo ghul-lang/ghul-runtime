@@ -15,8 +15,9 @@ namespace IO is
         error: string
     si
 
-    /// Runs other programs. The same calls work on .NET and on the llvm
-    /// target; the wasm target cannot start a program, and throws.
+    /// Runs other programs. The same calls work on .NET, on the llvm target,
+    /// and on the wasm target run by Node; a wasm program run anywhere
+    /// else, such as a browser, cannot start a program, and is told so.
     class PROCESS is
         /// Runs `file_name` with `arguments` to completion, sharing this
         /// process's standard input and capturing its standard output and
@@ -69,7 +70,7 @@ namespace IO is
         /// - file_name: the program to run; a name with no directory is
         ///   looked for on the `PATH`
         /// - arguments: the arguments to pass, each as one argument
-        @IF.llvm()
+        @IF.source_core()
         run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static is
             _begin(file_name)
 
@@ -90,36 +91,27 @@ namespace IO is
             return PROCESS_RESULT(exit_code, _output() ?? "", _error() ?? "")
         si
 
-        /// Throws `Ghul.NotSupportedException`: the wasm target cannot start
-        /// another program.
-        ///
-        /// - file_name: the program that would be run
-        /// - arguments: the arguments that would be passed
-        @IF.wasm()
-        run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static =>
-            throw Ghul.NotSupportedException("Running {file_name}: the wasm target cannot start another program")
-
-        @IF.llvm()
+        @IF.source_core()
         @intrinsic("host.process_begin")
         _begin(file_name: string) static
 
-        @IF.llvm()
+        @IF.source_core()
         @intrinsic("host.process_add_argument")
         _add_argument(argument: string) static
 
-        @IF.llvm()
+        @IF.source_core()
         @intrinsic("host.process_run")
         _run() -> int static
 
-        @IF.llvm()
+        @IF.source_core()
         @intrinsic("host.process_failure")
         _failure() -> int static
 
-        @IF.llvm()
+        @IF.source_core()
         @intrinsic("host.process_output")
         _output() -> string? static
 
-        @IF.llvm()
+        @IF.source_core()
         @intrinsic("host.process_error")
         _error() -> string? static
     si
