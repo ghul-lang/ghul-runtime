@@ -2,7 +2,6 @@
     "name": "bigint-totals",
     "targets": ["wasm"],
     "dependencies": {
-        "ghul-runtime": { "path": "../.." },
-        "ghul-core": { "git": "https://github.com/ghul-lang/ghul-core", "tag": "v0.68.0" }
+        "ghul-runtime": { "path": "../.." }
     }
 }
