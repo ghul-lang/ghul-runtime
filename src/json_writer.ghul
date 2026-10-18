@@ -1,0 +1,109 @@
+namespace Json is
+    use Collections.LIST
+    use Collections.KEY_VALUE_PAIR
+    use Text.STRING_BUILDER
+
+    /// `value` as compact JSON text - no whitespace beyond what a string
+    /// it holds needs escaped, which is what a line of NDJSON wants.
+    ///
+    /// - value: the value to write
+    write(value: Value) -> string is
+        let builder = STRING_BUILDER()
+        write(value, builder)
+        return builder.to_string()
+    si
+
+    /// Appends `value` to `builder` as compact JSON text.
+    ///
+    /// - value: the value to write
+    /// - builder: where the text is appended
+    write(value: Value, builder: STRING_BUILDER) is
+        case value
+        when Value.NULL then builder.append("null")
+        when b: Value.BOOLEAN then builder.append(if b.value then "true" else "false" fi)
+        when n: Value.NUMBER then _write_number(n.value, builder)
+        when s: Value.STRING then _write_string(s.value, builder)
+        when a: Value.ARRAY then _write_array(a.items, builder)
+        when o: Value.OBJECT then _write_object(o.fields, builder)
+        esac
+    si
+
+    // An integral double is written without a decimal point, so a value
+    // built from an int round-trips to the same text a JSON number usually
+    // takes; anything else is written in double's own round-trip format.
+    _write_number(value: double, builder: STRING_BUILDER) is
+        if !double.is_finite(value) then
+            throw Ghul.ArgumentException("JSON has no representation for NaN or an infinity")
+        fi
+
+        if value == Ghul.Math.floor(value) /\ Ghul.Math.abs(value) < 1.0e15 then
+            builder.append(long(value).to_string())
+        else
+            builder.append(value.to_string())
+        fi
+    si
+
+    _write_string(value: string, builder: STRING_BUILDER) is
+        builder.append('"')
+
+        for c in value do
+            if c == '"' then
+                builder.append("\\\"")
+            elif c == '\\' then
+                builder.append("\\\\")
+            elif c == '\n' then
+                builder.append("\\n")
+            elif c == '\t' then
+                builder.append("\\t")
+            elif c == '\r' then
+                builder.append("\\r")
+            elif c == '\u0008' then
+                builder.append("\\b")
+            elif c == '\u000C' then
+                builder.append("\\f")
+            elif c < ' ' then
+                builder.append("\\u")
+                builder.append(_hex4(cast int(c)))
+            else
+                builder.append(c)
+            fi
+        od
+
+        builder.append('"')
+    si
+
+    _hex4(code: int) -> string is
+        let digits = "0123456789abcdef"
+        return "{digits[(code >> 12) & 15]}{digits[(code >> 8) & 15]}{digits[(code >> 4) & 15]}{digits[code & 15]}"
+    si
+
+    _write_array(items: LIST[Value], builder: STRING_BUILDER) is
+        builder.append('[')
+
+        for i in 0..items.count do
+            if i > 0 then
+                builder.append(',')
+            fi
+
+            write(items[i], builder)
+        od
+
+        builder.append(']')
+    si
+
+    _write_object(fields: LIST[KEY_VALUE_PAIR[string, Value]], builder: STRING_BUILDER) is
+        builder.append('{')
+
+        for i in 0..fields.count do
+            if i > 0 then
+                builder.append(',')
+            fi
+
+            _write_string(fields[i].key, builder)
+            builder.append(':')
+            write(fields[i].value, builder)
+        od
+
+        builder.append('}')
+    si
+si

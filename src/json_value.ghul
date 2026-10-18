@@ -1,0 +1,123 @@
+namespace Json is
+    use Collections.LIST
+    use Collections.KEY_VALUE_PAIR
+
+    /// A JSON value: null, a boolean, a number, a string, an array, or an
+    /// object. A number is held as `double`, as every mainstream JSON
+    /// implementation holds it, so an integer past 2^53 loses precision
+    /// round-tripping through it.
+    union Value is
+        /// JSON's null.
+        NULL
+
+        /// `true` or `false`.
+        BOOLEAN(value: bool)
+
+        /// A JSON number, held as `double`.
+        NUMBER(value: double)
+
+        /// A JSON string.
+        STRING(value: string)
+
+        /// A JSON array, in order.
+        ARRAY(items: LIST[Value])
+
+        /// An object's fields, in the order they were parsed or added. A
+        /// name can repeat; `get` and `set` both read and write the first
+        /// occurrence they find.
+        OBJECT(fields: LIST[KEY_VALUE_PAIR[string, Value]])
+    si
+
+    /// The JSON value for `value`.
+    of(value: bool) -> Value => Value.BOOLEAN(value)
+
+    /// The JSON value for `value`.
+    of(value: double) -> Value => Value.NUMBER(value)
+
+    /// The JSON value for `value`.
+    of(value: int) -> Value => Value.NUMBER(double(value))
+
+    /// The JSON value for `value`.
+    of(value: string) -> Value => Value.STRING(value)
+
+    /// A new, empty array - append to its `items` to fill it.
+    array() -> Value => Value.ARRAY(LIST[Value]())
+
+    /// An array holding `items`, in order.
+    ///
+    /// - items: the array's elements
+    array(items: Value{}) -> Value => Value.ARRAY(LIST[Value](items))
+
+    /// A new, empty object - add fields to it with `set`.
+    object() -> Value => Value.OBJECT(LIST[KEY_VALUE_PAIR[string, Value]]())
+
+    /// Whether `value` holds JSON null.
+    ///
+    /// - value: the value to test
+    is_null(value: Value) -> bool => isa Value.NULL(value)
+
+    /// `value`'s own text, where it holds STRING; null otherwise.
+    ///
+    /// - value: the value to read
+    as_string(value: Value) -> string? =>
+        if let s: Value.STRING = value then s.value else null fi
+
+    /// `value`'s own number, where it holds NUMBER; null otherwise.
+    ///
+    /// - value: the value to read
+    as_number(value: Value) -> double? =>
+        if let n: Value.NUMBER = value then n.value else null fi
+
+    /// `value`'s own flag, where it holds BOOLEAN; null otherwise.
+    ///
+    /// - value: the value to read
+    as_bool(value: Value) -> bool? =>
+        if let b: Value.BOOLEAN = value then b.value else null fi
+
+    /// `value`'s own elements, where it holds ARRAY; null otherwise.
+    ///
+    /// - value: the value to read
+    as_array(value: Value) -> LIST[Value]? =>
+        if let a: Value.ARRAY = value then a.items else null fi
+
+    /// `value`'s own fields, where it holds OBJECT; null otherwise.
+    ///
+    /// - value: the value to read
+    as_object(value: Value) -> LIST[KEY_VALUE_PAIR[string, Value]]? =>
+        if let o: Value.OBJECT = value then o.fields else null fi
+
+    /// The field named `name`, or null where `object` has none - present
+    /// even where the field's own value is JSON null, since that is a
+    /// different thing from the field being absent.
+    ///
+    /// - object: a value that must hold OBJECT
+    /// - name: the field to find
+    get(object: Value, name: string) -> Value? is
+        for entry in cast Value.OBJECT(object).fields do
+            if entry.key =~ name then
+                return entry.value
+            fi
+        od
+
+        return null
+    si
+
+    /// Adds `name`'s field, or replaces it in place where `object` already
+    /// has one.
+    ///
+    /// - object: a value that must hold OBJECT
+    /// - name: the field's name
+    /// - value: the field's value
+    set(object: Value, name: string, value: Value) is
+        let fields = cast Value.OBJECT(object).fields
+
+        for i in 0..fields.count do
+            if fields[i].key =~ name then
+                fields[i] = KEY_VALUE_PAIR(name, value)
+                return
+            fi
+        od
+
+        fields.add(KEY_VALUE_PAIR(name, value))
+    si
+si

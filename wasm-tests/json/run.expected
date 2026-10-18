@@ -1,0 +1,48 @@
+true
+false
+true
+3.5
+7
+hi
+null
+2
+3
+alice
+30
+true
+2
+bob
+true
+true
+false
+42
+-3.5
+150
+0
+hi there
+line
+break
+quote"here
+euro €
+3
+2
+test
+7
+2
+true
+true
+caught: 0
+null
+true
+false
+42
+-3.5
+0
+"plain"
+"line\nbreak\ttab\"quote\\back"
+"euro €"
+"control \u0001"
+[1,"two",true]
+{"a":1,"b":[2,3]}
+{"n":7,"s":"two words","a":[1,2,3],"t":true,"f":false,"z":null}
+true
