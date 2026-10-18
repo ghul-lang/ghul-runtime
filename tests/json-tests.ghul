@@ -474,6 +474,15 @@ namespace Tests is
         si
 
         @Test()
+        from_json__reads_an_array_into_a_list_with_no_capacity_constructor() is
+            let items = cast System.Collections.ObjectModel.Collection[int](
+                Json.from_json(Json.parse("[1,2,3]"), typeof System.Collections.ObjectModel.Collection[int])!)
+
+            are_equal(3, items.count)
+            are_equal(3, items[2])
+        si
+
+        @Test()
         from_json__reads_base_members_and_public_fields() is
             let derived = cast DERIVED_FIXTURE(
                 Json.from_json(Json.parse("{{\"id\":3,\"label\":\"three\",\"weight\":2.5}}"), typeof DERIVED_FIXTURE)!)
@@ -484,11 +493,11 @@ namespace Tests is
         si
 
         @Test()
-        from_json__matches_constructor_parameters_in_any_case() is
+        from_json__matches_constructor_parameters_by_exact_name() is
             let open = cast RequestFixture.OPEN(
                 Json.from_json(Json.parse("{{\"kind\":\"open\",\"Path\":\"a.ghul\",\"line\":4}}"), typeof RequestFixture)!)
 
-            are_equal("a.ghul", open.path)
+            is_false(open.path?)
             are_equal(4, open.line)
         si
 

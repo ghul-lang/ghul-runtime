@@ -50,10 +50,10 @@ namespace Json is
             return Value.NUMBER(double(n))
         fi
 
-        if let sequence: Collections.NonGenericIterable = value then
+        if let elements = _elements(value) then
             let items = LIST[Value]()
 
-            for element in System.Linq.Enumerable.cast[object](sequence) do
+            for element in elements do
                 items.add(to_json(element))
             od
 
@@ -73,6 +73,27 @@ namespace Json is
 
         return Value.OBJECT(fields)
     si
+
+    // `value`'s elements where it is a sequence, and otherwise null.
+    @IF.dotnet()
+    _elements(value: object) -> Collections.Iterable[object?]? static =>
+        if let sequence: Collections.NonGenericIterable = value then
+            System.Linq.Enumerable.cast[object?](sequence)
+        else
+            null
+        fi
+
+    // `value`'s elements where it is a list, or a sequence of references,
+    // and otherwise null.
+    @IF.not.dotnet()
+    _elements(value: object) -> Collections.Iterable[object?]? static =>
+        if let list: Ghul.Internal.UntypedList = value then
+            list.untyped_items
+        elif let sequence: Collections.Iterable[object?] = value then
+            sequence
+        else
+            null
+        fi
 
     // A member JSON reads and writes: its name, its declared type, how to
     // read it, and how to write it where it can be written.
@@ -141,8 +162,8 @@ namespace Json is
     /// `Ghul.Internal.UNION_ATTRIBUTE` lists for the union - a union
     /// compiled without that list cannot be read this way. Any other type
     /// is built through its parameterless constructor, or else its only
-    /// one, each parameter read from the field of the same name in any
-    /// case; the remaining fields are then written to the public properties
+    /// one, each parameter read from the field of the same name; the
+    /// remaining fields are then written to the public properties
     /// and fields of the same name. A field `json` carries that the type
     /// has no member for is ignored. `Value.NULL` gives `null`.
     ///
@@ -199,26 +220,69 @@ namespace Json is
         let element_type = _element_type(type)
 
         if type.is_array \/ type.is_interface then
-            let result = System.Array.create_instance(element_type, items.count)
-
-            for i in 0..items.count do
-                result.set_value(from_json(items[i], element_type), i)
-            od
-
-            return result
+            return _array(element_type, items)
         fi
 
-        let result = System.Activator.create_instance(type)!
+        let values = LIST[object?]()
 
-        if let list: DotNet.NonGeneric.Collections.IList = result then
-            for item in items do
-                list.add(from_json(item, element_type))
-            od
+        for item in items do
+            values.add(from_json(item, element_type))
+        od
 
+        if let result = _filled(type, values) then
             return result
         fi
 
         throw Ghul.Exception("{type.name} cannot be built from a JSON array")
+    si
+
+    // An array of `element_type` holding `items`.
+    @IF.dotnet()
+    _array(element_type: System.Type, items: LIST[Value]) -> object static is
+        let result = System.Array.create_instance(element_type, items.count)
+
+        for i in 0..items.count do
+            result.set_value(from_json(items[i], element_type), i)
+        od
+
+        return result
+    si
+
+    // Building an array of a type known only at run time is not supported
+    // off .NET.
+    @IF.not.dotnet()
+    _array(element_type: System.Type, items: LIST[Value]) -> object static =>
+        throw Ghul.NotSupportedException("an array of {element_type.name} cannot be built from JSON on this target")
+
+    // An instance of the list type `type` holding `values`, made with room
+    // for exactly that many where it takes a capacity, or null where `type` is not a list.
+    @IF.dotnet()
+    _filled(type: System.Type, values: LIST[object?]) -> object? static is
+        let sized = type.get_constructor([typeof int])?
+        let made = if sized then System.Activator.create_instance(type, [cast object(values.count)]) else System.Activator.create_instance(type) fi
+
+        if let list: DotNet.NonGeneric.Collections.IList = made then
+            for value in values do
+                list.add(value)
+            od
+
+            return list
+        fi
+
+        return null
+    si
+
+    // An instance of the list type `type` holding `values`, its storage
+    // filled in one step, or null where `type` is not a list.
+    @IF.not.dotnet()
+    _filled(type: System.Type, values: LIST[object?]) -> object? static is
+        if let list: Ghul.Internal.UntypedList = System.Activator.create_instance(type) then
+            list.fill_untyped(values.to_array())
+
+            return list
+        fi
+
+        return null
     si
 
     // What a sequence of `type` holds: an array's element type, or the one
@@ -280,7 +344,7 @@ namespace Json is
 
     // An instance of `type` built from `json`'s fields: through its
     // parameterless constructor, or else its only constructor with each
-    // parameter read from the field of the same name in any case, and then
+    // parameter read from the field of the same name, and then
     // each remaining field written to the member of the same name.
     // `discriminator` names a field that is not a member.
     _build_object(json: Value, type: System.Type, discriminator: string?) -> object static is
@@ -314,7 +378,7 @@ namespace Json is
             let found: Value? mut = null
 
             for pair in fields do
-                if !found? /\ string.equals(pair.key, parameter.name, Ghul.StringComparison.ORDINAL_IGNORE_CASE) then
+                if !found? /\ pair.key =~ (parameter.name ?? "") then
                     found = pair.value
                     consumed.add(pair.key)
                 fi
