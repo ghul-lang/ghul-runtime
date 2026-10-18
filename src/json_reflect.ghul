@@ -255,10 +255,13 @@ namespace Json is
         throw Ghul.NotSupportedException("an array of {element_type.name} cannot be built from JSON on this target")
 
     // An instance of the list type `type` holding `values`, made with room
-    // for exactly that many, or null where `type` is not a list.
+    // for exactly that many where it takes a capacity, or null where `type` is not a list.
     @IF.dotnet()
     _filled(type: System.Type, values: LIST[object?]) -> object? static is
-        if let list: DotNet.NonGeneric.Collections.IList = System.Activator.create_instance(type, [cast object(values.count)]) then
+        let sized = type.get_constructor([typeof int])?
+        let made = if sized then System.Activator.create_instance(type, [cast object(values.count)]) else System.Activator.create_instance(type) fi
+
+        if let list: DotNet.NonGeneric.Collections.IList = made then
             for value in values do
                 list.add(value)
             od
