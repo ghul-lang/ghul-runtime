@@ -1,19 +1,28 @@
 namespace Json is
     use Collections.LIST
+    use Collections.MAP
+    use Collections.SET
     use Collections.KEY_VALUE_PAIR
     use System.Reflection.BindingFlags
+    use System.Reflection.ConstructorInfo
     use System.Reflection.FieldInfo
     use System.Reflection.PropertyInfo
 
-    // The members a type's public instance surface is read through: its
-    // own declared fields and properties, not its base's.
-    _MEMBERS: BindingFlags static =>
+    // The field a union variant's name is written under.
+    _KIND: string static => "kind"
+
+    // The members of one level of a type that JSON reads and writes: its
+    // own public instance properties and fields.
+    _LEVEL: BindingFlags static =>
         BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.DECLARED_ONLY
 
-    /// The JSON value for `value`: a scalar read directly, a union variant
-    /// as its fields under a `kind` field naming the variant, in lower
-    /// case, and any other object as its public properties, each under its
-    /// own name. `null` and an absent optional both give `Value.NULL`.
+    /// The JSON value for `value`: a scalar read directly, a sequence as
+    /// an array of its elements, and any other object as its public
+    /// properties and fields, its own and its base types', each under its
+    /// own name. A union variant leads with a `kind` field holding the
+    /// variant's name in lower case. A member whose
+    /// name starts with `$`, which the compiler synthesises, is left out.
+    /// `null` and an absent optional both give `Value.NULL`.
     ///
     /// - value: the value to convert, read through its own runtime type
     to_json(value: object?) -> Value static is
@@ -41,35 +50,78 @@ namespace Json is
             return Value.NUMBER(double(n))
         fi
 
-        return _reflect(value, value.get_type())
-    si
+        if let sequence: Collections.NonGenericIterable = value then
+            let items = LIST[Value]()
 
-    // `value`'s own fields or properties, reflected through `type` - the
-    // runtime type of a plain object, or the declaring type of a union
-    // variant.
-    _reflect(value: object, type: System.Type) -> Value static is
+            for element in System.Linq.Enumerable.cast[object](sequence) do
+                items.add(to_json(element))
+            od
+
+            return Value.ARRAY(items)
+        fi
+
+        let type = value.get_type()
         let fields = LIST[KEY_VALUE_PAIR[string, Value]]()
 
         if type.is_defined(typeof Ghul.Internal.VARIANT_ATTRIBUTE, false) then
-            fields.add(KEY_VALUE_PAIR[string, Value]("kind", Value.STRING(type.name.to_lower())))
-
-            for member in type.get_fields(_MEMBERS) do
-                fields.add(KEY_VALUE_PAIR[string, Value](member.name, to_json(member.get_value(value))))
-            od
-        else
-            for property in type.get_properties(_MEMBERS) do
-                fields.add(KEY_VALUE_PAIR[string, Value](property.name, to_json(_read(property, value))))
-            od
+            fields.add(KEY_VALUE_PAIR[string, Value](_KIND, Value.STRING(type.name.to_lower())))
         fi
 
+        for member in _members(type) do
+            fields.add(KEY_VALUE_PAIR[string, Value](member.name, to_json(member.read(value))))
+        od
+
         return Value.OBJECT(fields)
+    si
+
+    // A member JSON reads and writes: its name, its declared type, how to
+    // read it, and how to write it where it can be written.
+    class _MEMBER(name: string public, type: System.Type public, read: (object) -> object? public, write: ((object, object?) -> void)? public)
+
+    // `type`'s public instance properties and then fields, level by level
+    // from `type` itself to its root, each name once, leaving out those
+    // the compiler synthesises.
+    _members(type: System.Type) -> LIST[_MEMBER] static is
+        let result = LIST[_MEMBER]()
+        let seen = SET[string]()
+        let level: System.Type? mut = type
+
+        while let current = level do
+            for property in current.get_properties(_LEVEL) do
+                if property.get_get_method()? /\ property.get_index_parameters().count == 0 /\ !property.name.starts_with('$') /\ seen.add(property.name) then
+                    let writable = property.get_set_method()?
+
+                    result.add(
+                        _MEMBER(
+                            property.name,
+                            property.property_type,
+                            instance => _read(property, instance),
+                            if writable then (instance, value) -> void => property.set_value(instance, value) else null fi))
+                fi
+            od
+
+            for `field in current.get_fields(_LEVEL) do
+                if !`field.name.starts_with('$') /\ seen.add(`field.name) then
+                    result.add(
+                        _MEMBER(
+                            `field.name,
+                            `field.field_type,
+                            instance => `field.get_value(instance),
+                            if `field.is_init_only then null else (instance, value) -> void => `field.set_value(instance, value) fi))
+                fi
+            od
+
+            level = current.base_type
+        od
+
+        return result
     si
 
     // `property`'s value on `value`: the value itself for an ordinary
     // property, and `MAYBE[T]`'s own value, or null where it holds none,
     // for one whose declared type is that carrier - boxing a `Nullable[T]`
     // already gives the same answer with no help needed here.
-    _read(property: System.Reflection.PropertyInfo, value: object) -> object? static is
+    _read(property: PropertyInfo, value: object) -> object? static is
         if Ghul.MAYBE[object].underlying_type(property.property_type)? then
             let maybe = property.get_value(value)!
             let maybe_type = maybe.get_type()
@@ -82,13 +134,17 @@ namespace Json is
     si
 
     /// The value `type` describes, read from `json`. A scalar is read
-    /// directly. A union is built from its `kind` field, matched against
-    /// the variant names `Ghul.Internal.UNION_ATTRIBUTE` lists for the
-    /// union - a union compiled without that list cannot be read this
-    /// way. Any other type is built through a parameterless constructor
-    /// and its public properties set from the object's fields; a field
-    /// `json` carries that the type has no property for is ignored.
-    /// `Value.NULL` gives `null`.
+    /// directly, and an array is read into an array, or into a sequence
+    /// type: a class one through its parameterless constructor, and a trait
+    /// one as an array. A union is built from its `kind` field, matched
+    /// against the variant names
+    /// `Ghul.Internal.UNION_ATTRIBUTE` lists for the union - a union
+    /// compiled without that list cannot be read this way. Any other type
+    /// is built through its parameterless constructor, or else its only
+    /// one, each parameter read from the field of the same name in any
+    /// case; the remaining fields are then written to the public properties
+    /// and fields of the same name. A field `json` carries that the type
+    /// has no member for is ignored. `Value.NULL` gives `null`.
     ///
     /// - json: the JSON value to read
     /// - type: the type to build
@@ -97,31 +153,88 @@ namespace Json is
             return null
         fi
 
-        if type =~ typeof bool then
+        let maybe_underlying = Ghul.MAYBE[object].underlying_type(type)
+
+        if let underlying = maybe_underlying then
+            return System.Activator.create_instance(type, [from_json(json, underlying)])
+        fi
+
+        let target = System.Nullable.get_underlying_type(type) ?? type
+
+        if target =~ typeof bool then
             return as_bool(json)!
         fi
 
-        if type =~ typeof string then
+        if target =~ typeof string then
             return as_string(json)!
         fi
 
-        if type =~ typeof double then
+        if target =~ typeof double then
             return as_number(json)!
         fi
 
-        if type =~ typeof int then
+        if target =~ typeof int then
             return int(as_number(json)!)
         fi
 
-        if type =~ typeof long then
+        if target =~ typeof long then
             return long(as_number(json)!)
         fi
 
-        if type.is_defined(typeof Ghul.Internal.UNION_ATTRIBUTE, false) then
-            return _build_variant(json, type)
+        if target.is_defined(typeof Ghul.Internal.UNION_ATTRIBUTE, false) then
+            return _build_variant(json, target)
         fi
 
-        return _build_object(json, type)
+        if let items = as_array(json) then
+            return _build_sequence(items, target)
+        fi
+
+        return _build_object(json, target, null)
+    si
+
+    // An instance of `type` holding `items`: an array of the element type
+    // for an array or a sequence trait, and otherwise `type` itself made
+    // through its parameterless constructor, each item added to it.
+    _build_sequence(items: LIST[Value], type: System.Type) -> object static is
+        let element_type = _element_type(type)
+
+        if type.is_array \/ type.is_interface then
+            let result = System.Array.create_instance(element_type, items.count)
+
+            for i in 0..items.count do
+                result.set_value(from_json(items[i], element_type), i)
+            od
+
+            return result
+        fi
+
+        let result = System.Activator.create_instance(type)!
+
+        if let list: DotNet.NonGeneric.Collections.IList = result then
+            for item in items do
+                list.add(from_json(item, element_type))
+            od
+
+            return result
+        fi
+
+        throw Ghul.Exception("{type.name} cannot be built from a JSON array")
+    si
+
+    // What a sequence of `type` holds: an array's element type, or the one
+    // type argument of a generic sequence, and `object` otherwise.
+    _element_type(type: System.Type) -> System.Type is
+        if type.is_array then
+            return type.get_element_type()!
+        fi
+
+        let arguments = type.get_generic_arguments()
+
+        if arguments.count == 1 then
+            return arguments[0]
+        fi
+
+        return typeof object
     si
 
     // `union_type`'s own `UNION_ATTRIBUTE`, read off its custom attributes.
@@ -135,8 +248,8 @@ namespace Json is
         throw Ghul.Exception("{union_type.name} is not a union")
     si
 
-    // The variant of `union_type` that `json`'s `kind` field names, built
-    // from `json`'s other fields through the variant's constructor.
+    // The variant of `union_type` that `json`'s discriminator field names,
+    // built from `json`'s other fields.
     _build_variant(json: Value, union_type: System.Type) -> object static is
         let attribute = _union_attribute(union_type)
 
@@ -144,7 +257,7 @@ namespace Json is
             throw Ghul.Exception("{union_type.name} was compiled without a variant list and cannot be read this way")
         fi
 
-        let kind = get(json, "kind")
+        let kind = get(json, _KIND)
 
         if !kind? then
             throw Ghul.Exception("{union_type.name} is missing its \"kind\" field")
@@ -158,66 +271,76 @@ namespace Json is
 
         for variant in attribute.variants do
             if variant.name.to_lower() =~ discriminator then
-                return _construct(variant, json)
+                return _build_object(json, variant, _KIND)
             fi
         od
 
         throw Ghul.Exception("{union_type.name} has no variant named \"{discriminator}\"")
     si
 
-    // `type`'s own instance, built through its one constructor with each
-    // parameter read from the `json` field of the same name.
-    _construct(type: System.Type, json: Value) -> object static is
-        let parameters = type.get_constructors(_MEMBERS)[0].get_parameters()
-        let args = LIST[object?]()
+    // An instance of `type` built from `json`'s fields: through its
+    // parameterless constructor, or else its only constructor with each
+    // parameter read from the field of the same name in any case, and then
+    // each remaining field written to the member of the same name.
+    // `discriminator` names a field that is not a member.
+    _build_object(json: Value, type: System.Type, discriminator: string?) -> object static is
+        let fields = as_object(json)
 
-        for parameter in parameters do
-            let member = get(json, parameter.name!) ?? Value.NULL
-            args.add(_read_as(member, parameter.parameter_type))
-        od
-
-        return System.Activator.create_instance(type, args.to_array())!
-    si
-
-    // `type`'s own instance, built through its parameterless constructor
-    // with its public properties set from `json`'s fields of the same
-    // name; a field `json` carries with no matching property is ignored.
-    _build_object(json: Value, type: System.Type) -> object static is
-        let instance = System.Activator.create_instance(type)!
-
-        for property in type.get_properties(_MEMBERS) do
-            let found = get(json, property.name)
-
-            if found? then
-                _assign(property, instance, found)
-            fi
-        od
-
-        return instance
-    si
-
-    // `property`'s value on `instance`, read from `json`: the value
-    // itself for an ordinary property, and a built `MAYBE[T]` (absent
-    // for `Value.NULL`) for one whose declared type is that carrier -
-    // `property.set_value` unboxes directly into a `Nullable[T]` with no
-    // help needed here.
-    _assign(property: PropertyInfo, instance: object, json: Value) static is
-        property.set_value(instance, _read_as(json, property.property_type))
-    si
-
-    // `json` read as `type`, wrapping the result in a fresh `MAYBE[T]`
-    // when `type` is that carrier.
-    _read_as(json: Value, type: System.Type) -> object? static is
-        let underlying = Ghul.MAYBE[object].underlying_type(type)
-
-        if underlying? then
-            if isa Value.NULL(json) then
-                return System.Activator.create_instance(type)
-            fi
-
-            return System.Activator.create_instance(type, [from_json(json, underlying)])
+        if !fields? then
+            throw Ghul.Exception("{type.name} cannot be built from a JSON value that is not an object")
         fi
 
-        return from_json(json, type)
+        let constructors = type.get_constructors(BindingFlags.PUBLIC | BindingFlags.INSTANCE)
+        let chosen: ConstructorInfo? mut = null
+
+        for constructor in constructors do
+            if !chosen? /\ constructor.get_parameters().count == 0 then
+                chosen = constructor
+            fi
+        od
+
+        if !chosen? then
+            if constructors.count != 1 then
+                throw Ghul.Exception("{type.name} has no constructor to build it with")
+            fi
+
+            chosen = constructors[0]
+        fi
+
+        let consumed = SET[string]()
+        let arguments = LIST[object?]()
+
+        for parameter in chosen.get_parameters() do
+            let found: Value? mut = null
+
+            for pair in fields do
+                if !found? /\ string.equals(pair.key, parameter.name, Ghul.StringComparison.ORDINAL_IGNORE_CASE) then
+                    found = pair.value
+                    consumed.add(pair.key)
+                fi
+            od
+
+            arguments.add(from_json(found ?? Value.NULL, parameter.parameter_type))
+        od
+
+        let result = System.Activator.create_instance(type, arguments.to_array())!
+
+        let members = _members(type)
+
+        for pair in fields do
+            if consumed.contains(pair.key) \/ pair.key =~ (discriminator ?? "") then
+                continue
+            fi
+
+            for member in members do
+                if member.name =~ pair.key then
+                    if let write = member.write then
+                        write(result, from_json(pair.value, member.type))
+                    fi
+                fi
+            od
+        od
+
+        return result
     si
 si

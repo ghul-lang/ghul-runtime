@@ -240,6 +240,36 @@ namespace Tests is
         init() is si
     si
 
+    class BASE_FIXTURE is
+        id: int public
+
+        init() is si
+    si
+
+    @suppress("field-definite-assignment")
+    class DERIVED_FIXTURE: BASE_FIXTURE is
+        label: string public
+        weight: double field
+
+        init() is
+            weight = 1.5
+        si
+    si
+
+    @suppress("field-definite-assignment")
+    class BATCH_FIXTURE is
+        names: Collections.LIST[string] public
+        points: POINT_DTO_FIXTURE[] public
+        tags: Collections.Iterable[string] public
+
+        init() is si
+    si
+
+    union RequestFixture is
+        OPEN(path: string, line: int)
+        CLOSE
+    si
+
     @TestClass()
     class JSON_TO_JSON_SHOULD is
         init() is si
@@ -405,6 +435,78 @@ namespace Tests is
                 fail("expected an exception")
             catch e: Ghul.Exception
             yrt
+        si
+
+        @Test()
+        to_json__writes_base_members_and_public_fields() is
+            let derived = DERIVED_FIXTURE()
+
+            derived.id = 7
+            derived.label = "seven"
+
+            are_equal("{{\"label\":\"seven\",\"weight\":1.5,\"id\":7}}", Json.write(Json.to_json(derived)))
+        si
+
+        @Test()
+        to_json__writes_a_sequence_as_an_array() is
+            let batch = BATCH_FIXTURE()
+
+            batch.names = Collections.LIST[string](["a", "b"])
+            batch.points = [POINT_DTO_FIXTURE()]
+            batch.tags = ["x"]
+
+            are_equal(
+                "{{\"names\":[\"a\",\"b\"],\"points\":[{{\"x\":0,\"y\":0}}],\"tags\":[\"x\"]}}",
+                Json.write(Json.to_json(batch)))
+        si
+
+        @Test()
+        from_json__reads_arrays_into_a_list_an_array_and_a_sequence() is
+            let batch = cast BATCH_FIXTURE(
+                Json.from_json(
+                    Json.parse("{{\"names\":[\"a\",\"b\"],\"points\":[{{\"x\":1,\"y\":2}}],\"tags\":[\"x\",\"y\"]}}"),
+                    typeof BATCH_FIXTURE)!)
+
+            are_equal(2, batch.names.count)
+            are_equal("b", batch.names[1])
+            are_equal(2, batch.points[0].y)
+            are_equal("x,y", batch.tags |> Ghul.Pipes.join(","))
+        si
+
+        @Test()
+        from_json__reads_base_members_and_public_fields() is
+            let derived = cast DERIVED_FIXTURE(
+                Json.from_json(Json.parse("{{\"id\":3,\"label\":\"three\",\"weight\":2.5}}"), typeof DERIVED_FIXTURE)!)
+
+            are_equal(3, derived.id)
+            are_equal("three", derived.label)
+            are_equal(2.5, derived.weight)
+        si
+
+        @Test()
+        from_json__matches_constructor_parameters_in_any_case() is
+            let open = cast RequestFixture.OPEN(
+                Json.from_json(Json.parse("{{\"kind\":\"open\",\"Path\":\"a.ghul\",\"line\":4}}"), typeof RequestFixture)!)
+
+            are_equal("a.ghul", open.path)
+            are_equal(4, open.line)
+        si
+
+        @Test()
+        from_json__given_a_missing_constructor_argument__passes_its_default() is
+            let open = cast RequestFixture.OPEN(
+                Json.from_json(Json.parse("{{\"kind\":\"open\"}}"), typeof RequestFixture)!)
+
+            is_false(open.path?)
+            are_equal(0, open.line)
+        si
+
+        @Test()
+        to_json__round_trips_a_unit_variant() is
+            let written = Json.write(Json.to_json(RequestFixture.CLOSE))
+
+            are_equal("{{\"kind\":\"close\"}}", written)
+            is_true(isa RequestFixture.CLOSE(Json.from_json(Json.parse(written), typeof RequestFixture)))
         si
     si
 si
