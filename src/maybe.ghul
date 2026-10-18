@@ -74,5 +74,13 @@ namespace Ghul is
             else
                 "none"
             fi
+
+        /// `T` for a `MAYBE[T]` type, mirroring `System.Nullable.get_underlying_type`; null for any other type.
+        underlying_type(type: System.Type) -> System.Type? static =>
+            if type.is_generic_type /\ type.get_generic_type_definition() =~ typeof MAYBE[_] then
+                type.get_generic_arguments()[0]
+            else
+                null
+            fi
     si
 si
