@@ -80,4 +80,144 @@ namespace Json is
 
         return property.get_value(value)
     si
+
+    /// The value `type` describes, read from `json`. A scalar is read
+    /// directly. A union is built from its `kind` field, matched against
+    /// the variant names `Ghul.Internal.UNION_ATTRIBUTE` lists for the
+    /// union - a union compiled without that list cannot be read this
+    /// way. Any other type is built through a parameterless constructor
+    /// and its public properties set from the object's fields; a field
+    /// `json` carries that the type has no property for is ignored.
+    /// `Value.NULL` gives `null`.
+    ///
+    /// - json: the JSON value to read
+    /// - type: the type to build
+    from_json(json: Value, type: System.Type) -> object? static is
+        if isa Value.NULL(json) then
+            return null
+        fi
+
+        if type =~ typeof bool then
+            return as_bool(json)!
+        fi
+
+        if type =~ typeof string then
+            return as_string(json)!
+        fi
+
+        if type =~ typeof double then
+            return as_number(json)!
+        fi
+
+        if type =~ typeof int then
+            return int(as_number(json)!)
+        fi
+
+        if type =~ typeof long then
+            return long(as_number(json)!)
+        fi
+
+        if type.is_defined(typeof Ghul.Internal.UNION_ATTRIBUTE, false) then
+            return _build_variant(json, type)
+        fi
+
+        return _build_object(json, type)
+    si
+
+    // `union_type`'s own `UNION_ATTRIBUTE`, read off its custom attributes.
+    _union_attribute(union_type: System.Type) -> Ghul.Internal.UNION_ATTRIBUTE static is
+        for attribute in union_type.get_custom_attributes(typeof Ghul.Internal.UNION_ATTRIBUTE, false) do
+            if let found: Ghul.Internal.UNION_ATTRIBUTE = attribute then
+                return found
+            fi
+        od
+
+        throw Ghul.Exception("{union_type.name} is not a union")
+    si
+
+    // The variant of `union_type` that `json`'s `kind` field names, built
+    // from `json`'s other fields through the variant's constructor.
+    _build_variant(json: Value, union_type: System.Type) -> object static is
+        let attribute = _union_attribute(union_type)
+
+        if attribute.variants.count == 0 then
+            throw Ghul.Exception("{union_type.name} was compiled without a variant list and cannot be read this way")
+        fi
+
+        let kind = get(json, "kind")
+
+        if !kind? then
+            throw Ghul.Exception("{union_type.name} is missing its \"kind\" field")
+        fi
+
+        let discriminator = as_string(kind)
+
+        if !discriminator? then
+            throw Ghul.Exception("{union_type.name}'s \"kind\" field is not a string")
+        fi
+
+        for variant in attribute.variants do
+            if variant.name.to_lower() =~ discriminator then
+                return _construct(variant, json)
+            fi
+        od
+
+        throw Ghul.Exception("{union_type.name} has no variant named \"{discriminator}\"")
+    si
+
+    // `type`'s own instance, built through its one constructor with each
+    // parameter read from the `json` field of the same name.
+    _construct(type: System.Type, json: Value) -> object static is
+        let parameters = type.get_constructors(_MEMBERS)[0].get_parameters()
+        let args = LIST[object?]()
+
+        for parameter in parameters do
+            let member = get(json, parameter.name!) ?? Value.NULL
+            args.add(_read_as(member, parameter.parameter_type))
+        od
+
+        return System.Activator.create_instance(type, args.to_array())!
+    si
+
+    // `type`'s own instance, built through its parameterless constructor
+    // with its public properties set from `json`'s fields of the same
+    // name; a field `json` carries with no matching property is ignored.
+    _build_object(json: Value, type: System.Type) -> object static is
+        let instance = System.Activator.create_instance(type)!
+
+        for property in type.get_properties(_MEMBERS) do
+            let found = get(json, property.name)
+
+            if found? then
+                _assign(property, instance, found)
+            fi
+        od
+
+        return instance
+    si
+
+    // `property`'s value on `instance`, read from `json`: the value
+    // itself for an ordinary property, and a built `MAYBE[T]` (absent
+    // for `Value.NULL`) for one whose declared type is that carrier -
+    // `property.set_value` unboxes directly into a `Nullable[T]` with no
+    // help needed here.
+    _assign(property: PropertyInfo, instance: object, json: Value) static is
+        property.set_value(instance, _read_as(json, property.property_type))
+    si
+
+    // `json` read as `type`, wrapping the result in a fresh `MAYBE[T]`
+    // when `type` is that carrier.
+    _read_as(json: Value, type: System.Type) -> object? static is
+        let underlying = Ghul.MAYBE[object].underlying_type(type)
+
+        if underlying? then
+            if isa Value.NULL(json) then
+                return System.Activator.create_instance(type)
+            fi
+
+            return System.Activator.create_instance(type, [from_json(json, underlying)])
+        fi
+
+        return from_json(json, type)
+    si
 si
