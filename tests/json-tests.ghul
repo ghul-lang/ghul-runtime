@@ -484,11 +484,11 @@ namespace Tests is
         si
 
         @Test()
-        from_json__matches_constructor_parameters_in_any_case() is
+        from_json__matches_constructor_parameters_by_exact_name() is
             let open = cast RequestFixture.OPEN(
                 Json.from_json(Json.parse("{{\"kind\":\"open\",\"Path\":\"a.ghul\",\"line\":4}}"), typeof RequestFixture)!)
 
-            are_equal("a.ghul", open.path)
+            is_false(open.path?)
             are_equal(4, open.line)
         si
 
