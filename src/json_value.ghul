@@ -7,10 +7,19 @@ namespace Json is
     /// implementation holds it, so an integer past 2^53 loses precision
     /// round-tripping through it.
     union Value is
+        /// JSON's null.
         NULL
+
+        /// `true` or `false`.
         BOOLEAN(value: bool)
+
+        /// A JSON number, held as `double`.
         NUMBER(value: double)
+
+        /// A JSON string.
         STRING(value: string)
+
+        /// A JSON array, in order.
         ARRAY(items: LIST[Value])
 
         /// An object's fields, in the order they were parsed or added. A
