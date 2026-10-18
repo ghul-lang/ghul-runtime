@@ -7,7 +7,19 @@ namespace Ghul.Internal is
     // from another assembly. Compiler-emitted; not user-facing —
     // user code never spells this name.
     class UNION_ATTRIBUTE: Attribute is
+        // Empty on a union compiled before this list existed. A
+        // consumer that needs the variants - a reflective
+        // deserializer, for instance - treats that case as an error
+        // rather than falling back to assembly-wide type enumeration.
+        /// The union's variant types, in declaration order.
+        variants: System.Type[] public
+
         init() is
+            variants = []
+        si
+
+        init(variants: System.Type[]) is
+            self.variants = variants
         si
     si
 
