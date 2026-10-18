@@ -1,0 +1,85 @@
+namespace Json is
+    use Collections.LIST
+    use Collections.KEY_VALUE_PAIR
+    use System.Reflection.BindingFlags
+    use System.Reflection.FieldInfo
+    use System.Reflection.PropertyInfo
+
+    // The members a type's public instance surface is read through: its
+    // own declared fields and properties, not its base's.
+    _MEMBERS: BindingFlags static =>
+        BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.DECLARED_ONLY
+
+    /// The JSON value for `value`: a scalar read directly, a union variant
+    /// as its fields under a `kind` field naming the variant, in lower
+    /// case, and any other object as its public properties, each under its
+    /// own name. `null` and an absent optional both give `Value.NULL`.
+    ///
+    /// - value: the value to convert, read through its own runtime type
+    to_json(value: object?) -> Value static is
+        if !value? then
+            return Value.NULL
+        fi
+
+        if let b: bool = value then
+            return Value.BOOLEAN(b)
+        fi
+
+        if let s: string = value then
+            return Value.STRING(s)
+        fi
+
+        if let n: double = value then
+            return Value.NUMBER(n)
+        fi
+
+        if let n: int = value then
+            return Value.NUMBER(double(n))
+        fi
+
+        if let n: long = value then
+            return Value.NUMBER(double(n))
+        fi
+
+        return _reflect(value, value.get_type())
+    si
+
+    // `value`'s own fields or properties, reflected through `type` - the
+    // runtime type of a plain object, or the declaring type of a union
+    // variant.
+    _reflect(value: object, type: System.Type) -> Value static is
+        let fields = LIST[KEY_VALUE_PAIR[string, Value]]()
+
+        if type.is_defined(typeof Ghul.Internal.VARIANT_ATTRIBUTE, false) then
+            fields.add(KEY_VALUE_PAIR[string, Value]("kind", Value.STRING(type.name.to_lower())))
+
+            for member in type.get_fields(_MEMBERS) do
+                fields.add(KEY_VALUE_PAIR[string, Value](member.name, to_json(member.get_value(value))))
+            od
+        else
+            for property in type.get_properties(_MEMBERS) do
+                fields.add(KEY_VALUE_PAIR[string, Value](property.name, to_json(_read(property, value))))
+            od
+        fi
+
+        return Value.OBJECT(fields)
+    si
+
+    // `property`'s value on `value`: the value itself for an ordinary
+    // property, and `MAYBE[T]`'s own value, or null where it holds none,
+    // for one whose declared type is that carrier - boxing a `Nullable[T]`
+    // already gives the same answer with no help needed here.
+    _read(property: System.Reflection.PropertyInfo, value: object) -> object? static is
+        let declared = property.property_type
+
+        if declared.is_generic_type /\ declared.get_generic_type_definition() =~ typeof Ghul.MAYBE[_] then
+            let maybe = property.get_value(value)!
+            let maybe_type = maybe.get_type()
+            let has_value = cast bool(maybe_type.get_property("has_value")!.get_value(maybe))
+
+            return if has_value then maybe_type.get_property("value")!.get_value(maybe) else null fi
+        fi
+
+        return property.get_value(value)
+    si
+si

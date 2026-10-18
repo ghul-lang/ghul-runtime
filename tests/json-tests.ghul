@@ -200,4 +200,79 @@ namespace Tests is
             yrt
         si
     si
+
+    union ShapeFixture is
+        CIRCLE(radius: double) default
+        SQUARE(side: double)
+    si
+
+    class POINT_FIXTURE(x: int public, y: int public)
+
+    class PERSON_FIXTURE(name: string public, age: int public, nickname: string? public)
+
+    class HOLDER_FIXTURE[T](value: T? public)
+
+    @TestClass()
+    class JSON_TO_JSON_SHOULD is
+        init() is si
+
+        @Test()
+        to_json__given_null__is_null() is
+            are_equal("null", Json.write(Json.to_json(null)))
+        si
+
+        @Test()
+        to_json__given_a_scalar__reads_it_directly() is
+            are_equal("true", Json.write(Json.to_json(true)))
+            are_equal("7", Json.write(Json.to_json(7)))
+            are_equal("1.5", Json.write(Json.to_json(1.5)))
+            are_equal("\"hi\"", Json.write(Json.to_json("hi")))
+        si
+
+        @Test()
+        to_json__given_an_object__reads_its_properties() is
+            are_equal(
+                "{{\"x\":3,\"y\":4}}",
+                Json.write(Json.to_json(POINT_FIXTURE(3, 4))))
+        si
+
+        @Test()
+        to_json__given_a_union_variant__names_it_under_kind() is
+            are_equal(
+                "{{\"kind\":\"circle\",\"radius\":1.5}}",
+                Json.write(Json.to_json(ShapeFixture.CIRCLE(1.5))))
+
+            are_equal(
+                "{{\"kind\":\"square\",\"side\":2}}",
+                Json.write(Json.to_json(ShapeFixture.SQUARE(2.0))))
+        si
+
+        @Test()
+        to_json__given_a_present_optional_property__reads_its_value() is
+            are_equal(
+                "{{\"name\":\"alice\",\"age\":30,\"nickname\":\"al\"}}",
+                Json.write(Json.to_json(PERSON_FIXTURE("alice", 30, "al"))))
+        si
+
+        @Test()
+        to_json__given_an_absent_optional_property__is_null() is
+            are_equal(
+                "{{\"name\":\"bob\",\"age\":25,\"nickname\":null}}",
+                Json.write(Json.to_json(PERSON_FIXTURE("bob", 25, null))))
+        si
+
+        @Test()
+        to_json__given_a_present_generic_optional_property__reads_its_value() is
+            are_equal(
+                "{{\"value\":5}}",
+                Json.write(Json.to_json(HOLDER_FIXTURE[int](5))))
+        si
+
+        @Test()
+        to_json__given_an_absent_generic_optional_property__is_null() is
+            are_equal(
+                "{{\"value\":null}}",
+                Json.write(Json.to_json(HOLDER_FIXTURE[int](null))))
+        si
+    si
 si
