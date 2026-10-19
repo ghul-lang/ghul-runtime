@@ -54,11 +54,6 @@ executables with `dotnet ghul-test --config llvm wasm-tests`. A test's manifest
 lists the targets it passes on; the gaps that keep the rest off llvm are
 tracked on [ghul-lang/ghul#3460](https://github.com/ghul-lang/ghul/issues/3460).
 
-`requirements.json` names the oldest `ghul.compiler` that builds this release,
-as `minimum-compiler`. The `ghul` tool reads it to choose a release of the
-runtime for a compiler, so raise it in the same change that starts using a
-newer compiler feature.
-
 `native-aot-tests/` renders values with `$` under the JIT and published with
 Native AOT, where rendering cannot rely on reflection, and checks that both
 print its `run.expected`. See its README for how to run it.
