@@ -1,0 +1,42 @@
+namespace Tests is
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class ConcatOperatorShould is
+        init() is
+        si
+
+        @Test()
+        Concat_TwoSequences_ReturnsTheFirstThenTheSecond() is
+            assert_are_equal([1, 2, 3, 4], [1, 2] ++ [3, 4])
+        si
+
+        @Test()
+        Concat_EmptyOperands_ReturnsTheOtherSide() is
+            assert_are_equal([1], empty`[int]() ++ [1])
+            assert_are_equal([1], [1] ++ empty`[int]())
+            are_equal(0, empty`[int]() ++ empty`[int]() |> count())
+        si
+
+        @Test()
+        Concat_Chain_GroupsToTheLeft() is
+            assert_are_equal([1, 2, 3, 4, 5], [1, 2] ++ [3] ++ [4, 5])
+        si
+
+        @Test()
+        Concat_AfterPipeStage_AppliesToTheChain() is
+            assert_are_equal([2, 4, 9], [1, 2] |> map(x => x * 2) ++ [9])
+        si
+
+        @Test()
+        Concat_SequencesOfSequences_DoesNotFlatten() is
+            are_equal(3, [[1], [2]] ++ [[3]] |> count())
+        si
+    si
+si

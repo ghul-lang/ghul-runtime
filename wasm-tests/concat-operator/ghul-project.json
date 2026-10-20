@@ -1,0 +1,7 @@
+{
+    "name": "concat-operator",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
