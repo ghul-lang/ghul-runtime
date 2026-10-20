@@ -150,9 +150,7 @@ namespace Ghul.Pipes is
     cat[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         CAT_PIPE[T](source, right)
 
-    /// The elements of `source` followed by the elements of `right`, as `cat`
-    /// gives them. Both sides are sequences: put a single element in an array
-    /// literal, as in `[x] ++ xs`.
+    /// The elements of `source` followed by the elements of `right`.
     ++[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         cat(source, right)
 
