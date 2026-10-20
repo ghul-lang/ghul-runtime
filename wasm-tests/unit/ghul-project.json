@@ -2,6 +2,7 @@
     "name": "unit",
     "targets": ["wasm"],
     "dependencies": {
+        "ghul-core": { "version": ">=0.0.0" },
         "ghul-runtime": { "path": "../.." }
     }
 }
