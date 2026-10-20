@@ -210,9 +210,6 @@ jobs:
 
     - name: Build and run the wasm tests
       run: |
-        GHUL_COMPILER_VERSION=$(jq -r '.tools["ghul.compiler"].version' .config/dotnet-tools.json)
-        export GHUL_COMPILER_VERSION
-        echo "building the wasm tests with ghul.compiler $GHUL_COMPILER_VERSION"
         dotnet ghul-test wasm-tests
 
   # The same programs built for the llvm target and run as native
@@ -238,9 +235,6 @@ jobs:
 
     - name: Build and run the llvm tests
       run: |
-        GHUL_COMPILER_VERSION=$(jq -r '.tools["ghul.compiler"].version' .config/dotnet-tools.json)
-        export GHUL_COMPILER_VERSION
-        echo "building the llvm tests with ghul.compiler $GHUL_COMPILER_VERSION"
         dotnet ghul-test --config llvm wasm-tests
 
   publish-beta-package:
