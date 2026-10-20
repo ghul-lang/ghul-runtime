@@ -1,0 +1,8 @@
+{
+    "name": "concat-operator",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-core": { "version": ">=0.0.0" },
+        "ghul-runtime": { "path": "../.." }
+    }
+}

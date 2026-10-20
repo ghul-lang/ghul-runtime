@@ -1,0 +1,14 @@
+// The ++ operator joins two sequences end to end, lazily, and groups to the
+// left; a chain of pipe stages is read before the operator is applied.
+use IO.Std.write_line
+use Ghul.Pipes
+
+let xs = [7, 8]
+
+write_line("{[1, 2] ++ [3] ++ [4, 5] |> join(",")}")
+write_line("{[0] ++ xs |> join(",")}")
+write_line("{xs |> map(x => x * 2) ++ [9] |> join(",")}")
+write_line("{([] ++ [1]) |> join(",")}")
+write_line("{[[1], [2]] ++ [[3]] |> count()}")
+write_line("{from(1) ++ [0] |> take(3) |> join(",")}")
+write_line("{[1, 2] ++ [3, 4] |> sum()}")
