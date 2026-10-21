@@ -9,7 +9,7 @@ namespace Tests is
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
     // Coverage for the free-function equivalents of Pipe[T]'s combinators
-    // and terminals (see degory/ghul-runtime#134) - direct calls, |>
+    // and terminals (see ghul-lang/ghul-runtime#134) - direct calls, |>
     // composition starting from a raw array (no pipe()/| wrap needed), and
     // that the free functions and the existing .method()/| surface agree.
     @TestClass()

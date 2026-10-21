@@ -188,7 +188,7 @@
        between CoreCompile (which also needs sources/output/references to
        build) and GenerateGhulOptionsJson (which publishes just the flags, for
        clients that analyse the project instead of building it - see
-       degory/ghul#2090). Kept as its own target, rather than inline in
+       ghul-lang/ghul#2090). Kept as its own target, rather than inline in
        CoreCompile, so GenerateGhulOptionsJson can depend on it without
        depending on CoreCompile itself. -->
   <Target Name="_ComputeGhulCompilerOptions">

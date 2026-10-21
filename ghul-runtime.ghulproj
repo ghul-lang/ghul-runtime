@@ -20,7 +20,7 @@
     <PackageProjectUrl>https://ghul.dev</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/degory/ghul-runtime</RepositoryUrl>
+    <RepositoryUrl>https://github.com/ghul-lang/ghul-runtime</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryBranch>main</RepositoryBranch>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
