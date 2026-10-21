@@ -1,11 +1,11 @@
 # ghūl compiler runtime library
 
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/degory/ghul-runtime/cicd.yml?branch=main)](https://github.com/degory/ghul-runtime/actions/workflows/cicd.yml?query=branch%3Amain)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/ghul-lang/ghul-runtime/cicd.yml?branch=main)](https://github.com/ghul-lang/ghul-runtime/actions/workflows/cicd.yml?query=branch%3Amain)
 [![NuGet version (ghul.runtime)](https://img.shields.io/nuget/v/ghul.runtime.svg)](https://www.nuget.org/packages/ghul.runtime/)
-[![Release](https://img.shields.io/github/v/release/degory/ghul-runtime?label=release)](https://github.com/degory/ghul-runtime/releases)
-[![Release Date](https://img.shields.io/github/release-date/degory/ghul-runtime)](https://github.com/degory/ghul-runtime/releases) 
-[![Issues](https://img.shields.io/github/issues-search/degory/ghul?query=is%3Aopen%20is%3Aissue%20label%3Aghul-runtime&label=issues)](https://github.com/degory/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-runtime) 
-[![License](https://img.shields.io/github/license/degory/ghul-runtime)](https://github.com/degory/ghul-runtime/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/ghul-lang/ghul-runtime?label=release)](https://github.com/ghul-lang/ghul-runtime/releases)
+[![Release Date](https://img.shields.io/github/release-date/ghul-lang/ghul-runtime)](https://github.com/ghul-lang/ghul-runtime/releases) 
+[![Issues](https://img.shields.io/github/issues-search/ghul-lang/ghul?query=is%3Aopen%20is%3Aissue%20label%3Aghul-runtime&label=issues)](https://github.com/ghul-lang/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-runtime) 
+[![License](https://img.shields.io/github/license/ghul-lang/ghul-runtime)](https://github.com/ghul-lang/ghul-runtime/blob/main/LICENSE)
 [![ghūl](https://img.shields.io/badge/gh%C5%ABl-100%25!-information)](https://ghul.dev)
 
 This package provides: 
@@ -60,4 +60,4 @@ print its `run.expected`. See its README for how to run it.
 
 ## Issues
 
-[View open issues](https://github.com/degory/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-runtime) or [raise a new one](https://github.com/degory/ghul/issues/new?labels=ghul-runtime).
+[View open issues](https://github.com/ghul-lang/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-runtime) or [raise a new one](https://github.com/ghul-lang/ghul/issues/new?labels=ghul-runtime).
