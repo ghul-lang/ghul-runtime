@@ -47,6 +47,17 @@ namespace Ghul.Pipes is
     take_while[T..](source: Iterable[T], predicate: T.. -> bool pure) -> Iterable[T] pure =>
         TAKE_WHILE_PIPE[T](source, predicate)
 
+    /// Every `n`-th element of `source`: the first, then elements `n`, `2n`, and so on past it.
+    ///
+    /// - source: the sequence to step through.
+    /// - n: how many elements apart the kept ones are; must be positive.
+    ///
+    /// `n` of 1 keeps everything. Combined with a bounded range, `0::20 |> step(3)`
+    /// reads the elements 0, 3, 6, 9, 12, 15, 18.
+    step[T](source: Iterable[T], n: int) -> Iterable[T] pure =>
+        assert n >= 1 else System.ArgumentOutOfRangeException("n", "{n} is not positive: step must be at least 1") in
+        STEP_PIPE[T](source, n)
+
     /// The elements of `source` with duplicates removed, keeping each one's first occurrence.
     distinct[T](source: Iterable[T]) -> Iterable[T] pure =>
         DISTINCT_PIPE[T](source)

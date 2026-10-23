@@ -1,0 +1,39 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// Every `n`-th element of `source`: the first, then elements `n`, `2n`, and so on past it.
+    class STEP_PIPE[T]: FilterPipeBase[T] is
+        _n: int
+        _until_include: int
+
+        init(source: Iterable[T], n: int) is
+            super.init(source)
+            _n = n
+            _until_include = 0
+        si
+
+        /// A new stage of this kind over `source`, not yet read.
+        fresh_over(source: Iterable[T]) -> FilterPipeBase[T] => STEP_PIPE[T](source, _n)
+
+        /// Counts down towards the next element to include.
+        have_moved() is
+            if _until_include > 0 then
+                _until_include = _until_include - 1
+            fi
+        si
+
+        /// Always continues.
+        should_continue() -> bool => true
+
+        /// Accepts the element when the countdown since the last accepted one has run out,
+        /// and restarts the countdown for the elements in between.
+        should_include() -> bool is
+            if _until_include == 0 then
+                _until_include = _n
+                return true
+            fi
+
+            return false
+        si
+    si
+si
