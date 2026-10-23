@@ -457,6 +457,26 @@ namespace Tests is
         si
 
         @Test()
+        Sleeping_should_resume_in_deadline_order_when_all_come_due_in_one_pass() is
+            let journal = LIST[string]()
+
+            // Both deadlines pass while nothing drives the scheduler, so
+            // the first `run` finds both sleepers due in a single wake.
+            // The later sleeper is registered first, so wake order comes
+            // from the deadlines, not from registration.
+            let _ = sleeper(journal, "later", 100)
+            System.Threading.Thread.sleep(30)
+            let _ = sleeper(journal, "sooner", 1)
+            System.Threading.Thread.sleep(100)
+
+            are_equal(0, journal.count)
+
+            run()
+
+            are_equal("sooner, later", journal |> Ghul.Pipes.join(", "))
+        si
+
+        @Test()
         Sleeping_should_wait_at_least_as_long_as_it_was_asked_to() is
             let journal = LIST[string]()
             let started = SCHEDULER.now
