@@ -14,6 +14,7 @@ src/peek-pipe.ghul
 src/repeat-pipe.ghul
 src/skip-pipe.ghul
 src/skip-while-pipe.ghul
+src/step-pipe.ghul
 src/take-pipe.ghul
 src/take-while-pipe.ghul
 src/windows-pipe.ghul
