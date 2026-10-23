@@ -225,11 +225,11 @@ namespace Ghul.Coroutines is
             _inbox.wait(timeout)
         si
 
-        // Queues every sleeper whose deadline has passed. With nothing
-        // ready to run there is no coroutine for a wait to interleave
-        // with, so the thread waits for the earliest deadline; with
-        // work still queued it takes whatever is already due and
-        // leaves the rest, and that wait is the only place the
+        // Queues every sleeper whose deadline has passed, in deadline
+        // order. With nothing ready to run there is no coroutine for a
+        // wait to interleave with, so the thread waits for the earliest
+        // deadline; with work still queued it takes whatever is already
+        // due and leaves the rest, and that wait is the only place the
         // scheduler blocks.
         _wake_due_sleepers(may_wait: bool) is
             if _sleepers.count == 0 then
@@ -253,14 +253,30 @@ namespace Ghul.Coroutines is
             fi
 
             let due = now
+            let waking = Collections.LIST[SLEEPER]()
             let still_waiting = Collections.LIST[SLEEPER]()
 
             for s in _sleepers do
                 if s.deadline <= due then
-                    _ready.enqueue(s.resume)
+                    // Several sleepers can come due in the same pass when
+                    // the wait for the earliest overshot a later deadline;
+                    // they take their turns in deadline order, so wake
+                    // order never depends on how long the wait took. Equal
+                    // deadlines keep registration order.
+                    let at mut = waking.count
+
+                    while at > 0 /\ waking[at - 1].deadline > s.deadline do
+                        at = at - 1
+                    od
+
+                    waking.insert(at, s)
                 else
                     still_waiting.add(s)
                 fi
+            od
+
+            for s in waking do
+                _ready.enqueue(s.resume)
             od
 
             _sleepers = still_waiting
