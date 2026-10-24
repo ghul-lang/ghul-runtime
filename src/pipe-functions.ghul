@@ -71,59 +71,6 @@ namespace Ghul.Pipes is
     memo[T](source: Iterable[T]) -> Iterable[T] pure =>
         MEMO_PIPE[T](MEMO_CACHE[T](source))
 
-    // The buffered pipes below hold a short prefix of already-pulled
-    // elements in stage fields and re-derive their tail from the source
-    // on every read after the first: nothing of the tail is buffered.
-    // A read built from an iterator something else already pulled from
-    // continues that iterator; the overloads without one take a fresh
-    // iterator from `source` and skip the `skip` elements the prefix
-    // stands for.
-
-    /// What remains of `source` from its element `skip` on, as a lazy
-    /// sequence each read of which starts there.
-    buffered[T](source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_0_PIPE[T](source, skip)
-
-    /// The already-pulled element `e0`, followed by what remains of
-    /// `source` from its element `skip` on, as a lazy sequence each read
-    /// of which starts from `e0`.
-    buffered[T](e0: T, source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_1_PIPE[T](e0, source, skip)
-
-    /// The already-pulled elements `e0` and `e1`, followed by what remains
-    /// of `source` from its element `skip` on, as a lazy sequence each
-    /// read of which starts from `e0`.
-    buffered[T](e0: T, e1: T, source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_2_PIPE[T](e0, e1, source, skip)
-
-    /// The already-pulled elements `e0`, `e1` and `e2`, followed by what
-    /// remains of `source` from its element `skip` on, as a lazy sequence
-    /// each read of which starts from `e0`.
-    buffered[T](e0: T, e1: T, e2: T, source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_3_PIPE[T](e0, e1, e2, source, skip)
-
-    /// What remains of `live` now, and on every later read of `source`
-    /// from its element `skip` on, as a lazy sequence.
-    buffered[T](live: Iterator[T], source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_0_PIPE[T](source, skip, live)
-
-    /// The already-pulled element `e0`, followed by what remains of `live`
-    /// now and of `source` from its element `skip` on, as a lazy sequence
-    /// each read of which starts from `e0`.
-    buffered[T](live: Iterator[T], e0: T, source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_1_PIPE[T](e0, source, skip, live)
-
-    /// The already-pulled elements `e0` and `e1`, followed by what remains
-    /// of `live` now and of `source` from its element `skip` on, as a lazy
-    /// sequence each read of which starts from `e0`.
-    buffered[T](live: Iterator[T], e0: T, e1: T, source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_2_PIPE[T](e0, e1, source, skip, live)
-
-    /// The already-pulled elements `e0`, `e1` and `e2`, followed by what
-    /// remains of `live` now and of `source` from its element `skip` on,
-    /// as a lazy sequence each read of which starts from `e0`.
-    buffered[T](live: Iterator[T], e0: T, e1: T, e2: T, source: Iterable[T], skip: int) -> Pipe[T] pure =>
-        BUFFERED_3_PIPE[T](e0, e1, e2, source, skip, live)
 
 
     /// The elements of `source` grouped into consecutive read-only lists of `size`
