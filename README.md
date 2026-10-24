@@ -47,12 +47,14 @@ ghul-cli project can depend on either by path.
 ## The WebAssembly target
 
 Under `--target wasm` the runtime is compiled from source together with
-ghul-core: both trees' `src/**/*.ghul` are compiled whole, and within them
-`@IF.dotnet()` marks what is compiled only for .NET and
-`@IF.source_core()` what is compiled only for a target whose core library is
-compiled from source, WebAssembly and LLVM. `ghul-runtime/src`'s files that
-declare types ghul-core also declares carry `@@IF.dotnet()` at file level, so
-they compile only into the .NET assembly. What is not yet
+ghul-core: both trees' `src/**/*.ghul` are compiled whole. A file whose
+declarations belong to one target only carries `@@IF.dotnet()` or
+`@@IF.source_core()` on its first line — the former compiles only into the
+.NET assembly, the latter only on a target whose core library is compiled
+from source, WebAssembly and LLVM. Within a file compiled everywhere,
+`@IF.dotnet()` and `@IF.source_core()` mark the individual declarations that
+belong to one target only. `ghul-runtime/src`'s files that declare types
+ghul-core also declares carry the file-level form. What is not yet
 available on the wasm target is tracked on
 [ghul-lang/ghul#3319](https://github.com/ghul-lang/ghul/issues/3319).
 
