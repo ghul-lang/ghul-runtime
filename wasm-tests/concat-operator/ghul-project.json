@@ -2,7 +2,7 @@
     "name": "concat-operator",
     "targets": ["wasm", "llvm"],
     "dependencies": {
-        "ghul-core": { "version": ">=0.0.0" },
-        "ghul-runtime": { "path": "../.." }
+        "ghul-core": { "path": "../../ghul-core" },
+        "ghul-runtime": { "path": "../../ghul-runtime" }
     }
 }

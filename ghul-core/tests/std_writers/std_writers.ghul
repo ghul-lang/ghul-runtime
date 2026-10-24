@@ -1,0 +1,14 @@
+// Writes through IO.Std's own members and through its out and error
+// writers. Standard output and standard error are checked separately.
+use IO.Std
+
+entry() is
+    Std.out.write_line("out line")
+    Std.out.write("out ")
+    Std.out.write_line("piece")
+    Std.error.write_line("error line")
+    Std.write_line()
+    Std.out.write_line()
+    Std.out.flush()
+    Std.write_line("done")
+si

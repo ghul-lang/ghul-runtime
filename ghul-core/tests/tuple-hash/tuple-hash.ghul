@@ -1,0 +1,33 @@
+// Tuples hash by their elements: equal tuples hash alike, an absent element
+// hashes as nothing does, and a set or map keyed by tuples finds what was put
+// in it. The hashes themselves differ between targets, so only whether two
+// are equal is printed.
+use IO.Std.write_line
+use Collections.SET
+use Collections.MAP
+
+entry() is
+    write_line("{(1, 2).get_hash_code() == (1, 2).get_hash_code()} {(1, 2).get_hash_code() != (2, 1).get_hash_code()}")
+    write_line("{(x = "a", y = 1).get_hash_code() == (x = "a", y = 1).get_hash_code()}")
+    write_line("{(1, "b", 'c', 2.5).get_hash_code() == (1, "b", 'c', 2.5).get_hash_code()}")
+
+    let absent: string? = null
+    write_line("{(absent, 1).get_hash_code() == (absent, 1).get_hash_code()}")
+
+    let points = SET[(int, int)]()
+    let i mut = 0
+
+    while i < 2000 do
+        points.add((i, i * 7))
+        i = i + 1
+    od
+
+    write_line("{points.count} {points.contains((10, 70))} {points.contains((70, 10))} {points.add((5, 35))}")
+
+    let names = MAP[(string, string), int]()
+    names[("ada", "lovelace")] = 1815
+    names[("alan", "turing")] = 1912
+    names[("ada", "lovelace")] = 1816
+
+    write_line("{names.count} {names[("ada", "lovelace")]} {names.contains_key(("alan", "lovelace"))}")
+si

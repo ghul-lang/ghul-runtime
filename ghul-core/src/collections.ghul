@@ -1,0 +1,215 @@
+namespace Collections is
+    // The iteration surface a `for` loop drives: move_next advances,
+    // current reads the element reached, and the iterator property of
+    // an iterable hands one out. All three are covariant, as their
+    // .NET counterparts are, so Iterable[CAT] is an Iterable[Animal].
+    trait Iterator[E: out]: Ghul.Disposable is
+        move_next() -> bool;
+        current: E;
+        dispose();
+    si
+
+    trait Iterable[E: out] is
+        iterator: Iterator[E];
+    si
+
+    /// Orders two values of `T`, for a sort or an ordered collection.
+    trait Comparer[T: in] open is
+        /// Negative when `x` comes before `y`, positive when it comes after, zero when neither does.
+        compare(x: T, y: T) -> int;
+    si
+
+    /// Says whether two values of `T` are equal and hashes them alike, for a
+    /// hashed collection that should not use the values' own `=~` and
+    /// `get_hash_code`.
+    trait EqualityComparer[T: in] open is
+        /// Whether `x` and `y` are equal.
+        equals(x: T, y: T) -> bool;
+
+        /// A hash that is the same for any two values `equals` counts as equal.
+        get_hash_code(value: T) -> int;
+    si
+
+    /// Compares objects by identity: two are equal only when they are the
+    /// same object, and each hashes by its identity rather than its contents.
+    /// Reached only through `instance`, as on .NET, where it has no public
+    /// constructor.
+    class ReferenceEqualityComparer: EqualityComparer[object?] abstract is
+        _instance: ReferenceEqualityComparer static
+
+        init() static is
+            _instance = _REFERENCE_EQUALITY_COMPARER()
+        si
+
+        init() is si
+
+        /// The one comparer there is.
+        instance: ReferenceEqualityComparer static => _instance
+
+        /// Whether `x` and `y` are the same object, or both absent.
+        equals(x: object?, y: object?) -> bool => x == y;
+
+        /// A hash of `value`'s identity, or 0 where it is absent.
+        get_hash_code(value: object?) -> int =>
+            if let present = value then Ghul._identity_hash(present) else 0 fi;
+    si
+
+    // The one instance of ReferenceEqualityComparer.
+    class _REFERENCE_EQUALITY_COMPARER: ReferenceEqualityComparer is
+        init() is
+            super.init()
+        si
+    si
+
+    /// A sequence that knows how many elements it holds.
+    trait Bag[E: out]: Iterable[E] is
+        /// The number of elements.
+        count: int pure;
+    si
+
+    /// A read-only sequence whose elements can be read by position.
+    trait List[E: out]: Bag[E] is
+        /// The element at `index`, counting from zero.
+        [index: int]: E pure;
+    si
+
+    /// A collection elements can be added to and cleared from.
+    trait MutableBag[E]: Iterable[E] is
+        /// The number of elements.
+        count: int;
+
+        /// Adds `value`.
+        ///
+        /// - value: the element to add
+        add(value: E);
+
+        /// Removes every element.
+        clear();
+    si
+
+    /// A collection whose elements can be read, replaced, inserted and
+    /// removed by position.
+    trait MutableList[E]: MutableBag[E] is
+        /// The element at `index`, counting from zero.
+        [index: int]: E, = value;
+
+        /// Inserts `value` at `index`, moving the elements from there on up
+        /// by one.
+        ///
+        /// - index: where the element goes, from zero to `count`
+        /// - value: the element to insert
+        insert(index: int, value: E);
+
+        /// Removes the element at `index`, moving the elements after it
+        /// down by one.
+        ///
+        /// - index: the position of the element to remove
+        remove_at(index: int);
+
+        /// Whether the list holds `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: E) -> bool;
+
+        /// Removes the first element equal to `value`, answering whether there
+        /// was one.
+        ///
+        /// - value: the element to remove
+        remove(value: E) -> bool;
+    si
+
+    /// A read-only map from keys to values, iterated as key and value pairs.
+    trait Map[K, V]: Bag[KEY_VALUE_PAIR[K, V]] is
+        /// The value `key` maps to; throws if the map has no such key.
+        [key: K]: V pure;
+
+        /// Whether the map has `key`.
+        ///
+        /// - key: the key to look for
+        contains_key(key: K) -> bool pure;
+
+        /// Writes the value `key` maps to into `value`, answering whether
+        /// the map has `key`; `value` is set to the default of `V` when it
+        /// does not.
+        ///
+        /// - key: the key to look for
+        /// - value: where the value goes
+        try_get_value(key: K, value: V ref) -> bool pure;
+
+        /// The keys.
+        keys: Iterable[K];
+
+        /// The values.
+        values: Iterable[V];
+    si
+
+    /// A map whose entries can be added, replaced and removed.
+    trait MutableMap[K, V]: MutableBag[KEY_VALUE_PAIR[K, V]] is
+        /// The value `key` maps to; throws if the map has no such key.
+        /// Assigning adds the key or replaces its value.
+        [key: K]: V, = value;
+
+        /// Adds `key` mapping to `value`; throws if the map already has
+        /// `key`.
+        ///
+        /// - key: the key to add
+        /// - value: the value it maps to
+        add(key: K, value: V);
+
+        /// Removes `key`, answering whether the map had it.
+        ///
+        /// - key: the key to remove
+        remove(key: K) -> bool;
+
+        /// Whether the map has `key`.
+        ///
+        /// - key: the key to look for
+        contains_key(key: K) -> bool;
+
+        /// Writes the value `key` maps to into `value`, answering whether
+        /// the map has `key`; `value` is set to the default of `V` when it
+        /// does not.
+        ///
+        /// - key: the key to look for
+        /// - value: where the value goes
+        try_get_value(key: K, value: V ref) -> bool;
+
+        /// The keys.
+        keys: Iterable[K];
+
+        /// The values.
+        values: Iterable[V];
+    si
+
+    /// A read-only set: a collection holding no element twice.
+    trait Set[E]: Bag[E] is
+        /// Whether the set holds `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: E) -> bool;
+    si
+
+    /// A set elements can be added to and removed from.
+    trait MutableSet[E]: Iterable[E] is
+        /// The number of elements.
+        count: int;
+
+        /// Adds `value`, answering whether the set did not already hold it.
+        ///
+        /// - value: the element to add
+        add(value: E) -> bool;
+
+        /// Removes `value`, answering whether the set held it.
+        ///
+        /// - value: the element to remove
+        remove(value: E) -> bool;
+
+        /// Whether the set holds `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: E) -> bool;
+
+        /// Removes every element.
+        clear();
+    si
+si

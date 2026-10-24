@@ -1,0 +1,31 @@
+// Strings that are =~ hash alike, so a union with a string field
+// compares by its contents, even where the two strings are different
+// objects, and a string held as object equals another holding the same
+// code units.
+use IO.Std
+
+union Shape is
+    CIRCLE(name: string, size: int)
+    DOT
+si
+
+entry() is
+    let a = "hello"
+    let b = "hel{"lo"}"
+
+    Std.write_line(if a.get_hash_code() == b.get_hash_code() then "equal strings hash alike" else "equal strings hash apart" fi)
+    Std.write_line(if a.get_hash_code() == "world".get_hash_code() then "hello and world collide" else "hello and world differ" fi)
+    Std.write_line(if "".get_hash_code() == "".get_hash_code() then "empty hashes alike" else "empty hashes apart" fi)
+
+    let x: Shape = Shape.CIRCLE("circle", 1)
+    let y: Shape = Shape.CIRCLE("cir{"cle"}", 1)
+    let z: Shape = Shape.CIRCLE("square", 1)
+
+    Std.write_line(if x =~ y then "same contents equal" else "same contents differ" fi)
+    Std.write_line(if x =~ z then "different contents equal" else "different contents differ" fi)
+
+    let held: object = b
+
+    Std.write_line(if held.equals(a) then "a string held as object equals its contents" else "a string held as object differs" fi)
+    Std.write_line(if held.equals(cast object(1)) then "a string equals an int" else "a string differs from an int" fi)
+si

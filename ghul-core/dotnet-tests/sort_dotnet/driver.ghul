@@ -1,0 +1,69 @@
+// Sorts the same keyed elements with the core library's sort and with .NET's
+// List.Sort, comparing by key alone so that equal keys show where each sort
+// leaves them, and prints how many arrangements differ.
+namespace Harness is
+    use IO.Std.write_line
+
+    class BY_KEY: Collections.Comparer[(key: int, position: int)] is
+        init() is si
+
+        compare(a: (key: int, position: int), b: (key: int, position: int)) -> int => a.key.compare_to(b.key)
+    si
+
+    entry() is
+        let random = System.Random(2468)
+        let failures mut = 0
+        let checked mut = 0
+
+        let sizes = Collections.LIST[int]([0, 1, 2, 3, 4, 15, 16, 17, 31, 32, 33, 100, 257, 1000, 4096])
+
+        for size in sizes do
+            for pattern in 0..7 do
+                for spread in [1, 3, 10, 1000000] do
+                    let keys = Collections.LIST[(key: int, position: int)]()
+
+                    for i in 0..size do
+                        let key =
+                            case pattern
+                            when 0 then random.next(spread)
+                            when 1 then i % spread
+                            when 2 then (size - i) % spread
+                            when 3 then 0
+                            when 4 then (if i < size / 2 then i else size - i fi) % spread
+                            when 5 then (i * 7919) % spread
+                            else (i % 5) * spread
+                            esac
+
+                        keys.add((key = key, position = i))
+                    od
+
+                    let mine = keys.to_array()
+                    let theirs = Collections.LIST[(key: int, position: int)](keys)
+
+                    Ghul._introsort(mine, mine.count, BY_KEY())
+                    theirs.sort(BY_KEY())
+
+                    checked = checked + 1
+
+                    let same mut = true
+
+                    for i in 0..size do
+                        if mine[i].position != theirs[i].position then
+                            same = false
+                        fi
+                    od
+
+                    if !same then
+                        failures = failures + 1
+
+                        if failures < 10 then
+                            write_line("size {size} pattern {pattern} spread {spread} differs")
+                        fi
+                    fi
+                od
+            od
+        od
+
+        write_line("checked {checked}, {failures} differ")
+    si
+si

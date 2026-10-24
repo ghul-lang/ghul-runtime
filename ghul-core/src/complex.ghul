@@ -1,0 +1,340 @@
+// .NET's name for this type is kept, so source written against .NET builds
+// here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Numerics is
+    use Ghul.Math
+
+    /// A complex number with `double` parts, as .NET's
+    /// `System.Numerics.Complex` is, computed the way .NET computes it. A real
+    /// number `x` is the complex number `Complex(x, 0.0)`.
+    struct Complex is
+        /// The real part.
+        real: double
+
+        /// The imaginary part.
+        imaginary: double
+
+        /// The complex number `real` + `imaginary`i.
+        ///
+        /// - real: the real part
+        /// - imaginary: the imaginary part
+        init(real: double, imaginary: double) is
+            self.real = real
+            self.imaginary = imaginary
+        si
+
+        /// 0 + 0i.
+        zero: Complex static => Complex(0.0, 0.0)
+
+        /// 1 + 0i.
+        one: Complex static => Complex(1.0, 0.0)
+
+        /// 0 + 1i.
+        imaginary_one: Complex static => Complex(0.0, 1.0)
+
+        /// The distance from zero.
+        magnitude: double => _hypot(real, imaginary)
+
+        /// The angle from the positive real axis, in radians from -pi to pi.
+        phase: double => Math.atan2(imaginary, real)
+
+        /// The complex number at distance `magnitude` from zero and angle
+        /// `phase` from the positive real axis.
+        ///
+        /// - magnitude: the distance from zero
+        /// - phase: the angle, in radians
+        from_polar_coordinates(magnitude: double, phase: double) -> Complex static =>
+            Complex(magnitude * Math.cos(phase), magnitude * Math.sin(phase))
+
+        /// The distance of `value` from zero.
+        ///
+        /// - value: the complex number
+        abs(value: Complex) -> double static => value.magnitude
+
+        /// `value` with its imaginary part negated.
+        ///
+        /// - value: the complex number
+        conjugate(value: Complex) -> Complex static => Complex(value.real, -value.imaginary)
+
+        /// 1 divided by `value`, or zero where `value` is zero.
+        ///
+        /// - value: the complex number
+        reciprocal(value: Complex) -> Complex static =>
+            if value.real == 0.0 /\ value.imaginary == 0.0 then zero else one / value fi
+
+        /// `value` with both parts negated.
+        ///
+        /// - value: the complex number
+        negate(value: Complex) -> Complex static => -value
+
+        /// e raised to `value`.
+        ///
+        /// - value: the power
+        exp(value: Complex) -> Complex static is
+            let scale = Math.exp(value.real)
+
+            return Complex(scale * Math.cos(value.imaginary), scale * Math.sin(value.imaginary))
+        si
+
+        /// The natural logarithm of `value`.
+        ///
+        /// - value: the complex number
+        log(value: Complex) -> Complex static =>
+            Complex(Math.log(value.magnitude), Math.atan2(value.imaginary, value.real))
+
+        /// The base-10 logarithm of `value`.
+        ///
+        /// - value: the complex number
+        log10(value: Complex) -> Complex static => log(value) / Ghul.Math.log(10.0)
+
+        /// The logarithm of `value` in `base_value`.
+        ///
+        /// - value: the complex number
+        /// - base_value: the base
+        log(value: Complex, base_value: double) -> Complex static => log(value) / Ghul.Math.log(base_value)
+
+        /// The sine of `value`.
+        ///
+        /// - value: the angle, in radians
+        sin(value: Complex) -> Complex static =>
+            Complex(Math.sin(value.real) * Math.cosh(value.imaginary), Math.cos(value.real) * Math.sinh(value.imaginary))
+
+        /// The cosine of `value`.
+        ///
+        /// - value: the angle, in radians
+        cos(value: Complex) -> Complex static =>
+            Complex(Math.cos(value.real) * Math.cosh(value.imaginary), -Math.sin(value.real) * Math.sinh(value.imaginary))
+
+        /// The tangent of `value`.
+        ///
+        /// - value: the angle, in radians
+        tan(value: Complex) -> Complex static => sin(value) / cos(value)
+
+        /// The hyperbolic sine of `value`.
+        ///
+        /// - value: the complex number
+        sinh(value: Complex) -> Complex static =>
+            Complex(Math.sinh(value.real) * Math.cos(value.imaginary), Math.cosh(value.real) * Math.sin(value.imaginary))
+
+        /// The hyperbolic cosine of `value`.
+        ///
+        /// - value: the complex number
+        cosh(value: Complex) -> Complex static =>
+            Complex(Math.cosh(value.real) * Math.cos(value.imaginary), Math.sinh(value.real) * Math.sin(value.imaginary))
+
+        /// The hyperbolic tangent of `value`.
+        ///
+        /// - value: the complex number
+        tanh(value: Complex) -> Complex static => sinh(value) / cosh(value)
+
+        /// The angle whose sine is `value`.
+        ///
+        /// - value: the sine
+        asin(value: Complex) -> Complex static =>
+            -imaginary_one * log(imaginary_one * value + sqrt(one - value * value))
+
+        /// The angle whose cosine is `value`.
+        ///
+        /// - value: the cosine
+        acos(value: Complex) -> Complex static =>
+            -imaginary_one * log(value + imaginary_one * sqrt(one - value * value))
+
+        /// The angle whose tangent is `value`.
+        ///
+        /// - value: the tangent
+        atan(value: Complex) -> Complex static =>
+            Complex(0.0, 0.5) * (log(one - imaginary_one * value) - log(one + imaginary_one * value))
+
+        /// The principal square root of `value`.
+        ///
+        /// - value: the complex number
+        sqrt(value: Complex) -> Complex static is
+            if value.imaginary == 0.0 then
+                return
+                    if value.real < 0.0 then Complex(0.0, Math.sqrt(-value.real))
+                    else Complex(Math.sqrt(value.real), value.imaginary)
+                    fi
+            fi
+
+            let size = value.magnitude
+            let real_part = Math.sqrt((size + value.real) / 2.0)
+            let imaginary_part = Math.sqrt((size - value.real) / 2.0)
+
+            return Complex(real_part, if value.imaginary < 0.0 then -imaginary_part else imaginary_part fi)
+        si
+
+        /// `value` raised to `power`.
+        ///
+        /// - value: the base
+        /// - power: the exponent
+        pow(value: Complex, power: Complex) -> Complex static is
+            if power.real == 0.0 /\ power.imaginary == 0.0 then
+                return one
+            fi
+
+            if value.real == 0.0 /\ value.imaginary == 0.0 then
+                return zero
+            fi
+
+            let rho = value.magnitude
+            let theta = Math.atan2(value.imaginary, value.real)
+            let new_rho = power.real * theta + power.imaginary * Math.log(rho)
+            let t = Math.pow(rho, power.real) * Math.pow(Math.e, -power.imaginary * theta)
+
+            return Complex(t * Math.cos(new_rho), t * Math.sin(new_rho))
+        si
+
+        /// `value` raised to the real `power`.
+        ///
+        /// - value: the base
+        /// - power: the exponent
+        pow(value: Complex, power: double) -> Complex static => pow(value, Complex(power, 0.0))
+
+        /// The sum of `left` and `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        add(left: Complex, right: Complex) -> Complex static => left + right
+
+        /// `left` less `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        subtract(left: Complex, right: Complex) -> Complex static => left - right
+
+        /// The product of `left` and `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        multiply(left: Complex, right: Complex) -> Complex static => left * right
+
+        /// `dividend` divided by `divisor`.
+        ///
+        /// - dividend: the number divided
+        /// - divisor: the number to divide by
+        divide(dividend: Complex, divisor: Complex) -> Complex static => dividend / divisor
+
+        /// The sum of `left` and `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        +(left: Complex, right: Complex) -> Complex static pure =>
+            Complex(left.real + right.real, left.imaginary + right.imaginary)
+
+        /// The sum of `left` and the real `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        +(left: Complex, right: double) -> Complex static pure =>
+            Complex(left.real + right, left.imaginary)
+
+        /// The sum of the real `left` and `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        +(left: double, right: Complex) -> Complex static pure =>
+            Complex(left + right.real, right.imaginary)
+
+        /// `left` less `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        -(left: Complex, right: Complex) -> Complex static pure =>
+            Complex(left.real - right.real, left.imaginary - right.imaginary)
+
+        /// `left` less the real `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        -(left: Complex, right: double) -> Complex static pure =>
+            Complex(left.real - right, left.imaginary)
+
+        /// The real `left` less `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        -(left: double, right: Complex) -> Complex static pure =>
+            Complex(left - right.real, -right.imaginary)
+
+        /// `value` with both parts negated.
+        ///
+        /// - value: the complex number
+        -(value: Complex) -> Complex static pure => Complex(-value.real, -value.imaginary)
+
+        /// The product of `left` and `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        *(left: Complex, right: Complex) -> Complex static pure =>
+            Complex(
+                left.real * right.real - left.imaginary * right.imaginary,
+                left.imaginary * right.real + left.real * right.imaginary)
+
+        /// The product of `left` and the real `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        *(left: Complex, right: double) -> Complex static pure =>
+            Complex(left.real * right, left.imaginary * right)
+
+        /// The product of the real `left` and `right`.
+        ///
+        /// - left: the first operand
+        /// - right: the second operand
+        *(left: double, right: Complex) -> Complex static pure =>
+            Complex(left * right.real, left * right.imaginary)
+
+        /// `left` divided by `right`, by Smith's method as .NET divides.
+        ///
+        /// - left: the dividend
+        /// - right: the divisor
+        /(left: Complex, right: Complex) -> Complex static pure is
+            let a = left.real
+            let b = left.imaginary
+            let c = right.real
+            let d = right.imaginary
+
+            if Math.abs(d) < Math.abs(c) then
+                let doc = d / c
+
+                return Complex((a + b * doc) / (c + d * doc), (b - a * doc) / (c + d * doc))
+            fi
+
+            let cod = c / d
+
+            return Complex((b + a * cod) / (d + c * cod), (-a + b * cod) / (d + c * cod))
+        si
+
+        /// `left` divided by the real `right`.
+        ///
+        /// - left: the dividend
+        /// - right: the divisor
+        /(left: Complex, right: double) -> Complex static pure =>
+            Complex(left.real / right, left.imaginary / right)
+
+        /// The complex number as .NET writes it, `<real; imaginary>`.
+        to_string() -> string => "<{real}; {imaginary}>"
+
+        // The length of the hypotenuse, scaled so that neither square
+        // overflows, as .NET computes a complex number's magnitude.
+        _hypot(a: double, b: double) -> double static pure is
+            let x = Math.abs(a)
+            let y = Math.abs(b)
+            let small = if x < y then x else y fi
+            let large = if x < y then y else x fi
+
+            if small == 0.0 then
+                return large
+            fi
+
+            if large == double.positive_infinity /\ !double.is_na_n(small) then
+                return double.positive_infinity
+            fi
+
+            let ratio = small / large
+
+            return large * Math.sqrt(1.0 + ratio * ratio)
+        si
+    si
+si

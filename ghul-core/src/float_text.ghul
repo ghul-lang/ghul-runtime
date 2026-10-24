@@ -1,0 +1,415 @@
+namespace Ghul is
+    // The text .NET gives a double or a single: the shortest digits that
+    // parse back to the same value, in plain or E notation as .NET chooses.
+    //
+    // The digits come from the free-format algorithm of Burger and Dybvig,
+    // which works on exact integers: the value and the halfway points to its
+    // neighbours are scaled by a power of ten and read off one digit at a
+    // time until the digits so far identify the value.
+
+    _format_double(value: double) -> string is
+        let bits = _double_bits(value)
+        let negative = (bits >> 63) != 0ul
+        let biased = cast int((bits >> 52) & 2047ul)
+        let fraction = bits & ((1ul << 52) - 1ul)
+
+        if biased == 2047 then
+            return _non_finite_text(fraction != 0ul, negative)
+        fi
+
+        if biased == 0 /\ fraction == 0ul then
+            return if negative then "-0" else "0" fi
+        fi
+
+        let digits = _shortest_digits(fraction, biased, 52, 1075)
+
+        return _float_layout(digits.text, digits.exponent, 17, negative)
+    si
+
+    _format_single(value: single) -> string is
+        let bits = _single_bits(value)
+        let negative = (bits >> 31) != 0u
+        let biased = cast int((bits >> 23) & 255u)
+        let fraction = cast ulong(bits & ((1u << 23) - 1u))
+
+        if biased == 255 then
+            return _non_finite_text(fraction != 0ul, negative)
+        fi
+
+        if biased == 0 /\ fraction == 0ul then
+            return if negative then "-0" else "0" fi
+        fi
+
+        let digits = _shortest_digits(fraction, biased, 23, 150)
+
+        return _float_layout(digits.text, digits.exponent, 9, negative)
+    si
+
+    _non_finite_text(is_nan: bool, negative: bool) -> string =>
+        if is_nan then
+            "NaN"
+        elif negative then
+            "-Infinity"
+        else
+            "Infinity"
+        fi
+
+    // The shortest digits of the finite, non-zero value whose fraction field,
+    // biased exponent and format are given, as the digit text and the
+    // exponent `k` with the value equal to 0.digits times ten to the `k`.
+    _shortest_digits(fraction: ulong, biased: int, fraction_bits: int, bias: int) -> (text: string, exponent: int) is
+        let hidden = 1ul << fraction_bits
+        let mantissa = if biased == 0 then fraction else fraction | hidden fi
+        let binary_exponent = if biased == 0 then 1 - bias else biased - bias fi
+
+        // Round-half-even parsing accepts a halfway point when the mantissa
+        // is even, so the bounds are then inclusive.
+        let even = (mantissa & 1ul) == 0ul
+
+        // The gap below a power of two is half the gap above it, except at
+        // the smallest normal exponent.
+        let unequal_gaps = fraction == 0ul /\ biased > 1
+
+        let r: Collections.LIST[uint] mut
+        let s: Collections.LIST[uint] mut
+        let high: Collections.LIST[uint] mut
+        let low: Collections.LIST[uint] mut
+
+        if binary_exponent >= 0 then
+            let scale = _big_shifted(_big_of(1ul), binary_exponent)
+
+            if !unequal_gaps then
+                r = _big_shifted(_big_of(mantissa), binary_exponent + 1)
+                s = _big_of(2ul)
+                high = scale
+                low = scale
+            else
+                r = _big_shifted(_big_of(mantissa), binary_exponent + 2)
+                s = _big_of(4ul)
+                high = _big_shifted(scale, 1)
+                low = scale
+            fi
+        else
+            if !unequal_gaps then
+                r = _big_of(mantissa * 2ul)
+                s = _big_shifted(_big_of(1ul), 1 - binary_exponent)
+                high = _big_of(1ul)
+                low = _big_of(1ul)
+            else
+                r = _big_of(mantissa * 4ul)
+                s = _big_shifted(_big_of(1ul), 2 - binary_exponent)
+                high = _big_of(2ul)
+                low = _big_of(1ul)
+            fi
+        fi
+
+        // An estimate of the decimal exponent from the binary one; it is
+        // either right or one too small, and the test below corrects it.
+        let estimate = cast double(binary_exponent + _bit_length(mantissa) - 1) * 0.30102999566398119521
+        let k mut = _ceiling(estimate)
+
+        if k >= 0 then
+            s = _big_multiplied_by_power_of_ten(s, k)
+        else
+            r = _big_multiplied_by_power_of_ten(r, -k)
+            high = _big_multiplied_by_power_of_ten(high, -k)
+            low = _big_multiplied_by_power_of_ten(low, -k)
+        fi
+
+        if _reaches(_big_sum(r, high), s, even) then
+            s = _big_multiplied(s, 10ul)
+            k = k + 1
+        fi
+
+        let text mut = ""
+
+        while true do
+            r = _big_multiplied(r, 10ul)
+            high = _big_multiplied(high, 10ul)
+            low = _big_multiplied(low, 10ul)
+
+            let digit mut = 0
+
+            while _big_compare(r, s) >= 0 do
+                r = _big_difference(r, s)
+                digit = digit + 1
+            od
+
+            let within_low = if even then _big_compare(r, low) <= 0 else _big_compare(r, low) < 0 fi
+            let within_high = _reaches(_big_sum(r, high), s, even)
+
+            if !within_low /\ !within_high then
+                text = _string_concat(text, _digit_text(digit))
+            else
+                if within_low /\ within_high then
+                    // Either last digit identifies the value; take the nearer,
+                    // and the even one at an exact tie, as .NET does.
+                    let twice = _big_compare(_big_shifted(r, 1), s)
+
+                    if twice > 0 \/ (twice == 0 /\ digit % 2 == 1) then
+                        digit = digit + 1
+                    fi
+                elif within_high then
+                    digit = digit + 1
+                fi
+
+                text = _string_concat(text, _digit_text(digit))
+
+                return (text = text, exponent = k)
+            fi
+        od
+
+        return (text = text, exponent = k)
+    si
+
+    // Whether `sum` reaches `limit`: at or past it when the bound is
+    // inclusive, past it otherwise.
+    _reaches(sum: Collections.LIST[uint], limit: Collections.LIST[uint], inclusive: bool) -> bool =>
+        if inclusive then _big_compare(sum, limit) >= 0 else _big_compare(sum, limit) > 0 fi
+
+    // .NET's layout of `digits`, which stand for 0.digits times ten to the
+    // `exponent`: plain while the decimal point falls from three places
+    // before the first digit to `widest` places after it, E notation
+    // otherwise.
+    _float_layout(digits: string, exponent: int, widest: int, negative: bool) -> string is
+        let scientific = exponent - 1
+        let count = digits.length
+        let text mut = ""
+
+        if exponent >= -3 /\ exponent <= widest then
+            if exponent <= 0 then
+                text = _string_concat(_string_concat("0.", _zeros(-exponent)), digits)
+            elif exponent >= count then
+                text = _string_concat(digits, _zeros(exponent - count))
+            else
+                text = _string_concat(_string_concat(_digits_from(digits, 0, exponent), "."), _digits_from(digits, exponent, count))
+            fi
+        else
+            text = _digits_from(digits, 0, 1)
+
+            if count > 1 then
+                text = _string_concat(_string_concat(text, "."), _digits_from(digits, 1, count))
+            fi
+
+            let magnitude = if scientific < 0 then -scientific else scientific fi
+
+            text = _string_concat(text, if scientific < 0 then "E-" else "E+" fi)
+
+            if magnitude < 10 then
+                text = _string_concat(text, "0")
+            fi
+
+            text = _string_concat(text, _decimal_text(magnitude))
+        fi
+
+        return if negative then _string_concat("-", text) else text fi
+    si
+
+    _digits_from(digits: string, start: int, end: int) -> string is
+        let text mut = ""
+        let i mut = start
+
+        while i < end do
+            text = _string_concat(text, _string_from_char(digits[i]))
+            i = i + 1
+        od
+
+        return text
+    si
+
+    _zeros(count: int) -> string is
+        let text mut = ""
+        let i mut = 0
+
+        while i < count do
+            text = _string_concat(text, "0")
+            i = i + 1
+        od
+
+        return text
+    si
+
+    _digit_text(digit: int) -> string => _string_from_char(cast char(48 + digit))
+
+    _decimal_text(value: int) -> string =>
+        if value < 10 then
+            _digit_text(value)
+        else
+            _string_concat(_decimal_text(value / 10), _digit_text(value % 10))
+        fi
+
+    _bit_length(value: ulong) -> int is
+        let length mut = 0
+        let rest mut = value
+
+        while rest != 0ul do
+            length = length + 1
+            rest = rest >> 1
+        od
+
+        return length
+    si
+
+    _ceiling(value: double) -> int is
+        let truncated = cast int(value)
+
+        return if cast double(truncated) < value then truncated + 1 else truncated fi
+    si
+
+    // A non-negative integer as 32-bit limbs, least significant first, with
+    // no zero limb at the top.
+
+    _big_of(value: ulong) -> Collections.LIST[uint] is
+        let result = Collections.LIST[uint]()
+
+        if value != 0ul then
+            result.add(cast uint(value & 4294967295ul))
+
+            if (value >> 32) != 0ul then
+                result.add(cast uint(value >> 32))
+            fi
+        fi
+
+        return result
+    si
+
+    _big_multiplied(value: Collections.LIST[uint], factor: ulong) -> Collections.LIST[uint] is
+        let result = Collections.LIST[uint]()
+        let carry mut = 0ul
+        let i mut = 0
+
+        while i < value.count do
+            let product = cast ulong(value[i]) * factor + carry
+
+            result.add(cast uint(product & 4294967295ul))
+            carry = product >> 32
+            i = i + 1
+        od
+
+        while carry != 0ul do
+            result.add(cast uint(carry & 4294967295ul))
+            carry = carry >> 32
+        od
+
+        return result
+    si
+
+    _big_multiplied_by_power_of_ten(value: Collections.LIST[uint], power: int) -> Collections.LIST[uint] is
+        let result mut = value
+        let remaining mut = power
+
+        while remaining >= 9 do
+            result = _big_multiplied(result, 1000000000ul)
+            remaining = remaining - 9
+        od
+
+        while remaining > 0 do
+            result = _big_multiplied(result, 10ul)
+            remaining = remaining - 1
+        od
+
+        return result
+    si
+
+    _big_shifted(value: Collections.LIST[uint], places: int) -> Collections.LIST[uint] is
+        let result = Collections.LIST[uint]()
+        let whole = places / 32
+        let part = places % 32
+        let i mut = 0
+
+        while i < whole do
+            result.add(0u)
+            i = i + 1
+        od
+
+        let carry mut = 0ul
+        i = 0
+
+        while i < value.count do
+            let shifted = (cast ulong(value[i]) << part) | carry
+
+            result.add(cast uint(shifted & 4294967295ul))
+            carry = shifted >> 32
+            i = i + 1
+        od
+
+        if carry != 0ul then
+            result.add(cast uint(carry))
+        fi
+
+        return _big_trimmed(result)
+    si
+
+    _big_sum(a: Collections.LIST[uint], b: Collections.LIST[uint]) -> Collections.LIST[uint] is
+        let result = Collections.LIST[uint]()
+        let longest = if a.count > b.count then a.count else b.count fi
+        let carry mut = 0ul
+        let i mut = 0
+
+        while i < longest do
+            let left = if i < a.count then cast ulong(a[i]) else 0ul fi
+            let right = if i < b.count then cast ulong(b[i]) else 0ul fi
+            let total = left + right + carry
+
+            result.add(cast uint(total & 4294967295ul))
+            carry = total >> 32
+            i = i + 1
+        od
+
+        if carry != 0ul then
+            result.add(cast uint(carry))
+        fi
+
+        return result
+    si
+
+    // `a` less `b`, where `a` is at least `b`.
+    _big_difference(a: Collections.LIST[uint], b: Collections.LIST[uint]) -> Collections.LIST[uint] is
+        let result = Collections.LIST[uint]()
+        let borrow mut = 0l
+        let i mut = 0
+
+        while i < a.count do
+            let right = if i < b.count then cast long(b[i]) else 0l fi
+            let difference mut = cast long(a[i]) - right - borrow
+
+            if difference < 0l then
+                difference = difference + 4294967296l
+                borrow = 1l
+            else
+                borrow = 0l
+            fi
+
+            result.add(cast uint(difference))
+            i = i + 1
+        od
+
+        return _big_trimmed(result)
+    si
+
+    _big_compare(a: Collections.LIST[uint], b: Collections.LIST[uint]) -> int is
+        if a.count != b.count then
+            return if a.count < b.count then -1 else 1 fi
+        fi
+
+        let i mut = a.count - 1
+
+        while i >= 0 do
+            if a[i] != b[i] then
+                return if a[i] < b[i] then -1 else 1 fi
+            fi
+
+            i = i - 1
+        od
+
+        return 0
+    si
+
+    _big_trimmed(value: Collections.LIST[uint]) -> Collections.LIST[uint] is
+        while value.count > 0 /\ value[value.count - 1] == 0u do
+            value.remove_at(value.count - 1)
+        od
+
+        return value
+    si
+si

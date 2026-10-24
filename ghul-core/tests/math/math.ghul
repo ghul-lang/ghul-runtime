@@ -1,0 +1,38 @@
+// Math answers as .NET's System.Math does, rounding a value halfway between
+// two integers to the even one.
+use IO.Std.write_line
+use Ghul.Math
+
+entry() is
+    write_line("{Math.sqrt(2.0)} {Math.cbrt(27.0)} {Math.pow(2.0, 10.0)}")
+    write_line("{Math.abs(-3)} {Math.abs(-3L)} {Math.abs(-2.5)} {Math.sign(-7)} {Math.sign(0.0)}")
+    write_line("{Math.min(4, 9)} {Math.max(4L, 9L)} {Math.min(2.5, 1.5)} {Math.max(2.5, 1.5)} {Math.clamp(15, 0, 10)}")
+    write_line("{Math.round(2.5)} {Math.round(3.5)} {Math.round(-2.5)} {Math.round(2.6)} {Math.round(1.23456, 2)}")
+    write_line("{Math.floor(-1.5)} {Math.ceiling(1.2)} {Math.truncate(-1.7)}")
+    write_line("{Math.sin(0.0)} {Math.cos(0.0)} {Math.atan2(1.0, 1.0)} {Math.exp(0.0)}")
+    write_line("{Math.log(Math.e)} {Math.log10(1000.0)} {Math.log2(8.0)} {Math.log(8.0, 2.0)}")
+    write_line("{Math.pi} {Math.tau} {Math.e}")
+    write_line("{Math.min(0.0s, -0.0s)} {Math.max(-0.0s, 0.0s)} {Math.min(0.0, -0.0)} {Math.max(-0.0, 0.0)}")
+
+    write_line("{Math.ieee_remainder(10.0, 3.0)} {Math.ieee_remainder(11.0, 3.0)} {Math.ieee_remainder(5.0, 1.0 / 0.0)} {SCORE(3) <> SCORE(-5)}")
+
+    try
+        Math.abs(-2147483647 - 1)
+        write_line("no throw")
+    catch ex: Ghul.OverflowException
+        write_line("abs of the least int throws")
+    yrt
+
+    try
+        Math.sign(0.0 / 0.0)
+        write_line("no throw")
+    catch ex: Ghul.ArithmeticException
+        write_line("sign of NaN throws")
+    yrt
+si
+
+// An ordering a program declares without `pure` has to be provably
+// store-free, so the functions it calls must be.
+class SCORE(value: int) is
+    <>(other: SCORE) -> int => Math.sign(cast double(Math.abs(value) - Math.abs(other.value)))
+si

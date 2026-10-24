@@ -1,0 +1,122 @@
+// .NET's name for this type is kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System is
+    use Ghul.RANDOM
+
+    /// A 128-bit identifier, as .NET's `System.Guid` is. `new_guid` makes a
+    /// random one, written in .NET's usual form of 32 hexadecimal digits in
+    /// groups of 8, 4, 4, 4 and 12.
+    struct Guid is
+        _bytes: ubyte[]?
+
+        /// The guid made of `bytes`, the first three groups of its text taken
+        /// low byte first, as .NET reads them.
+        ///
+        /// - bytes: the 16 bytes
+        init(bytes: ubyte[]) is
+            if bytes.count != 16 then
+                throw Ghul.ArgumentException("a guid is 16 bytes")
+            fi
+
+            _bytes = _copy(bytes)
+        si
+
+        /// The guid whose bits are all zero.
+        empty: Guid static => Guid(Ghul._array_new[ubyte](16))
+
+        /// A new random guid, of version 4.
+        new_guid() -> Guid static is
+            let source = RANDOM()
+            let bytes = Ghul._array_new[ubyte](16)
+            let i mut = 0
+
+            while i < 16 do
+                Ghul._array_set(bytes, i, ubyte(source.next(256)))
+                i = i + 1
+            od
+
+            Ghul._array_set(bytes, 7, ubyte((int(bytes[7]) & 0x0F) | 0x40))
+            Ghul._array_set(bytes, 8, ubyte((int(bytes[8]) & 0x3F) | 0x80))
+
+            return Guid(bytes)
+        si
+
+        /// The guid's 16 bytes, in the order .NET's `Guid(bytes)` takes them:
+        /// the first three groups low byte first.
+        to_byte_array() -> ubyte[] => _copy(_held)
+
+        /// The guid as 32 lower-case hexadecimal digits in groups of 8, 4, 4,
+        /// 4 and 12, joined by hyphens.
+        to_string() -> string is
+            let digits = "0123456789abcdef"
+            let bytes = _held
+            let chars = Ghul._array_new[char](36)
+            let order = [3, 2, 1, 0, -1, 5, 4, -1, 7, 6, -1, 8, 9, -1, 10, 11, 12, 13, 14, 15]
+            let at mut = 0
+
+            for index in order do
+                if index < 0 then
+                    Ghul._array_set(chars, at, '-')
+                    at = at + 1
+                else
+                    Ghul._array_set(chars, at, digits[int(bytes[index]) >> 4])
+                    Ghul._array_set(chars, at + 1, digits[int(bytes[index]) & 15])
+                    at = at + 2
+                fi
+            od
+
+            return string(chars)
+        si
+
+        /// Whether `other` holds the same 128 bits.
+        ///
+        /// - other: the guid to compare with
+        =~(other: Guid) -> bool pure is
+            let mine = _held
+            let theirs = other._held
+            let i mut = 0
+
+            while i < 16 do
+                if mine[i] != theirs[i] then
+                    return false
+                fi
+
+                i = i + 1
+            od
+
+            return true
+        si
+
+        /// A hash of the guid's bits, equal for equal guids.
+        get_hash_code() -> int pure is
+            let bytes = _held
+            let hash mut = 0
+            let i mut = 0
+
+            while i < 16 do
+                hash = hash * 31 + int(bytes[i])
+                i = i + 1
+            od
+
+            return hash
+        si
+
+        // A default-constructed guid holds no array, and stands for `empty`.
+        _held: ubyte[] pure => _bytes ?? Ghul._array_new[ubyte](16)
+
+        _copy(bytes: ubyte[]) -> ubyte[] static is
+            let result = Ghul._array_new[ubyte](bytes.count)
+            let i mut = 0
+
+            while i < bytes.count do
+                Ghul._array_set(result, i, bytes[i])
+                i = i + 1
+            od
+
+            return result
+        si
+    si
+si
+

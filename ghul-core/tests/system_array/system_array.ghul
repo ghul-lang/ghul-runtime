@@ -1,0 +1,39 @@
+// System.Array's searches, sorts, reversals and fill, which change the array
+// they are given in place, answering as .NET does.
+use IO.Std.write_line
+use Ghul.Pipes
+
+show[T](values: T[]) -> string => values |> map(v => "{v}") |> join(" ")
+
+entry() is
+    let months = ["nivose", "pluviose", "ventose", "nivose"]
+
+    write_line("{System.Array.index_of(months, "ventose")} {System.Array.index_of(months, "brumaire")} {System.Array.index_of(months, "nivose", 1)} {System.Array.last_index_of(months, "nivose")}")
+
+    let numbers = [5, 3, 9, 1, 7, 3]
+
+    System.Array.sort(numbers)
+    write_line(show(numbers))
+
+    let words = ["pear", "apple", "fig", "banana"]
+
+    System.Array.sort(words)
+    write_line(show(words))
+
+    System.Array.reverse(words)
+    write_line(show(words))
+
+    let digits = [1, 2, 3, 4, 5, 6]
+
+    System.Array.reverse(digits, 1, 4)
+    write_line(show(digits))
+
+    System.Array.fill(digits, 0)
+    write_line(show(digits))
+
+    let empty: int[] = []
+
+    System.Array.reverse(empty)
+    System.Array.sort(empty)
+    write_line("[{show(empty)}] {System.Array.index_of(empty, 1)}")
+si

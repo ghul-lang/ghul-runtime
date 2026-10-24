@@ -1,0 +1,12 @@
+// A program ends itself through its environment with the status it passes,
+// after the output written before it, and has no executable path on wasm.
+entry(env: Ghul.Environment) -> int is
+    IO.Std.write_line(env.process_path ?? "no path")
+    IO.Std.write("written before exit")
+
+    env.exit(3)
+
+    IO.Std.write_line("not reached")
+
+    return 0
+si

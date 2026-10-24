@@ -1,0 +1,48 @@
+// System.Index and System.Range resolve against a length as they do on
+// .NET. The program's exit status has one bit for each case that holds.
+bit(condition: bool, value: int) -> int => if condition then value else 0 fi
+
+thrown(length: int, range: System.Range) -> bool is
+    try
+        range.get_offset_and_length(length)
+        return false
+    catch e: Ghul.ArgumentOutOfRangeException
+        return true
+    yrt
+si
+
+entry() -> int is
+    let result mut = 0
+
+    // 1: an index from the start is its own value
+    result = result + bit(System.Index(2, false).get_offset(10) == 2, 1)
+
+    // 2: an index from the end counts back from the length
+    result = result + bit(System.Index(3, true).get_offset(10) == 7, 2)
+
+    // 4: a range from the start up to one back from the end
+    let (offset, length) = System.Range(System.Index(1, false), System.Index(1, true)).get_offset_and_length(5)
+    result = result + bit(offset == 1 /\ length == 3, 4)
+
+    // 8: a range with both ends counted back
+    let tail = System.Range(System.Index(3, true), System.Index(0, true)).get_offset_and_length(5)
+    result = result + bit(tail.offset == 2 /\ tail.length == 3, 8)
+
+    // 16: a range reaching past the end is rejected
+    result = result + bit(thrown(3, System.Range(System.Index(0, false), System.Index(5, false))), 16)
+
+    // 32: a range whose start is after its end is rejected
+    result = result + bit(thrown(10, System.Range(System.Index(4, false), System.Index(2, false))), 32)
+
+    // 64: the static members give the same positions as the constructors
+    let whole = System.Range.all.get_offset_and_length(4)
+    let tail_from = System.Range.start_at(System.Index.from_end(1)).get_offset_and_length(4)
+    let head_to = System.Range.end_at(System.Index.from_start(2)).get_offset_and_length(4)
+    result = result + bit(whole.offset == 0 /\ whole.length == 4 /\ tail_from.offset == 3 /\ tail_from.length == 1 /\ head_to.offset == 0 /\ head_to.length == 2, 64)
+
+    // 128: the index and the range write themselves as they do on .NET
+    let written = System.Range(System.Index(1, false), System.Index(2, true))
+    result = result + bit(System.Index(5, false).to_string() =~ "5" /\ System.Index(3, true).to_string() =~ "^3" /\ written.to_string() =~ "1..^2", 128)
+
+    return result
+si

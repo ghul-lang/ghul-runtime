@@ -1,0 +1,15 @@
+// Standard input read a line, a character and the rest at a time, with
+// lines ending at a line feed, a carriage return, or both.
+
+use default
+
+let first = IO.Std.read_line()
+write_line("first: [{first}]")
+let c = IO.Std.read()
+write_line("char: {c} peek: {IO.Std.`in.peek()}")
+while let line = IO.Std.read_line() do
+    write_line("line: [{line}]")
+    if line =~ "stop" then break fi
+od
+write_line("rest: [{IO.Std.`in.read_to_end()}]")
+write_line("after: {IO.Std.read_line() ?? "null"} {IO.Std.read()}")

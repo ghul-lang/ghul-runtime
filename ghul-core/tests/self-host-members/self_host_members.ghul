@@ -1,0 +1,56 @@
+// The members the compiler's own source uses that the core library
+// supplies: string.format, replace_line_endings, ulong parsing,
+// char.is_symbol, a mutable list searched through its trait, an enum marked
+// as flags, and LAZY.
+use IO.Std.write_line
+
+@Ghul.Flags()
+enum Access is
+    READ = 1,
+    WRITE = 2,
+    EXECUTE = 4
+si
+
+class NODE(name: string)
+
+entry() is
+    write_line(string.format("{{0}} of {{1}}", 3, "seven"))
+    write_line(string.format("[{{0,5}}] [{{0,-5}}] [{{1:X}}]", "ab", 255))
+    write_line(string.format("{{{{{{0}}}}}} {{1}} {{2}}", "a", "b", "c"))
+    write_line(string.format("{{0}}{{1}}{{2}}{{3}}", ["w", "x", "y", "z"]: object))
+    write_line(string.format("[{{0}}]", null))
+
+    try
+        write_line(string.format("{{1}}", "only one"))
+    catch e: Ghul.FormatException
+        write_line("format exception")
+    yrt
+
+    write_line("one\r\ntwo\rthree\nfour".replace_line_endings(" | "))
+    write_line("a\r\nb".replace_line_endings().length)
+
+    let big: ulong mut = 0UL
+    write_line("{ulong.try_parse("18446744073709551615", big ref)} {big}")
+    write_line("{ulong.try_parse("18446744073709551616", big ref)} {big}")
+    write_line("{ulong.try_parse("12x", big ref)} {ulong.parse("+42")}")
+
+    write_line("{char.is_symbol('+')} {char.is_symbol('a')} {char.is_symbol('×')} {char.is_symbol('⊕')} {char.is_symbol('〈')}")
+
+    let first = NODE("first")
+    let second = NODE("second")
+    let nodes: Collections.MutableList[NODE] = Collections.LIST[NODE]([first, second])
+
+    write_line("{nodes.contains(second)} {nodes.contains(NODE("second"))}")
+    write_line("{nodes.remove(first)} {nodes.remove(first)} {nodes.count}")
+
+    let calls mut = 0
+    let lazy = Ghul.LAZY[int](() -> int is
+        calls = calls + 1
+        return 42
+    si)
+
+    write_line("{lazy.is_value_created} {lazy.value} {lazy.value} {calls} {lazy.is_value_created}")
+
+    let access = Access.READ | Access.EXECUTE
+    write_line("{cast int(access)} {cast int(access & Access.WRITE)}")
+si

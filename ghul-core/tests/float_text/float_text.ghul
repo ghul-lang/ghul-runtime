@@ -1,0 +1,14 @@
+// A double or a single writes the shortest text that reads back as the same
+// value, as .NET writes it in the invariant culture.
+texts() -> string[] =>
+    [
+        0.1.to_string(), (0.1 + 0.2).to_string(), 1.0e15.to_string(), 1.0e21.to_string(),
+        0.0001.to_string(), 0.00001.to_string(), 5.0e-324.to_string(), (-0.0).to_string(),
+        1.7976931348623157e308.to_string(), 3.14159s.to_string(), 16777216.0s.to_string()
+    ]
+
+entry() is
+    for text in texts() do
+        IO.Std.write_line(text)
+    od
+si

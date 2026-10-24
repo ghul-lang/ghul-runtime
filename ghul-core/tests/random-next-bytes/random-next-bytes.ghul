@@ -1,0 +1,7 @@
+use IO.Std.write_line
+
+let buffer = [0ub, 0ub, 0ub, 0ub, 0ub, 0ub, 0ub, 0ub]
+
+Ghul.RANDOM(7).next_bytes(buffer)
+
+write_line("{buffer.count} {buffer |> Ghul.Pipes.any(byte => byte != 0ub)}")

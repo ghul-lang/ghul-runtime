@@ -1,0 +1,2 @@
+ghul: ghul-project.json: targets: ghul does not build for dotnet; for .NET, use the .NET SDK with a .ghulproj and dotnet build; list wasm or llvm instead
+

@@ -1,0 +1,217 @@
+namespace Ghul is
+    /// The base of every exception: what `throw` raises and `catch` handles.
+    @suppress("non-upper-snake-case-name")
+    class Exception is
+        /// What went wrong, for a person to read.
+        message: string;
+
+        /// An exception whose message names its type and says only that it
+        /// was thrown.
+        init() is
+            self.message = "Exception of type '{_type_name(self)}' was thrown.";
+        si
+
+        /// - message: what went wrong
+        init(message: string) is
+            self.message = message;
+        si
+    si
+
+    /// Thrown by a member that has no body to run: a body-less override.
+    class NotImplementedException: Exception is
+        /// An exception saying the operation is not implemented.
+        init() is
+            super.init("The method or operation is not implemented.");
+        si
+
+        /// - member: the member that has no body
+        init(member: string) is
+            super.init(member);
+        si
+    si
+
+    /// Thrown by a member this type does not support, such as the `reset`
+    /// synthesised for an iterator that cannot start again.
+    class NotSupportedException: Exception is
+        init() is
+            super.init("the operation is not supported");
+        si
+
+        /// - message: what is not supported
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown when an object is not in a state where the requested operation
+    /// can run, such as reading the value of an absent `MAYBE`.
+    class InvalidOperationException: Exception is
+        /// - message: why the operation cannot run
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown by waiting for a task that threw, holding what it threw.
+    class AggregateException: Exception is
+        /// What the task threw.
+        inner_exception: Exception
+
+        /// - inner_exception: what the task threw
+        init(inner_exception: Exception) is
+            super.init("One or more errors occurred. ({inner_exception.message})")
+            self.inner_exception = inner_exception
+        si
+    si
+
+    /// Thrown when an object that has been closed or disposed is used.
+    class ObjectDisposedException: InvalidOperationException is
+        /// - message: what was used after it was closed
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown when the operation is not allowed on what it names, such as
+    /// reading a directory as a file.
+    class UnauthorizedAccessException: Exception is
+        /// - message: what was refused
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown by an `assert` whose condition is false.
+    class AssertFailedException: Exception is
+        /// - message: the assert's own message, or where it is and what it
+        ///   tests when it gives none
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown by a cast that cannot convert its value to the target type.
+    class InvalidCastException: Exception is
+        init() is
+            super.init("the cast is not valid");
+        si
+
+        /// - message: what could not be converted
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown where a member is reached through a null reference.
+    class NullReferenceException: Exception is
+        init() is
+            super.init("Object reference not set to an instance of an object.");
+        si
+
+        /// - message: what was reached through null
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown by an index into an array or a string that is outside it.
+    class IndexOutOfRangeException: Exception is
+        init() is
+            super.init("Index was outside the bounds of the array.");
+        si
+
+        /// - message: which index was outside what
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// The base of the exceptions arithmetic raises.
+    class ArithmeticException: Exception is
+        init() is
+            super.init("the arithmetic operation failed");
+        si
+
+        /// - message: what failed
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown by arithmetic or a conversion whose result does not fit its
+    /// type.
+    class OverflowException: ArithmeticException is
+        init() is
+            super.init("Arithmetic operation resulted in an overflow.");
+        si
+
+        /// - message: what overflowed
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown by an integer division or remainder whose divisor is zero.
+    class DivideByZeroException: ArithmeticException is
+        init() is
+            super.init("Attempted to divide by zero.");
+        si
+
+        /// - message: what was divided
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown when a format string is not one the formatting member
+    /// understands, or text is not in the format a parse expects.
+    class FormatException: Exception is
+        init() is
+            super.init("the input string was not in a correct format");
+        si
+
+        /// - message: what was wrong with the format
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown when an argument is not one a member accepts.
+    class ArgumentException: Exception is
+        /// - message: which argument was not accepted
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown when an index or a count is outside the range a member accepts.
+    class ArgumentOutOfRangeException: ArgumentException is
+        /// - message: which argument was out of range
+        init(message: string) is
+            super.init(message);
+        si
+
+        /// - parameter: the name of the argument that was out of range
+        /// - message: why it was out of range
+        init(parameter: string, message: string) is
+            super.init(message);
+        si
+    si
+
+    /// Thrown when `!` unwraps a union value that holds a non-default variant.
+    /// The payload is what the value held instead: the complement variant's
+    /// field value when that variant declares exactly one field, otherwise the
+    /// whole variant value.
+    ///
+    /// - T: the type of what the value held instead
+    class UnwrapFailedException[T]: Exception is
+        /// What the value held instead of the default variant.
+        payload: T;
+
+        /// - payload: what the value held instead
+        init(payload: T) is
+            self.payload = payload;
+            super.init("unwrap failed: the value holds a non-default variant");
+        si
+    si
+si

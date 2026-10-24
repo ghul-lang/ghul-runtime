@@ -1,0 +1,24 @@
+use IO.Std.write_line
+
+// A map and a set given a comparer use it for their keys in place of the
+// keys' own equality and hash.
+class BY_LENGTH: Collections.EqualityComparer[string] is
+    init() is si
+
+    equals(x: string, y: string) -> bool => x.length == y.length
+    get_hash_code(value: string) -> int => value.length
+si
+
+entry() is
+    let map = Collections.MAP[string, int](BY_LENGTH())
+
+    map["one"] = 1
+    map["two"] = 2
+    map["three"] = 3
+
+    write_line("{map.count} {map["six"]} {map.contains_key("seven")} {map.contains_key("four")}")
+
+    let set = Collections.SET[string](BY_LENGTH())
+
+    write_line("{set.add("a")} {set.add("b")} {set.add("cc")} {set.count}")
+si

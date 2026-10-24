@@ -1,0 +1,34 @@
+namespace Collections is
+    /// A key and the value it maps to: what iterating a map yields.
+    struct KEY_VALUE_PAIR[K, V] is
+        _key: K field
+        _value: V field
+
+        /// The key.
+        key: K pure => _key
+
+        /// The value the key maps to.
+        value: V pure => _value
+
+        /// The key, read first when the pair is destructured.
+        `0: K pure => _key
+
+        /// The value, read second when the pair is destructured.
+        `1: V pure => _value
+
+        /// - key: the key
+        /// - value: the value the key maps to
+        init(key: K, value: V) pure is
+            _key = key
+            _value = value
+        si
+
+        /// Whether `other` has an equal key and an equal value.
+        ///
+        /// - other: the pair to compare with
+        =~(other: KEY_VALUE_PAIR[K, V]) -> bool pure => _key =~ other.key /\ _value =~ other.value
+
+        /// A hash of the key and the value, alike for pairs that are equal.
+        get_hash_code() -> int => Ghul._hash_of(_key) * 31 + Ghul._hash_of(_value)
+    si
+si

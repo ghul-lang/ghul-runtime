@@ -1,0 +1,27 @@
+// Object identity, and letter case beyond ASCII, behave as on .NET.
+use IO.Std.write_line
+
+class THING is
+    init() is si
+si
+
+code(c: char) -> int => cast int(c)
+
+show(value: bool) -> string => if value then "true" else "false" fi
+
+entry() is
+    let a = THING()
+    let b = THING()
+    let o = object()
+
+    write_line("{show(a.equals(a))} {show(a.equals(b))} {show(object.reference_equals(a, a))} {show(object.reference_equals(null, null))}")
+    write_line("{show(a.get_hash_code() == a.get_hash_code())} {show(o.equals(o))}")
+
+    // Greek, Cyrillic and Latin Extended-A, written as code points.
+    write_line("{code(char.to_upper(cast char(0x3B1)))} {code(char.to_lower(cast char(0x3A9)))} {code(char.to_upper(cast char(0x3C2)))}")
+    write_line("{code(char.to_upper(cast char(0x3AC)))} {code(char.to_lower(cast char(0x38F)))}")
+    write_line("{code(char.to_upper(cast char(0x436)))} {code(char.to_lower(cast char(0x401)))}")
+    write_line("{code(char.to_upper(cast char(0x101)))} {code(char.to_lower(cast char(0x139)))} {code(char.to_upper(cast char(0x17F)))} {code(char.to_lower(cast char(0x130)))}")
+    write_line("{show(char.is_letter(cast char(0x3B2)))} {show(char.is_upper(cast char(0x416)))} {show(char.is_lower(cast char(0xDF)))} {show(char.is_letter('3'))}")
+    write_line("{"straße".to_upper()} {"ABC".to_lower()}")
+si

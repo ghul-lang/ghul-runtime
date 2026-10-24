@@ -1,0 +1,38 @@
+// A set holds a null element once, as .NET's hash set does, beside the
+// elements it hashes.
+use IO.Std.write_line
+
+entry() is
+    let names = Collections.SET[string?]()
+
+    write_line("{names.add("a")} {names.add(null)} {names.add(null)} {names.count}")
+    write_line("{names.contains(null)} {names.contains("a")} {names.contains("b")}")
+
+    let seen mut = 0
+
+    for name in names do
+        seen = seen + 1
+    od
+
+    write_line("{seen} {names.remove(null)} {names.remove(null)} {names.count} {names.contains(null)}")
+
+    names.add(null)
+    names.clear()
+
+    write_line("{names.count} {names.contains(null)}")
+
+    let ordered = Collections.SET[string?]()
+
+    ordered.add("first")
+    ordered.add(null)
+    ordered.add("last")
+
+    let text = Text.STRING_BUILDER()
+
+    for name in ordered do
+        text.append(if let n = name then n else "null" fi)
+        text.append(" ")
+    od
+
+    write_line(text.to_string().trim())
+si

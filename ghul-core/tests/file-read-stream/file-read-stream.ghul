@@ -1,0 +1,43 @@
+// File.open_read on a native executable reads the file as it is read, so a
+// file with no end can be read in part, and a file read to its end answers
+// what it holds.
+use IO.Std.write_line
+
+let random = IO.File.open_read("/dev/urandom")
+let buffer = Ghul._array_new[ubyte](4)
+
+for _ in 1::4 do
+    write_line("{random.read(buffer, 0, 4)}")
+od
+
+random.dispose()
+
+IO.File.write_all_text("stream-test.txt", "hello, world")
+
+let file = IO.File.open_read("stream-test.txt")
+let chunk = Ghul._array_new[ubyte](5)
+let got mut = file.read(chunk, 0, 5)
+let total mut = 0
+
+while got > 0 do
+    total = total + got
+    got = file.read(chunk, 0, 5)
+od
+
+file.dispose()
+
+write_line("{total}")
+
+try
+    file.read(chunk, 0, 5)
+catch e: Ghul.ObjectDisposedException
+    write_line("closed")
+yrt
+
+try
+    IO.File.open_read("no-such-file")
+catch e: IO.FileNotFoundException
+    write_line("missing")
+yrt
+
+IO.File.delete("stream-test.txt")

@@ -1,0 +1,144 @@
+namespace Ghul is
+    /// Implemented by a type that says when two of its values are equal.
+    trait Equatable[T] is
+        /// Whether this value and `other` are equal.
+        =~(other: T) -> bool pure;
+    si
+
+    /// Implemented by a type whose values are ordered.
+    trait Comparable[T] is
+        /// Negative when this value orders before `other`, zero when neither
+        /// orders first, positive otherwise.
+        <>(other: T) -> int pure;
+    si
+
+    // The built-in scalar types implement both, as their .NET counterparts
+    // implement IEquatable and IComparable, so `=~` and the relational
+    // operators reach them the same way on both targets. Each `<>` names
+    // the global intrinsic explicitly, since inside the block the member
+    // being declared would otherwise be found first. Floating-point `=~`
+    // goes through `<>`, which treats two NaNs as equal, as .NET's Equals
+    // does.
+
+    impl Equatable[byte] for byte is
+        =~(other: byte) -> bool pure => self == other;
+    si
+
+    impl Comparable[byte] for byte is
+        <>(other: byte) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[ubyte] for ubyte is
+        =~(other: ubyte) -> bool pure => self == other;
+    si
+
+    impl Comparable[ubyte] for ubyte is
+        <>(other: ubyte) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[short] for short is
+        =~(other: short) -> bool pure => self == other;
+    si
+
+    impl Comparable[short] for short is
+        <>(other: short) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[ushort] for ushort is
+        =~(other: ushort) -> bool pure => self == other;
+    si
+
+    impl Comparable[ushort] for ushort is
+        <>(other: ushort) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[int] for int is
+        =~(other: int) -> bool pure => self == other;
+    si
+
+    impl Comparable[int] for int is
+        <>(other: int) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[uint] for uint is
+        =~(other: uint) -> bool pure => self == other;
+    si
+
+    impl Comparable[uint] for uint is
+        <>(other: uint) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[long] for long is
+        =~(other: long) -> bool pure => self == other;
+    si
+
+    impl Comparable[long] for long is
+        <>(other: long) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[ulong] for ulong is
+        =~(other: ulong) -> bool pure => self == other;
+    si
+
+    impl Comparable[ulong] for ulong is
+        <>(other: ulong) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[word] for word is
+        =~(other: word) -> bool pure => self == other;
+    si
+
+    impl Comparable[word] for word is
+        <>(other: word) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[uword] for uword is
+        =~(other: uword) -> bool pure => self == other;
+    si
+
+    impl Comparable[uword] for uword is
+        <>(other: uword) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[char] for char is
+        =~(other: char) -> bool pure => self == other;
+    si
+
+    impl Comparable[char] for char is
+        <>(other: char) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[decimal] for decimal is
+        =~(other: decimal) -> bool pure => self == other;
+    si
+
+    impl Comparable[decimal] for decimal is
+        <>(other: decimal) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[single] for single is
+        =~(other: single) -> bool pure => Ghul.Intrinsics.`<>(self, other) == 0;
+    si
+
+    impl Comparable[single] for single is
+        <>(other: single) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[double] for double is
+        =~(other: double) -> bool pure => Ghul.Intrinsics.`<>(self, other) == 0;
+    si
+
+    impl Comparable[double] for double is
+        <>(other: double) -> int pure => Ghul.Intrinsics.`<>(self, other);
+    si
+
+    impl Equatable[bool] for bool is
+        =~(other: bool) -> bool pure => self == other;
+    si
+
+    // No intrinsic orders two `bool`s, so false orders before true here.
+    impl Comparable[bool] for bool is
+        <>(other: bool) -> int pure =>
+            if self == other then 0 elif self then 1 else -1 fi;
+    si
+si

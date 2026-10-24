@@ -1,0 +1,35 @@
+use IO.Std.write_line
+use Ghul.Pipes
+
+// A listing of the top directory sees only what is directly in it, however
+// deep the tree below goes, and a non-recursive delete refuses a directory
+// that holds only a nested directory.
+IO.Directory.create_directory("listing/nested/deep")
+IO.File.write_all_text("listing/a.txt", "a")
+IO.File.write_all_text("listing/b.log", "b")
+IO.File.write_all_text("listing/nested/c.txt", "c")
+IO.File.write_all_text("listing/nested/deep/d.txt", "d")
+
+write_line(IO.Directory.get_files("listing") |> join(" "))
+write_line(IO.Directory.get_files("listing", "*.txt") |> join(" "))
+write_line(IO.Directory.get_directories("listing") |> join(" "))
+write_line(IO.Directory.get_file_system_entries("listing") |> join(" "))
+write_line(IO.Directory.get_files("listing", "*.txt", IO.SearchOption.ALL_DIRECTORIES) |> join(" "))
+
+IO.File.delete("listing/nested/deep/d.txt")
+
+try
+    IO.Directory.delete("listing/nested")
+catch e: IO.IOException
+    write_line("not empty")
+yrt
+
+IO.Directory.delete("listing/nested/deep")
+write_line(IO.Directory.get_directories("listing/nested") |> join(" "))
+IO.Directory.delete("listing", true)
+write_line("{IO.Directory.exists("listing")}")
+
+// A path from the root that is already resolved comes back as it is.
+for path in ["/a/b", "/a/b/", "/", "/a//b", "/a/./b", "/a/../b", "/a/.b", "/a/..b/c"] do
+    write_line("{path} -> {IO.Path.get_full_path(path)}")
+od

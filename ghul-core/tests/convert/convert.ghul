@@ -1,0 +1,53 @@
+// System.Convert's conversions between numbers and text in a base, and
+// between bytes and hexadecimal or base64 text, answering as .NET does.
+use IO.Std.write_line
+use Ghul.Pipes
+use System.Convert
+
+failure(action: () -> object) -> string is
+    try
+        return "{action()}"
+    catch e: Ghul.OverflowException
+        return "overflow"
+    catch e: Ghul.FormatException
+        return "format"
+    catch e: Ghul.ArgumentException
+        return "argument"
+    yrt
+si
+
+bytes(values: ubyte[]) -> string => values |> map(b => "{b}") |> join(" ")
+
+entry() is
+    write_line("{Convert.to_string(10, 2)} {Convert.to_string(10, 8)} {Convert.to_string(255, 16)} {Convert.to_string(-42, 10)} {Convert.to_string(0, 2)}")
+    write_line("{Convert.to_string(-1, 2)} {Convert.to_string(-1, 16)} {Convert.to_string(int.min_value, 8)}")
+    write_line("{Convert.to_string(5_000_000_000L, 16)} {Convert.to_string(-1L, 8)} {Convert.to_string(long.min_value, 2)}")
+    write_line("{Convert.to_string(cast short(-2), 16)} {Convert.to_string(200ub, 2)}")
+    write_line(failure(() => Convert.to_string(10, 3)))
+
+    write_line("{Convert.to_int32("1010", 2)} {Convert.to_int32("777", 8)} {Convert.to_int32("ff", 16)} {Convert.to_int32("0x1F", 16)} {Convert.to_int32("-123", 10)}")
+    write_line("{Convert.to_int32("FFFFFFFF", 16)} {Convert.to_int32("80000000", 16)} {Convert.to_int32("11111111111111111111111111111111", 2)}")
+    write_line("{Convert.to_int32("42")} {Convert.to_int32("-7")} {Convert.to_int64("FFFFFFFFFF", 16)} {Convert.to_int64("-9000000000", 10)}")
+    write_line("{Convert.to_int64("FFFFFFFFFFFFFFFF", 16)} {Convert.to_byte("ff", 16)} {Convert.to_byte("11", 2)} {Convert.to_byte("200")}")
+    write_line(failure(() => Convert.to_int32("100000000", 16)))
+    write_line(failure(() => Convert.to_int32("12z", 16)))
+    write_line(failure(() => Convert.to_int32("2", 2)))
+    write_line(failure(() => Convert.to_int32("-1", 16)))
+    write_line(failure(() => Convert.to_int32("2147483648", 10)))
+    write_line(failure(() => Convert.to_byte("100", 16)))
+    write_line(failure(() => Convert.to_int32("abc")))
+
+    let data: ubyte[] = [0ub, 1ub, 15ub, 16ub, 127ub, 128ub, 255ub]
+
+    write_line(Convert.to_hex_string(data))
+    write_line(Convert.to_hex_string_lower(data))
+    write_line(bytes(Convert.from_hex_string("00ff10Ab")))
+    write_line(failure(() => Convert.from_hex_string("abc")))
+    write_line(failure(() => Convert.from_hex_string("zz")))
+
+    write_line(Convert.to_base64_string(data))
+    write_line("[{Convert.to_base64_string([])}] {Convert.to_base64_string([77ub])} {Convert.to_base64_string([77ub, 97ub])}")
+    write_line(bytes(Convert.from_base64_string("AAEPEH+A/w==")))
+    write_line(bytes(Convert.from_base64_string("TWE=")))
+    write_line(failure(() => Convert.from_base64_string("abc")))
+si

@@ -1,0 +1,26 @@
+// A field narrowed by a presence test stays narrowed across splitting and
+// trimming at a set of code units, since neither stores anything.
+use IO.Std.write_line
+
+class HOLDER is
+    _name: string?
+
+    init(name: string) is
+        _name = name
+    si
+
+    report(text: string) -> string is
+        if _name? then
+            let pieces = text.split([',', ';'])
+            let trimmed = text.trim(['[', ']']).trim_start(['x']).trim_end(['y'])
+
+            return "{_name.length} {pieces.count} {trimmed}"
+        fi
+
+        return "absent"
+    si
+si
+
+entry() is
+    write_line(HOLDER("name").report("[xa,b;cy]"))
+si

@@ -1,0 +1,34 @@
+// LIST.sort with a comparer and with a comparison function; equal keys stay
+// where .NET's sort leaves them. The comparer is declared under the trait's
+// old name, IComparer, which still reaches Comparer.
+use IO.Std.write_line
+
+class BY_LENGTH: Collections.IComparer[string] is
+    init() is si
+
+    compare(x: string?, y: string?) -> int => x!.length - y!.length
+si
+
+let words = Collections.LIST[string]()
+
+for w in ["pear", "fig", "banana", "kiwi", "apple", "date", "plum", "lime", "melon", "nut", "yam", "cherry", "grape", "lemon", "orange", "peach", "quince", "olive", "guava", "papaya"] do
+    words.add(w)
+od
+
+words.sort(BY_LENGTH())
+
+for w in words do
+    write_line(w)
+od
+
+let numbers = Collections.LIST[int]()
+
+for n in [5, -3, 12, 0, 7, 7, -8, 100, 42, 3] do
+    numbers.add(n)
+od
+
+numbers.sort((a: int, b: int) -> int => b - a)
+
+for n in numbers do
+    write_line("{n}")
+od

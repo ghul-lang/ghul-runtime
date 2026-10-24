@@ -1,0 +1,48 @@
+// A field narrowed by a presence test stays narrowed across the reads the
+// collections and their read-only views offer.
+use IO.Std.write_line
+
+class HOLDER is
+    _name: string?
+
+    init(name: string) is
+        _name = name
+    si
+
+    report(
+        list: Collections.LIST[int],
+        stack: Collections.STACK[int],
+        map: Collections.MAP[string, int],
+        set: Collections.SET[string],
+        view: Collections.List[int],
+        lookup: Collections.Map[string, int],
+        bag: Collections.Bag[int]
+    ) -> string is
+        if _name? then
+            let found: int mut = 0
+            let looked_up: int mut = 0
+
+            let total =
+                list[0] + list.count + stack.peek() + stack.count + map["a"] + map.count +
+                set.count + view[0] + view.count + lookup["a"] + lookup.count + bag.count
+
+            let present = map.try_get_value("a", found ref) /\ lookup.try_get_value("a", looked_up ref)
+
+            return "{_name.length} {total} {present} {found} {looked_up}"
+        fi
+
+        return "absent"
+    si
+si
+
+entry() is
+    let list = Collections.LIST[int]([1, 2])
+    let stack = Collections.STACK[int]()
+    stack.push(3)
+    let map = Collections.MAP[string, int]()
+    map.add("a", 4)
+    let set = Collections.SET[string]()
+    set.add("x")
+
+    write_line(HOLDER("name").report(list, stack, map, set, list, map, list))
+si

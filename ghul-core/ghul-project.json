@@ -1,0 +1,7 @@
+{
+    "name": "ghul-core",
+    "version": "0.1.0",
+    "kind": "library",
+    "targets": ["wasm", "dotnet"],
+    "sources": ["src/**/*.ghul"],
+}

@@ -1,0 +1,49 @@
+// The numeric types' to_string(format), compiled for wasm; the expected text
+// is what .NET writes for the same calls.
+use IO.Std.write_line
+
+let doubles = [0.0, -0.0, 0.125, 2.5, -2.5, 1.0 / 3.0, 1234567.891, -0.0004, 6.02214076e23, 1.0e-7]
+
+for d in doubles do
+    write_line(d.to_string("F2"))
+    write_line(d.to_string("F0"))
+    write_line(d.to_string("N0"))
+    write_line(d.to_string("N3"))
+    write_line(d.to_string("E6"))
+    write_line(d.to_string("e2"))
+    write_line(d.to_string("G6"))
+    write_line(d.to_string("R"))
+    write_line(d.to_string("0.###"))
+    write_line(d.to_string("00000.000"))
+    write_line(d.to_string("#,##0.00"))
+od
+
+let s: single = 3.14159265s
+
+write_line(s.to_string("F4"))
+write_line(s.to_string("G"))
+
+let ints = [0, 7, -7, 255, 1234567, -2147483647, 2147483647]
+
+for i in ints do
+    write_line(i.to_string("D4"))
+    write_line(i.to_string("X"))
+    write_line(i.to_string("x8"))
+    write_line(i.to_string("N0"))
+    write_line(i.to_string("F2"))
+    write_line(i.to_string("G2"))
+    write_line(i.to_string("00"))
+od
+
+let l: long = -1234567890123L
+let u: ulong = 18446744073709551615ul
+let b: ubyte = 200ub
+let sh: short = -300s
+
+write_line(l.to_string("N0"))
+write_line(l.to_string("X"))
+write_line(u.to_string("N0"))
+write_line(u.to_string("X"))
+write_line(b.to_string("X2"))
+write_line(sh.to_string("X"))
+write_line(sh.to_string("D5"))

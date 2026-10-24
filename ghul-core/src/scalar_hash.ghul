@@ -1,0 +1,83 @@
+namespace Ghul is
+    // Each scalar's own hash, so a hash table over a scalar key calls it
+    // directly rather than boxing the key to reach object's. The values are
+    // the ones a boxed scalar answers: an integer of 32 bits or fewer is its
+    // value, a 64-bit one folds its halves together, and a floating value
+    // hashes its bits once zero of either sign and every NaN are made alike,
+    // so values `=~` reports equal hash alike.
+
+    partial bool is
+        /// One for true, zero for false.
+        get_hash_code() -> int pure => if self then 1 else 0 fi
+    si
+
+    partial byte is
+        /// The value.
+        get_hash_code() -> int pure => int(self)
+    si
+
+    partial ubyte is
+        /// The value.
+        get_hash_code() -> int pure => int(self)
+    si
+
+    partial short is
+        /// The value.
+        get_hash_code() -> int pure => int(self)
+    si
+
+    partial ushort is
+        /// The value.
+        get_hash_code() -> int pure => int(self)
+    si
+
+    partial char is
+        /// The code unit.
+        get_hash_code() -> int pure => int(self)
+    si
+
+    partial int is
+        /// The value.
+        get_hash_code() -> int pure => self
+    si
+
+    partial uint is
+        /// The value's bits.
+        get_hash_code() -> int pure => cast int(self)
+    si
+
+    partial long is
+        /// The low half of the value's bits exclusive-ored with the high half.
+        get_hash_code() -> int pure => _fold64(cast ulong(self))
+    si
+
+    partial ulong is
+        /// The low half of the value's bits exclusive-ored with the high half.
+        get_hash_code() -> int pure => _fold64(self)
+    si
+
+    partial word is
+        /// The low half of the value's bits exclusive-ored with the high half.
+        get_hash_code() -> int pure => _fold64(cast ulong(self))
+    si
+
+    partial uword is
+        /// The low half of the value's bits exclusive-ored with the high half.
+        get_hash_code() -> int pure => _fold64(cast ulong(self))
+    si
+
+    partial single is
+        /// The value's bits, with every NaN and both zeros made alike.
+        get_hash_code() -> int pure =>
+            if self != self then 0 else (self + 0.0s).to_bits() fi
+    si
+
+    partial double is
+        /// The value's bits folded to 32, with every NaN and both zeros made
+        /// alike.
+        get_hash_code() -> int pure =>
+            if self != self then 0 else _fold64(cast ulong((self + 0.0).to_bits())) fi
+    si
+
+    _fold64(bits: ulong) -> int pure => cast int(cast uint(bits ^ (bits >> 32)))
+si

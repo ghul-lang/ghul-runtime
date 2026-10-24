@@ -1,0 +1,264 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Text is
+    use IO._UTF8
+
+    /// Converts between text and bytes, as .NET's `System.Text.Encoding`
+    /// does, for UTF-8, UTF-16, UTF-32 and ASCII.
+    class Encoding abstract is
+        init() is si
+
+        /// UTF-8, writing no byte-order mark.
+        utf8: Encoding static => UTF8Encoding(false)
+
+        /// Seven-bit ASCII. A character outside it is written as `?`, and a
+        /// byte outside it reads as `?`.
+        ascii: Encoding static => ASCIIEncoding()
+
+        /// UTF-16 with the low byte of each code unit first, writing no
+        /// byte-order mark.
+        unicode: Encoding static => UnicodeEncoding()
+
+        /// UTF-32 with the low byte of each code point first, writing no
+        /// byte-order mark.
+        utf32: Encoding static => UTF32Encoding()
+
+        /// The bytes that stand for `text`.
+        ///
+        /// - text: the text to encode
+        get_bytes(text: string) -> ubyte[]
+
+        /// The text `bytes` stand for. A byte-order mark at the start is
+        /// skipped, and bytes that are not valid stand for U+FFFD.
+        ///
+        /// - bytes: the bytes to decode
+        get_string(bytes: ubyte[]) -> string
+
+        /// The text `count` bytes of `bytes` from `index` stand for.
+        ///
+        /// - bytes: the bytes to decode
+        /// - index: the first byte to decode
+        /// - count: the number of bytes to decode
+        get_string(bytes: ubyte[], index: int, count: int) -> string is
+            if index < 0 \/ count < 0 \/ index > bytes.count - count then
+                throw Ghul.ArgumentOutOfRangeException("index", "the range is outside the bytes")
+            fi
+
+            let part = Ghul._array_new[ubyte](count)
+            let i mut = 0
+
+            while i < count do
+                Ghul._array_set(part, i, bytes[index + i])
+                i = i + 1
+            od
+
+            return get_string(part)
+        si
+
+        /// The number of bytes `get_bytes` writes for `text`.
+        ///
+        /// - text: the text to measure
+        get_byte_count(text: string) -> int => get_bytes(text).count
+    si
+
+    /// UTF-8, as .NET's `System.Text.UTF8Encoding` is.
+    class UTF8Encoding: Encoding is
+        _emits_identifier: bool
+
+        /// UTF-8 that writes no byte-order mark.
+        init() is
+            self.init(false)
+        si
+
+        /// - encoder_should_emit_utf8_identifier: whether a file written in
+        ///   this encoding starts with a byte-order mark; `get_bytes` never
+        ///   adds one, as on .NET
+        init(encoder_should_emit_utf8_identifier: bool) is
+            super.init()
+
+            _emits_identifier = encoder_should_emit_utf8_identifier
+        si
+
+        get_bytes(text: string) -> ubyte[] => _UTF8.encode(text)
+
+        get_string(bytes: ubyte[]) -> string => _UTF8.decode(bytes)
+    si
+
+    /// Seven-bit ASCII, as .NET's `System.Text.ASCIIEncoding` is. A
+    /// code unit outside it is written as `?`, and a byte outside it reads
+    /// as `?`.
+    class ASCIIEncoding: Encoding is
+        init() is
+            super.init()
+        si
+
+        get_bytes(text: string) -> ubyte[] is
+            let out = IO.MemoryStream(text.length)
+            let i mut = 0
+
+            while i < text.length do
+                let unit = int(text[i])
+
+                if unit < 0x80 then
+                    out.write_byte(ubyte(unit))
+                else
+                    out.write_byte(ubyte('?'))
+                fi
+
+                i = i + 1
+            od
+
+            return out.to_array()
+        si
+
+        get_string(bytes: ubyte[]) -> string is
+            let chars = Ghul._array_new[char](bytes.count)
+            let i mut = 0
+
+            while i < bytes.count do
+                let b = int(bytes[i])
+
+                Ghul._array_set(chars, i, if b < 0x80 then char(b) else '?' fi)
+                i = i + 1
+            od
+
+            return string(chars)
+        si
+    si
+
+    /// UTF-16 with the low byte of each code unit first, as .NET's
+    /// `System.Text.UnicodeEncoding` is by default. No byte-order mark is
+    /// written.
+    class UnicodeEncoding: Encoding is
+        init() is
+            super.init()
+        si
+
+        get_bytes(text: string) -> ubyte[] is
+            let result = Ghul._array_new[ubyte](text.length * 2)
+            let i mut = 0
+
+            while i < text.length do
+                let unit = int(text[i])
+
+                Ghul._array_set(result, 2 * i, ubyte(unit & 0xFF))
+                Ghul._array_set(result, 2 * i + 1, ubyte(unit >> 8))
+                i = i + 1
+            od
+
+            return result
+        si
+
+        get_string(bytes: ubyte[]) -> string is
+            let start = 0
+            let units = (bytes.count - start) / 2
+            let odd = (bytes.count - start) % 2
+            let chars = Ghul._array_new[char](units + odd)
+            let i mut = 0
+
+            while i < units do
+                Ghul._array_set(chars, i, char(int(bytes[start + 2 * i]) | (int(bytes[start + 2 * i + 1]) << 8)))
+                i = i + 1
+            od
+
+            if odd != 0 then
+                Ghul._array_set(chars, units, char(0xFFFD))
+            fi
+
+            return string(chars)
+        si
+    si
+
+    /// UTF-32 with the low byte of each code point first, as .NET's
+    /// `System.Text.UTF32Encoding` is by default. No byte-order mark is
+    /// written. A lone
+    /// surrogate is written as U+FFFD, and a value that is not a code point
+    /// reads as U+FFFD.
+    class UTF32Encoding: Encoding is
+        init() is
+            super.init()
+        si
+
+        get_bytes(text: string) -> ubyte[] is
+            let out = IO.MemoryStream(text.length * 4)
+            let i mut = 0
+
+            while i < text.length do
+                let unit = int(text[i])
+                let code mut = unit
+
+                if unit >= 0xD800 /\ unit <= 0xDBFF /\ i + 1 < text.length then
+                    let low = int(text[i + 1])
+
+                    if low >= 0xDC00 /\ low <= 0xDFFF then
+                        code = 0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00)
+                        i = i + 1
+                    fi
+                fi
+
+                if code >= 0xD800 /\ code <= 0xDFFF then
+                    code = 0xFFFD
+                fi
+
+                out.write_byte(ubyte(code & 0xFF))
+                out.write_byte(ubyte((code >> 8) & 0xFF))
+                out.write_byte(ubyte((code >> 16) & 0xFF))
+                out.write_byte(ubyte(0))
+
+                i = i + 1
+            od
+
+            return out.to_array()
+        si
+
+        get_string(bytes: ubyte[]) -> string is
+            let chars = Collections.LIST[char](bytes.count / 4)
+            let i mut = 0
+
+            while i + 4 <= bytes.count do
+                let code = cast long(bytes[i]) | (cast long(bytes[i + 1]) << 8) | (cast long(bytes[i + 2]) << 16) | (cast long(bytes[i + 3]) << 24)
+
+                if code > 0x10FFFFL \/ (code >= 0xD800L /\ code <= 0xDFFFL) then
+                    chars.add(char(0xFFFD))
+                elif code >= 0x10000L then
+                    let offset = int(code) - 0x10000
+
+                    chars.add(char(0xD800 + (offset >> 10)))
+                    chars.add(char(0xDC00 + (offset & 0x3FF)))
+                else
+                    chars.add(char(int(code)))
+                fi
+
+                i = i + 4
+            od
+
+            if i < bytes.count then
+                chars.add(char(0xFFFD))
+            fi
+
+            return string(chars.to_array())
+        si
+    si
+si
+
+namespace IO is
+    /// Writes text into a string, as .NET's `System.IO.StringWriter` does.
+    class StringWriter: TextWriter is
+        _text: Text.STRING_BUILDER
+
+        /// A writer over an empty string.
+        init() is
+            super.init()
+
+            _text = Text.STRING_BUILDER()
+        si
+
+        write(text: string) pure =>
+            _text.append(text)
+
+        /// Everything written so far.
+        to_string() -> string => _text.to_string()
+    si
+si

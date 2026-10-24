@@ -1,0 +1,108 @@
+namespace System.Runtime.CompilerServices is
+    // What the compiler's lowering of an asynchronous function uses, as .NET
+    // names it: the state machine the function becomes, the awaiter shapes,
+    // and the attribute naming the builder a task-like type is driven by.
+    // The task-like types and their builders are declared by the libraries
+    // that offer them, such as ghul-runtime's coroutines.
+
+    /// The state machine an asynchronous function compiles to.
+    trait IAsyncStateMachine is
+        /// Runs the machine until it next suspends or finishes.
+        move_next();
+
+        /// Hands the machine the copy of itself its builder keeps. A machine
+        /// that is a class has nothing to do here.
+        ///
+        /// - state_machine: the copy the builder keeps
+        set_state_machine(state_machine: IAsyncStateMachine);
+    si
+
+    /// An awaiter that runs a continuation once what was awaited completes.
+    trait INotifyCompletion is
+        /// Runs `continuation` once what was awaited completes.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void);
+    si
+
+    /// An awaiter that can run a continuation without flowing an execution
+    /// context to it.
+    trait ICriticalNotifyCompletion: INotifyCompletion is
+        /// Runs `continuation` once what was awaited completes.
+        ///
+        /// - continuation: what to run
+        unsafe_on_completed(continuation: () -> void);
+    si
+
+    /// Names the builder the compiler drives for an asynchronous function
+    /// returning the type this marks.
+    class AsyncMethodBuilderAttribute is
+        /// The builder type.
+        builder_type: Ghul.Type
+
+        /// An attribute naming `builder_type`.
+        ///
+        /// - builder_type: the builder type
+        init(builder_type: Ghul.Type) is
+            self.builder_type = builder_type
+        si
+    si
+si
+
+namespace System.Runtime.ExceptionServices is
+    /// An exception captured so that it can be thrown again.
+    class ExceptionDispatchInfo is
+        _exception: Ghul.Exception
+
+        init(exception: Ghul.Exception) is
+            _exception = exception
+        si
+
+        /// The exception that was captured.
+        source_exception: Ghul.Exception => _exception
+
+        /// Captures `exception` so that it can be thrown again.
+        ///
+        /// - exception: the exception to capture
+        capture(exception: Ghul.Exception) -> ExceptionDispatchInfo static =>
+            ExceptionDispatchInfo(exception)
+
+        /// Throws the captured exception again.
+        `throw() is
+            throw _exception
+        si
+    si
+si
+
+namespace System is
+    /// The members of .NET's `System.Environment` the wasm target has: the
+    /// time since the program started, for measuring intervals, and reading a
+    /// variable. The whole environment and the arguments are `Ghul.Environment`.
+    class Environment is
+        /// Milliseconds since the program started, which only ever increase.
+        tick_count64: long static => cast long(_monotonic_milliseconds())
+
+        /// Milliseconds since the program started, which only ever increase
+        /// until they no longer fit in an `int`.
+        tick_count: int static => cast int(tick_count64)
+
+        /// The bytes of physical memory the process occupies: the resident
+        /// set, or the working set where the system calls it that. It reads
+        /// the figure without collecting, and is 0 where the host cannot say.
+        working_set: long static => cast long(_working_set_bytes())
+
+        /// The value of the environment variable `name`, or absent if it is not set.
+        ///
+        /// - name: the variable's name
+        get_environment_variable(name: string) -> string? static =>
+            Ghul.ENVIRONMENT.instance[name]
+
+        // Milliseconds since the program started, as the host measures them.
+        @intrinsic("host.monotonic_milliseconds")
+        _monotonic_milliseconds() -> double static
+
+        // The process's resident memory, as the host measures it.
+        @intrinsic("host.working_set_bytes")
+        _working_set_bytes() -> double static
+    si
+si

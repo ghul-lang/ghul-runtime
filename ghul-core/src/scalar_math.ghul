@@ -1,0 +1,201 @@
+namespace Ghul is
+    // The static members .NET gives the numeric types themselves, such as
+    // `int.max(a, b)` and `double.sqrt(x)`, each answering as `Math` does.
+
+    partial int is
+        /// The magnitude of `value`.
+        ///
+        /// - value: the value
+        abs(value: int) -> int static pure => Math.abs(value)
+
+        /// The lesser of `a` and `b`.
+        ///
+        /// - a: one value
+        /// - b: the other
+        min(a: int, b: int) -> int static pure => Math.min(a, b)
+
+        /// The greater of `a` and `b`.
+        ///
+        /// - a: one value
+        /// - b: the other
+        max(a: int, b: int) -> int static pure => Math.max(a, b)
+
+        /// `value` brought within `min` and `max`.
+        ///
+        /// - value: the value
+        /// - min: the least it may be
+        /// - max: the most it may be
+        clamp(value: int, min: int, max: int) -> int static pure => Math.clamp(value, min, max)
+
+        /// -1, 0 or 1 as `value` is negative, zero or positive.
+        ///
+        /// - value: the value
+        sign(value: int) -> int static pure => Math.sign(value)
+    si
+
+    partial long is
+        /// The magnitude of `value`.
+        ///
+        /// - value: the value
+        abs(value: long) -> long static pure => Math.abs(value)
+
+        /// The lesser of `a` and `b`.
+        ///
+        /// - a: one value
+        /// - b: the other
+        min(a: long, b: long) -> long static pure => Math.min(a, b)
+
+        /// The greater of `a` and `b`.
+        ///
+        /// - a: one value
+        /// - b: the other
+        max(a: long, b: long) -> long static pure => Math.max(a, b)
+
+        /// `value` brought within `min` and `max`.
+        ///
+        /// - value: the value
+        /// - min: the least it may be
+        /// - max: the most it may be
+        clamp(value: long, min: long, max: long) -> long static pure => Math.clamp(value, min, max)
+
+        /// -1, 0 or 1 as `value` is negative, zero or positive.
+        ///
+        /// - value: the value
+        sign(value: long) -> int static pure => Math.sign(value)
+    si
+
+    partial double is
+        /// The magnitude of `value`.
+        ///
+        /// - value: the value
+        abs(value: double) -> double static pure => Math.abs(value)
+
+        /// The lesser of `a` and `b`.
+        ///
+        /// - a: one value
+        /// - b: the other
+        min(a: double, b: double) -> double static pure => Math.min(a, b)
+
+        /// The greater of `a` and `b`.
+        ///
+        /// - a: one value
+        /// - b: the other
+        max(a: double, b: double) -> double static pure => Math.max(a, b)
+
+        /// `value` brought within `min` and `max`.
+        ///
+        /// - value: the value
+        /// - min: the least it may be
+        /// - max: the most it may be
+        clamp(value: double, min: double, max: double) -> double static pure => Math.clamp(value, min, max)
+
+        /// -1, 0 or 1 as `value` is negative, zero or positive.
+        ///
+        /// - value: the value
+        sign(value: double) -> int static pure => Math.sign(value)
+
+        /// The square root of `value`.
+        ///
+        /// - value: the value
+        sqrt(value: double) -> double static pure => Math.sqrt(value)
+
+        /// The cube root of `value`.
+        ///
+        /// - value: the value
+        cbrt(value: double) -> double static pure => Math.cbrt(value)
+
+        /// The greatest whole number not above `value`.
+        ///
+        /// - value: the value
+        floor(value: double) -> double static pure => Math.floor(value)
+
+        /// The least whole number not below `value`.
+        ///
+        /// - value: the value
+        ceiling(value: double) -> double static pure => Math.ceiling(value)
+
+        /// `value` with its fraction dropped.
+        ///
+        /// - value: the value
+        truncate(value: double) -> double static pure => Math.truncate(value)
+
+        /// `value` rounded to the nearest whole number, a tie going to the even one.
+        ///
+        /// - value: the value
+        round(value: double) -> double static pure => Math.round(value)
+
+        /// e raised to `value`.
+        ///
+        /// - value: the value
+        exp(value: double) -> double static pure => Math.exp(value)
+
+        /// The natural logarithm of `value`.
+        ///
+        /// - value: the value
+        log(value: double) -> double static pure => Math.log(value)
+
+        /// The base-10 logarithm of `value`.
+        ///
+        /// - value: the value
+        log10(value: double) -> double static pure => Math.log10(value)
+
+        /// The base-2 logarithm of `value`.
+        ///
+        /// - value: the value
+        log2(value: double) -> double static pure => Math.log2(value)
+
+        /// The sine of `value`, in radians.
+        ///
+        /// - value: the value
+        sin(value: double) -> double static pure => Math.sin(value)
+
+        /// The cosine of `value`, in radians.
+        ///
+        /// - value: the value
+        cos(value: double) -> double static pure => Math.cos(value)
+
+        /// The tangent of `value`, in radians.
+        ///
+        /// - value: the value
+        tan(value: double) -> double static pure => Math.tan(value)
+
+        /// The angle, in radians, whose sine is `value`.
+        ///
+        /// - value: the value
+        asin(value: double) -> double static pure => Math.asin(value)
+
+        /// The angle, in radians, whose cosine is `value`.
+        ///
+        /// - value: the value
+        acos(value: double) -> double static pure => Math.acos(value)
+
+        /// The angle, in radians, whose tangent is `value`.
+        ///
+        /// - value: the value
+        atan(value: double) -> double static pure => Math.atan(value)
+
+        /// `x` raised to `y`.
+        ///
+        /// - x: the base
+        /// - y: the exponent
+        pow(x: double, y: double) -> double static pure => Math.pow(x, y)
+
+        /// The angle, in radians, of the point (`x`, `y`) from the positive x axis.
+        ///
+        /// - y: the point's y
+        /// - x: the point's x
+        atan2(y: double, x: double) -> double static pure => Math.atan2(y, x)
+
+        /// The logarithm of `value` to `base`.
+        ///
+        /// - value: the value
+        /// - base: the base
+        log(value: double, base: double) -> double static pure => Math.log(value, base)
+
+        /// `value` rounded to `digits` decimal places.
+        ///
+        /// - value: the value
+        /// - digits: the decimal places to keep
+        round(value: double, digits: int) -> double static pure => Math.round(value, digits)
+    si
+si

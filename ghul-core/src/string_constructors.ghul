@@ -1,0 +1,72 @@
+namespace Ghul.Internal is
+    /// The string constructors .NET's string declares, which the compiler
+    /// offers as overloads of string's own.
+    class STRING_CHAR_CONSTRUCTORS is
+        /// A string holding the code units of `chars`, in order.
+        ///
+        /// - chars: the code units
+        @intrinsic("constructor.from_chars")
+        from_chars(chars: char[]) -> string static pure => _string_from_chars(chars, 0, chars.count)
+
+        /// A string holding `count` copies of `unit`.
+        ///
+        /// - unit: the code unit to repeat
+        /// - count: how many copies, which must not be negative
+        @intrinsic("constructor.from_repeated")
+        from_repeated(unit: char, count: int) -> string static pure is
+            if count < 0 then
+                throw Ghul.ArgumentOutOfRangeException("count", "the count must not be negative")
+            fi
+
+            return Text.STRING_BUILDER().append(unit, count).to_string()
+        si
+    si
+
+    /// Joins strings end to end without copying the same characters over and
+    /// over.
+    class STRING_JOINER is
+        /// The strings of `parts` joined end to end, in order.
+        ///
+        /// - parts: the strings to join
+        join(parts: Collections.LIST[string]) -> string static is
+            let pieces = Ghul._array_new[string](parts.count)
+            let i mut = 0
+
+            while i < parts.count do
+                Ghul._array_set(pieces, i, parts[i])
+                i = i + 1
+            od
+
+            return join(pieces)
+        si
+
+        /// The strings of `parts` joined end to end, in order, in one copy.
+        ///
+        /// - parts: the strings to join
+        join(parts: string[]) -> string static is
+            let total mut = 0
+            let i mut = 0
+
+            while i < parts.count do
+                total = total + parts[i].length
+                i = i + 1
+            od
+
+            let chars = Ghul._array_new[char](total)
+            let at mut = 0
+
+            i = 0
+
+            while i < parts.count do
+                let part = parts[i]
+
+                _string_copy_to(part, 0, chars, at, part.length)
+
+                at = at + part.length
+                i = i + 1
+            od
+
+            return _string_from_chars(chars, 0, total)
+        si
+    si
+si

@@ -1,0 +1,10 @@
+// Decimals compare and add as they do on .NET.
+//
+// Decimals are not yet compiled for the wasm target, so calling f records
+// the diagnostics that say so until they are.
+f(price: decimal) -> bool =>
+    price < price + 2.25m /\ price =~ price
+
+entry() is
+    let _ = f(1.5m)
+si

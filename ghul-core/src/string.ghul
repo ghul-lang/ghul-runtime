@@ -1,0 +1,63 @@
+namespace Ghul is
+    partial string is
+        /// The number of UTF-16 code units the string holds.
+        length: int => _string_length(self)
+
+        /// The UTF-16 code unit at `index`.
+        ///
+        /// - index: the position of the code unit, from 0
+        [index: int]: char => _string_char_at(self, index)
+
+        /// Whether `other` holds the same code units.
+        ///
+        /// - other: the string to compare with
+        =~(other: string) -> bool pure => Ghul.Intrinsics.`=~(self, other)
+
+        /// A hash of the string's code units, equal for strings that are
+        /// `=~`. The value is the same from run to run, where .NET's varies
+        /// by process, so no program can rely on a particular value.
+        get_hash_code() -> int pure is
+            let hash mut = -2128831035
+            let i mut = 0
+
+            while i < length do
+                hash = (hash ^ cast int(self[i])) * 16777619
+                i = i + 1
+            od
+
+            return hash
+        si
+
+        /// Whether `other` is a string holding the same code units, as .NET's
+        /// `Equals` has it, so a string held as `object` compares by content.
+        ///
+        /// - other: the object to compare with
+        equals(other: object?) -> bool pure =>
+            if let s: string = other then self =~ s else false fi
+
+        /// The string itself.
+        to_string() -> string pure => self
+    si
+
+    @intrinsic("string.length")
+    _string_length(text: string) -> int pure
+
+    @intrinsic("string.char_at")
+    _string_char_at(text: string, index: int) -> char pure
+
+    @intrinsic("string.concat")
+    _string_concat(left: string?, right: string?) -> string pure
+
+    @intrinsic("string.from_char")
+    _string_from_char(unit: char) -> string pure
+
+    // A new string of the `count` code units of `chars` from `start` on, in
+    // one copy. The range is not checked.
+    @intrinsic("string.from_chars")
+    _string_from_chars(chars: char[], start: int, count: int) -> string pure
+
+    // Copies the `count` code units of `text` from `start` on into `chars`
+    // from `at` on, in one move. The ranges are not checked.
+    @intrinsic("string.copy_to")
+    _string_copy_to(text: string, start: int, chars: char[], at: int, count: int)
+si

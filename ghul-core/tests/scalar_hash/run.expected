@@ -1,0 +1,14 @@
+bool true true 1
+byte true -1
+ubyte true 200
+short true -2
+ushort true 60000
+char true 65
+int true -7 42
+uint true -294967296
+long true 0 256
+ulong true -2
+word true 123
+uword true -2
+single true true 0
+double true true true

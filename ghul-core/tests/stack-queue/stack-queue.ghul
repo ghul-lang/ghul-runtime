@@ -1,0 +1,45 @@
+// STACK, Queue and SET's set operations, and a KEY_VALUE_PAIR destructured
+// by position, as on .NET: a stack and a queue iterate from the end they
+// remove from, and an empty one throws when read.
+
+use default
+
+let s = STACK[int]()
+s.push(1); s.push(2); s.push(3)
+write_line("{s.count} {s.peek()} {s.pop()} {s.pop()} {s.count} {s.contains(1)} {s.contains(3)}")
+for i in 4::9 do s.push(i) od
+write_line(s |> join(","))
+write_line(s.to_array() |> join(","))
+let s2 = STACK([7, 8, 9])
+write_line("{s2.pop()}")
+
+let q = Queue[string]()
+q.enqueue("a"); q.enqueue("b"); q.enqueue("c")
+write_line("{q.dequeue()} {q.peek()} {q.count}")
+for i in 1::6 do q.enqueue("{i}") od
+write_line(q |> join(","))
+write_line("{q.dequeue()} {q.dequeue()} {q.contains("3")} {q.contains("z")}")
+
+let a = SET([1, 2, 3])
+let b = SET([2, 3, 4])
+a.union_with(b)
+write_line("{a.count} {a.set_equals([4, 3, 2, 1, 1])} {SET([2, 3]).is_subset_of(b)} {b.is_superset_of([2, 4])} {a.overlaps([9, 4])}")
+let c = SET([1, 2, 3, 4])
+c.intersect_with([2, 4, 6])
+write_line("{c.count} {c.contains(2)} {c.contains(3)}")
+c.except_with([2])
+write_line("{c.count} {c.contains(4)}")
+
+let m = MAP[string, int]()
+m["x"] = 1
+m["y"] = 2
+for (k, v) in m do write_line("{k}={v}") od
+write_line("{m |> map(((k, v)) => v) |> sum()}")
+let (kk, vv) = KEY_VALUE_PAIR("p", 5)
+write_line("{kk} {vv}")
+
+try
+    STACK[int]().pop()
+catch e: Ghul.InvalidOperationException
+    write_line(e.message)
+yrt

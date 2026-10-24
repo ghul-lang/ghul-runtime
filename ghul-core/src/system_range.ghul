@@ -1,0 +1,108 @@
+// .NET's index and range types, under the names .NET gives them, so code
+// written against `System.Index` and `System.Range` builds on both targets.
+@@suppress("non-upper-snake-case-name")
+
+namespace System is
+    use Ghul.ArgumentOutOfRangeException
+
+    /// A position in a sequence, counted from its start or back from its end.
+    struct Index is
+        /// The count of elements from the start, or back from the end.
+        value: int
+
+        /// Whether `value` is counted back from the end.
+        is_from_end: bool
+
+        /// Creates an index `value` elements from the start, or back from the
+        /// end where `from_end` is true.
+        ///
+        /// - value: the count of elements, which must not be negative
+        /// - from_end: whether `value` is counted back from the end
+        init(value: int, from_end: bool) is
+            if value < 0 then
+                throw ArgumentOutOfRangeException("value", "the index must not be negative")
+            fi
+
+            self.value = value
+            is_from_end = from_end
+        si
+
+        /// The index of the first element.
+        start: Index static => Index(0, false)
+
+        /// The index one past the last element.
+        end: Index static => Index(0, true)
+
+        /// An index `value` elements from the start.
+        ///
+        /// - value: the count of elements, which must not be negative
+        from_start(value: int) -> Index static => Index(value, false)
+
+        /// An index `value` elements back from the end.
+        ///
+        /// - value: the count of elements, which must not be negative
+        from_end(value: int) -> Index static => Index(value, true)
+
+        /// The index as .NET writes it: its value, after a `^` where it is
+        /// counted back from the end.
+        to_string() -> string => if is_from_end then "^{value}" else "{value}" fi
+
+        /// The position this index stands for in a sequence of `length`
+        /// elements, counted from its start.
+        ///
+        /// - length: the number of elements in the sequence
+        get_offset(length: int) -> int =>
+            if is_from_end then length - value else value fi
+    si
+
+    /// The part of a sequence between two indexes, the start included and
+    /// the end not.
+    struct Range is
+        /// Where the range starts.
+        start: Index
+
+        /// Where the range ends, not included.
+        end: Index
+
+        /// Creates the range from `start` up to but not including `end`.
+        ///
+        /// - start: where the range starts
+        /// - end: where the range ends, not included
+        init(start: Index, end: Index) is
+            self.start = start
+            self.end = end
+        si
+
+        /// The range covering a whole sequence.
+        all: Range static => Range(Index.start, Index.end)
+
+        /// The range from `start` to the end of a sequence.
+        ///
+        /// - start: where the range starts
+        start_at(start: Index) -> Range static => Range(start, Index.end)
+
+        /// The range from the start of a sequence up to but not including `end`.
+        ///
+        /// - end: where the range ends, not included
+        end_at(end: Index) -> Range static => Range(Index.start, end)
+
+        /// The range as .NET writes it: its two indexes either side of `..`.
+        to_string() -> string => "{start.to_string()}..{end.to_string()}"
+
+        /// Where this range starts in a sequence of `length` elements, and how
+        /// many elements it covers there.
+        ///
+        /// - length: the number of elements in the sequence, which the range
+        ///   must fall within
+        get_offset_and_length(length: int) -> (offset: int, length: int) is
+            let first = start.get_offset(length)
+            let last = end.get_offset(length)
+
+            if first < 0 \/ last > length \/ first > last then
+                throw ArgumentOutOfRangeException("length", "the range does not fall within the sequence")
+            fi
+
+            return (offset = first, length = last - first)
+        si
+    si
+si

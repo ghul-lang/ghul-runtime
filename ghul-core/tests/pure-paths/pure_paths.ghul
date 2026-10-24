@@ -1,0 +1,27 @@
+// A field narrowed by a presence test stays narrowed across resolving a
+// path, since resolving one reads the current directory and stores
+// nothing.
+use IO.Std.write_line
+
+class HOLDER is
+    _name: string?
+
+    init(name: string) is
+        _name = name
+    si
+
+    report() -> string is
+        if _name? then
+            let full = IO.Path.get_full_path("/a/b/../c")
+            let relative = IO.Path.get_relative_path("/a/b", "/a/c/d")
+
+            return "{_name.length} {full} {relative}"
+        fi
+
+        return "absent"
+    si
+si
+
+entry() is
+    write_line(HOLDER("name").report())
+si

@@ -1,0 +1,12 @@
+// A tuple's elements read by position and by name, and a tuple
+// destructures, as they do on .NET. The program's exit status is what f
+// answers.
+swap(pair: (int, bool)) -> (bool, int) => (pair.`1, pair.`0)
+
+f(named: (x: int, y: int)) -> int is
+    let (a, b) = swap((named.x, true))
+
+    return if a then b + named.y else 0 fi
+si
+
+entry() -> int => f((x = 1, y = 2))

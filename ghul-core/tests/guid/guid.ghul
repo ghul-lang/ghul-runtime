@@ -1,0 +1,22 @@
+// System.Guid: a random guid is version 4 in .NET's text form, a guid made
+// from bytes reads them as .NET does, and guids compare by their bits.
+use IO.Std.write_line
+use Ghul.Pipes
+use System.Guid
+
+entry() is
+    let first = Guid.new_guid()
+    let second = Guid.new_guid()
+    let text = first.to_string()
+
+    write_line("{text.length} {text[8]}{text[13]}{text[18]}{text[23]} {text[14]} {"89ab".index_of(text[19]) >= 0}")
+    write_line("{first =~ second} {first =~ first} {first.to_string() =~ second.to_string()}")
+
+    let bytes: ubyte[] = [1ub, 2ub, 3ub, 4ub, 5ub, 6ub, 7ub, 8ub, 9ub, 10ub, 11ub, 12ub, 13ub, 14ub, 15ub, 255ub]
+    let made = Guid(bytes)
+
+    write_line(made.to_string())
+    write_line(made.to_byte_array() |> map(b => "{b}") |> join(" "))
+    write_line("{made =~ Guid(bytes)} {made =~ Guid.empty} {made.get_hash_code() == Guid(bytes).get_hash_code()}")
+    write_line(Guid.empty.to_string())
+si

@@ -1,0 +1,62 @@
+// A map or set that has never held an entry has no table. Every member
+// answers as for an empty collection, and the first insert makes one, as it
+// does again after clear.
+
+use IO.Std.write_line
+
+entry() is
+    let ages = Collections.MAP[int, int]()
+    let found mut = 5
+
+    write_line("{ages.count} {ages.contains_key(1)} {ages.contains_value(1)} {ages.remove(1)}")
+    write_line("{ages.try_get_value(1, found ref)} {found}")
+
+    let entries mut = 0
+
+    for (key, value) in ages do
+        entries = entries + 1
+    od
+
+    for key in ages.keys do
+        entries = entries + 1
+    od
+
+    for value in ages.values do
+        entries = entries + 1
+    od
+
+    write_line("entries {entries}")
+
+    try
+        let missing = ages[1]
+        write_line("read {missing}")
+    catch ex: Collections.KeyNotFoundException
+        write_line("not found")
+    yrt
+
+    ages[1] = 10
+    ages.add(2, 20)
+    write_line("{ages.count} {ages[1]} {ages[2]}")
+
+    ages.clear()
+    write_line("{ages.count} {ages.contains_key(1)}")
+
+    ages[3] = 30
+    write_line("{ages.count} {ages[3]}")
+
+    let sized = Collections.MAP[int, int](0)
+    sized[4] = 40
+    write_line("{sized.count} {sized[4]}")
+
+    let names = Collections.SET[int]()
+    let members mut = 0
+
+    for name in names do
+        members = members + 1
+    od
+
+    write_line("{names.count} {names.contains(1)} {names.remove(1)} members {members}")
+
+    names.add(7)
+    write_line("{names.count} {names.contains(7)}")
+si

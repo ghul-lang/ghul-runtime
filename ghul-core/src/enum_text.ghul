@@ -1,0 +1,64 @@
+namespace Ghul.Internal is
+    use Collections.LIST
+    use Text.STRING_BUILDER
+
+    /// The text of an enum value, as .NET's `Enum.ToString` gives it. The
+    /// compiler calls this with the enum's members, since a value of an enum
+    /// is held as the integer underneath it and carries no names of its own.
+    class ENUM_TEXT is
+        /// The name of the member `value` is, or for a flags enum the names
+        /// of the members it combines, joined with ", ", or else the number.
+        ///
+        /// - value: the value to name
+        /// - names: the enum's member names, in ascending order of value
+        /// - values: each member's value, in the same order as `names`
+        /// - is_flags: whether the enum combines its members as flags
+        of(value: int, names: string[], values: int[], is_flags: bool) -> string static is
+            for i in 0..values.count do
+                if values[i] == value then
+                    return names[i]
+                fi
+            od
+
+            if !is_flags \/ value == 0 then
+                return value.to_string()
+            fi
+
+            let rest mut = value
+            let taken = LIST[int]()
+
+            let i mut = values.count - 1
+
+            while i >= 0 /\ rest != 0 do
+                let member = values[i]
+
+                if member != 0 /\ rest & member == member then
+                    rest = rest - member
+                    taken.add(i)
+                fi
+
+                i = i - 1
+            od
+
+            if rest != 0 then
+                return value.to_string()
+            fi
+
+            let text = STRING_BUILDER()
+
+            let j mut = taken.count - 1
+
+            while j >= 0 do
+                text.append(names[taken[j]])
+
+                if j > 0 then
+                    text.append(", ")
+                fi
+
+                j = j - 1
+            od
+
+            return text.to_string()
+        si
+    si
+si

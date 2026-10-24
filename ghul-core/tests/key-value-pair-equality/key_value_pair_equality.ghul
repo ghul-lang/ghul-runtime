@@ -1,0 +1,23 @@
+// Pairs compare by key and value, so a union holding a list of pairs
+// compares element by element.
+use IO.Std.write_line
+
+union Op is
+    APPENDED(list: Collections.LIST[Collections.KEY_VALUE_PAIR[string, int]])
+si
+
+entry() is
+    let a = Collections.KEY_VALUE_PAIR("one", 1)
+    let b = Collections.KEY_VALUE_PAIR("o{"ne"}", 1)
+    let c = Collections.KEY_VALUE_PAIR("one", 2)
+
+    write_line("{a =~ b} {a =~ c} {a.get_hash_code() == b.get_hash_code()}")
+
+    let left = Collections.LIST[Collections.KEY_VALUE_PAIR[string, int]]()
+    let right = Collections.LIST[Collections.KEY_VALUE_PAIR[string, int]]()
+
+    left.add(a)
+    right.add(b)
+
+    write_line("{Op.APPENDED(left) =~ Op.APPENDED(right)}")
+si

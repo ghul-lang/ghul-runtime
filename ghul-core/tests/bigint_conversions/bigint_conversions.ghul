@@ -1,0 +1,31 @@
+// cast between bigint and the scalars, a bigint under numeric formats,
+// one reached as object or a type parameter, and division by zero; the
+// expected text is what .NET prints for the same program.
+takes(b: bigint) -> bigint => b
+let i = 7
+let l = 9L
+let c = 'A'
+let b = 123456789n
+IO.Std.write_line("{takes(cast(i))} {takes(cast(l))} {takes(cast(c))} {cast bigint(i)} {bigint(i)} {bigint(l)} {bigint(2.9)}")
+IO.Std.write_line("{cast int(b)} {cast long(b)} {cast double(b)} {cast uint(b)} {cast char(65n)}")
+let x: bigint = cast(i)
+IO.Std.write_line("{x}")
+IO.Std.write_line("{895014631192902121n:N0} {255n:X} {(-256n):X} {(-1n):x} {12345n:D8} {12345n:F2} {(-5n):N0} {1234567n:E3}")
+try
+    IO.Std.write_line("{cast int(5000000000n)}")
+catch e: Ghul.OverflowException
+    IO.Std.write_line("overflow")
+yrt
+show[T](value: T) -> string => "{value}"
+
+let o: object = 12345678901234567890n
+IO.Std.write_line("{o}")
+IO.Std.write_line(o.to_string())
+IO.Std.write_line(show(42n))
+IO.Std.write_line([1n, 2n, 3n] |> Ghul.Pipes.join(", "))
+IO.Std.write_line("{[1n, 2n]}")
+try
+    IO.Std.write_line("{1n / 0n}")
+catch e: Ghul.DivideByZeroException
+    IO.Std.write_line("caught")
+yrt
