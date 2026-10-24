@@ -70,11 +70,11 @@ namespace Tests is
         iterator: Iterator[T] => COUNTING_ITERATOR[T](values, total)
     si
 
-    // Coverage for `buffered`: the prefix comes first on every read, the
-    // first read continues the iterator it was built from without
-    // re-reading the source, and every later read re-derives from the
-    // source, skipping to where the prefix ends, so nothing of the tail
-    // is ever buffered.
+    // Coverage for the buffered pipe stages: the prefix comes first on
+    // every read, the first read continues the iterator the stage was
+    // built from without re-reading the source, and every later read
+    // re-derives from the source, skipping to where the prefix ends, so
+    // nothing of the tail is ever buffered.
     @TestClass()
     class BUFFERED_PIPEShould is
         init() is
@@ -83,15 +83,15 @@ namespace Tests is
         @Test()
         Read_YieldsPrefixThenTailInOrder() is
             let source = [3, 4, 5]
-            let p = buffered(1, 2, source, 0)
+            let p = BUFFERED_1_PIPE[int](1, source, 0, source.iterator)
 
-            assert_elements([1, 2, 3, 4, 5], drain(p))
+            assert_elements([1, 3, 4, 5], drain(p))
         si
 
         @Test()
         Read_NoPrefix_SkipsToWhereThePrefixWouldEnd() is
             let source = [1, 2, 3, 4]
-            let p = buffered(source, 2)
+            let p = BUFFERED_0_PIPE[int](source, 2, null)
 
             assert_elements([3, 4], drain(p))
         si
@@ -99,7 +99,7 @@ namespace Tests is
         @Test()
         Read_SkipAdjustsTheTail() is
             let source = ["a", "b", "c", "d"]
-            let p = buffered("x", source, 2)
+            let p = BUFFERED_1_PIPE[string]("x", source, 2, null)
 
             assert_elements(["x", "c", "d"], drain(p))
         si
@@ -115,7 +115,7 @@ namespace Tests is
             are_equal(2, source.handed_out)
 
             // One element was pulled past what the arm matched.
-            let p = buffered(live, 2, source, 2)
+            let p = BUFFERED_1_PIPE[int](2, source, 2, live)
 
             assert_elements([2, 3, 4], drain(p))
             are_equal(4, source.handed_out)
@@ -129,7 +129,7 @@ namespace Tests is
             is_true(live.move_next())
             are_equal(1, source.handed_out)
 
-            let p = buffered(live, 0, source, 1)
+            let p = BUFFERED_1_PIPE[int](0, source, 1, live)
 
             assert_elements([0, 2, 3, 4], drain(p))
             are_equal(4, source.handed_out)
@@ -144,7 +144,7 @@ namespace Tests is
         @Test()
         Read_EmptyTail_YieldsOnlyThePrefix() is
             let source = ["x", "y"]
-            let p = buffered("a", "b", source, 2)
+            let p = BUFFERED_2_PIPE[string]("a", "b", source, 2, null)
 
             assert_elements(["a", "b"], drain(p))
 
@@ -158,7 +158,7 @@ namespace Tests is
         @Test()
         Read_SkipPastTheEnd_YieldsOnlyThePrefix() is
             let source = ["x"]
-            let p = buffered("a", source, 5)
+            let p = BUFFERED_1_PIPE[string]("a", source, 5, null)
 
             assert_elements(["a"], drain(p))
         si
@@ -166,7 +166,7 @@ namespace Tests is
         @Test()
         Read_OverInfiniteTail_PullsOnlyWhatIsConsumed() is
             let naturals = stream(0, n => n || n + 1)
-            let p = buffered(-1, naturals, 0)
+            let p = BUFFERED_1_PIPE[int](-1, naturals, 0, null)
 
             are_equal("-1, 0, 1", p |> take(3) |> join(", "))
 

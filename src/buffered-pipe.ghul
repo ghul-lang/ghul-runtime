@@ -114,12 +114,6 @@ namespace Ghul.Pipes is
             super.init(source, skip, 0, live)
         si
 
-        init(source: Iterable[T], skip: int) is
-            let no_live: Iterator[T]? = null
-
-            super.init(source, skip, 0, no_live)
-        si
-
         fresh() -> PipeStage[T] is
             let no_live: Iterator[T]? = null
 
@@ -135,14 +129,6 @@ namespace Ghul.Pipes is
 
         init(e0: T, source: Iterable[T], skip: int, live: Iterator[T]?) is
             super.init(source, skip, 1, live)
-
-            _e0 = e0
-        si
-
-        init(e0: T, source: Iterable[T], skip: int) is
-            let no_live: Iterator[T]? = null
-
-            super.init(source, skip, 1, no_live)
 
             _e0 = e0
         si
@@ -168,15 +154,6 @@ namespace Ghul.Pipes is
             _e1 = e1
         si
 
-        init(e0: T, e1: T, source: Iterable[T], skip: int) is
-            let no_live: Iterator[T]? = null
-
-            super.init(source, skip, 2, no_live)
-
-            _e0 = e0
-            _e1 = e1
-        si
-
         fresh() -> PipeStage[T] is
             let no_live: Iterator[T]? = null
 
@@ -194,16 +171,6 @@ namespace Ghul.Pipes is
 
         init(e0: T, e1: T, e2: T, source: Iterable[T], skip: int, live: Iterator[T]?) is
             super.init(source, skip, 3, live)
-
-            _e0 = e0
-            _e1 = e1
-            _e2 = e2
-        si
-
-        init(e0: T, e1: T, e2: T, source: Iterable[T], skip: int) is
-            let no_live: Iterator[T]? = null
-
-            super.init(source, skip, 3, no_live)
 
             _e0 = e0
             _e1 = e1
