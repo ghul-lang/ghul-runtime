@@ -1,4 +1,5 @@
 src/adaptor-pipe.ghul
+src/buffered-pipe.ghul
 src/cat-pipe.ghul
 src/chunk-pipe.ghul
 src/count-pipe.ghul

@@ -1,0 +1,119 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    // A lazy sequence pattern pulls elements from its source's iterator
+    // into locals; the rest element one of its arms binds is the elements
+    // the pull took past what the arm matched, followed by what remains
+    // of that iterator. These stages hold that prefix in fields - one,
+    // two or three of them, a longer prefix chained from single-element
+    // stages - so building a rest value allocates the stage and nothing
+    // to hold the elements it already has. The tail is a shared cache
+    // pulled once: every later read of the same rest replays it.
+    /// A pipe over elements already pulled from a source, followed by
+    /// what remains of that source's iterator. Each read starts from the
+    /// first prefix element; the tail is pulled once and shared by every
+    /// read.
+    class BufferedPipeBase[T]: PipeStage[T] abstract is
+        tail: MEMO_CACHE[T] protected
+        _prefix_count: int protected
+        _at: int
+
+        init(tail: MEMO_CACHE[T], prefix_count: int) is
+            super.init()
+
+            self.tail = tail
+            self._prefix_count = prefix_count
+        si
+
+        /// A new read of the same prefix over the same shared tail cache.
+        fresh() -> PipeStage[T]
+
+        /// The prefix element at `at`, which is below `prefix_count`.
+        prefix_element(at: int) -> T
+
+        /// Advances over the prefix, then pulls and caches the next tail
+        /// element.
+        move_next() -> bool is
+            if _at < _prefix_count \/ tail.has_element(_at - _prefix_count) then
+                _at = _at + 1
+
+                return true
+            fi
+
+            return false
+        si
+
+        /// The most recently produced element.
+        current: T =>
+            if _at <= _prefix_count then
+                prefix_element(_at - 1)
+            else
+                tail.elements[_at - _prefix_count - 1]
+            fi
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Has no effect: the tail's iterator is shared by every read and
+        /// is released when the tail runs out.
+        dispose() is
+        si
+    si
+
+    /// A buffered pipe over one already-pulled element and a tail.
+    class BUFFERED_1_PIPE[T]: BufferedPipeBase[T] is
+        _e0: T
+
+        init(e0: T, tail: MEMO_CACHE[T]) is
+            super.init(tail, 1)
+
+            _e0 = e0
+        si
+
+        fresh() -> PipeStage[T] => BUFFERED_1_PIPE[T](_e0, tail)
+
+        prefix_element(at: int) -> T => _e0
+    si
+
+    /// A buffered pipe over two already-pulled elements and a tail.
+    class BUFFERED_2_PIPE[T]: BufferedPipeBase[T] is
+        _e0: T
+        _e1: T
+
+        init(e0: T, e1: T, tail: MEMO_CACHE[T]) is
+            super.init(tail, 2)
+
+            _e0 = e0
+            _e1 = e1
+        si
+
+        fresh() -> PipeStage[T] => BUFFERED_2_PIPE[T](_e0, _e1, tail)
+
+        prefix_element(at: int) -> T => if at == 0 then _e0 else _e1 fi
+    si
+
+    /// A buffered pipe over three already-pulled elements and a tail.
+    class BUFFERED_3_PIPE[T]: BufferedPipeBase[T] is
+        _e0: T
+        _e1: T
+        _e2: T
+
+        init(e0: T, e1: T, e2: T, tail: MEMO_CACHE[T]) is
+            super.init(tail, 3)
+
+            _e0 = e0
+            _e1 = e1
+            _e2 = e2
+        si
+
+        fresh() -> PipeStage[T] => BUFFERED_3_PIPE[T](_e0, _e1, _e2, tail)
+
+        prefix_element(at: int) -> T =>
+            case at
+            when 0 then _e0
+            when 1 then _e1
+            else _e2
+            esac
+    si
+si
