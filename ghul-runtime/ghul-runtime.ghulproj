@@ -16,7 +16,7 @@
     <Description>ghūl compiler runtime library</Description>
     <PackageDescription>ghūl compiler runtime library</PackageDescription>
     <PackageTags>ghul;ghūl;runtime</PackageTags>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <PackageOutputPath>../nupkg</PackageOutputPath>
     <PackageProjectUrl>https://ghul.dev</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -35,10 +35,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>  
-    <None Include="LICENSE*" Pack="true" PackagePath="\" />
+    <None Include="../README.md" Pack="true" PackagePath="\"/>  
+    <None Include="../LICENSE*" Pack="true" PackagePath="\" />
 
-    <None Include="./images/ghul-logo-icon.png" Pack="true" PackagePath=""/>
+    <None Include="../images/ghul-logo-icon.png" Pack="true" PackagePath=""/>
 
     <GhulSources Include="src/**/*.ghul" />
 

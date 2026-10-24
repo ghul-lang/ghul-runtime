@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../ghul-runtime.ghulproj" />
+    <ProjectReference Include="../ghul-runtime/ghul-runtime.ghulproj" />
 
     <GhulSources Include="**/*.ghul" />
 
@@ -39,5 +39,5 @@
     <GhulOptions Include="--warn-as-error redundant-semicolon" />
   </ItemGroup>
 
-  <Import Project="../build/ghul.runtime.targets" />
+  <Import Project="../ghul-runtime/build/ghul.runtime.targets" />
 </Project>
