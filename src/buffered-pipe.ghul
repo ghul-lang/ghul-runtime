@@ -3,38 +3,84 @@ namespace Ghul.Pipes is
 
     // A lazy sequence pattern pulls elements from its source's iterator
     // into locals; the rest element one of its arms binds is the elements
-    // the pull took past what the arm matched, followed by what remains
+    // the pull took past what the arm matched, followed by the remainder
     // of that iterator. These stages hold that prefix in fields - one,
     // two or three of them, a longer prefix chained from single-element
     // stages - so building a rest value allocates the stage and nothing
-    // to hold the elements it already has. The tail is a shared cache
-    // pulled once: every later read of the same rest replays it.
+    // to hold the elements it already has.
+    //
+    // The tail is not buffered. The first read continues the iterator
+    // the pattern's pull left positioned (`live`), so it sees exactly
+    // what remained of the pull; every later read re-derives from
+    // `source`, skipping the elements the pattern matched, which costs
+    // no more than the pull itself did and holds nothing.
     /// A pipe over elements already pulled from a source, followed by
-    /// what remains of that source's iterator. Each read starts from the
-    /// first prefix element; the tail is pulled once and shared by every
-    /// read.
+    /// what remains of that source from just past them. Each read starts
+    /// from the first prefix element; the tail is not buffered - the
+    /// first read continues the iterator it was built from, and every
+    /// later read takes a fresh iterator from the source and skips to
+    /// where the prefix ends.
     class BufferedPipeBase[T]: PipeStage[T] abstract is
-        tail: MEMO_CACHE[T] protected
+        source: Iterable[T] protected
+        skip: int protected
         _prefix_count: int protected
+        _live: Iterator[T]?
         _at: int
 
-        init(tail: MEMO_CACHE[T], prefix_count: int) is
+        init(source: Iterable[T], skip: int, prefix_count: int, live: Iterator[T]?) is
             super.init()
 
-            self.tail = tail
-            self._prefix_count = prefix_count
+            self.source = source
+            self.skip = skip
+            _prefix_count = prefix_count
+            _live = live
         si
 
-        /// A new read of the same prefix over the same shared tail cache.
+        /// A new read of the same prefix over the same source, taking a
+        /// fresh iterator from it when it runs past the prefix.
         fresh() -> PipeStage[T]
 
         /// The prefix element at `at`, which is below `prefix_count`.
         prefix_element(at: int) -> T
 
-        /// Advances over the prefix, then pulls and caches the next tail
-        /// element.
+        // The tail's iterator: the one built with, while it lasts, and
+        // otherwise a fresh one from the source positioned just past
+        // the elements the prefix stands for. Null once neither can
+        // supply another element.
+        tail_iterator() -> Iterator[T]? is
+            let it = _live
+
+            if it? then
+                return it
+            fi
+
+            let fresh_iterator = source.iterator
+            let skipped mut = 0
+
+            while skipped < skip do
+                if !fresh_iterator.move_next() then
+                    return null
+                fi
+
+                skipped = skipped + 1
+            od
+
+            _live = fresh_iterator
+
+            return fresh_iterator
+        si
+
+        /// Advances over the prefix, then over what remains of the tail.
         move_next() -> bool is
-            if _at < _prefix_count \/ tail.has_element(_at - _prefix_count) then
+            if _at < _prefix_count then
+                _at = _at + 1
+
+                return true
+            fi
+
+            let tail = tail_iterator()
+
+            if tail? /\ tail.move_next() then
                 _at = _at + 1
 
                 return true
@@ -48,30 +94,64 @@ namespace Ghul.Pipes is
             if _at <= _prefix_count then
                 prefix_element(_at - 1)
             else
-                tail.elements[_at - _prefix_count - 1]
+                tail_iterator()!.current
             fi
 
         /// Renders the pipe's elements, in order, as text.
         @IF.dotnet()
         to_string() -> string => $(self)
 
-        /// Has no effect: the tail's iterator is shared by every read and
-        /// is released when the tail runs out.
+        /// Has no effect: the tail's iterator is taken per read, and a
+        /// source that holds a resource is held only while a read walks it.
         dispose() is
         si
+    si
+
+    /// A buffered pipe over a tail only: no elements were pulled past
+    /// what the pattern matched.
+    class BUFFERED_0_PIPE[T]: BufferedPipeBase[T] is
+        init(source: Iterable[T], skip: int, live: Iterator[T]?) is
+            super.init(source, skip, 0, live)
+        si
+
+        init(source: Iterable[T], skip: int) is
+            let no_live: Iterator[T]? = null
+
+            super.init(source, skip, 0, no_live)
+        si
+
+        fresh() -> PipeStage[T] is
+            let no_live: Iterator[T]? = null
+
+            return BUFFERED_0_PIPE[T](source, skip, no_live)
+        si
+
+        prefix_element(at: int) -> T => throw Ghul.NotSupportedException("a zero-prefix buffered pipe has no prefix element")
     si
 
     /// A buffered pipe over one already-pulled element and a tail.
     class BUFFERED_1_PIPE[T]: BufferedPipeBase[T] is
         _e0: T
 
-        init(e0: T, tail: MEMO_CACHE[T]) is
-            super.init(tail, 1)
+        init(e0: T, source: Iterable[T], skip: int, live: Iterator[T]?) is
+            super.init(source, skip, 1, live)
 
             _e0 = e0
         si
 
-        fresh() -> PipeStage[T] => BUFFERED_1_PIPE[T](_e0, tail)
+        init(e0: T, source: Iterable[T], skip: int) is
+            let no_live: Iterator[T]? = null
+
+            super.init(source, skip, 1, no_live)
+
+            _e0 = e0
+        si
+
+        fresh() -> PipeStage[T] is
+            let no_live: Iterator[T]? = null
+
+            return BUFFERED_1_PIPE[T](_e0, source, skip, no_live)
+        si
 
         prefix_element(at: int) -> T => _e0
     si
@@ -81,14 +161,27 @@ namespace Ghul.Pipes is
         _e0: T
         _e1: T
 
-        init(e0: T, e1: T, tail: MEMO_CACHE[T]) is
-            super.init(tail, 2)
+        init(e0: T, e1: T, source: Iterable[T], skip: int, live: Iterator[T]?) is
+            super.init(source, skip, 2, live)
 
             _e0 = e0
             _e1 = e1
         si
 
-        fresh() -> PipeStage[T] => BUFFERED_2_PIPE[T](_e0, _e1, tail)
+        init(e0: T, e1: T, source: Iterable[T], skip: int) is
+            let no_live: Iterator[T]? = null
+
+            super.init(source, skip, 2, no_live)
+
+            _e0 = e0
+            _e1 = e1
+        si
+
+        fresh() -> PipeStage[T] is
+            let no_live: Iterator[T]? = null
+
+            return BUFFERED_2_PIPE[T](_e0, _e1, source, skip, no_live)
+        si
 
         prefix_element(at: int) -> T => if at == 0 then _e0 else _e1 fi
     si
@@ -99,15 +192,29 @@ namespace Ghul.Pipes is
         _e1: T
         _e2: T
 
-        init(e0: T, e1: T, e2: T, tail: MEMO_CACHE[T]) is
-            super.init(tail, 3)
+        init(e0: T, e1: T, e2: T, source: Iterable[T], skip: int, live: Iterator[T]?) is
+            super.init(source, skip, 3, live)
 
             _e0 = e0
             _e1 = e1
             _e2 = e2
         si
 
-        fresh() -> PipeStage[T] => BUFFERED_3_PIPE[T](_e0, _e1, _e2, tail)
+        init(e0: T, e1: T, e2: T, source: Iterable[T], skip: int) is
+            let no_live: Iterator[T]? = null
+
+            super.init(source, skip, 3, no_live)
+
+            _e0 = e0
+            _e1 = e1
+            _e2 = e2
+        si
+
+        fresh() -> PipeStage[T] is
+            let no_live: Iterator[T]? = null
+
+            return BUFFERED_3_PIPE[T](_e0, _e1, _e2, source, skip, no_live)
+        si
 
         prefix_element(at: int) -> T =>
             case at

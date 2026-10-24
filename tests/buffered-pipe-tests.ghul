@@ -8,9 +8,73 @@ namespace Tests is
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
+    // A total several iterators bump, so a test can count what a
+    // source has handed out across reads.
+    class TOTAL is
+        count: int public
+
+        init() is
+        si
+
+        bump() is
+            count = count + 1
+        si
+    si
+
+    // An iterator that counts the elements it hands out into a total a
+    // test reads, so a test can tell a read that continues a positioned
+    // iterator from one that re-derives from the source.
+    class COUNTING_ITERATOR[T]: Iterator[T] is
+        values: T[]
+        _at: int
+        _total: TOTAL
+
+        init(values: T[], total: TOTAL) is
+            self.values = values
+            _total = total
+        si
+
+        current: T => values[_at - 1]
+
+        move_next() -> bool is
+            if _at < values.count then
+                _at = _at + 1
+                _total.bump()
+                return true
+            fi
+
+            return false
+        si
+
+        reset() is
+            _at = 0
+        si
+
+        dispose() is
+        si
+    si
+
+    // A source each read of which takes a fresh counting iterator, all
+    // bumping one total.
+    class COUNTING_READER_SOURCE[T]: Iterable[T] is
+        values: T[]
+        total: TOTAL field
+
+        handed_out: int => total.count
+
+        init(values: T[]) is
+            self.values = values
+            total = TOTAL()
+        si
+
+        iterator: Iterator[T] => COUNTING_ITERATOR[T](values, total)
+    si
+
     // Coverage for `buffered`: the prefix comes first on every read, the
-    // tail follows it, the tail is pulled once and replayed on every later
-    // read, and cursors over one pipe share what the tail has given so far.
+    // first read continues the iterator it was built from without
+    // re-reading the source, and every later read re-derives from the
+    // source, skipping to where the prefix ends, so nothing of the tail
+    // is ever buffered.
     @TestClass()
     class BUFFERED_PIPEShould is
         init() is
@@ -18,29 +82,69 @@ namespace Tests is
 
         @Test()
         Read_YieldsPrefixThenTailInOrder() is
-            let tail = COUNTING_SOURCE[int]([3, 4])
-            let p = buffered(1, 2, tail)
+            let source = [3, 4, 5]
+            let p = buffered(1, 2, source, 0)
 
-            assert_elements([1, 2, 3, 4], drain(p))
+            assert_elements([1, 2, 3, 4, 5], drain(p))
         si
 
         @Test()
-        Read_Twice_ReplaysPrefixAndTailWithoutRereadingTail() is
-            let tail = COUNTING_SOURCE[int]([3, 4])
-            let p = buffered(1, tail)
+        Read_NoPrefix_SkipsToWhereThePrefixWouldEnd() is
+            let source = [1, 2, 3, 4]
+            let p = buffered(source, 2)
 
-            assert_elements([1, 3, 4], drain(p))
-            are_equal(2, tail.handed_out)
+            assert_elements([3, 4], drain(p))
+        si
 
-            assert_elements([1, 3, 4], drain(p))
-            assert_elements([1, 3, 4], drain(p))
-            are_equal(2, tail.handed_out)
+        @Test()
+        Read_SkipAdjustsTheTail() is
+            let source = ["a", "b", "c", "d"]
+            let p = buffered("x", source, 2)
+
+            assert_elements(["x", "c", "d"], drain(p))
+        si
+
+        @Test()
+        Read_ContinuesTheLiveIteratorWithoutRereadingTheSource() is
+            let source = COUNTING_READER_SOURCE[int]([1, 2, 3, 4])
+            let live = source.iterator
+
+            // The pull a pattern would have made: two elements taken.
+            is_true(live.move_next())
+            is_true(live.move_next())
+            are_equal(2, source.handed_out)
+
+            // One element was pulled past what the arm matched.
+            let p = buffered(live, 2, source, 2)
+
+            assert_elements([2, 3, 4], drain(p))
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Read_Twice_SecondReadReDerivesFromTheSource() is
+            let source = COUNTING_READER_SOURCE[int]([1, 2, 3, 4])
+            let live = source.iterator
+
+            is_true(live.move_next())
+            are_equal(1, source.handed_out)
+
+            let p = buffered(live, 0, source, 1)
+
+            assert_elements([0, 2, 3, 4], drain(p))
+            are_equal(4, source.handed_out)
+
+            // The second read replays the prefix from the stage's fields
+            // and re-derives the tail: one skipped element and the tail
+            // again.
+            assert_elements([0, 2, 3, 4], drain(p))
+            are_equal(8, source.handed_out)
         si
 
         @Test()
         Read_EmptyTail_YieldsOnlyThePrefix() is
-            let empty: string[] = []
-            let p = buffered("a", "b", empty.iterator)
+            let source = ["x", "y"]
+            let p = buffered("a", "b", source, 2)
 
             assert_elements(["a", "b"], drain(p))
 
@@ -52,51 +156,23 @@ namespace Tests is
         si
 
         @Test()
-        Read_ZeroPrefix_PullsTheTailOnceAndReplaysIt() is
-            let tail = COUNTING_SOURCE[string](["a", "b"])
-            let p = buffered(tail.iterator)
+        Read_SkipPastTheEnd_YieldsOnlyThePrefix() is
+            let source = ["x"]
+            let p = buffered("a", source, 5)
 
-            assert_elements(["a", "b"], drain(p))
-            are_equal(2, tail.handed_out)
-
-            assert_elements(["a", "b"], drain(p))
-            are_equal(2, tail.handed_out)
-        si
-
-        @Test()
-        Read_PartialRead_ExtendsTailCacheWhenALaterReadRunsFurther() is
-            let tail = COUNTING_SOURCE[int]([4, 5, 6])
-            let p = buffered(1, 2, 3, tail)
-
-            let part_read = p.iterator
-
-            is_true(part_read.move_next())
-            are_equal(1, part_read.current)
-            is_true(part_read.move_next())
-            are_equal(2, part_read.current)
-            are_equal(0, tail.handed_out)
-
-            // A full read replays the prefix and pulls the whole tail.
-            assert_elements([1, 2, 3, 4, 5, 6], drain(p))
-            are_equal(3, tail.handed_out)
-
-            // The part-read read carries on from the shared tail cache.
-            is_true(part_read.move_next())
-            are_equal(3, part_read.current)
-            is_true(part_read.move_next())
-            are_equal(4, part_read.current)
-            are_equal(3, tail.handed_out)
+            assert_elements(["a"], drain(p))
         si
 
         @Test()
         Read_OverInfiniteTail_PullsOnlyWhatIsConsumed() is
             let naturals = stream(0, n => n || n + 1)
-            let p = buffered(-1, naturals.iterator)
+            let p = buffered(-1, naturals, 0)
 
             are_equal("-1, 0, 1", p |> take(3) |> join(", "))
 
-            // A later read replays the prefix and the two cached tail
-            // elements and asks the stream for one more.
+            // A later read re-derives: the prefix replays, the two tail
+            // elements are taken from a fresh iterator, and the stream
+            // is asked for one more.
             are_equal("-1, 0, 1, 2", p |> take(4) |> join(", "))
         si
     si
