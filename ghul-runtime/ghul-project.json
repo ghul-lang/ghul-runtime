@@ -1,6 +1,5 @@
 {
     "name": "ghul-runtime",
-    "version": "29.4.0",
     "kind": "library",
     "targets": ["wasm", "llvm", "dotnet"],
     "sources": ["src/**/*.ghul"],
