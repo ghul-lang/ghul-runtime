@@ -1,0 +1,103 @@
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Coverage for `buffered`: the prefix comes first on every read, the
+    // tail follows it, the tail is pulled once and replayed on every later
+    // read, and cursors over one pipe share what the tail has given so far.
+    @TestClass()
+    class BUFFERED_PIPEShould is
+        init() is
+        si
+
+        @Test()
+        Read_YieldsPrefixThenTailInOrder() is
+            let tail = COUNTING_SOURCE[int]([3, 4])
+            let p = buffered(1, 2, tail)
+
+            assert_elements([1, 2, 3, 4], drain(p))
+        si
+
+        @Test()
+        Read_Twice_ReplaysPrefixAndTailWithoutRereadingTail() is
+            let tail = COUNTING_SOURCE[int]([3, 4])
+            let p = buffered(1, tail)
+
+            assert_elements([1, 3, 4], drain(p))
+            are_equal(2, tail.handed_out)
+
+            assert_elements([1, 3, 4], drain(p))
+            assert_elements([1, 3, 4], drain(p))
+            are_equal(2, tail.handed_out)
+        si
+
+        @Test()
+        Read_EmptyTail_YieldsOnlyThePrefix() is
+            let empty: string[] = []
+            let p = buffered("a", "b", empty.iterator)
+
+            assert_elements(["a", "b"], drain(p))
+
+            let first = p.iterator
+
+            is_true(first.move_next())
+            is_true(first.move_next())
+            is_false(first.move_next())
+        si
+
+        @Test()
+        Read_ZeroPrefix_PullsTheTailOnceAndReplaysIt() is
+            let tail = COUNTING_SOURCE[string](["a", "b"])
+            let p = buffered(tail.iterator)
+
+            assert_elements(["a", "b"], drain(p))
+            are_equal(2, tail.handed_out)
+
+            assert_elements(["a", "b"], drain(p))
+            are_equal(2, tail.handed_out)
+        si
+
+        @Test()
+        Read_PartialRead_ExtendsTailCacheWhenALaterReadRunsFurther() is
+            let tail = COUNTING_SOURCE[int]([4, 5, 6])
+            let p = buffered(1, 2, 3, tail)
+
+            let part_read = p.iterator
+
+            is_true(part_read.move_next())
+            are_equal(1, part_read.current)
+            is_true(part_read.move_next())
+            are_equal(2, part_read.current)
+            are_equal(0, tail.handed_out)
+
+            // A full read replays the prefix and pulls the whole tail.
+            assert_elements([1, 2, 3, 4, 5, 6], drain(p))
+            are_equal(3, tail.handed_out)
+
+            // The part-read read carries on from the shared tail cache.
+            is_true(part_read.move_next())
+            are_equal(3, part_read.current)
+            is_true(part_read.move_next())
+            are_equal(4, part_read.current)
+            are_equal(3, tail.handed_out)
+        si
+
+        @Test()
+        Read_OverInfiniteTail_PullsOnlyWhatIsConsumed() is
+            let naturals = stream(0, n => n || n + 1)
+            let p = buffered(-1, naturals.iterator)
+
+            are_equal("-1, 0, 1", p |> take(3) |> join(", "))
+
+            // A later read replays the prefix and the two cached tail
+            // elements and asks the stream for one more.
+            are_equal("-1, 0, 1, 2", p |> take(4) |> join(", "))
+        si
+    si
+si

@@ -71,6 +71,30 @@ namespace Ghul.Pipes is
     memo[T](source: Iterable[T]) -> Iterable[T] pure =>
         MEMO_PIPE[T](MEMO_CACHE[T](source))
 
+    /// What remains of `tail` as a lazy sequence each read of which starts
+    /// from the beginning: the tail is pulled once and later reads replay
+    /// what it gave.
+    buffered[T](tail: Iterator[T]) -> Pipe[T] pure =>
+        MEMO_PIPE[T](MEMO_CACHE[T](tail))
+
+    /// The already-pulled element `e0`, followed by what remains of `tail`,
+    /// as a lazy sequence each read of which starts from `e0`. The tail is
+    /// pulled once: later reads replay what it gave.
+    buffered[T](e0: T, tail: Iterator[T]) -> Pipe[T] pure =>
+        BUFFERED_1_PIPE[T](e0, MEMO_CACHE[T](tail))
+
+    /// The already-pulled elements `e0` and `e1`, followed by what remains
+    /// of `tail`, as a lazy sequence each read of which starts from `e0`.
+    /// The tail is pulled once: later reads replay what it gave.
+    buffered[T](e0: T, e1: T, tail: Iterator[T]) -> Pipe[T] pure =>
+        BUFFERED_2_PIPE[T](e0, e1, MEMO_CACHE[T](tail))
+
+    /// The already-pulled elements `e0`, `e1` and `e2`, followed by what
+    /// remains of `tail`, as a lazy sequence each read of which starts from
+    /// `e0`. The tail is pulled once: later reads replay what it gave.
+    buffered[T](e0: T, e1: T, e2: T, tail: Iterator[T]) -> Pipe[T] pure =>
+        BUFFERED_3_PIPE[T](e0, e1, e2, MEMO_CACHE[T](tail))
+
     /// The elements of `source` grouped into consecutive read-only lists of `size`
     /// elements each, with the last one shorter if `source`'s length doesn't divide evenly.
     chunk[T](source: Iterable[T], size: int) -> Iterable[List[T]] pure =>

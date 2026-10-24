@@ -12,6 +12,15 @@ namespace Ghul.Pipes is
             elements = LIST[T]()
         si
 
+        // A cache over what remains of an iterator something else already
+        // pulled from, with nothing cached yet.
+        /// A cache over `tail`, which is pulled once and shared by every
+        /// cursor over the cache.
+        init(tail: Iterator[T]) is
+            iterator = tail
+            elements = LIST[T]()
+        si
+
         // Makes sure the cache holds more than `at` elements, pulling from
         // the source if it doesn't yet; false once the source can't supply it.
         has_element(at: int) -> bool is

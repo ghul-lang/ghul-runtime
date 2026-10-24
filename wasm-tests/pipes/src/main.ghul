@@ -27,4 +27,8 @@ entry() is
     for ordering in permutations([1, 2, 3]) do
         write_line("{ordering[0]}{ordering[1]}{ordering[2]}")
     od
+
+    let b = buffered(1, 2, [3, 4].iterator)
+    write_line("{b |> join(", ")}")
+    write_line("{b |> join(", ")}")
 si
