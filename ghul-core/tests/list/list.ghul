@@ -1,0 +1,35 @@
+// LIST grows as elements are added, and reads, writes, inserts and removes
+// by position, as it does on .NET.
+//
+// The range type is not yet compiled for the wasm target, so the list is
+// filled with a while loop rather than a for over a range.
+sum() -> int is
+    let numbers = Collections.LIST[int]()
+
+    let i mut = 0
+
+    while i < 10 do
+        numbers.add(i)
+        i = i + 1
+    od
+
+    numbers.insert(0, 100)
+    numbers.remove_at(1)
+    numbers[2] = 50
+
+    let total mut = 0
+
+    for n in numbers do
+        total = total + n
+    od
+
+    let copy = Collections.LIST[int](numbers)
+    let list: Collections.List[int] = copy
+    let mutable: Collections.MutableList[int] = copy
+
+    return total + list.count + mutable[0] + copy.capacity + copy.to_array().count
+si
+
+entry() is
+    IO.Std.write_line("{sum()}")
+si

@@ -1,0 +1,445 @@
+namespace Ghul is
+    use Text.STRING_BUILDER
+
+    partial string is
+        /// The strings of `values` joined end to end, in order.
+        ///
+        /// - values: the strings to join
+        concat(values: string[]) -> string static is
+            let parts = Ghul._array_new[string](values.count)
+            let i mut = 0
+
+            while i < values.count do
+                Ghul._array_set(parts, i, values[i] ?? "")
+                i = i + 1
+            od
+
+            return Ghul.Internal.STRING_JOINER.join(parts)
+        si
+
+        /// `a` followed by `b`.
+        ///
+        /// - a: the first string
+        /// - b: the second string
+        concat(a: string?, b: string?) -> string static => _string_concat(a, b)
+
+        /// `a`, `b` and `c` end to end.
+        ///
+        /// - a: the first string
+        /// - b: the second string
+        /// - c: the third string
+        concat(a: string?, b: string?, c: string?) -> string static => _string_concat(_string_concat(a, b), c)
+
+        /// The code units from `start` to the end.
+        ///
+        /// - start: the position of the first code unit, from 0
+        substring(start: int) -> string pure =>
+            substring(start, length - start)
+
+        /// `count` code units starting at `start`.
+        ///
+        /// - start: the position of the first code unit, from 0
+        /// - count: the number of code units
+        substring(start: int, count: int) -> string pure is
+            if start < 0 \/ count < 0 \/ start > length - count then
+                throw ArgumentOutOfRangeException("start")
+            fi
+
+            return _string_substring(self, start, count)
+        si
+
+        /// The position of the first `value`, or -1.
+        ///
+        /// - value: the code unit to find
+        index_of(value: char) -> int pure => index_of(value, 0)
+
+        /// The position of the first `value` at or after `start`, or -1.
+        ///
+        /// - value: the code unit to find
+        /// - start: where the search begins
+        index_of(value: char, start: int) -> int pure is
+            if start < 0 \/ start > length then
+                throw ArgumentOutOfRangeException("start")
+            fi
+
+            let i mut = start
+
+            while i < length do
+                if self[i] == value then
+                    return i
+                fi
+
+                i = i + 1
+            od
+
+            return -1
+        si
+
+        /// The position of the first occurrence of `value`, or -1.
+        ///
+        /// - value: the text to find; the empty string is found at 0
+        index_of(value: string) -> int pure => index_of(value, 0)
+
+        /// The position of the first occurrence of `value` at or after
+        /// `start`, or -1.
+        ///
+        /// - value: the text to find
+        /// - start: where the search begins
+        index_of(value: string, start: int) -> int pure is
+            if start < 0 \/ start > length then
+                throw ArgumentOutOfRangeException("start")
+            fi
+
+            let last = length - value.length
+            let i mut = start
+
+            while i <= last do
+                if _matches_at(i, value) then
+                    return i
+                fi
+
+                i = i + 1
+            od
+
+            return -1
+        si
+
+        /// The position of the last `value`, or -1.
+        ///
+        /// - value: the code unit to find
+        last_index_of(value: char) -> int pure is
+            let i mut = length - 1
+
+            while i >= 0 do
+                if self[i] == value then
+                    return i
+                fi
+
+                i = i - 1
+            od
+
+            return -1
+        si
+
+        /// The position of the last occurrence of `value`, or -1.
+        ///
+        /// - value: the text to find; the empty string is found at the end
+        last_index_of(value: string) -> int pure is
+            let i mut = length - value.length
+
+            while i >= 0 do
+                if _matches_at(i, value) then
+                    return i
+                fi
+
+                i = i - 1
+            od
+
+            return -1
+        si
+
+        /// Whether the string holds `value`.
+        ///
+        /// - value: the code unit to look for
+        contains(value: char) -> bool pure => index_of(value) >= 0
+
+        /// Whether the string holds `value`.
+        ///
+        /// - value: the text to look for
+        contains(value: string) -> bool pure => index_of(value) >= 0
+
+        /// Whether the string begins with `value`.
+        ///
+        /// - value: the text to look for
+        starts_with(value: string) -> bool pure =>
+            value.length <= length /\ _matches_at(0, value)
+
+        /// Whether the string begins with `value`.
+        ///
+        /// - value: the code unit to look for
+        starts_with(value: char) -> bool pure =>
+            length > 0 /\ self[0] == value
+
+        /// Whether the string ends with `value`.
+        ///
+        /// - value: the text to look for
+        ends_with(value: string) -> bool pure =>
+            value.length <= length /\ _matches_at(length - value.length, value)
+
+        /// Whether the string ends with `value`.
+        ///
+        /// - value: the code unit to look for
+        ends_with(value: char) -> bool pure =>
+            length > 0 /\ self[length - 1] == value
+
+        /// The string without its leading and trailing white space.
+        trim() -> string pure is
+            let start = _first_non_white_space()
+            let end = _last_non_white_space()
+
+            if start > end then
+                return ""
+            fi
+
+            return substring(start, end - start + 1)
+        si
+
+        /// The string without its leading white space.
+        trim_start() -> string pure => substring(_first_non_white_space())
+
+        /// The string without its trailing white space.
+        trim_end() -> string pure => substring(0, _last_non_white_space() + 1)
+
+        /// The string with each letter made upper case, as `char.to_upper`
+        /// maps it.
+        to_upper() -> string pure is
+            let result = STRING_BUILDER()
+            let i mut = 0
+
+            while i < length do
+                result.append(char.to_upper(self[i]))
+                i = i + 1
+            od
+
+            return result.to_string()
+        si
+
+        /// The string with each letter made lower case, as `char.to_lower`
+        /// maps it.
+        to_lower() -> string pure is
+            let result = STRING_BUILDER()
+            let i mut = 0
+
+            while i < length do
+                result.append(char.to_lower(self[i]))
+                i = i + 1
+            od
+
+            return result.to_string()
+        si
+
+        /// The pieces between each `separator`, in order. Adjacent separators
+        /// give empty pieces.
+        ///
+        /// - separator: the code unit to split at
+        split(separator: char) -> string[] pure => split(_string_from_char(separator))
+
+        /// The pieces between each `separator`, in order. Adjacent separators
+        /// give empty pieces.
+        ///
+        /// - separator: the text to split at
+        split(separator: string) -> string[] pure is
+            let pieces = Collections.LIST[string]()
+            let start mut = 0
+
+            if separator.length > 0 then
+                let found mut = index_of(separator, 0)
+
+                while found >= 0 do
+                    pieces.add(substring(start, found - start))
+
+                    start = found + separator.length
+                    found = index_of(separator, start)
+                od
+            fi
+
+            pieces.add(substring(start))
+
+            let result = _array_new[string](pieces.count)
+            let i mut = 0
+
+            while i < pieces.count do
+                _array_set(result, i, pieces[i])
+                i = i + 1
+            od
+
+            return result
+        si
+
+        /// The string with every occurrence of `old_value` replaced by `new_value`.
+        ///
+        /// - old_value: the text to replace; must not be empty
+        /// - new_value: the text to put in its place
+        replace(old_value: string, new_value: string) -> string pure is
+            if old_value.length == 0 then
+                throw ArgumentException("old_value")
+            fi
+
+            let result = STRING_BUILDER()
+            let start mut = 0
+            let found mut = index_of(old_value, 0)
+
+            while found >= 0 do
+                result.append(substring(start, found - start))
+                result.append(new_value)
+
+                start = found + old_value.length
+                found = index_of(old_value, start)
+            od
+
+            result.append(substring(start))
+
+            return result.to_string()
+        si
+
+        /// The string with every `old_value` replaced by `new_value`.
+        ///
+        /// - old_value: the code unit to replace
+        /// - new_value: the code unit to put in its place
+        replace(old_value: char, new_value: char) -> string pure =>
+            replace(_string_from_char(old_value), _string_from_char(new_value))
+
+        /// The string, preceded by spaces up to `width` code units.
+        ///
+        /// - width: the length to pad to
+        pad_left(width: int) -> string pure => pad_left(width, ' ')
+
+        /// The string, preceded by `padding` up to `width` code units.
+        ///
+        /// - width: the length to pad to
+        /// - padding: the code unit to pad with
+        pad_left(width: int, padding: char) -> string pure =>
+            _string_concat(_repeat(padding, width - length), self)
+
+        /// The string, followed by spaces up to `width` code units.
+        ///
+        /// - width: the length to pad to
+        pad_right(width: int) -> string pure => pad_right(width, ' ')
+
+        /// The string, followed by `padding` up to `width` code units.
+        ///
+        /// - width: the length to pad to
+        /// - padding: the code unit to pad with
+        pad_right(width: int, padding: char) -> string pure =>
+            _string_concat(self, _repeat(padding, width - length))
+
+        /// Negative when this string orders before `other` by code unit, zero
+        /// when they are equal, positive otherwise.
+        ///
+        /// - other: the string to compare with; absent orders first
+        compare_to(other: string?) -> int => compare(self, other)
+
+        /// `values`, with `separator` between each pair.
+        ///
+        /// - separator: the text to put between values
+        /// - values: the strings to join, in order
+        join(separator: string, values: Collections.Iterable[string]) -> string static is
+            let result = STRING_BUILDER()
+            let first mut = true
+
+            for value in values do
+                if !first then
+                    result.append(separator)
+                fi
+
+                result.append(value)
+                first = false
+            od
+
+            return result.to_string()
+        si
+
+        /// Whether `value` is absent or empty.
+        ///
+        /// - value: the string to test
+        is_null_or_empty(value: string?) -> bool static pure =>
+            !value? \/ value.length == 0
+
+        /// Whether `value` is absent, empty, or only white space.
+        ///
+        /// - value: the string to test
+        is_null_or_white_space(value: string?) -> bool static pure =>
+            !value? \/ value._first_non_white_space() == value.length
+
+        /// Negative when `a` orders before `b` by code unit, zero when they
+        /// are equal, positive otherwise. Absent orders before any string.
+        ///
+        /// - a: the first string
+        /// - b: the second string
+        compare(a: string?, b: string?) -> int static is
+            if !a? then
+                return if !b? then 0 else -1 fi
+            fi
+
+            if !b? then
+                return 1
+            fi
+
+            let shorter = if a.length < b.length then a.length else b.length fi
+            let i mut = 0
+
+            while i < shorter do
+                let difference = cast int(a[i]) - cast int(b[i])
+
+                if difference != 0 then
+                    return difference
+                fi
+
+                i = i + 1
+            od
+
+            return a.length - b.length
+        si
+
+        _matches_at(position: int, value: string) -> bool is
+            let i mut = 0
+
+            while i < value.length do
+                if self[position + i] != value[i] then
+                    return false
+                fi
+
+                i = i + 1
+            od
+
+            return true
+        si
+
+        _first_non_white_space() -> int is
+            let i mut = 0
+
+            while i < length /\ _is_white_space(self[i]) do
+                i = i + 1
+            od
+
+            return i
+        si
+
+        _last_non_white_space() -> int is
+            let i mut = length - 1
+
+            while i >= 0 /\ _is_white_space(self[i]) do
+                i = i - 1
+            od
+
+            return i
+        si
+    si
+
+    // Whether `unit` is white space as .NET's char.IsWhiteSpace defines it.
+    _is_white_space(unit: char) -> bool pure is
+        let code = cast int(unit)
+
+        return
+            code == 32 \/ (code >= 9 /\ code <= 13) \/ code == 133 \/ code == 160 \/
+            code == 5760 \/ (code >= 8192 /\ code <= 8202) \/ code == 8232 \/ code == 8233 \/
+            code == 8239 \/ code == 8287 \/ code == 12288
+    si
+
+    // `count` copies of `unit`; empty when `count` is not positive.
+    _repeat(unit: char, count: int) -> string is
+        let result = STRING_BUILDER()
+        let text = _string_from_char(unit)
+        let i mut = 0
+
+        while i < count do
+            result.append(text)
+            i = i + 1
+        od
+
+        return result.to_string()
+    si
+
+    @intrinsic("string.substring")
+    _string_substring(text: string, start: int, count: int) -> string pure
+si

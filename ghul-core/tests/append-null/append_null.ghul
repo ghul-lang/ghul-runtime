@@ -1,0 +1,14 @@
+// A null string appends nothing, whether appended to a builder directly or
+// interpolated, as .NET's builder treats one.
+absent() -> string => cast string(null)
+
+entry() is
+    let builder = Text.STRING_BUILDER()
+
+    builder.append("a")
+    builder.append(absent())
+    builder.append("b")
+
+    IO.Std.write_line(builder.to_string())
+    IO.Std.write_line("[{absent()}]")
+si

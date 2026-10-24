@@ -1,0 +1,7 @@
+// A floating value's bits, as BitConverter gives them on .NET.
+use IO.Std.write_line
+
+entry() is
+    write_line("{1.0.to_bits()} {(-0.0).to_bits()} {(-2.5).to_bits()}")
+    write_line("{1.0s.to_bits()} {(-0.0s).to_bits()} {(-2.5s).to_bits()}")
+si

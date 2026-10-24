@@ -1,0 +1,128 @@
+// Compares the core library's numeric format strings with .NET's for fixed
+// values and for random values of every magnitude, and prints how many differ.
+namespace Harness is
+    use IO.Std.write_line
+
+    entry() is
+        let invariant = System.Globalization.CultureInfo.invariant_culture
+        let random = System.Random(4321)
+        let failures mut = 0
+        let checked mut = 0
+
+        let float_formats = [
+            "F", "F0", "F1", "F2", "F3", "F4", "F6", "F8", "F10", "F15", "f2",
+            "N", "N0", "N2", "n3", "E", "E2", "E6", "e5", "G", "G4", "G6", "G10", "G17", "g6", "R",
+            "0", "00", "0.#", "0.###", "0.####", "0.000", "00000.000", "0.0000000000", "#,##0.00", "#.##"
+        ]
+
+        let integer_formats = [
+            "D", "D2", "D4", "X", "X2", "X4", "X8", "x", "x2", "x8", "N0", "N2", "F2", "F0", "E2", "G", "G4", "00", "0.0", "#,##0"
+        ]
+
+        let doubles = Collections.LIST[double]([
+            0.0, -0.0, 0.5, 1.5, 2.5, -2.5, 0.125, 0.375, 1.005, 2.675, 0.045, 1.0 / 3.0, 2.0 / 3.0, 123456.789,
+            -123456.789, 999.9999, 0.00001234, 1.0e-7, 1.0e15, 1.0e16, 1.0e21, 9.995, 99.95, 0.95, 12345678901234567890.0,
+            3.141592653589793, 2.718281828459045, 1.7976931348623157e308, 5.0e-324, -0.001, -0.0004, 1.0e-5, 1.0e-6, 100000.0, 1234567.0
+        ])
+
+        let i mut = 0
+
+        while i < 4000 do
+            let magnitude = random.next(-12, 22)
+            let v = (random.next_double() - 0.3) * System.Math.pow(10.0, cast double(magnitude))
+
+            doubles.add(v)
+            doubles.add(System.Math.round(v * 1000.0) / 1000.0)
+            i = i + 1
+        od
+
+        for v in doubles do
+            for f in float_formats do
+                checked = checked + 1
+
+                let theirs = v.to_string(f, invariant)
+                let mine = Ghul._format_double_as(v, f)
+
+                if !(mine =~ theirs) then
+                    failures = failures + 1
+
+                    if failures < 60 then
+                        write_line("double {v:R} {f}: {theirs} -> {mine}")
+                    fi
+                fi
+            od
+
+            let s = cast single(v)
+
+            for f in float_formats do
+                checked = checked + 1
+
+                let theirs = s.to_string(f, invariant)
+                let mine = Ghul._format_single_as(s, f)
+
+                if !(mine =~ theirs) then
+                    failures = failures + 1
+
+                    if failures < 60 then
+                        write_line("single {s:R} {f}: {theirs} -> {mine}")
+                    fi
+                fi
+            od
+        od
+
+        let longs = Collections.LIST[long]([0L, 1L, -1L, 5L, 15L, 125L, -125L, 255L, 1234567L, -1234567L, long.max_value, long.min_value, 2147483647L, -2147483648L])
+
+        i = 0
+
+        while i < 2000 do
+            longs.add(random.next_int64(-10000000000L, 10000000000L))
+            longs.add(cast long(random.next(-1000, 1000)))
+            i = i + 1
+        od
+
+        for v in longs do
+            for f in integer_formats do
+                checked = checked + 2
+
+                let theirs = v.to_string(f, invariant)
+                let mine = Ghul._format_signed_as(v, f, 64)
+
+                if !(mine =~ theirs) then
+                    failures = failures + 1
+
+                    if failures < 60 then
+                        write_line("long {v} {f}: {theirs} -> {mine}")
+                    fi
+                fi
+
+                let n = cast int(v)
+                let theirs_int = n.to_string(f, invariant)
+                let mine_int = Ghul._format_signed_as(cast long(n), f, 32)
+
+                if !(mine_int =~ theirs_int) then
+                    failures = failures + 1
+
+                    if failures < 60 then
+                        write_line("int {n} {f}: {theirs_int} -> {mine_int}")
+                    fi
+                fi
+
+                let u = cast ulong(v)
+                let theirs_ulong = u.to_string(f, invariant)
+                let mine_ulong = Ghul._format_unsigned_as(u, f)
+
+                checked = checked + 1
+
+                if !(mine_ulong =~ theirs_ulong) then
+                    failures = failures + 1
+
+                    if failures < 60 then
+                        write_line("ulong {u} {f}: {theirs_ulong} -> {mine_ulong}")
+                    fi
+                fi
+            od
+        od
+
+        write_line("checked {checked > 0}, {failures} differ")
+    si
+si

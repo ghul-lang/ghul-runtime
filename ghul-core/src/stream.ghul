@@ -1,0 +1,449 @@
+namespace IO is
+    /// Where a seek on a stream counts its offset from.
+    enum SeekOrigin is
+        BEGIN,
+        CURRENT,
+        END
+    si
+
+    /// A sequence of bytes that can be read, written, or both, from a
+    /// current position. A member a particular stream does not support
+    /// throws `Ghul.NotSupportedException`.
+    class Stream: Ghul.Disposable abstract is
+        init() is si
+
+        /// Whether the stream can be read.
+        can_read: bool => false
+
+        /// Whether the stream can be written.
+        can_write: bool => false
+
+        /// Whether the position can be moved.
+        can_seek: bool => false
+
+        /// The number of bytes the stream holds.
+        length: long => throw Ghul.NotSupportedException("Stream does not support seeking.")
+
+        /// The position the next read or write starts at, counted in bytes
+        /// from the start.
+        position: long public => throw Ghul.NotSupportedException("Stream does not support seeking."),
+            = value is
+                throw Ghul.NotSupportedException("Stream does not support seeking.")
+            si
+
+        /// Reads up to `count` bytes into `buffer` starting at `offset`,
+        /// answering how many were read, which is zero at the end.
+        ///
+        /// - buffer: where the bytes go
+        /// - offset: the position in `buffer` the first byte goes to
+        /// - count: the most bytes to read
+        read(buffer: ubyte[], offset: int, count: int) -> int =>
+            throw Ghul.NotSupportedException("Stream does not support reading.")
+
+        /// Reads the next byte, or -1 at the end.
+        read_byte() -> int is
+            let one = Ghul._array_new[ubyte](1)
+
+            if read(one, 0, 1) == 0 then
+                return -1
+            fi
+
+            return int(one[0])
+        si
+
+        /// Writes `count` bytes of `buffer` starting at `offset`.
+        ///
+        /// - buffer: the bytes to write
+        /// - offset: the position in `buffer` of the first byte to write
+        /// - count: the number of bytes to write
+        write(buffer: ubyte[], offset: int, count: int) is
+            throw Ghul.NotSupportedException("Stream does not support writing.")
+        si
+
+        /// Writes one byte.
+        ///
+        /// - value: the byte to write
+        write_byte(value: ubyte) is
+            let one = Ghul._array_new[ubyte](1)
+
+            Ghul._array_set(one, 0, value)
+            write(one, 0, 1)
+        si
+
+        /// Moves the position to `offset` counted from `origin`, answering
+        /// the new position.
+        ///
+        /// - offset: how far to move, which may be negative
+        /// - origin: what the offset counts from
+        seek(offset: long, origin: SeekOrigin) -> long =>
+            throw Ghul.NotSupportedException("Stream does not support seeking.")
+
+        /// Reads every byte from the position to the end and writes it to
+        /// `destination`.
+        ///
+        /// - destination: the stream to write to
+        copy_to(destination: Stream) is
+            let buffer = Ghul._array_new[ubyte](81920)
+            let got mut = read(buffer, 0, buffer.count)
+
+            while got > 0 do
+                destination.write(buffer, 0, got)
+                got = read(buffer, 0, buffer.count)
+            od
+        si
+
+        /// Writes out anything the stream holds back.
+        flush() is si
+
+        /// Flushes the stream and releases it.
+        close() =>
+            dispose()
+
+        /// Flushes the stream and releases it.
+        dispose() =>
+            flush()
+    si
+
+    /// A stream over bytes held in memory. One made with no array grows as
+    /// it is written; one made over an array reads and writes that array in
+    /// place and cannot grow past it.
+    @suppress("non-upper-snake-case-name")
+    class MemoryStream: Stream is
+        _buffer: ubyte[]
+        _origin: int
+        _length: int
+        _position: int
+        _capacity: int
+        _expandable: bool
+        _writable: bool
+        _open: bool
+
+        /// An empty stream that grows as it is written.
+        init() is
+            self.init(0)
+        si
+
+        /// An empty stream with room for `capacity` bytes before it grows.
+        ///
+        /// - capacity: the number of bytes to make room for
+        init(capacity: int) is
+            super.init()
+
+            if capacity < 0 then
+                throw Ghul.ArgumentOutOfRangeException("capacity")
+            fi
+
+            _buffer = Ghul._array_new[ubyte](capacity)
+            _origin = 0
+            _capacity = capacity
+            _length = 0
+            _position = 0
+            _expandable = true
+            _writable = true
+            _open = true
+        si
+
+        /// A stream over every byte of `buffer`, which it reads and writes
+        /// in place.
+        ///
+        /// - buffer: the bytes to read and write
+        init(buffer: ubyte[]) is
+            self.init(buffer, 0, buffer.count, true)
+        si
+
+        /// A stream over every byte of `buffer`, written in place only where
+        /// `writable` is true.
+        ///
+        /// - buffer: the bytes to read and write
+        /// - writable: whether the stream can be written
+        init(buffer: ubyte[], writable: bool) is
+            self.init(buffer, 0, buffer.count, writable)
+        si
+
+        /// A stream over `count` bytes of `buffer` starting at `index`,
+        /// which it reads and writes in place.
+        ///
+        /// - buffer: the bytes to read and write
+        /// - index: the position in `buffer` the stream starts at
+        /// - count: the number of bytes the stream holds
+        init(buffer: ubyte[], index: int, count: int) is
+            self.init(buffer, index, count, true)
+        si
+
+        /// A stream over `count` bytes of `buffer` starting at `index`,
+        /// written in place only where `writable` is true.
+        ///
+        /// - buffer: the bytes to read and write
+        /// - index: the position in `buffer` the stream starts at
+        /// - count: the number of bytes the stream holds
+        /// - writable: whether the stream can be written
+        init(buffer: ubyte[], index: int, count: int, writable: bool) is
+            super.init()
+
+            if index < 0 then
+                throw Ghul.ArgumentOutOfRangeException("index")
+            fi
+
+            if count < 0 then
+                throw Ghul.ArgumentOutOfRangeException("count")
+            fi
+
+            if buffer.count - index < count then
+                throw Ghul.ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.")
+            fi
+
+            _buffer = buffer
+            _origin = index
+            _capacity = index + count
+            _length = index + count
+            _position = index
+            _expandable = false
+            _writable = writable
+            _open = true
+        si
+
+        can_read: bool => _open
+        can_write: bool => _open /\ _writable
+        can_seek: bool => _open
+
+        /// The number of bytes the stream holds.
+        length: long is
+            _check_open()
+
+            return long(_length - _origin)
+        si
+
+        /// The number of bytes the stream can hold before it grows.
+        capacity: int => _capacity - _origin
+
+        position: long public is
+            _check_open()
+
+            return long(_position - _origin)
+        si,
+            = value is
+                _check_open()
+
+                if value < 0L then
+                    throw Ghul.ArgumentOutOfRangeException("value")
+                fi
+
+                _position = _origin + int(value)
+            si
+
+        read(buffer: ubyte[], offset: int, count: int) -> int is
+            _check_open()
+            _check_buffer(buffer, offset, count)
+
+            let available = _length - _position
+
+            if available <= 0 then
+                return 0
+            fi
+
+            let n = if count < available then count else available fi
+            let data = _buffer
+            let i mut = 0
+
+            while i < n do
+                Ghul._array_set(buffer, offset + i, data[_position + i])
+                i = i + 1
+            od
+
+            _position = _position + n
+
+            return n
+        si
+
+        read_byte() -> int is
+            _check_open()
+
+            if _position >= _length then
+                return -1
+            fi
+
+            let value = _buffer[_position]
+
+            _position = _position + 1
+
+            return int(value)
+        si
+
+        write(buffer: ubyte[], offset: int, count: int) is
+            _check_writable()
+            _check_buffer(buffer, offset, count)
+            _make_room(_position + count)
+            _clear_gap()
+
+            let data = _buffer
+            let i mut = 0
+
+            while i < count do
+                Ghul._array_set(data, _position + i, buffer[offset + i])
+                i = i + 1
+            od
+
+            _position = _position + count
+            _extend_to_position()
+        si
+
+        write_byte(value: ubyte) is
+            _check_writable()
+            _make_room(_position + 1)
+            _clear_gap()
+
+            Ghul._array_set(_buffer, _position, value)
+
+            _position = _position + 1
+            _extend_to_position()
+        si
+
+        seek(offset: long, origin: SeekOrigin) -> long is
+            _check_open()
+
+            let base =
+                case origin
+                when SeekOrigin.BEGIN then _origin
+                when SeekOrigin.CURRENT then _position
+                else _length
+                esac
+
+            let target = long(base) + offset
+
+            if target < long(_origin) then
+                throw IOException("An attempt was made to move the position before the beginning of the stream.")
+            fi
+
+            _position = int(target)
+
+            return long(_position - _origin)
+        si
+
+        /// Makes the stream hold exactly `value` bytes, cutting it short or
+        /// filling the new bytes with zero.
+        ///
+        /// - value: the number of bytes the stream is to hold
+        set_length(value: long) is
+            _check_writable()
+
+            if value < 0L then
+                throw Ghul.ArgumentOutOfRangeException("value")
+            fi
+
+            let end = _origin + int(value)
+
+            _make_room(end)
+
+            let i mut = _length
+
+            while i < end do
+                Ghul._array_set(_buffer, i, 0ub)
+                i = i + 1
+            od
+
+            _length = end
+
+            if _position > end then
+                _position = end
+            fi
+        si
+
+        /// The bytes the stream holds, copied into a new array. It can be
+        /// called after the stream is closed.
+        to_array() -> ubyte[] is
+            let count = _length - _origin
+            let result = Ghul._array_new[ubyte](count)
+            let data = _buffer
+            let i mut = 0
+
+            while i < count do
+                Ghul._array_set(result, i, data[_origin + i])
+                i = i + 1
+            od
+
+            return result
+        si
+
+        /// Writes every byte the stream holds to `destination`.
+        ///
+        /// - destination: the stream to write to
+        write_to(destination: Stream) is
+            _check_open()
+
+            destination.write(_buffer, _origin, _length - _origin)
+        si
+
+        dispose() is
+            _open = false
+        si
+
+        _check_open() is
+            if !_open then
+                throw Ghul.ObjectDisposedException("Cannot access a closed Stream.")
+            fi
+        si
+
+        _check_writable() is
+            _check_open()
+
+            if !_writable then
+                throw Ghul.NotSupportedException("Stream does not support writing.")
+            fi
+        si
+
+        _check_buffer(buffer: ubyte[], offset: int, count: int) is
+            if offset < 0 then
+                throw Ghul.ArgumentOutOfRangeException("offset")
+            fi
+
+            if count < 0 then
+                throw Ghul.ArgumentOutOfRangeException("count")
+            fi
+
+            if buffer.count - offset < count then
+                throw Ghul.ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.")
+            fi
+        si
+
+        // Makes the buffer reach `end`, growing it where the stream may grow.
+        _make_room(end: int) is
+            if end <= _capacity then
+                return
+            fi
+
+            if !_expandable then
+                throw Ghul.NotSupportedException("Memory stream is not expandable.")
+            fi
+
+            let doubled = _buffer.count * 2
+            let size = if doubled > end then doubled else if end < 256 then 256 else end fi fi
+            let grown = Ghul._array_new[ubyte](size)
+            let i mut = 0
+
+            while i < _length do
+                Ghul._array_set(grown, i, _buffer[i])
+                i = i + 1
+            od
+
+            _buffer = grown
+            _capacity = size
+        si
+
+        // A write starting past the end leaves zeros between the old end and
+        // where it started, whatever the buffer held there before.
+        _clear_gap() is
+            let i mut = _length
+
+            while i < _position do
+                Ghul._array_set(_buffer, i, 0ub)
+                i = i + 1
+            od
+        si
+
+        _extend_to_position() is
+            if _position > _length then
+                _length = _position
+            fi
+        si
+    si
+si

@@ -1,0 +1,65 @@
+// A builder and a string built from characters stay cheap and correct however
+// much they hold: a few hundred thousand code units build, join and edit
+// without the cost growing with the square of the length.
+use IO.Std.write_line
+use Text.STRING_BUILDER
+use Collections.LIST
+
+checksum(text: string) -> int is
+    let sum mut = 0
+    let i mut = 0
+
+    while i < text.length do
+        sum = (sum * 31 + int(text[i])) & 0x7FFF_FFFF
+        i = i + 1
+    od
+
+    return sum
+si
+
+entry() is
+    let builder = STRING_BUILDER()
+    let expected = STRING_BUILDER()
+    let i mut = 0
+
+    while i < 300000 do
+        builder.append(char(97 + i % 26))
+        i = i + 1
+    od
+
+    write_line("{builder.length} {checksum(builder.to_string())}")
+
+    builder.append("tail")
+    write_line("{builder.length} {builder[builder.length - 1]}")
+
+    let pieces = STRING_BUILDER()
+    i = 0
+
+    while i < 2000 do
+        pieces.append("piece ").append(i).append(", ")
+        i = i + 1
+    od
+
+    let joined = pieces.to_string()
+    write_line("{joined.length} {joined.substring(0, 20)} {joined.substring(joined.length - 12)}")
+
+    pieces.insert(5, "[").remove(0, 2)
+    pieces[0] = '#'
+    write_line("{pieces.length} {pieces.to_string().substring(0, 12)}")
+
+    pieces.clear().append("again")
+    write_line("{pieces.length} {pieces.to_string()}")
+
+    let units = LIST[char]()
+    i = 0
+
+    while i < 200001 do
+        units.add(char(65 + i % 26))
+        i = i + 1
+    od
+
+    let text = string(units.to_array())
+    write_line("{text.length} {checksum(text)} {text[200000]}")
+    write_line("[{string(LIST[char]().to_array())}] [{string(['x'])}] [{string(['x', 'y'])}] [{string(['x', 'y', 'z'])}]")
+    write_line("{string('-', 150000).length}")
+si

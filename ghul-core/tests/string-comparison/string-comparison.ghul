@@ -1,0 +1,23 @@
+// string.compare with a StringComparison: the ordinal choices compare by
+// code unit, the culture choices as the ordinal ones do, and those that
+// ignore case compare each letter as its upper case.
+use IO.Std.write_line
+use Ghul.StringComparison.*
+
+sign(n: int) -> int => if n < 0 then -1 elif n > 0 then 1 else 0 fi
+
+show(a: string, b: string) is
+    write_line(
+        "{a} {b}: "
+        "{sign(string.compare(a, b, ORDINAL))} "
+        "{sign(string.compare(a, b, ORDINAL_IGNORE_CASE))} "
+        "{sign(string.compare(a, b, CURRENT_CULTURE))} "
+        "{sign(string.compare(a, b, INVARIANT_CULTURE_IGNORE_CASE))}")
+si
+
+show("apple", "Apple")
+show("apple", "apples")
+show("B", "a")
+show("a+b", "a-b")
+show("same", "same")
+write_line("{string.compare(null, "x", ORDINAL)} {string.compare("x", null, ORDINAL_IGNORE_CASE)} {string.compare(null, null, ORDINAL)}")

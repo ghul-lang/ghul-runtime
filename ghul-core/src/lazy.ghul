@@ -1,0 +1,32 @@
+namespace Ghul is
+    /// A value computed the first time it is read, by the function the
+    /// `LAZY` was constructed with, and kept from then on.
+    @suppress("field-definite-assignment")
+    class LAZY[T] is
+        _factory: (() -> T)?
+        _value: T
+
+        /// Whether the value has been computed.
+        is_value_created: bool
+
+        /// A `LAZY` whose value `factory` computes when it is first read.
+        ///
+        /// - factory: computes the value, once
+        init(factory: () -> T) is
+            _factory = factory
+        si
+
+        /// The value, computed by the factory on the first read.
+        value: T is
+            if !is_value_created then
+                let factory = _factory!
+
+                _value = factory()
+                is_value_created = true
+                _factory = null
+            fi
+
+            return _value
+        si
+    si
+si

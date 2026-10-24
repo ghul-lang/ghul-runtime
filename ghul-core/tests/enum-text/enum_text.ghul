@@ -1,0 +1,16 @@
+// The text .NET's Enum.ToString gives: a member's name, the names a flags
+// value combines, or the number where no member or combination answers.
+use IO.Std.write_line
+use Ghul.Internal.ENUM_TEXT
+
+entry() is
+    let names = ["NONE", "READ", "WRITE", "EXECUTE"]
+    let values = [0, 1, 2, 4]
+
+    write_line(ENUM_TEXT.of(2, names, values, false))
+    write_line(ENUM_TEXT.of(7, names, values, false))
+    write_line(ENUM_TEXT.of(0, names, values, true))
+    write_line(ENUM_TEXT.of(3, names, values, true))
+    write_line(ENUM_TEXT.of(7, names, values, true))
+    write_line(ENUM_TEXT.of(9, names, values, true))
+si

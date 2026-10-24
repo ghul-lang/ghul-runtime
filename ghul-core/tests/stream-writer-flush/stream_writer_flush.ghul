@@ -1,0 +1,34 @@
+use IO.Std.write_line
+
+let writer = IO.File.create_text("log.txt")
+writer.write("one")
+writer.flush()
+writer.write("two")
+writer.flush()
+writer.flush()
+writer.write("three")
+writer.close()
+write_line(IO.File.read_all_text("log.txt"))
+
+let more = IO.StreamWriter("log.txt", true)
+more.write("-four")
+more.flush()
+more.write("-five")
+more.dispose()
+write_line(IO.File.read_all_text("log.txt"))
+
+let fresh = IO.File.create_text("log.txt")
+fresh.write("replaced")
+fresh.flush()
+fresh.write("!")
+fresh.dispose()
+write_line(IO.File.read_all_text("log.txt"))
+
+if IO.File.exists("notes.txt") then
+    IO.File.delete("notes.txt")
+fi
+
+IO.File.append_all_text("notes.txt", "a")
+IO.File.append_all_text("notes.txt", "b")
+IO.File.append_all_text("notes.txt", "c")
+write_line(IO.File.read_all_text("notes.txt"))

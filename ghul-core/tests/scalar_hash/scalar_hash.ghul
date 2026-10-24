@@ -1,0 +1,22 @@
+// Each scalar's get_hash_code answers what the same value boxed answers, so a
+// hash table over a scalar key needs no box, and equal values hash alike.
+use IO.Std.write_line
+
+same[T](value: T) -> bool => value.get_hash_code() == cast object(value).get_hash_code()
+
+entry() is
+    write_line("bool {same(true)} {same(false)} {true.get_hash_code()}")
+    write_line("byte {same(cast byte(-1))} {cast byte(-1).get_hash_code()}")
+    write_line("ubyte {same(200ub)} {200ub.get_hash_code()}")
+    write_line("short {same(cast short(-2))} {cast short(-2).get_hash_code()}")
+    write_line("ushort {same(cast ushort(60000))} {cast ushort(60000).get_hash_code()}")
+    write_line("char {same('A')} {'A'.get_hash_code()}")
+    write_line("int {same(-7)} {(-7).get_hash_code()} {(42).get_hash_code()}")
+    write_line("uint {same(4000000000u)} {4000000000u.get_hash_code()}")
+    write_line("long {same(-1L)} {(-1L).get_hash_code()} {(1L << 40).get_hash_code()}")
+    write_line("ulong {same(0xFFFF_FFFF_0000_0001ul)} {0xFFFF_FFFF_0000_0001ul.get_hash_code()}")
+    write_line("word {same(123w)} {(123w).get_hash_code()}")
+    write_line("uword {same(0xFFFF_FFFF_0000_0001uw)} {(0xFFFF_FFFF_0000_0001uw).get_hash_code()}")
+    write_line("single {same(1.5s)} {(0.0s).get_hash_code() == (-0.0s).get_hash_code()} {(0.0s / 0.0s).get_hash_code()}")
+    write_line("double {same(2.5)} {(0.0).get_hash_code() == (-0.0).get_hash_code()} {(0.0 / 0.0).get_hash_code() == (-(0.0 / 0.0)).get_hash_code()}")
+si

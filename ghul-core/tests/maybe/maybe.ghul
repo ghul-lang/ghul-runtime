@@ -1,0 +1,21 @@
+// MAYBE and KEY_VALUE_PAIR behave as they do on .NET: a MAYBE is absent or
+// holds a value and compares by it, and a pair carries a key and a value.
+present() -> bool is
+    let none = Ghul.MAYBE[int]()
+    let some = Ghul.MAYBE[int](42)
+
+    return !none.has_value /\ some.has_value /\ some.value == 42 /\
+        some =~ Ghul.MAYBE[int](42) /\ none =~ Ghul.MAYBE[int]() /\ !(some =~ none)
+si
+
+pair() -> int is
+    let p = Collections.KEY_VALUE_PAIR[string, int]("answer", 42)
+    let (k = key, v = value) = p
+
+    return p.value + v
+si
+
+entry() is
+    IO.Std.write_line("{present()} {pair()}")
+    IO.Std.write_line("{Ghul.MAYBE[int](42)}")
+si

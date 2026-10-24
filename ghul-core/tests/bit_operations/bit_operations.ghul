@@ -1,0 +1,15 @@
+// System.Numerics.BitOperations' counts, logarithms, power-of-two tests and
+// rotations, answering as .NET does.
+use IO.Std.write_line
+use System.Numerics.BitOperations
+
+entry() is
+    write_line("{BitOperations.pop_count(0u)} {BitOperations.pop_count(0xFFu)} {BitOperations.pop_count(0xFFFF_FFFFu)} {BitOperations.pop_count(0xF0F0_0000_0000_0001ul)}")
+    write_line("{BitOperations.leading_zero_count(0u)} {BitOperations.leading_zero_count(1u)} {BitOperations.leading_zero_count(0x8000_0000u)} {BitOperations.leading_zero_count(0ul)} {BitOperations.leading_zero_count(0x100ul)}")
+    write_line("{BitOperations.trailing_zero_count(0)} {BitOperations.trailing_zero_count(8)} {BitOperations.trailing_zero_count(-8)} {BitOperations.trailing_zero_count(0u)} {BitOperations.trailing_zero_count(0L)} {BitOperations.trailing_zero_count(0x10_0000_0000ul)}")
+    write_line("{BitOperations.log2(0u)} {BitOperations.log2(1u)} {BitOperations.log2(1000u)} {BitOperations.log2(0xFFFF_FFFF_FFFF_FFFFul)}")
+    write_line("{BitOperations.is_pow2(0)} {BitOperations.is_pow2(64)} {BitOperations.is_pow2(-64)} {BitOperations.is_pow2(96u)} {BitOperations.is_pow2(1L << 40)} {BitOperations.is_pow2(0x8000_0000_0000_0000ul)}")
+    write_line("{BitOperations.rotate_left(0x8000_0001u, 1)} {BitOperations.rotate_left(0x1234_5678u, 36)} {BitOperations.rotate_left(1ul, 63)} {BitOperations.rotate_left(5ul, 0)}")
+    write_line("{BitOperations.rotate_right(1u, 1)} {BitOperations.rotate_right(0x1234_5678u, -4)} {BitOperations.rotate_right(1ul, 65)}")
+    write_line("{BitOperations.round_up_to_power_of2(0u)} {BitOperations.round_up_to_power_of2(5u)} {BitOperations.round_up_to_power_of2(0x8000_0001u)} {BitOperations.round_up_to_power_of2(1000ul)}")
+si

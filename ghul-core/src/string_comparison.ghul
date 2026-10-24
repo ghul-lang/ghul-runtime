@@ -1,0 +1,63 @@
+namespace Ghul is
+    /// How two strings are compared, as .NET names the choices. This
+    /// library holds no linguistic data: the culture values compare as
+    /// `ORDINAL` does, and the ones that ignore case as
+    /// `ORDINAL_IGNORE_CASE`.
+    enum StringComparison is
+        /// By the current culture; here, as `ORDINAL`.
+        CURRENT_CULTURE = 0,
+        /// By the current culture ignoring case; here, as `ORDINAL_IGNORE_CASE`.
+        CURRENT_CULTURE_IGNORE_CASE = 1,
+        /// By the invariant culture; here, as `ORDINAL`.
+        INVARIANT_CULTURE = 2,
+        /// By the invariant culture ignoring case; here, as `ORDINAL_IGNORE_CASE`.
+        INVARIANT_CULTURE_IGNORE_CASE = 3,
+        /// By UTF-16 code unit.
+        ORDINAL = 4,
+        /// By UTF-16 code unit, each letter taken as its upper case.
+        ORDINAL_IGNORE_CASE = 5,
+    si
+
+    partial string is
+        /// Negative where `a` orders before `b` under `comparison`, zero
+        /// where they are equal, positive otherwise. Absent orders before
+        /// any string.
+        ///
+        /// - a: the first string
+        /// - b: the second string
+        /// - comparison: how the two are compared
+        compare(a: string?, b: string?, comparison: StringComparison) -> int static is
+            if !_ignores_case(comparison) then
+                return compare(a, b)
+            fi
+
+            if !a? then
+                return if !b? then 0 else -1 fi
+            fi
+
+            if !b? then
+                return 1
+            fi
+
+            let shorter = if a.length < b.length then a.length else b.length fi
+            let i mut = 0
+
+            while i < shorter do
+                let difference = cast int(char.to_upper_invariant(a[i])) - cast int(char.to_upper_invariant(b[i]))
+
+                if difference != 0 then
+                    return difference
+                fi
+
+                i = i + 1
+            od
+
+            return a.length - b.length
+        si
+
+        _ignores_case(comparison: StringComparison) -> bool static =>
+            comparison == StringComparison.CURRENT_CULTURE_IGNORE_CASE \/
+            comparison == StringComparison.INVARIANT_CULTURE_IGNORE_CASE \/
+            comparison == StringComparison.ORDINAL_IGNORE_CASE
+    si
+si

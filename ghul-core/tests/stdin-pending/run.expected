@@ -1,0 +1,8 @@
+line: [one]
+line: [two]
+line: [three]
+line: [four]
+line: []
+line: [last]
+ended: true false
+heap: true true

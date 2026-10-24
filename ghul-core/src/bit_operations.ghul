@@ -1,0 +1,183 @@
+namespace System.Numerics is
+    /// .NET's bit-twiddling operations on unsigned integers, under the name
+    /// .NET gives them.
+    class BitOperations is
+        /// The number of bits set in `value`.
+        ///
+        /// - value: the value to count the bits of
+        pop_count(value: uint) -> int static => pop_count(cast ulong(value))
+
+        /// The number of bits set in `value`.
+        ///
+        /// - value: the value to count the bits of
+        pop_count(value: ulong) -> int static is
+            let count mut = 0
+            let rest mut = value
+
+            while rest != 0ul do
+                rest = rest & (rest - 1ul)
+                count = count + 1
+            od
+
+            return count
+        si
+
+        /// The number of zero bits above the highest set bit of `value`, or 32
+        /// where `value` is zero.
+        ///
+        /// - value: the value to examine
+        leading_zero_count(value: uint) -> int static => leading_zero_count(cast ulong(value)) - 32
+
+        /// The number of zero bits above the highest set bit of `value`, or 64
+        /// where `value` is zero.
+        ///
+        /// - value: the value to examine
+        leading_zero_count(value: ulong) -> int static is
+            if value == 0ul then
+                return 64
+            fi
+
+            let count mut = 0
+            let rest mut = value
+
+            while rest & 0x8000_0000_0000_0000ul == 0ul do
+                rest = rest << 1
+                count = count + 1
+            od
+
+            return count
+        si
+
+        /// The number of zero bits below the lowest set bit of `value`, or 32
+        /// where `value` is zero.
+        ///
+        /// - value: the value to examine
+        trailing_zero_count(value: int) -> int static => trailing_zero_count(cast uint(value))
+
+        /// The number of zero bits below the lowest set bit of `value`, or 32
+        /// where `value` is zero.
+        ///
+        /// - value: the value to examine
+        trailing_zero_count(value: uint) -> int static =>
+            if value == 0u then 32 else trailing_zero_count(cast ulong(value)) fi
+
+        /// The number of zero bits below the lowest set bit of `value`, or 64
+        /// where `value` is zero.
+        ///
+        /// - value: the value to examine
+        trailing_zero_count(value: long) -> int static => trailing_zero_count(cast ulong(value))
+
+        /// The number of zero bits below the lowest set bit of `value`, or 64
+        /// where `value` is zero.
+        ///
+        /// - value: the value to examine
+        trailing_zero_count(value: ulong) -> int static is
+            if value == 0ul then
+                return 64
+            fi
+
+            let count mut = 0
+            let rest mut = value
+
+            while rest & 1ul == 0ul do
+                rest = rest >> 1
+                count = count + 1
+            od
+
+            return count
+        si
+
+        /// The position of the highest set bit of `value`, which is the
+        /// integer part of its base 2 logarithm, or 0 where `value` is zero.
+        ///
+        /// - value: the value to examine
+        log2(value: uint) -> int static => log2(cast ulong(value))
+
+        /// The position of the highest set bit of `value`, which is the
+        /// integer part of its base 2 logarithm, or 0 where `value` is zero.
+        ///
+        /// - value: the value to examine
+        log2(value: ulong) -> int static =>
+            if value == 0ul then 0 else 63 - leading_zero_count(value) fi
+
+        /// Whether `value` is a power of two.
+        ///
+        /// - value: the value to examine
+        is_pow2(value: int) -> bool static => value > 0 /\ value & (value - 1) == 0
+
+        /// Whether `value` is a power of two.
+        ///
+        /// - value: the value to examine
+        is_pow2(value: uint) -> bool static => value != 0u /\ value & (value - 1u) == 0u
+
+        /// Whether `value` is a power of two.
+        ///
+        /// - value: the value to examine
+        is_pow2(value: long) -> bool static => value > 0L /\ value & (value - 1L) == 0L
+
+        /// Whether `value` is a power of two.
+        ///
+        /// - value: the value to examine
+        is_pow2(value: ulong) -> bool static => value != 0ul /\ value & (value - 1ul) == 0ul
+
+        /// `value` with its bits rotated `offset` places towards the high end,
+        /// the bits leaving the top coming back in at the bottom.
+        ///
+        /// - value: the value to rotate
+        /// - offset: the number of places, taken modulo 32
+        rotate_left(value: uint, offset: int) -> uint static is
+            let by = offset & 31
+
+            return if by == 0 then value else (value << by) | (value >> (32 - by)) fi
+        si
+
+        /// `value` with its bits rotated `offset` places towards the high end,
+        /// the bits leaving the top coming back in at the bottom.
+        ///
+        /// - value: the value to rotate
+        /// - offset: the number of places, taken modulo 64
+        rotate_left(value: ulong, offset: int) -> ulong static is
+            let by = offset & 63
+
+            return if by == 0 then value else (value << by) | (value >> (64 - by)) fi
+        si
+
+        /// `value` with its bits rotated `offset` places towards the low end,
+        /// the bits leaving the bottom coming back in at the top.
+        ///
+        /// - value: the value to rotate
+        /// - offset: the number of places, taken modulo 32
+        rotate_right(value: uint, offset: int) -> uint static => rotate_left(value, 32 - (offset & 31))
+
+        /// `value` with its bits rotated `offset` places towards the low end,
+        /// the bits leaving the bottom coming back in at the top.
+        ///
+        /// - value: the value to rotate
+        /// - offset: the number of places, taken modulo 64
+        rotate_right(value: ulong, offset: int) -> ulong static => rotate_left(value, 64 - (offset & 63))
+
+        /// The smallest power of two at least `value`, or 0 where there is none
+        /// in range or `value` is zero.
+        ///
+        /// - value: the value to round up
+        round_up_to_power_of2(value: uint) -> uint static is
+            let result = round_up_to_power_of2(cast ulong(value))
+
+            return if result > 0xFFFF_FFFFul then 0u else cast uint(result) fi
+        si
+
+        /// The smallest power of two at least `value`, or 0 where there is none
+        /// in range or `value` is zero.
+        ///
+        /// - value: the value to round up
+        round_up_to_power_of2(value: ulong) -> ulong static is
+            if value == 0ul then
+                return 0ul
+            fi
+
+            let shift = 64 - leading_zero_count(value - 1ul)
+
+            return if shift >= 64 then 0ul else 1ul << shift fi
+        si
+    si
+si

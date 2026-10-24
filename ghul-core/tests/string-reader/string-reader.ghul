@@ -1,0 +1,12 @@
+// Text held in a string read a line, a character and the rest at a time,
+// with lines ending at a line feed, a carriage return, or both.
+
+use default
+
+let reader = IO.StringReader("one\r\ntwo\rthree\nfour")
+
+write_line("first: [{reader.read_line()}]")
+write_line("char: {reader.read()} peek: {reader.peek()}")
+write_line("line: [{reader.read_line()}]")
+write_line("rest: [{reader.read_to_end()}]")
+write_line("after: {reader.read_line() ?? "null"} {reader.read()}")

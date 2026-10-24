@@ -1,0 +1,10 @@
+// A program reads its command-line arguments, in order, as it does on .NET.
+entry() is
+    let arguments = Ghul.ENVIRONMENT.arguments
+
+    IO.Std.write_line("{arguments.count}")
+
+    for argument in arguments do
+        IO.Std.write_line(argument)
+    od
+si

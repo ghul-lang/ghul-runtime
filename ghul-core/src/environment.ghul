@@ -1,0 +1,255 @@
+namespace Ghul is
+    use Collections.Iterable
+    use Collections.Iterator
+    use Collections.KEY_VALUE_PAIR
+    use Collections.LIST
+    use Collections.MAP
+    use Collections.Map
+
+    /// A live view of a string-keyed environment: reading a key that isn't set gives an absent value, and writing null removes the key.
+    trait Environment: Iterable[KEY_VALUE_PAIR[string, string]] is
+        /// Reads or writes the value for `key`, absent if it isn't set.
+        [key: string]: string?, = value
+
+        /// Whether `key` is currently set.
+        contains_key(key: string) -> bool
+
+        /// Removes `key`, and returns whether it was set.
+        remove(key: string) -> bool
+
+        /// The keys currently set.
+        keys: Iterable[string]
+
+        /// The values of the keys currently set.
+        values: Iterable[string]
+
+        /// A snapshot of every key and value, as an ordinary `Map`.
+        to_map() -> Map[string, string]
+
+        /// Ends the process with `status` as its exit status, after writing
+        /// out what the program has written to standard output.
+        ///
+        /// - status: the process's exit status
+        exit(status: int)
+
+        /// The path of the executable the process is running, or null where
+        /// there is none, as on the wasm target.
+        process_path: string?
+    si
+
+    /// The program's environment, as the host gave it when the program
+    /// started, and its command-line arguments. A write changes what the
+    /// program reads afterwards; nothing outside the program sees it.
+    class ENVIRONMENT: Environment is
+        _instance: ENVIRONMENT static
+
+        init() static is
+            _instance = ENVIRONMENT()
+        si
+
+        // The variables' names and values, at the same positions, the first
+        // _count of each array in use.
+        _names: string[]
+        _values: string[]
+        _count: int
+
+        init() is
+            _names = Ghul._array_new[string](0)
+            _values = Ghul._array_new[string](0)
+
+            let count = _environment_count()
+            let i mut = 0
+
+            while i < count do
+                let name = _environment_name(i)
+
+                if let value = _environment_lookup(name) then
+                    _add(name, value)
+                fi
+
+                i = i + 1
+            od
+        si
+
+        /// The program's environment.
+        instance: ENVIRONMENT static => _instance
+
+        /// The program's command-line arguments, in order.
+        arguments: string[] static is
+            let count = _argument_count()
+            let result = Ghul._array_new[string](count)
+            let i mut = 0
+
+            while i < count do
+                Ghul._array_set(result, i, _argument(i))
+                i = i + 1
+            od
+
+            return result
+        si
+
+        /// Reads or writes `key`; writing null removes it.
+        [key: string]: string? =>
+            _get(key),
+            = value is
+                if let present = value then
+                    let index = _index_of(key)
+
+                    if index >= 0 then
+                        Ghul._array_set(_values, index, present)
+                    else
+                        _add(key, present)
+                    fi
+                else
+                    remove(key)
+                fi
+            si
+
+        /// Whether `key` is set.
+        contains_key(key: string) -> bool => _index_of(key) >= 0
+
+        /// Removes `key`, and returns whether it was set.
+        remove(key: string) -> bool is
+            let index = _index_of(key)
+
+            if index < 0 then
+                return false
+            fi
+
+            let i mut = index
+
+            while i < _count - 1 do
+                Ghul._array_set(_names, i, _names[i + 1])
+                Ghul._array_set(_values, i, _values[i + 1])
+                i = i + 1
+            od
+
+            _count = _count - 1
+
+            return true
+        si
+
+        /// The keys set.
+        keys: Iterable[string] => _copy(_names)
+
+        /// The values of the keys set.
+        values: Iterable[string] => _copy(_values)
+
+        /// A snapshot of every key and value.
+        to_map() -> Map[string, string] => MAP[string, string](_pairs())
+
+        /// Ends the process with `status` as its exit status, after writing
+        /// out what the program has written to standard output.
+        ///
+        /// - status: the process's exit status
+        exit(status: int) is
+            _exit(status)
+        si
+
+        /// The path of the executable the process is running.
+        @IF.llvm()
+        process_path: string? => _process_path()
+
+        /// Null: a wasm program has no executable of its own.
+        @IF.not.llvm()
+        process_path: string? => null
+
+        /// An iterator over the keys and values set.
+        iterator: Iterator[KEY_VALUE_PAIR[string, string]] => _pairs().iterator
+
+        _pairs() -> LIST[KEY_VALUE_PAIR[string, string]] is
+            let result = LIST[KEY_VALUE_PAIR[string, string]]()
+            let i mut = 0
+
+            while i < _count do
+                result.add(KEY_VALUE_PAIR[string, string](_names[i], _values[i]))
+                i = i + 1
+            od
+
+            return result
+        si
+
+        _add(name: string, value: string) is
+            if _count == _names.count then
+                let capacity = if _count == 0 then 4 else _count * 2 fi
+
+                _names = _grow(_names, capacity)
+                _values = _grow(_values, capacity)
+            fi
+
+            Ghul._array_set(_names, _count, name)
+            Ghul._array_set(_values, _count, value)
+            _count = _count + 1
+        si
+
+        _index_of(key: string) -> int is
+            let i mut = 0
+
+            while i < _count do
+                if _names[i] =~ key then
+                    return i
+                fi
+
+                i = i + 1
+            od
+
+            return -1
+        si
+
+        _grow(items: string[], capacity: int) -> string[] is
+            let result = Ghul._array_new[string](capacity)
+            let i mut = 0
+
+            while i < _count do
+                Ghul._array_set(result, i, items[i])
+                i = i + 1
+            od
+
+            return result
+        si
+
+        _copy(items: string[]) -> string[] is
+            let result = Ghul._array_new[string](_count)
+            let i mut = 0
+
+            while i < _count do
+                Ghul._array_set(result, i, items[i])
+                i = i + 1
+            od
+
+            return result
+        si
+
+        _get(key: string) -> string? is
+            let index = _index_of(key)
+
+            if index >= 0 then
+                return _values[index]
+            fi
+
+            return null
+        si
+
+        @intrinsic("host.argument_count")
+        _argument_count() -> int static
+
+        @intrinsic("host.argument")
+        _argument(index: int) -> string static
+
+        @intrinsic("host.environment_count")
+        _environment_count() -> int static
+
+        @intrinsic("host.environment_name")
+        _environment_name(index: int) -> string static
+
+        @intrinsic("host.environment_lookup")
+        _environment_lookup(name: string) -> string? static
+
+        @intrinsic("host.exit")
+        _exit(status: int) static
+
+        @IF.llvm()
+        @intrinsic("host.process_path")
+        _process_path() -> string? static
+    si
+si

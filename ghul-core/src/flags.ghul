@@ -1,0 +1,8 @@
+namespace Ghul is
+    /// Marks an enum whose members combine as bit flags, which gives the
+    /// enum the bitwise operators `&`, `|`, `^` and `\`. Written
+    /// `@Ghul.Flags()`.
+    class FlagsAttribute is
+        init() is si
+    si
+si

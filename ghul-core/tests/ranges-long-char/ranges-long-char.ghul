@@ -1,0 +1,8 @@
+use IO.Std.write_line
+use Ghul.Pipes
+
+write_line("{3000000000L..3000000004L |> join()}")
+write_line("{9223372036854775805L::9223372036854775807L |> join()}")
+write_line("{'a'::'e' |> join()}")
+write_line("{'a'..'e' |> join()}")
+write_line("{5L..5L |> count()} {6L::5L |> count()}")

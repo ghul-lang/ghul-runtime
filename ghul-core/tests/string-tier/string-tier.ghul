@@ -1,0 +1,64 @@
+// The string and char members, parsing, and strings as comparable and
+// iterable values print what the same program prints on .NET.
+use IO.Std.write_line
+use Ghul.StringSplitOptions
+
+joined(pieces: string[]) -> string => "[{string.join("|", pieces)}]"
+
+show(value: bool) -> string => if value then "true" else "false" fi
+
+letters(text: string) -> int is
+    let count mut = 0
+
+    for c in text do
+        if char.is_letter(c) then
+            count = count + 1
+        fi
+    od
+
+    return count
+si
+
+entry() is
+    write_line("{show(char.is_digit('7'))} {show(char.is_digit('x'))}")
+    write_line("{show(char.is_letter('q'))} {show(char.is_letter('3'))} {show(char.is_letter_or_digit('3'))}")
+    write_line("{show(char.is_upper('Q'))} {show(char.is_lower('Q'))} {show(char.is_white_space('\t'))}")
+    write_line("{char.to_upper('a')}{char.to_lower('B')}{char.to_upper('!')}")
+    write_line("{cast int(char.to_upper(cast char(181)))} {cast int(char.to_upper(cast char(255)))}")
+
+    write_line("{int.parse(" -42 ")} {long.parse("9000000000")} {int.parse("+7")}")
+
+    let parsed mut = 0
+    write_line("{show(int.try_parse("123", parsed ref))} {parsed}")
+    write_line("{show(int.try_parse("12x", parsed ref))} {parsed}")
+    write_line("{show(int.try_parse("99999999999", parsed ref))} {parsed}")
+
+    let real mut = 0.0
+    write_line("{show(double.try_parse("2.5e2", real ref))} {real}")
+    write_line("{double.parse("-0.125")} {double.parse("3")}")
+
+    write_line(joined("a,b,,c".split([','])))
+    write_line(joined("a,b,,c".split([','], StringSplitOptions.REMOVE_EMPTY_ENTRIES)))
+    write_line(joined(" a ; b ;; c ".split(';', StringSplitOptions.TRIM_ENTRIES)))
+    write_line(joined("one  two\tthree".split([], StringSplitOptions.REMOVE_EMPTY_ENTRIES)))
+    write_line(joined("a--b->c".split(["--", "->"], StringSplitOptions.NONE)))
+
+    write_line("{"hello".to_char_array().count}")
+    write_line("{"xxhixx".trim('x')} {"--a-".trim_start('-')} {"ab..".trim_end(['.'])}")
+    write_line("{"abcdef".remove(3)} {"abcdef".remove(1, 2)} {"abef".insert(2, "cd")}")
+
+    write_line("{show("apple" <> "banana" < 0)} {show("b" > "a")} {string.compare_ordinal("a", "a")}")
+    write_line("{letters("a1 b2 c3")}")
+
+    try
+        int.parse("seven")
+    catch e: Ghul.FormatException
+        write_line("format")
+    yrt
+
+    try
+        int.parse("3000000000")
+    catch e: Ghul.OverflowException
+        write_line("overflow")
+    yrt
+si

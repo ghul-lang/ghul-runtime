@@ -1,0 +1,40 @@
+namespace Ghul is
+    // A string orders by its code units, as .NET's string does without a
+    // culture, and iterates as its code units, as a .NET string iterates as
+    // its chars.
+    impl Equatable[string] for string is
+    si
+
+    impl Comparable[string] for string is
+        /// Negative where this string orders before `other` by code unit,
+        /// zero where they are equal, positive otherwise.
+        ///
+        /// - other: the string to compare with
+        <>(other: string) -> int pure => compare(self, other)
+    si
+
+    impl Collections.Iterable[char] for string is
+        /// An iterator over the string's code units, in order.
+        iterator: Collections.Iterator[char] => _STRING_ITERATOR(self)
+    si
+
+    // Iterates the code units of a string in order.
+    class _STRING_ITERATOR: Collections.Iterator[char] is
+        _text: string
+        _index: int
+
+        init(text: string) is
+            _text = text
+            _index = -1
+        si
+
+        move_next() -> bool is
+            _index = _index + 1
+            return _index < _text.length
+        si
+
+        current: char => _text[_index]
+
+        dispose() is si
+    si
+si

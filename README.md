@@ -34,15 +34,27 @@ Other values are rejected. To choose directly, regardless of `OutputType`, set
 </PropertyGroup>
 ```
 
+## Repository layout
+
+This repository holds two source trees. `ghul-runtime/` is the runtime library
+itself, built on .NET as the `ghul.runtime` package by `ghul-runtime.ghulproj`.
+`ghul-core/` is the source core library, which supplies on the wasm and llvm
+targets the types .NET supplies on the other; it is not compiled on .NET, and
+was brought here from [ghul-core](https://github.com/ghul-lang/ghul-core), which
+this repository supersedes. Each tree carries its own `ghul-project.json`, so a
+ghul-cli project can depend on either by path.
+
 ## The WebAssembly target
 
 Under `--target wasm` the runtime is compiled from source together with
-[ghul-core](https://github.com/ghul-lang/ghul-core), which supplies the types
-.NET supplies on the other target. `wasm-sources.rsp` lists the files a wasm
-build compiles, one a line, to be passed to the compiler after ghul-core's
-sources. Within those files, `@IF.dotnet()` marks what is compiled only for .NET
-and `@IF.source_core()` what is compiled only for a target whose core library
-is compiled from source, WebAssembly and LLVM. What is not yet
+ghul-core: both trees' `src/**/*.ghul` are compiled whole. A file whose
+declarations belong to one target only carries `@@IF.dotnet()` or
+`@@IF.source_core()` on its first line — the former compiles only into the
+.NET assembly, the latter only on a target whose core library is compiled
+from source, WebAssembly and LLVM. Within a file compiled everywhere,
+`@IF.dotnet()` and `@IF.source_core()` mark the individual declarations that
+belong to one target only. `ghul-runtime/src`'s files that declare types
+ghul-core also declares carry the file-level form. What is not yet
 available on the wasm target is tracked on
 [ghul-lang/ghul#3319](https://github.com/ghul-lang/ghul/issues/3319).
 

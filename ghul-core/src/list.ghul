@@ -1,0 +1,523 @@
+namespace Collections is
+    /// A list that grows as elements are added, read and written by
+    /// position.
+    class LIST[T]: List[T], MutableList[T], Ghul.Internal.UntypedList is
+        _items: T[];
+        _count: int;
+
+        /// An empty list.
+        init() is
+            _items = Ghul._array_new[T](0);
+            _count = 0;
+        si
+
+        /// An empty list with room for `capacity` elements before it grows.
+        ///
+        /// - capacity: the number of elements to make room for
+        init(capacity: int) is
+            if capacity < 0 then
+                throw Ghul.ArgumentOutOfRangeException("capacity");
+            fi
+
+            _items = Ghul._array_new[T](capacity);
+            _count = 0;
+        si
+
+        /// A list holding the elements of `source`, in order, with room for
+        /// exactly that many where `source` knows its count.
+        ///
+        /// - source: the elements to copy
+        init(source: Iterable[T]) is
+            _items = Ghul._array_new[T](if let bag: Bag[T] = source then bag.count else 0 fi);
+            _count = 0;
+
+            add_range(source);
+        si
+
+        /// The number of elements.
+        count: int pure => _count;
+
+        /// The number of elements the list can hold before it grows.
+        capacity: int => _items.count;
+
+        /// The elements, each as an object, for a reader that knows the
+        /// element type only at run time.
+        untyped_items: object?[] is
+            let result = Ghul._array_new[object?](_count)
+
+            for i in 0.._count do
+                Ghul._array_set(result, i, cast object?(_items[i]))
+            od
+
+            return result
+        si
+
+        /// Replaces the elements with `items`, each of the element type, for a
+        /// reader that knows that type only at run time.
+        ///
+        /// - items: the new elements, in order
+        @IF.not.llvm()
+        fill_untyped(items: object?[]) is
+            _items = Ghul._array_new[T](items.count)
+
+            for i in 0..items.count do
+                Ghul._array_set(_items, i, cast T(items[i]))
+            od
+
+            _count = items.count
+        si
+
+        // Reflection is not described on llvm, so nothing reads into a list
+        // there by its run-time type.
+        @IF.llvm()
+        fill_untyped(items: object?[]) is
+            throw Ghul.NotSupportedException("filling a list by its run-time element type is not supported on this target")
+        si
+
+        /// The element at `index`, counting from zero.
+        [index: int]: T pure =>
+            if index < 0 \/ index >= _count then
+                throw Ghul.ArgumentOutOfRangeException("index")
+            else
+                _items[index]
+            fi,
+            = value is
+                if index < 0 \/ index >= _count then
+                    throw Ghul.ArgumentOutOfRangeException("index");
+                fi
+
+                Ghul._array_set(_items, index, value);
+            si
+
+        /// Adds `value` at the end.
+        ///
+        /// - value: the element to add
+        add(value: T) is
+            _ensure_room(_count + 1);
+
+            Ghul._array_set(_items, _count, value);
+            _count = _count + 1;
+        si
+
+        /// Adds each element of `source` at the end, in order.
+        ///
+        /// - source: the elements to add
+        add_range(source: Iterable[T]) is
+            for value in source do
+                add(value);
+            od
+        si
+
+        /// Inserts `value` at `index`, moving the elements from there on up
+        /// by one.
+        ///
+        /// - index: where the element goes, from zero to `count`
+        /// - value: the element to insert
+        insert(index: int, value: T) is
+            if index < 0 \/ index > _count then
+                throw Ghul.ArgumentOutOfRangeException("index");
+            fi
+
+            _ensure_room(_count + 1);
+
+            let i mut = _count;
+
+            while i > index do
+                Ghul._array_set(_items, i, _items[i - 1]);
+                i = i - 1;
+            od
+
+            Ghul._array_set(_items, index, value);
+            _count = _count + 1;
+        si
+
+        /// Removes the element at `index`, moving the elements after it
+        /// down by one.
+        ///
+        /// - index: the position of the element to remove
+        remove_at(index: int) is
+            if index < 0 \/ index >= _count then
+                throw Ghul.ArgumentOutOfRangeException("index");
+            fi
+
+            let i mut = index;
+
+            while i < _count - 1 do
+                Ghul._array_set(_items, i, _items[i + 1]);
+                i = i + 1;
+            od
+
+            _count = _count - 1;
+            Ghul._array_set(_items, _count, _[T]);
+        si
+
+        /// The position of the first element `=~` to `value`, or -1 where
+        /// none is.
+        ///
+        /// - value: the element to look for
+        index_of(value: T) -> int pure is
+            let i mut = 0;
+
+            while i < _count do
+                if _items[i] =~ value then
+                    return i;
+                fi
+
+                i = i + 1;
+            od
+
+            return -1;
+        si
+
+        /// Whether any element is `=~` to `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: T) -> bool pure => index_of(value) >= 0;
+
+        /// Sorts the elements in place in the order `comparer` gives,
+        /// leaving elements it calls equal where .NET's sort leaves them.
+        ///
+        /// - comparer: orders two elements
+        sort(comparer: Comparer[T]) is
+            Ghul._introsort(_items, _count, comparer);
+        si
+
+        /// Sorts the elements in place in the order `compare` gives,
+        /// leaving elements it calls equal where .NET's sort leaves them.
+        ///
+        /// - compare: negative when its first argument comes first, positive when it comes after, zero otherwise
+        sort(compare: (T, T) -> int) is
+            Ghul._introsort(_items, _count, Ghul._FUNCTION_COMPARER[T](compare));
+        si
+
+        /// Sorts the elements in place in their own order: each must be a
+        /// `Ghul.Comparable[T]`. Throws `Ghul.InvalidOperationException`
+        /// where an element is not comparable or is absent.
+        sort() is
+            Ghul._introsort(_items, _count, Ghul._DEFAULT_COMPARER[T]());
+        si
+
+        /// Reverses the order of the elements in place.
+        reverse() is
+            reverse(0, _count);
+        si
+
+        /// Reverses the order of `count` elements in place, starting at
+        /// `index`.
+        ///
+        /// - index: the position of the first element to reverse
+        /// - count: the number of elements to reverse
+        reverse(index: int, count: int) is
+            _check_range(index, count);
+
+            let low mut = index;
+            let high mut = index + count - 1;
+
+            while low < high do
+                let held = _items[low];
+
+                Ghul._array_set(_items, low, _items[high]);
+                Ghul._array_set(_items, high, held);
+
+                low = low + 1;
+                high = high - 1;
+            od
+        si
+
+        /// Removes `count` elements starting at `index`, moving the elements
+        /// after them down.
+        ///
+        /// - index: the position of the first element to remove
+        /// - count: the number of elements to remove
+        remove_range(index: int, count: int) is
+            _check_range(index, count);
+
+            let i mut = index;
+
+            while i + count < _count do
+                Ghul._array_set(_items, i, _items[i + count]);
+                i = i + 1;
+            od
+
+            while i < _count do
+                Ghul._array_set(_items, i, _[T]);
+                i = i + 1;
+            od
+
+            _count = _count - count;
+        si
+
+        /// Removes every element `match` accepts, keeping the others in
+        /// order, and answers how many it removed.
+        ///
+        /// - match: whether to remove an element
+        remove_all(match: T -> bool) -> int is
+            let kept mut = 0;
+            let i mut = 0;
+
+            while i < _count do
+                let value = _items[i];
+
+                if !match(value) then
+                    Ghul._array_set(_items, kept, value);
+                    kept = kept + 1;
+                fi
+
+                i = i + 1;
+            od
+
+            let removed = _count - kept;
+
+            i = kept;
+
+            while i < _count do
+                Ghul._array_set(_items, i, _[T]);
+                i = i + 1;
+            od
+
+            _count = kept;
+
+            return removed;
+        si
+
+        /// Inserts the elements of `source`, in order, at `index`, moving the
+        /// elements from there up.
+        ///
+        /// - index: where the first inserted element goes
+        /// - source: the elements to insert
+        insert_range(index: int, source: Iterable[T]) is
+            if index < 0 \/ index > _count then
+                throw Ghul.ArgumentOutOfRangeException("index");
+            fi
+
+            let added = LIST[T](source);
+            let n = added.count;
+
+            _ensure_room(_count + n);
+
+            let i mut = _count - 1;
+
+            while i >= index do
+                Ghul._array_set(_items, i + n, _items[i]);
+                i = i - 1;
+            od
+
+            let j mut = 0;
+
+            while j < n do
+                Ghul._array_set(_items, index + j, added[j]);
+                j = j + 1;
+            od
+
+            _count = _count + n;
+        si
+
+        _check_range(index: int, count: int) is
+            if index < 0 then
+                throw Ghul.ArgumentOutOfRangeException("index");
+            fi
+
+            if count < 0 then
+                throw Ghul.ArgumentOutOfRangeException("count");
+            fi
+
+            if index + count > _count then
+                throw Ghul.ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
+            fi
+        si
+
+        /// Removes the first element `=~` to `value`, answering whether
+        /// there was one.
+        ///
+        /// - value: the element to remove
+        remove(value: T) -> bool is
+            let index = index_of(value);
+
+            if index < 0 then
+                return false;
+            fi
+
+            remove_at(index);
+
+            return true;
+        si
+
+        /// Removes every element.
+        clear() is
+            let i mut = 0;
+
+            while i < _count do
+                Ghul._array_set(_items, i, _[T]);
+                i = i + 1;
+            od
+
+            _count = 0;
+        si
+
+        /// The elements, in order, copied into a new array.
+        to_array() -> T[] is
+            let result = Ghul._array_new[T](_count);
+            let i mut = 0;
+
+            while i < _count do
+                Ghul._array_set(result, i, _items[i]);
+                i = i + 1;
+            od
+
+            return result;
+        si
+
+        /// A new list holding `count` elements starting at `index`.
+        ///
+        /// - index: the position of the first element to take
+        /// - count: the number of elements to take
+        get_range(index: int, count: int) -> LIST[T] is
+            _check_range(index, count);
+
+            let result = LIST[T](count);
+            let i mut = 0;
+
+            while i < count do
+                result.add(_items[index + i]);
+                i = i + 1;
+            od
+
+            return result;
+        si
+
+        /// Copies every element into `array`, starting at its first position.
+        ///
+        /// - array: where the elements go, with room for all of them
+        copy_to(array: T[]) =>
+            copy_to(0, array, 0, _count);
+
+        /// Copies every element into `array`, starting at `array_index`.
+        ///
+        /// - array: where the elements go
+        /// - array_index: the position in `array` the first element goes to
+        copy_to(array: T[], array_index: int) =>
+            copy_to(0, array, array_index, _count);
+
+        /// Copies `count` elements starting at `index` into `array`,
+        /// starting at `array_index`.
+        ///
+        /// - index: the position of the first element to copy
+        /// - array: where the elements go
+        /// - array_index: the position in `array` the first element goes to
+        /// - count: the number of elements to copy
+        copy_to(index: int, array: T[], array_index: int, count: int) is
+            _check_range(index, count);
+
+            if array_index < 0 then
+                throw Ghul.ArgumentOutOfRangeException("arrayIndex");
+            fi
+
+            if array_index + count > array.count then
+                throw Ghul.ArgumentException("Destination array was not long enough. Check the destination index, length, and the array's lower bounds.");
+            fi
+
+            let i mut = 0;
+
+            while i < count do
+                Ghul._array_set(array, array_index + i, _items[index + i]);
+                i = i + 1;
+            od
+        si
+
+        /// An iterator over the elements, in order.
+        iterator: Iterator[T] => LIST_ITERATOR[T](_items, _count);
+
+        _ensure_room(needed: int) is
+            if needed <= _items.count then
+                return;
+            fi
+
+            let grown = Ghul._array_new[T](Ghul._grown_capacity(_items.count, needed));
+            let i mut = 0;
+
+            while i < _count do
+                Ghul._array_set(grown, i, _items[i]);
+                i = i + 1;
+            od
+
+            _items = grown;
+        si
+    si
+
+    /// Iterates the elements a list held when the iterator was made, in
+    /// order.
+    class LIST_ITERATOR[T]: Iterator[T] is
+        _items: T[];
+        _count: int;
+        _index: int;
+
+        /// An iterator positioned before the first of `count` elements of
+        /// `items`.
+        ///
+        /// - items: the list's backing array
+        /// - count: the number of elements in use
+        init(items: T[], count: int) is
+            _items = items;
+            _count = count;
+            _index = -1;
+        si
+
+        /// Moves to the next element, answering whether there is one.
+        move_next() -> bool is
+            _index = _index + 1;
+
+            return _index < _count;
+        si
+
+        /// The element the iterator is positioned at.
+        current: T => _items[_index];
+
+        /// Releases nothing: a list holds no resource.
+        dispose() is si
+    si
+si
+
+namespace Ghul is
+    // Orders by each value's own `Comparable[T]`, as .NET's default comparer
+    // orders by `IComparable<T>`. A value that is not comparable, an absent
+    // one included, cannot be ordered at all.
+    class _DEFAULT_COMPARER[T]: Collections.Comparer[T] is
+        init() is si
+
+        compare(x: T, y: T) -> int is
+            let comparable = cast Comparable[T]?(x);
+
+            if comparable? then
+                return comparable <> y;
+            fi
+
+            throw InvalidOperationException("Failed to compare two elements in the array.");
+        si
+    si
+
+    // Orders by calling a comparison function, so a sort given one can run
+    // through the comparer the sort takes.
+    class _FUNCTION_COMPARER[T]: Collections.Comparer[T] is
+        _compare: (T, T) -> int
+
+        init(compare: (T, T) -> int) is
+            _compare = compare
+        si
+
+        compare(x: T, y: T) -> int => _compare(x, y)
+    si
+si
+
+namespace Ghul.Internal is
+    /// A list whose elements can be read and replaced by a reader that knows
+    /// their type only at run time, such as a reflective serializer.
+    trait UntypedList is
+        /// The elements, each as an object.
+        untyped_items: object?[]
+
+        /// Replaces the elements with `items`, each of the element type.
+        ///
+        /// - items: the new elements, in order
+        fill_untyped(items: object?[])
+    si
+si

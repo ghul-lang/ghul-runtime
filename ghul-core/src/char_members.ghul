@@ -1,0 +1,334 @@
+namespace Ghul is
+    // Classification and simple case mapping over Basic Latin, Latin-1,
+    // Latin Extended-A, Greek and Cyrillic, as .NET's invariant culture maps
+    // them. Outside those ranges a character is neither a letter nor a
+    // digit, and keeps its case.
+    partial char is
+        /// Whether `c` is a decimal digit, `0` to `9`.
+        ///
+        /// - c: the character to test
+        is_digit(c: char) -> bool static pure => c >= '0' /\ c <= '9'
+
+        /// Whether `c` is a letter.
+        ///
+        /// - c: the character to test
+        is_letter(c: char) -> bool static pure =>
+            is_upper(c) \/ is_lower(c) \/ _is_caseless_letter(cast int(c))
+
+        /// Whether `c` is a letter or a decimal digit.
+        ///
+        /// - c: the character to test
+        is_letter_or_digit(c: char) -> bool static pure => is_letter(c) \/ is_digit(c)
+
+        /// Whether `c` is an upper-case letter.
+        ///
+        /// - c: the character to test
+        is_upper(c: char) -> bool static pure =>
+            _lower_of(cast int(c)) != cast int(c) \/ _is_upper_without_lower(cast int(c))
+
+        /// Whether `c` is a lower-case letter.
+        ///
+        /// - c: the character to test
+        is_lower(c: char) -> bool static pure =>
+            _upper_of(cast int(c)) != cast int(c) \/ _is_lower_without_upper(cast int(c))
+
+        /// Whether `c` is white space, as .NET's `char.IsWhiteSpace` counts it.
+        ///
+        /// - c: the character to test
+        is_white_space(c: char) -> bool static pure => _is_white_space(c)
+
+        /// Whether `c` is punctuation.
+        ///
+        /// - c: the character to test
+        is_punctuation(c: char) -> bool static pure is
+            let code = cast int(c)
+
+            return
+                code >= 0x21 /\ code <= 0x23 \/ code >= 0x25 /\ code <= 0x2A \/ code >= 0x2C /\ code <= 0x2F \/
+                code == 0x3A \/ code == 0x3B \/ code == 0x3F \/ code == 0x40 \/ code >= 0x5B /\ code <= 0x5D \/
+                code == 0x5F \/ code == 0x7B \/ code == 0x7D \/
+                code == 0xA1 \/ code == 0xA7 \/ code == 0xAB \/ code == 0xB6 \/ code == 0xB7 \/
+                code == 0xBB \/ code == 0xBF \/ code == 0x37E \/ code == 0x387
+        si
+
+        /// Whether `c` is a symbol: a mathematical, currency or modifier
+        /// symbol, or another. Covers ASCII and Latin-1, the currency symbols,
+        /// and the arrow, mathematical operator, technical, geometric shape and
+        /// miscellaneous symbol blocks.
+        ///
+        /// - c: the character to test
+        is_symbol(c: char) -> bool static pure is
+            let code = cast int(c)
+
+            return
+                code == 0x24 \/ code == 0x2B \/ code >= 0x3C /\ code <= 0x3E \/ code == 0x5E \/ code == 0x60 \/
+                code == 0x7C \/ code == 0x7E \/
+                code >= 0xA2 /\ code <= 0xA6 \/ code == 0xA8 \/ code == 0xA9 \/ code == 0xAC \/
+                code >= 0xAE /\ code <= 0xB1 \/ code == 0xB4 \/ code == 0xB8 \/ code == 0xD7 \/ code == 0xF7 \/
+                code >= 0x20A0 /\ code <= 0x20C0 \/
+                code >= 0x2190 /\ code <= 0x22FF \/
+                code >= 0x2300 /\ code <= 0x23FF /\ code != 0x2329 /\ code != 0x232A \/
+                code >= 0x25A0 /\ code <= 0x26FF \/
+                code >= 0x2A00 /\ code <= 0x2AFF
+        si
+
+        /// The upper-case form of `c`, or `c` itself where it has none.
+        ///
+        /// - c: the character to convert
+        to_upper(c: char) -> char static pure => cast char(_upper_of(cast int(c)))
+
+        /// The lower-case form of `c`, or `c` itself where it has none.
+        ///
+        /// - c: the character to convert
+        to_lower(c: char) -> char static pure => cast char(_lower_of(cast int(c)))
+
+        /// The upper-case form of `c` under the invariant culture.
+        ///
+        /// - c: the character to convert
+        to_upper_invariant(c: char) -> char static pure => to_upper(c)
+
+        /// The lower-case form of `c` under the invariant culture.
+        ///
+        /// - c: the character to convert
+        to_lower_invariant(c: char) -> char static pure => to_lower(c)
+
+        /// Whether `c` is in the ASCII range, U+0000 to U+007F.
+        ///
+        /// - c: the character to test
+        is_ascii(c: char) -> bool static pure => cast int(c) <= 0x7F
+
+        /// Whether `c` is an ASCII decimal digit, `0` to `9`.
+        ///
+        /// - c: the character to test
+        is_ascii_digit(c: char) -> bool static pure => c >= '0' /\ c <= '9'
+
+        /// Whether `c` is an ASCII hexadecimal digit: `0` to `9`, `a` to `f`
+        /// or `A` to `F`.
+        ///
+        /// - c: the character to test
+        is_ascii_hex_digit(c: char) -> bool static pure =>
+            is_ascii_digit(c) \/ (c >= 'a' /\ c <= 'f') \/ (c >= 'A' /\ c <= 'F')
+
+        /// Whether `c` is an ASCII lower-case letter, `a` to `z`.
+        ///
+        /// - c: the character to test
+        is_ascii_letter_lower(c: char) -> bool static pure => c >= 'a' /\ c <= 'z'
+
+        /// Whether `c` is an ASCII upper-case letter, `A` to `Z`.
+        ///
+        /// - c: the character to test
+        is_ascii_letter_upper(c: char) -> bool static pure => c >= 'A' /\ c <= 'Z'
+
+        /// Whether `c` is an ASCII letter.
+        ///
+        /// - c: the character to test
+        is_ascii_letter(c: char) -> bool static pure => is_ascii_letter_lower(c) \/ is_ascii_letter_upper(c)
+
+        /// Whether `c` is an ASCII letter or decimal digit.
+        ///
+        /// - c: the character to test
+        is_ascii_letter_or_digit(c: char) -> bool static pure => is_ascii_letter(c) \/ is_ascii_digit(c)
+
+        /// Whether `c` is a high surrogate, U+D800 to U+DBFF.
+        ///
+        /// - c: the character to test
+        is_high_surrogate(c: char) -> bool static pure => cast int(c) >= 0xD800 /\ cast int(c) <= 0xDBFF
+
+        /// Whether `c` is a low surrogate, U+DC00 to U+DFFF.
+        ///
+        /// - c: the character to test
+        is_low_surrogate(c: char) -> bool static pure => cast int(c) >= 0xDC00 /\ cast int(c) <= 0xDFFF
+
+        /// Whether `c` is a high or a low surrogate.
+        ///
+        /// - c: the character to test
+        is_surrogate(c: char) -> bool static pure => cast int(c) >= 0xD800 /\ cast int(c) <= 0xDFFF
+
+        /// Whether `high` and `low` are a high surrogate followed by a low one.
+        ///
+        /// - high: the first character
+        /// - low: the second character
+        is_surrogate_pair(high: char, low: char) -> bool static pure => is_high_surrogate(high) /\ is_low_surrogate(low)
+
+        /// The text of the code point `utf32`: one character, or a surrogate
+        /// pair above U+FFFF. Throws `ArgumentOutOfRangeException` where it is
+        /// not a code point or is a surrogate.
+        ///
+        /// - utf32: the code point
+        convert_from_utf32(utf32: int) -> string static is
+            if utf32 < 0 \/ utf32 > 0x10FFFF \/ (utf32 >= 0xD800 /\ utf32 <= 0xDFFF) then
+                throw ArgumentOutOfRangeException("utf32", "A valid UTF32 value is between 0x000000 and 0x10ffff, inclusive, and should not include surrogate codepoint values (0x00d800 ~ 0x00dfff).")
+            fi
+
+            if utf32 < 0x10000 then
+                return _string_from_char(cast char(utf32))
+            fi
+
+            let offset = utf32 - 0x10000
+
+            return _string_concat(
+                _string_from_char(cast char(0xD800 + (offset >> 10))),
+                _string_from_char(cast char(0xDC00 + (offset & 0x3FF))))
+        si
+
+        /// The code point the surrogate pair `high` and `low` stand for.
+        /// Throws `ArgumentOutOfRangeException` where they are not a pair.
+        ///
+        /// - high: the high surrogate
+        /// - low: the low surrogate
+        convert_to_utf32(high: char, low: char) -> int static is
+            if !is_high_surrogate(high) then
+                throw ArgumentOutOfRangeException("highSurrogate", "A valid high surrogate character is between 0xd800 and 0xdbff, inclusive.")
+            fi
+
+            if !is_low_surrogate(low) then
+                throw ArgumentOutOfRangeException("lowSurrogate", "A valid low surrogate character is between 0xdc00 and 0xdfff, inclusive.")
+            fi
+
+            return ((cast int(high) - 0xD800) << 10) + (cast int(low) - 0xDC00) + 0x10000
+        si
+
+        /// The code point at `index` in `text`, which is the pair starting
+        /// there where one does. Throws `ArgumentException` where `index` is at
+        /// a surrogate that is not part of a pair.
+        ///
+        /// - text: the text
+        /// - index: where the code point starts
+        convert_to_utf32(text: string, index: int) -> int static is
+            if index < 0 \/ index >= text.length then
+                throw ArgumentOutOfRangeException("index", "Index was out of range. Must be non-negative and less than the size of the collection.")
+            fi
+
+            let unit = text[index]
+
+            if !is_surrogate(unit) then
+                return cast int(unit)
+            fi
+
+            if is_high_surrogate(unit) /\ index + 1 < text.length /\ is_low_surrogate(text[index + 1]) then
+                return convert_to_utf32(unit, text[index + 1])
+            fi
+
+            throw ArgumentException("Found a high surrogate char without a following low surrogate at index: {index}. The input may not be in this encoding, or may not contain valid Unicode (UTF-16) characters.")
+        si
+    si
+
+    // The upper-case code point of `code`, or `code` itself where it has none.
+    _upper_of(code: int) -> int pure is
+        if code < 0x80 then
+            return if code >= 0x61 /\ code <= 0x7A then code - 32 else code fi
+        fi
+
+        if code < 0x100 then
+            return
+                if code >= 0xE0 /\ code <= 0xFE /\ code != 0xF7 then code - 32
+                elif code == 0xB5 then 0x39C
+                elif code == 0xFF then 0x178
+                else code
+                fi
+        fi
+
+        if code < 0x180 then
+            return
+                if code == 0x131 then 0x49
+                elif code == 0x17F then 0x53
+                elif _is_latin_extended_lower(code) then code - 1
+                else code
+                fi
+        fi
+
+        if code >= 0x370 /\ code < 0x400 then
+            return
+                if code >= 0x3B1 /\ code <= 0x3CB /\ code != 0x3C2 then code - 32
+                elif code == 0x3C2 then 0x3A3
+                elif code == 0x3AC then 0x386
+                elif code >= 0x3AD /\ code <= 0x3AF then code - 37
+                elif code == 0x3CC then 0x38C
+                elif code == 0x3CD \/ code == 0x3CE then code - 63
+                else code
+                fi
+        fi
+
+        if code >= 0x400 /\ code < 0x460 then
+            return
+                if code >= 0x430 /\ code <= 0x44F then code - 32
+                elif code >= 0x450 then code - 80
+                else code
+                fi
+        fi
+
+        return code
+    si
+
+    // The lower-case code point of `code`, or `code` itself where it has none.
+    _lower_of(code: int) -> int pure is
+        if code < 0x80 then
+            return if code >= 0x41 /\ code <= 0x5A then code + 32 else code fi
+        fi
+
+        if code < 0x100 then
+            return if code >= 0xC0 /\ code <= 0xDE /\ code != 0xD7 then code + 32 else code fi
+        fi
+
+        if code < 0x180 then
+            return
+                if code == 0x130 then 0x69
+                elif code == 0x178 then 0xFF
+                elif _is_latin_extended_upper(code) then code + 1
+                else code
+                fi
+        fi
+
+        if code >= 0x370 /\ code < 0x400 then
+            return
+                if code >= 0x391 /\ code <= 0x3AB /\ code != 0x3A2 then code + 32
+                elif code == 0x386 then 0x3AC
+                elif code >= 0x388 /\ code <= 0x38A then code + 37
+                elif code == 0x38C then 0x3CC
+                elif code == 0x38E \/ code == 0x38F then code + 63
+                else code
+                fi
+        fi
+
+        if code >= 0x400 /\ code < 0x460 then
+            return
+                if code >= 0x410 /\ code <= 0x42F then code + 32
+                elif code < 0x410 then code + 80
+                else code
+                fi
+        fi
+
+        return code
+    si
+
+    // Latin Extended-A pairs each upper-case letter with the lower-case one
+    // after it, the upper on an even code point except in 0x139-0x148 and
+    // 0x179-0x17E, where it is on an odd one.
+    _is_latin_extended_upper(code: int) -> bool pure =>
+        if code >= 0x100 /\ code <= 0x137 \/ code >= 0x14A /\ code <= 0x177 then
+            code % 2 == 0 /\ code != 0x130
+        elif code >= 0x139 /\ code <= 0x148 \/ code >= 0x179 /\ code <= 0x17E then
+            code % 2 == 1
+        else
+            false
+        fi
+
+    _is_latin_extended_lower(code: int) -> bool pure =>
+        if code >= 0x101 /\ code <= 0x137 \/ code >= 0x14B /\ code <= 0x177 then
+            code % 2 == 1 /\ code != 0x131
+        elif code >= 0x13A /\ code <= 0x148 \/ code >= 0x17A /\ code <= 0x17E then
+            code % 2 == 0
+        else
+            false
+        fi
+
+    // Upper-case letters whose lower case is outside these ranges.
+    _is_upper_without_lower(code: int) -> bool pure => code == 0x130
+
+    // Lower-case letters with no single upper-case form.
+    _is_lower_without_upper(code: int) -> bool pure =>
+        code == 0xDF \/ code == 0x138 \/ code == 0x149 \/ code == 0x390 \/ code == 0x3B0
+
+    // Letters with no case.
+    _is_caseless_letter(code: int) -> bool pure => code == 0xAA \/ code == 0xBA
+si

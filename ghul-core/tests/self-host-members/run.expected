@@ -1,0 +1,16 @@
+3 of seven
+[   ab] [ab   ] [FF]
+{a} b c
+wxyz
+[]
+format exception
+one | two | three | four
+3
+true 18446744073709551615
+false 0
+false 42
+true false true true false
+true false
+true false 1
+false 42 42 1 true
+5 0

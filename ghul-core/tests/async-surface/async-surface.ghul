@@ -1,0 +1,85 @@
+// The types an asynchronous function's lowering uses, driven by hand as a
+// builder drives them: a state machine stepped through its trait, an awaiter
+// handed continuations through the two notify traits, an exception captured
+// and thrown again, and the clock intervals are measured with.
+use IO.Std.write_line
+use Collections.LIST
+use System.Runtime.CompilerServices.IAsyncStateMachine
+use System.Runtime.CompilerServices.INotifyCompletion
+use System.Runtime.CompilerServices.ICriticalNotifyCompletion
+use System.Runtime.ExceptionServices.ExceptionDispatchInfo
+
+class COUNTER: IAsyncStateMachine is
+    steps: int
+
+    init() is si
+
+    move_next() is
+        steps = steps + 1
+    si
+
+    set_state_machine(state_machine: IAsyncStateMachine) is si
+si
+
+class LATER: ICriticalNotifyCompletion is
+    _waiting: LIST[() -> void]
+
+    init() is
+        _waiting = LIST[() -> void]()
+    si
+
+    on_completed(continuation: () -> void) is
+        _waiting.add(continuation)
+    si
+
+    unsafe_on_completed(continuation: () -> void) is
+        _waiting.add(continuation)
+    si
+
+    complete() is
+        for continuation in _waiting do
+            continuation()
+        od
+
+        _waiting.clear()
+    si
+si
+
+entry() is
+    let counter = COUNTER()
+    let machine: IAsyncStateMachine = counter
+
+    machine.move_next()
+    machine.move_next()
+    machine.set_state_machine(machine)
+    write_line("stepped {counter.steps} times")
+
+    let later = LATER()
+    let plain: INotifyCompletion = later
+    let critical: ICriticalNotifyCompletion = later
+
+    plain.on_completed(() is write_line("resumed through on_completed") si)
+    critical.unsafe_on_completed(() is write_line("resumed through unsafe_on_completed") si)
+    critical.on_completed(() is machine.move_next() si)
+    later.complete()
+    write_line("stepped {counter.steps} times")
+
+    try
+        throw Ghul.InvalidOperationException("first failure")
+    catch e: Ghul.InvalidOperationException
+        let captured = ExceptionDispatchInfo.capture(e)
+
+        write_line(captured.source_exception.message)
+
+        try
+            captured.`throw()
+        catch again: Ghul.InvalidOperationException
+            write_line("thrown again: {again.message}")
+        yrt
+    yrt
+
+    let start = System.Environment.tick_count64
+    let later_tick = System.Environment.tick_count64
+
+    write_line("{start >= 0L} {later_tick >= start} {System.Environment.tick_count >= 0}")
+si

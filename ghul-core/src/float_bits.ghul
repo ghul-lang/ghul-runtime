@@ -1,0 +1,11 @@
+namespace Ghul is
+    partial double is
+        /// The value's IEEE 754 binary64 encoding, as a `long`.
+        to_bits() -> long pure => cast long(_double_bits(self))
+    si
+
+    partial single is
+        /// The value's IEEE 754 binary32 encoding, as an `int`.
+        to_bits() -> int pure => cast int(_single_bits(self))
+    si
+si

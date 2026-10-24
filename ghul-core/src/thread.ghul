@@ -1,0 +1,44 @@
+namespace System.Threading is
+    /// The members of .NET's `System.Threading.Thread` the source-core
+    /// targets have: pausing the program. The program is single threaded, so
+    /// the wait holds the whole program.
+    class Thread is
+        /// Waits for `milliseconds` before returning, without using the
+        /// processor. Zero returns at once, and -1 waits without end.
+        ///
+        /// - milliseconds: how long to wait; a value below -1 throws `ArgumentOutOfRangeException`
+        sleep(milliseconds: int) static is
+            if milliseconds < -1 then
+                throw System.ArgumentOutOfRangeException(
+                    "milliseconds", "Number must be either non-negative and less than or equal to Int32.MaxValue or -1.")
+            fi
+
+            if milliseconds == -1 then
+                while true do
+                    _host_sleep(int.max_value)
+                od
+            fi
+
+            _host_sleep(milliseconds)
+        si
+
+        /// Waits for `timeout` before returning, without using the
+        /// processor. Zero returns at once, and -1 millisecond waits without end.
+        ///
+        /// - timeout: how long to wait; a duration below -1 millisecond, or above `Int32.MaxValue` milliseconds, throws `ArgumentOutOfRangeException`
+        sleep(timeout: System.TimeSpan) static is
+            let milliseconds = timeout.total_milliseconds
+
+            if milliseconds < -1.0 \/ milliseconds > 2147483647.0 then
+                throw System.ArgumentOutOfRangeException(
+                    "timeout", "Number must be either non-negative and less than or equal to Int32.MaxValue or -1.")
+            fi
+
+            sleep(cast int(milliseconds))
+        si
+
+        // Blocks the program for the given milliseconds, as the host does it.
+        @intrinsic("host.sleep")
+        _host_sleep(milliseconds: int) static
+    si
+si

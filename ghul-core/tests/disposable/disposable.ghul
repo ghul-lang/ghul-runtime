@@ -1,0 +1,58 @@
+// `use` disposes what it holds when the block ends, on every path out of it
+// and in the reverse of the order the values were taken: a class of the
+// program's own, an iterator, and a reader over a file.
+use IO.Std.write_line
+
+class RESOURCE: Ghul.Disposable is
+    _name: string
+
+    init(name: string) is
+        _name = name
+    si
+
+    name: string => _name
+
+    dispose() is
+        write_line("released {_name}")
+    si
+si
+
+two() is
+    let first = use RESOURCE("first")
+    let second = use RESOURCE("second")
+
+    write_line("holding {first.name} and {second.name}")
+si
+
+thrown() is
+    let held = use RESOURCE("held")
+
+    write_line("holding {held.name}")
+
+    throw Ghul.InvalidOperationException("thrown while holding")
+si
+
+first_of(values: Collections.Iterable[string]) -> string? is
+    let items = use values.iterator
+
+    return if items.move_next() then items.current else null fi
+si
+
+entry() is
+    two()
+
+    try
+        thrown()
+    catch e: Ghul.InvalidOperationException
+        write_line("caught {e.message}")
+    yrt
+
+    write_line(first_of(["a", "b"]) ?? "none")
+    write_line(first_of(Collections.LIST[string]()) ?? "none")
+
+    IO.File.write_all_text("lines.txt", "one\ntwo\n")
+
+    let reader = use IO.StreamReader("lines.txt")
+
+    write_line(reader.read_line() ?? "end")
+si

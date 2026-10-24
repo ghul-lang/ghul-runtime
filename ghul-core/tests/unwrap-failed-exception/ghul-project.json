@@ -1,0 +1,9 @@
+{
+    "name": "unwrap-failed-exception",
+    "targets": ["wasm"],
+    "sources": ["*.ghul"],
+    "dependencies": {
+        "ghul-core": { "path": "../.." },
+        "ghul-runtime": { "path": "../../../ghul-runtime" }
+    }
+}

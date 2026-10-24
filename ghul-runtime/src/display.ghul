@@ -1,0 +1,876 @@
+@@IF.dotnet()
+namespace Ghul is
+    use System.Text.StringBuilder
+
+    // `$` renders a value for display. It is meant for showing a value to
+    // a person - a short example, a trace, a value echoed back - rather
+    // than for any format that is going to be parsed back.
+    //
+    // A type that implements `Displayable` renders however it says it
+    // does. Otherwise a sequence renders as its elements in square
+    // brackets, recursively, so a collection shows what it holds instead
+    // of the type name `to_string()` gives it; a tuple and a map entry
+    // render as their parts in parentheses; a value whose type has a
+    // `to_string()` of its own renders as that; and anything else renders
+    // as its type and its public members, the way a constructor call that
+    // built it would read.
+    //
+    // `inspect` renders in the detailed mode, which is the same except
+    // that a string or a character inside something else is quoted, so
+    // that `["a, b"]` and `["a", "b"]` read differently. The value itself
+    // is not quoted at the top: `inspect("hello")` is `hello`, as a REPL
+    // shows it.
+    //
+    // A type can be rendered by whichever overload fits it best. The
+    // sequence overload catches anything whose static type says it is
+    // one; the `object?` overload covers the rest, and falls back to
+    // reflection so that a value held at `object` - an element of an
+    // `object[]`, a nested collection - still renders as a sequence when
+    // it is one.
+    //
+    // At most `max_elements` elements of any one sequence are rendered,
+    // and an ellipsis stands for the rest. Without a limit an unbounded
+    // sequence - a generator, a stream - would never finish rendering.
+    // `$` and `inspect` use the default; a host showing values its own
+    // way can make a DISPLAY_STATE with a limit of its own.
+    //
+    // A graph that leads back to something already being rendered would
+    // otherwise recurse until the stack ran out, so each value on the way
+    // down is remembered and one met again renders as `_cycle_marker`.
+
+    // Implemented by a type that wants to say how it looks when it is
+    // displayed, which is not always how its `to_string()` should read.
+    //
+    // Write the text through `state`, and render a child value with
+    // `state.render(...)` rather than by calling `$` on it. The state
+    // carries how much of a sequence is left to show and which values are
+    // already being rendered further up; a fresh call to `$` starts with
+    // neither, so a child rendered that way escapes both the element
+    // limit and the cycle check.
+    // Open because a type controls how it is rendered by implementing
+    // this, which downstream assemblies have to be able to do.
+    /// Implemented by a type that controls how `$` and `inspect` render it.
+    trait Displayable open is
+        /// Writes this value's rendering to `state`.
+        display(state: DISPLAY_STATE)
+    si
+
+    // How a value is rendered: CLEAN as `$` renders it, for program
+    // output and interpolation, and DETAILED as `inspect` does, with the
+    // strings and characters inside a value quoted.
+    /// How a value is rendered: `CLEAN` for `$`, `DETAILED` for `inspect`.
+    enum DisplayMode is
+        /// The plain rendering `$` uses.
+        CLEAN,
+        /// The detailed rendering `inspect` uses, with strings and characters quoted.
+        DETAILED
+    si
+
+    // A value rendered in the detailed mode. The overloads mirror `$`'s,
+    // so a string and a sequence resolve the same way they do there.
+    /// Renders `value` the way `inspect` shows it: like `$`, but with a string or character inside another value quoted.
+    inspect(value: object?) -> string pure is
+        let state = DISPLAY_STATE(DisplayMode.DETAILED, DISPLAY_STATE.default_max_elements)
+
+        state.render(value)
+
+        return state.to_string()
+    si
+
+    /// Returns `value` unchanged; a string already renders as itself.
+    inspect(value: string) -> string pure => value
+
+    /// Renders `values` as a sequence, the way `inspect` shows one.
+    inspect[T](values: Collections.Iterable[T]) -> string pure is
+        let state = DISPLAY_STATE(DisplayMode.DETAILED, DISPLAY_STATE.default_max_elements)
+
+        state.render_sequence(values)
+
+        return state.to_string()
+    si
+
+    // What an implementation of `Displayable` is handed. The buffer, the
+    // element budget and the set of values already being rendered are
+    // private: the surface is `append` and `render`, so how the text is
+    // accumulated stays free to change - to write straight to a stream,
+    // or to carry an indent - without any implementation noticing.
+    /// Holds the buffer, the element budget and the cycle-tracking set an implementation of `Displayable` writes into.
+    class DISPLAY_STATE is
+        /// The default limit on how many elements of a sequence are rendered.
+        default_max_elements: int static => 100
+
+        _cycle_marker: string static => "<cycle>"
+
+        _into: StringBuilder
+
+        // Holds one entry per level of the value currently being
+        // rendered rather than one per value seen, so it stays short.
+        _open: Collections.LIST[object]
+
+        // How many levels below the value being rendered the render is,
+        // which decides whether a string is quoted in the detailed mode.
+        _depth: int
+
+        // Clean, as `$` renders, or detailed, as `inspect` does. A
+        // `Displayable` can ask, to render itself to match.
+        /// Whether this state renders in the clean mode or the detailed mode.
+        mode: DisplayMode
+
+        // The most elements of any one sequence rendered.
+        /// The most elements of any one sequence this state renders.
+        max_elements: int
+
+        _type_info: System.Collections.Concurrent.ConcurrentDictionary[System.Type, _DISPLAY_TYPE_INFO] static
+
+        init() static is
+            _type_info = System.Collections.Concurrent.ConcurrentDictionary[System.Type, _DISPLAY_TYPE_INFO]()
+        si
+
+        init() is
+            self.init(DisplayMode.CLEAN, default_max_elements)
+        si
+
+        /// Creates a display state that renders in `mode`, showing up to `max_elements` elements per sequence.
+        init(mode: DisplayMode, max_elements: int) is
+            _into = StringBuilder()
+            _open = Collections.LIST[object]()
+            self.mode = mode
+            self.max_elements = max_elements
+        si
+
+        /// Appends `text` to the value being rendered.
+        append(text: string) is
+            _into.append(text)
+        si
+
+        /// Appends `c` to the value being rendered.
+        append(c: char) is
+            _into.append(c)
+        si
+
+        /// Returns what has been rendered so far.
+        to_string() -> string => _into.to_string()
+
+        // Render a value into this state under the same element limit and
+        // cycle tracking as everything else in the same render.
+        /// Renders `value` under this state's element limit and cycle tracking.
+        render(value: object?) is
+            if !value? then
+                append("null")
+
+                return
+            fi
+
+            // A string is a sequence of characters, and rendering it as
+            // one would be useless.
+            if let text: string = value then
+                append(if _is_quoted then _quote(text, '"') else text fi)
+
+                return
+            fi
+
+            let type = value.get_type()
+
+            if type == typeof(char) then
+                append(if _is_quoted then _quote(value.to_string() ?? "", '\'') else value.to_string() ?? "" fi)
+
+                return
+            fi
+
+            if type == typeof(bool) then
+                append(if cast bool(value) then "true" else "false" fi)
+
+                return
+            fi
+
+            if _is_open(value) then
+                append(_cycle_marker)
+
+                return
+            fi
+
+            // What a type renders through the state is inside it, so a
+            // string it renders is quoted in the detailed mode, as a string
+            // inside any other value is.
+            if isa Displayable(value) then
+                _mark(value)
+                _depth = _depth + 1
+                value.display(self)
+                _depth = _depth - 1
+                _release(value)
+
+                return
+            fi
+
+            if let tuple = cast System.Runtime.CompilerServices.ITuple?(value) then
+                _mark(value)
+                _append_parts(tuple)
+                _release(value)
+
+                return
+            fi
+
+            if type.is_generic_type /\ type.get_generic_type_definition() == typeof(Collections.KeyValuePair[_, _]) then
+                _append_pair(value, type)
+
+                return
+            fi
+
+            // Ahead-of-time compilation keeps reflection metadata only for
+            // what it can see being reflected over, which is none of what
+            // the rest of this needs. Constant-folded wherever code can be
+            // generated at run time, so a JIT build pays nothing for it.
+            if !System.Runtime.CompilerServices.RuntimeFeature.is_dynamic_code_supported then
+                _render_compiled_ahead(value, type)
+
+                return
+            fi
+
+            // A type that says what it is in its own words is taken at its
+            // word, even where it is also a sequence: structural rendering
+            // is for the types that say nothing useful, such as an array.
+            if _speaks_for_itself(type) then
+                append(value.to_string() ?? "null")
+
+                return
+            fi
+
+            let enumerator = _try_get_enumerator(value)
+
+            if enumerator? then
+                _mark(value)
+
+                let rendered = _append_reflected(enumerator)
+
+                _release(value)
+
+                if rendered then
+                    return
+                fi
+            fi
+
+            // A type from an assembly ghūl did not compile is left to say
+            // what it is itself: reading its properties would run code whose
+            // effects nothing here knows, and a property as ordinary-looking
+            // as a task's result blocks.
+            if !_info(type).renders_members then
+                append(value.to_string() ?? "null")
+
+                return
+            fi
+
+            _mark(value)
+            _append_members(value, type)
+            _release(value)
+        si
+
+        // Whether a string or a character rendered now is quoted: in the
+        // detailed mode, anywhere but at the top.
+        _is_quoted: bool => mode == DisplayMode.DETAILED /\ _depth > 0
+
+        _quote(text: string, mark: char) -> string static =>
+            "{mark}{text.replace("\\", "\\\\").replace("{mark}", "\\{mark}").replace("\n", "\\n").replace("\t", "\\t")}{mark}"
+
+        // A child value, one level further down.
+        _render_child(value: object?) is
+            _depth = _depth + 1
+
+            render(value)
+
+            _depth = _depth - 1
+        si
+
+        _append_parts(tuple: System.Runtime.CompilerServices.ITuple) is
+            append('(')
+
+            for i in 0..tuple.length do
+                if i > 0 then
+                    append(", ")
+                fi
+
+                _render_child(tuple[i])
+            od
+
+            append(')')
+        si
+
+        // Compiled ahead of time, a pair's properties can be beyond
+        // reflection, and its own text is the best there is.
+        _append_pair(value: object, type: System.Type) is
+            let key = type.get_property("Key")
+            let pair_value = type.get_property("Value")
+
+            if !key? \/ !pair_value? then
+                append(value.to_string() ?? "null")
+
+                return
+            fi
+
+            append('(')
+            _render_child(key.get_value(value))
+            append(", ")
+            _render_child(pair_value.get_value(value))
+            append(')')
+        si
+
+        _speaks_for_itself(type: System.Type) -> bool static => _info(type).speaks_for_itself
+
+        _info(type: System.Type) -> _DISPLAY_TYPE_INFO static =>
+            _type_info.get_or_add(type, t => _work_out(t))
+
+        _work_out(type: System.Type) -> _DISPLAY_TYPE_INFO static is
+            let members = Collections.LIST[(name: string, read: object -> object?)]()
+
+            for property in type.get_properties(_instance_flags()) do
+                if property.can_read /\ property.get_index_parameters().count == 0 /\ _is_user_name(property.name) then
+                    let readable = property
+
+                    members.add((name = readable.name, read = (v: object) -> object? => readable.get_value(v)))
+                fi
+            od
+
+            for member in type.get_fields(_instance_flags()) do
+                if _is_user_name(member.name) then
+                    let readable = member
+
+                    members.add((name = readable.name, read = (v: object) -> object? => readable.get_value(v)))
+                fi
+            od
+
+            return _DISPLAY_TYPE_INFO(_works_out_speaks_for_itself(type), _is_compiled_by_ghul(type.assembly), members)
+        si
+
+        // The runtime itself, and any assembly referencing it, which is
+        // every assembly ghūl compiles. Native AOT cannot list an
+        // assembly's references, and there the marker the compiler puts on
+        // every assembly it builds answers instead.
+        _is_compiled_by_ghul(assembly: System.Reflection.Assembly) -> bool static is
+            let runtime = (typeof DISPLAY_STATE).assembly
+
+            if assembly == runtime then
+                return true
+            fi
+
+            let runtime_name = runtime.get_name().name
+
+            try
+                for reference in assembly.get_referenced_assemblies() do
+                    if reference.name =~ runtime_name then
+                        return true
+                    fi
+                od
+            catch ex: System.PlatformNotSupportedException
+                return assembly.is_defined(typeof Internal.GHUL_COMPILED_ATTRIBUTE, false)
+            yrt
+
+            return false
+        si
+
+        // Whether a value is rendered by its own to_string rather than by
+        // what it holds: wherever its type declares one, except for a pipe
+        // whose to_string was written by this runtime or generated by the
+        // compiler for a generator. Those render their elements by coming
+        // back here, so rendering them by their to_string would never end.
+        _works_out_speaks_for_itself(type: System.Type) -> bool static is
+            if !_has_own_text(type) then
+                return false
+            fi
+
+            let declaring = type.get_method("ToString", System.Type.empty_types)?.declaring_type
+
+            if !declaring? \/ !_is_pipe(type) then
+                return true
+            fi
+
+            return
+                declaring.assembly != (typeof DISPLAY_STATE).assembly /\
+                !declaring.is_defined(typeof System.Runtime.CompilerServices.CompilerGeneratedAttribute, false)
+        si
+
+        _is_pipe(type: System.Type) -> bool static is
+            for implemented in type.get_interfaces() do
+                if implemented.is_generic_type /\ implemented.get_generic_type_definition() == typeof(Ghul.Pipes.Pipe[_]) then
+                    return true
+                fi
+            od
+
+            return false
+        si
+
+        // A sequence left part way through by a render starts again from
+        // its beginning, as it would have had the render read to its end.
+        // An enumerator that cannot be reset is left where it stopped.
+        _rewind(values: object) static is
+            if !System.Runtime.CompilerServices.RuntimeFeature.is_dynamic_code_supported then
+                if let enumerator: Collections.MoveNext = values then
+                    try
+                        enumerator.reset()
+                    catch e: System.Exception
+                    yrt
+                fi
+
+                return
+            fi
+
+            let reset = values.get_type().get_method("Reset", System.Type.empty_types)
+
+            if reset? then
+                try
+                    reset.invoke(values, null)
+                catch e: System.Reflection.TargetInvocationException
+                yrt
+            fi
+        si
+
+        // Whether a type says what it is in its own words. One that does
+        // not would only give back its .NET type name.
+        _has_own_text(type: System.Type) -> bool static is
+            let to_string = type.get_method("ToString", System.Type.empty_types)
+
+            if !to_string? then
+                return true
+            fi
+
+            let declaring = to_string.declaring_type
+
+            return declaring != typeof(object) /\ declaring != typeof(System.ValueType)
+        si
+
+        // What `render` does where reflection cannot say whether a type
+        // declares its own to_string or a GetEnumerator. A sequence is read
+        // through the non-generic IEnumerable every .NET sequence
+        // implements.
+        _render_compiled_ahead(value: object, type: System.Type) is
+            if let text = _own_words(value, type) then
+                append(text)
+
+                return
+            fi
+
+            if let sequence: Collections.NonGenericIterable = value then
+                _mark(value)
+                _append_elements(value, System.Linq.Enumerable.cast[object](sequence))
+                _release(value)
+
+                return
+            fi
+
+            if !_info(type).renders_members then
+                append(value.to_string() ?? "null")
+
+                return
+            fi
+
+            _mark(value)
+            _append_members(value, type)
+            _release(value)
+        si
+
+        // The text a value gives of itself, where reflection cannot say
+        // whether its type declares a to_string: none for text that is only
+        // the type name, which is what a type without one answers, nor for
+        // a value asked from inside its own to_string, which a pipe's
+        // renders by coming back here.
+        _own_words(value: object, type: System.Type) -> string? static is
+            let asked = _OWN_WORDS_ASKED.asked.value
+
+            for entry in asked do
+                if entry == value then
+                    return null
+                fi
+            od
+
+            asked.add(value)
+
+            let text: string? mut = null
+
+            try
+                text = value.to_string()
+            finally
+                asked.remove_at(asked.count - 1)
+            yrt
+
+            if !text? \/ text =~ type.to_string() then
+                return null
+            fi
+
+            return text
+        si
+
+        _append_elements(value: object, elements: Collections.Iterable[object]) is
+            append('[')
+
+            let count mut = 0
+
+            for element in elements do
+                if count >= max_elements then
+                    append(", ...")
+
+                    _rewind(value)
+
+                    break
+                fi
+
+                if count > 0 then
+                    append(", ")
+                fi
+
+                _render_child(element)
+
+                count = count + 1
+            od
+
+            append(']')
+        si
+
+        // The type and its public members, as the constructor call that
+        // would build it reads: `POINT(x = 3, y = 4)`, or the type alone
+        // for one with nothing public to show.
+        _append_members(value: object, type: System.Type) is
+            append(type_name(type))
+
+            let count mut = 0
+
+            for member in _info(type).members do
+                count = _append_member(member.name, member.read(value), count)
+            od
+
+            if count > 0 then
+                append(')')
+            fi
+        si
+
+        _append_member(name: string, member: object?, count: int) -> int is
+            if count >= max_elements then
+                if count == max_elements then
+                    append(", ...")
+                fi
+
+                return count + 1
+            fi
+
+            append(if count == 0 then "(" else ", " fi)
+            append("{name} = ")
+            _render_child(member)
+
+            return count + 1
+        si
+
+        // A name the compiler made up for something it generated carries
+        // a `$`, which no name a program declares can.
+        _is_user_name(name: string) -> bool static => name.length > 0 /\ !name.contains('$')
+
+        _instance_flags() -> System.Reflection.BindingFlags static =>
+            cast System.Reflection.BindingFlags(
+                cast int(System.Reflection.BindingFlags.PUBLIC) |
+                cast int(System.Reflection.BindingFlags.INSTANCE))
+
+        // A type as a ghūl program names it: the built-in names for the
+        // types that have one, type arguments in square brackets, a union
+        // variant after its union's name, and no namespace otherwise.
+        /// The name a ghūl program would use for `type`.
+        type_name(type: System.Type) -> string static is
+            if type.is_array then
+                let element = type.get_element_type()
+
+                return "{if element? then type_name(element) else "?" fi}[]"
+            fi
+
+            if type.is_generic_type /\ type.get_generic_type_definition() == typeof(System.Nullable[_]) then
+                return "{type_name(type.get_generic_arguments()[0])}?"
+            fi
+
+            if let builtin = _builtin_name(type) then
+                return builtin
+            fi
+
+            let name mut = type.name
+
+            let tick = name.index_of('`')
+
+            if tick >= 0 then
+                name = name.substring(0, tick)
+            fi
+
+            if let owner = _union_name(type) then
+                name = "{owner}.{name}"
+            fi
+
+            if type.is_generic_type then
+                let arguments = Collections.LIST[string]()
+
+                for argument in type.get_generic_arguments() do
+                    arguments.add(type_name(argument))
+                od
+
+                return "{name}[{arguments |> Ghul.Pipes.join(", ")}]"
+            fi
+
+            return name
+        si
+
+        // A union's variant is declared in a namespace named for the union
+        // and extends the union's own class, which is what tells it apart
+        // from a class in a namespace that happens to share a class's name.
+        _union_name(type: System.Type) -> string? static is
+            let space = type.`namespace
+            let base = type.base_type
+
+            if !space? \/ !base? then
+                return null
+            fi
+
+            let dot = space.last_index_of('.')
+            let last = if dot >= 0 then space.substring(dot + 1) else space fi
+
+            let base_name mut = base.name
+            let tick = base_name.index_of('`')
+
+            if tick >= 0 then
+                base_name = base_name.substring(0, tick)
+            fi
+
+            return if last =~ base_name then last else null fi
+        si
+
+        _builtin_name(type: System.Type) -> string? static is
+            if type == typeof(int) then return "int" fi
+            if type == typeof(long) then return "long" fi
+            if type == typeof(short) then return "short" fi
+            if type == typeof(byte) then return "byte" fi
+            if type == typeof(uint) then return "uint" fi
+            if type == typeof(ulong) then return "ulong" fi
+            if type == typeof(ushort) then return "ushort" fi
+            if type == typeof(ubyte) then return "ubyte" fi
+            if type == typeof(word) then return "word" fi
+            if type == typeof(uword) then return "uword" fi
+            if type == typeof(double) then return "double" fi
+            if type == typeof(single) then return "single" fi
+            if type == typeof(decimal) then return "decimal" fi
+            if type == typeof(bool) then return "bool" fi
+            if type == typeof(char) then return "char" fi
+            if type == typeof(string) then return "string" fi
+            if type == typeof(object) then return "object" fi
+
+            return null
+        si
+
+        // Render a value already known to be a sequence, without the
+        // reflection `render` would need to discover that for itself.
+        /// Renders `values` as a sequence, preferring a `Displayable` or `to_string()` implementation it declares.
+        render_sequence[T](values: Collections.Iterable[T]) is
+            // A type that says how it looks says it here too: a static
+            // type that happens to be a sequence does not make the
+            // structural rendering the right one.
+            if isa Displayable(values) then
+                render(values)
+
+                return
+            fi
+
+            if !System.Runtime.CompilerServices.RuntimeFeature.is_dynamic_code_supported then
+                if let text = _own_words(values, values.get_type()) then
+                    append(text)
+                else
+                    render_elements(values)
+                fi
+
+                return
+            fi
+
+            if _speaks_for_itself(values.get_type()) then
+                append(values.to_string() ?? "null")
+
+                return
+            fi
+
+            render_elements(values)
+        si
+
+        // Render a sequence as its elements in brackets, whatever its type
+        // says about how it looks.
+        /// Renders `values` as its elements in brackets, ignoring how its type says it looks.
+        render_elements[T](values: Collections.Iterable[T]) is
+            if _is_open(values) then
+                append(_cycle_marker)
+
+                return
+            fi
+
+            _mark(values)
+
+            append('[')
+
+            let count mut = 0
+
+            for value in values do
+                if count >= max_elements then
+                    append(", ...")
+                    _rewind(values)
+
+                    break
+                fi
+
+                if count > 0 then
+                    append(", ")
+                fi
+
+                _render_child(value)
+
+                count = count + 1
+            od
+
+            append(']')
+
+            _release(values)
+        si
+
+        // Only a reference is worth remembering. A cycle cannot be made of
+        // value types alone - each is stored by copy, so the graph would
+        // have to be infinitely large - which means every cycle passes
+        // through a reference and tracking those is enough. Tracking a
+        // value type would not work anyway: one reaches here boxed, and
+        // each boxing is a distinct object, so it would never be
+        // recognised on the way round. A string is interned, so two equal
+        // literals share a reference and would look like a repeat; it is
+        // answered before this in any case.
+        _is_trackable(value: object) -> bool =>
+            !value.get_type().is_value_type /\ !isa string(value)
+
+        // Remembered only while the value is on the path currently being
+        // rendered, so the same collection appearing in two places renders
+        // in full both times. Only a value that leads back to itself is a
+        // cycle.
+        _mark(value: object) is
+            if _is_trackable(value) then
+                _open.add(value)
+            fi
+        si
+
+        _release(value: object) is
+            if _is_trackable(value) /\ _open.count > 0 then
+                _open.remove_at(_open.count - 1)
+            fi
+        si
+
+        // Reference identity is the only sound test here: two structurally
+        // equal collections are not a cycle, and consulting a user's `=~`
+        // could recurse or cost more than the render.
+        _is_open(value: object) -> bool is
+            for entry in _open do
+                if entry == value then
+                    return true
+                fi
+            od
+
+            return false
+        si
+
+        // Enumerate a value whose static type says nothing about whether
+        // it is a sequence. Reflection is the only route:
+        // `Collections.Iterable[T]` needs a `T` that is not known here,
+        // and a value-type instantiation such as `LIST[int]` is not an
+        // `Iterable[object]`, so no cast covers it. Returns null when the
+        // value is not enumerable.
+        _try_get_enumerator(value: object) -> object? is
+            let get_enumerator = value.get_type().get_method("GetEnumerator")
+
+            if !get_enumerator? then
+                return null
+            fi
+
+            return get_enumerator.invoke(value, null)
+        si
+
+        // Returns false, having appended nothing, when the enumerator
+        // cannot be driven - an explicit interface implementation leaves
+        // no public `MoveNext` or `Current` to find. The caller then falls
+        // back to the value's own `to_string()`, rather than showing it as
+        // empty when all that is really known is that it could not be
+        // read.
+        _append_reflected(enumerator: object) -> bool is
+            let enumerator_type = enumerator.get_type()
+            let move_next = enumerator_type.get_method("MoveNext")
+            let current = enumerator_type.get_property("Current")
+
+            if !move_next? \/ !current? then
+                return false
+            fi
+
+            append('[')
+
+            let count mut = 0
+
+            while cast bool(move_next.invoke(enumerator, null) ?? false) do
+                if count >= max_elements then
+                    append(", ...")
+                    _rewind(enumerator)
+
+                    break
+                fi
+
+                if count > 0 then
+                    append(", ")
+                fi
+
+                _render_child(current.get_value(enumerator))
+
+                count = count + 1
+            od
+
+            append(']')
+
+            return true
+        si
+    si
+
+    // The values being asked for their own text on each thread. Only a
+    // render compiled ahead of time asks, so only it ever initialises this.
+    class _OWN_WORDS_ASKED is
+        asked: System.Threading.ThreadLocal[Collections.LIST[object]] static
+
+        init() static is
+            asked = System.Threading.ThreadLocal[Collections.LIST[object]](() => Collections.LIST[object]())
+        si
+    si
+
+    // What rendering needs to know about a type. Finding it out takes
+    // reflection, so it is worked out once per type rather than for every
+    // value of the type a render meets.
+    class _DISPLAY_TYPE_INFO(
+        speaks_for_itself: bool,
+        renders_members: bool,
+        members: Collections.List[(name: string, read: object -> object?)]
+    )
+si
+
+namespace Ghul.Intrinsics is
+    use Ghul
+
+    /// Renders `value` for display, as string interpolation and program output use it.
+    $(value: object?) -> string pure is
+        let state = DISPLAY_STATE()
+
+        state.render(value)
+
+        return state.to_string()
+    si
+
+    // Non-optional deliberately. A plain string prefers the sequence
+    // overload below - a string is an Iterable[char] - over a parameter
+    // spelled `string?`, so an optional one here never wins and the
+    // string renders as its characters. Declared this way it wins for a
+    // present string, and an absent one is answered by the object?
+    // overload above.
+    /// Returns `value` unchanged; a string already renders as itself.
+    $(value: string) -> string pure => value
+
+    /// Renders `values` as a sequence in brackets.
+    $[T](values: Collections.Iterable[T]) -> string pure is
+        let state = DISPLAY_STATE()
+
+        state.render_sequence(values)
+
+        return state.to_string()
+    si
+si

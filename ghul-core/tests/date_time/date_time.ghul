@@ -1,0 +1,59 @@
+// System.DateTime's calendar, arithmetic, text and parsing, and TimeSpan's
+// parts and totals, answering as .NET does under the invariant culture.
+use IO.Std.write_line
+use System.DateTime
+use System.DateTimeKind
+use System.DayOfWeek
+use System.TimeSpan
+
+entry() is
+    let d = DateTime(2026, 9, 25, 13, 4, 5)
+
+    write_line("{d.year} {d.month} {d.day} {d.hour} {d.minute} {d.second} {d.millisecond} {d.day_of_year} {d.day_of_week == DayOfWeek.FRIDAY}")
+    write_line(d.to_string())
+    write_line(d.to_string("yyyy-MM-dd HH:mm:ss.fff"))
+    write_line(d.to_string("MMMM d yyyy h:mm tt"))
+    write_line(d.to_string("ddd dd MMM yy"))
+    write_line(d.to_string("dddd, MMMM dd 'at' HH\\h"))
+    write_line("{d.to_string("s")} {d.to_string("d")} {d.to_string("D")} {d.to_string("t")} {d.to_string("T")} {d.to_string("g")}")
+    write_line("{d.date} {d.time_of_day} {d.ticks}")
+
+    write_line("{DateTime.is_leap_year(1900)} {DateTime.is_leap_year(2000)} {DateTime.is_leap_year(2024)} {DateTime.days_in_month(2024, 2)} {DateTime.days_in_month(2023, 2)} {DateTime.days_in_month(2026, 12)}")
+
+    let leap = DateTime(2024, 2, 29)
+
+    write_line("{leap.add_years(1)} {leap.add_months(1)} {leap.add_months(-14)} {DateTime(2026, 1, 31).add_months(1)}")
+    write_line("{d.add_days(1.5)} {d.add_hours(-14.0)} {d.add_minutes(90.0)} {d.add_seconds(-5.0)} {d.add_milliseconds(250.0).to_string("HH:mm:ss.fff")}")
+
+    let span = DateTime(2026, 12, 25) - DateTime(2026, 9, 25, 13, 4, 5)
+
+    write_line("{span} {span.days} {span.hours} {span.minutes} {span.seconds} {span.total_days} {span.total_hours} {span.total_minutes}")
+    write_line("{d + TimeSpan.from_hours(36.0)} {d - TimeSpan.from_minutes(65.0)} {(d - d.date).total_seconds}")
+
+    write_line("{DateTime(1792, 9, 22).day_of_week == DayOfWeek.SATURDAY} {DateTime(1, 1, 1).day_of_week == DayOfWeek.MONDAY} {DateTime.min_value.ticks} {DateTime.max_value.ticks}")
+
+    write_line("{DateTime.parse("2026-03-21")} {DateTime.parse("2026-03-21 10:11:12")} {DateTime.parse("2026-03-21T10:11:12.5")} {DateTime.parse("03/21/2026")}")
+    write_line("{DateTime(2026, 9, 21, 12, 0, 0, DateTimeKind.UTC).kind == DateTimeKind.UTC} {d.kind == DateTimeKind.UNSPECIFIED} {DateTime.parse("2026-03-21T10:11:12Z").kind == DateTimeKind.UTC}")
+
+    let t = TimeSpan(1, 2, 3, 4)
+
+    write_line("{t} {TimeSpan(2, 3, 4)} {t.negate()} {t.negate().duration()} {t.negate().hours} {t + TimeSpan.from_days(1.0)} {t - TimeSpan.from_seconds(4.0)}")
+    write_line("{TimeSpan.ticks_per_day} {TimeSpan.ticks_per_hour} {TimeSpan.ticks_per_minute} {TimeSpan.from_ticks(15L)}")
+
+    write_line("{d =~ DateTime(2026, 9, 25, 13, 4, 5)} {d < d.add_ticks(1L)}")
+
+    let formattable: System.IFormattable = d
+
+    write_line(formattable.to_string("yyyy/MM", null))
+
+    let format = "hh\\:mm\\:ss\\,fff"
+    let stamp = TimeSpan.parse_exact("01:02:03,456", format, null)
+
+    write_line("{stamp} {(stamp + TimeSpan.from_seconds(90L)).to_string(format)} {stamp.to_string("c")} {stamp.to_string("g")} {stamp.to_string("G")}")
+    write_line("{TimeSpan.parse("1:02")} {TimeSpan.parse("3.04:05:06.5")} {TimeSpan.parse(" -00:00:07 ")} {TimeSpan.parse("2")} {TimeSpan.parse("12:34:56").total_seconds}")
+    write_line("{TimeSpan.from_hours(5)} {TimeSpan.from_days(2)} {TimeSpan.from_minutes(90L)} {t.to_string("d\\.hh\\:mm")} {t.to_string("%h")} {t.to_string("'['hh']'")}")
+    write_line("{System.Diagnostics.Stopwatch.frequency} {System.Diagnostics.Stopwatch.is_high_resolution}")
+    write_line("{earliest(DateTime(2026, 3, 1), DateTime(2025, 12, 31))} {earliest(t, TimeSpan.zero)}")
+si
+
+earliest[T: Ghul.Comparable[T]](a: T, b: T) -> T => if a <> b <= 0 then a else b fi

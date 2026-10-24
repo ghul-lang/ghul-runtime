@@ -1,0 +1,5 @@
+// Stands in for the core library's array intrinsic on .NET, so the sort can
+// be checked against .NET's own.
+namespace Ghul is
+    _array_set[E](array: E[], index: int, value: E) => (cast System.Array(array)).set_value(value, index)
+si

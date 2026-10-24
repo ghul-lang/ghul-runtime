@@ -1,0 +1,170 @@
+namespace Ghul is
+    use Text.STRING_BUILDER
+
+    partial string is
+        /// `format` with its one placeholder, `{0}`, replaced by `argument`.
+        ///
+        /// - format: the text, with placeholders written `{index[,alignment][:format]}`
+        /// - argument: the value for `{0}`
+        format(format: string, argument: object?) -> string static =>
+            _format(format, [argument])
+
+        /// `format` with `{0}` and `{1}` replaced by the two arguments.
+        ///
+        /// - format: the text, with placeholders written `{index[,alignment][:format]}`
+        /// - first: the value for `{0}`
+        /// - second: the value for `{1}`
+        format(format: string, first: object?, second: object?) -> string static =>
+            _format(format, [first, second])
+
+        /// `format` with `{0}` to `{2}` replaced by the three arguments.
+        ///
+        /// - format: the text, with placeholders written `{index[,alignment][:format]}`
+        /// - first: the value for `{0}`
+        /// - second: the value for `{1}`
+        /// - third: the value for `{2}`
+        format(format: string, first: object?, second: object?, third: object?) -> string static =>
+            _format(format, [first, second, third])
+
+        /// `format` with each placeholder replaced by the argument it numbers.
+        /// `{{` and `}}` stand for a brace. A placeholder numbering no
+        /// argument, or a brace standing alone, throws a `FormatException`.
+        ///
+        /// - format: the text, with placeholders written `{index[,alignment][:format]}`
+        /// - arguments: the values, numbered from zero
+        format(format: string, arguments: object?[]) -> string static =>
+            _format(format, arguments)
+
+        _format(format: string, arguments: object?[]) -> string static is
+            let result = STRING_BUILDER()
+            let i mut = 0
+
+            while i < format.length do
+                let c = format[i]
+
+                if c == '{' then
+                    if i + 1 < format.length /\ format[i + 1] == '{' then
+                        result.append('{')
+                        i = i + 2
+                    else
+                        let close = format.index_of('}', i + 1)
+
+                        if close < 0 then
+                            throw FormatException("input string was not in a correct format")
+                        fi
+
+                        result.append(_placeholder(format.substring(i + 1, close - i - 1), arguments))
+
+                        i = close + 1
+                    fi
+                elif c == '}' then
+                    if i + 1 < format.length /\ format[i + 1] == '}' then
+                        result.append('}')
+                        i = i + 2
+                    else
+                        throw FormatException("input string was not in a correct format")
+                    fi
+                else
+                    result.append(c)
+                    i = i + 1
+                fi
+            od
+
+            return result.to_string()
+        si
+
+        // One placeholder's text, between its braces: an index, then an
+        // optional alignment after a comma and an optional format after a
+        // colon.
+        _placeholder(text: string, arguments: object?[]) -> string static is
+            let colon = text.index_of(':')
+            let head = if colon >= 0 then text.substring(0, colon) else text fi
+            let item_format: string? = if colon >= 0 then text.substring(colon + 1) else null fi
+
+            let comma = head.index_of(',')
+            let index_text = (if comma >= 0 then head.substring(0, comma) else head fi).trim()
+
+            let index mut = 0
+
+            if !int.try_parse(index_text, index ref) \/ index < 0 \/ index >= arguments.count then
+                throw FormatException("index must be greater than or equal to zero and less than the size of the argument list")
+            fi
+
+            let rendered = _render(arguments[index], item_format)
+
+            if comma < 0 then
+                return rendered
+            fi
+
+            let alignment mut = 0
+
+            if !int.try_parse(head.substring(comma + 1).trim(), alignment ref) then
+                throw FormatException("input string was not in a correct format")
+            fi
+
+            if alignment >= 0 then
+                return rendered.pad_left(alignment)
+            fi
+
+            return rendered.pad_right(-alignment)
+        si
+
+        _render(value: object?, item_format: string?) -> string static is
+            if !value? then
+                return ""
+            fi
+
+            if let f: string = item_format then
+                if let n: int = value then
+                    return n.to_string(f)
+                elif let n: uint = value then
+                    return n.to_string(f)
+                elif let n: long = value then
+                    return n.to_string(f)
+                elif let n: ulong = value then
+                    return n.to_string(f)
+                elif let n: double = value then
+                    return n.to_string(f)
+                elif let n: single = value then
+                    return n.to_string(f)
+                fi
+            fi
+
+            return value.to_string() ?? ""
+        si
+
+        /// The string with each line ending replaced by a line feed.
+        replace_line_endings() -> string => replace_line_endings("\n")
+
+        /// The string with each line ending replaced by `replacement`. A
+        /// line ending is a carriage return and line feed together, or any
+        /// one of a carriage return, a line feed, a form feed, a next line,
+        /// a line separator or a paragraph separator.
+        ///
+        /// - replacement: the text each line ending becomes
+        replace_line_endings(replacement: string) -> string is
+            let result = STRING_BUILDER()
+            let i mut = 0
+
+            while i < length do
+                let c = self[i]
+
+                if c == '\r' then
+                    result.append(replacement)
+
+                    if i + 1 < length /\ self[i + 1] == '\n' then
+                        i = i + 1
+                    fi
+                elif c == '\n' \/ c == '\u000C' \/ c == '\u0085' \/ c == ' ' \/ c == ' ' then
+                    result.append(replacement)
+                else
+                    result.append(c)
+                fi
+
+                i = i + 1
+            od
+
+            return result.to_string()
+        si
+    si
+si

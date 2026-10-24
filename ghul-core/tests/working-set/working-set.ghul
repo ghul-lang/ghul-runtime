@@ -1,0 +1,7 @@
+use IO.Std.write_line
+
+write_line("{System.Environment.working_set > 0L}")
+
+let kept = [1, 2, 3]
+
+write_line("{System.Environment.working_set > 0L} {kept.count}")

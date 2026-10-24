@@ -1,0 +1,730 @@
+namespace Ghul is
+    // A bigint holds its value in an i64 while the value fits, and the
+    // host's arbitrary-precision integer only when it does not: the value is
+    // small exactly when it fits, whichever way it was made, and the target
+    // moves anything the host answers back into the i64 through _canonical.
+    // Operations on small values are done here; any other goes to the host,
+    // which gives .NET's BigInteger semantics: division truncates, a
+    // remainder takes the dividend's sign, and shifts are arithmetic. The
+    // small path gives the same answers.
+
+    partial bigint is
+        /// The value built from `value`.
+        ///
+        /// - value: the integer to hold
+        @intrinsic("bigint.of_small")
+        init(value: long)
+
+        /// The value built from `value`.
+        ///
+        /// - value: the integer to hold
+        @intrinsic("bigint.of_small")
+        init(value: int)
+
+        /// The integer part of `value`.
+        ///
+        /// - value: the number to truncate
+        @intrinsic("host.bigint_from_double")
+        init(value: double)
+
+        /// The value built from `value`.
+        ///
+        /// - value: the integer to hold
+        @intrinsic("host.bigint_from_ulong")
+        init(value: ulong)
+
+        /// `value` as a bigint, for `cast` and an argument a bigint
+        /// parameter takes.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: int) -> bigint static pure => bigint(value)
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: long) -> bigint static pure => bigint(value)
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: uint) -> bigint static pure => bigint(cast long(value))
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: ulong) -> bigint static pure => bigint(value)
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: short) -> bigint static pure => bigint(cast int(value))
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: ushort) -> bigint static pure => bigint(cast int(value))
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: byte) -> bigint static pure => bigint(cast int(value))
+
+        /// `value` as a bigint.
+        ///
+        /// - value: the integer to convert
+        op_implicit(value: ubyte) -> bigint static pure => bigint(cast int(value))
+
+        /// The code of `value` as a bigint.
+        ///
+        /// - value: the character to convert
+        op_implicit(value: char) -> bigint static pure => bigint(cast int(value))
+
+        /// The integer part of `value`.
+        ///
+        /// - value: the number to truncate
+        op_explicit(value: double) -> bigint static pure => bigint(value)
+
+        /// The integer part of `value`.
+        ///
+        /// - value: the number to truncate
+        op_explicit(value: single) -> bigint static pure => bigint(cast double(value))
+
+        /// The value under the numeric format string `format`, as .NET writes
+        /// a BigInteger in the invariant culture.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure is
+            let spec = _parsed_format(format)
+
+            if spec.kind == 'X' then
+                let hex = _to_hex(self, spec.upper)
+
+                return _padded_left(hex, spec.precision, if sign < 0 then (if spec.upper then 'F' else 'f' fi) else '0' fi)
+            fi
+
+            let negative = sign < 0
+            let text = _text(if negative then -self else self fi)
+
+            return _format_integer_text(negative, text, format)
+        si
+
+        /// Zero.
+        zero: bigint static => bigint(0L)
+
+        /// One.
+        one: bigint static => bigint(1L)
+
+        /// Minus one.
+        minus_one: bigint static => bigint(-1L)
+
+        // A value that is not small is too large for a long, so it is never
+        // zero or one.
+
+        /// Whether the value is zero.
+        is_zero: bool => _bigint_is_small(self) /\ _bigint_small(self) == 0L
+
+        /// Whether the value is one.
+        is_one: bool => _bigint_is_small(self) /\ _bigint_small(self) == 1L
+
+        /// Whether the value is even.
+        is_even: bool => (self & one).is_zero
+
+        /// Whether the value is a power of two.
+        is_power_of_two: bool => self > zero /\ (self & (self - one)).is_zero
+
+        /// -1, 0 or 1 as the value is negative, zero or positive.
+        sign: int is
+            if _bigint_is_small(self) then
+                let x = _bigint_small(self)
+
+                return if x < 0L then -1 elif x > 0L then 1 else 0 fi
+            fi
+
+            return _compare(self, zero)
+        si
+
+        /// The bits needed to hold the value in two's complement, less the sign bit.
+        get_bit_length() -> long => cast long(_bits(self))
+
+        /// The value in decimal, with a leading `-` when it is negative.
+        to_string() -> string => _text(self)
+
+        /// A hash code consistent with `=~`: the low 32 bits of the value
+        /// exclusive-ored with the value shifted right by 32, on either path.
+        get_hash_code() -> int =>
+            if _bigint_is_small(self) then cast int(_bigint_small(self) ^ (_bigint_small(self) >> 32)) else _hash(self) fi
+
+        /// The integer `text` writes in decimal, with optional surrounding
+        /// white space and a leading sign.
+        ///
+        /// - text: the decimal text to read
+        parse(text: string) -> bigint static is
+            if !_is_integer_text(text) then
+                throw FormatException("the value could not be parsed")
+            fi
+
+            return _parse(text)
+        si
+
+        /// `value` raised to the power `exponent`.
+        ///
+        /// - value: the base
+        /// - exponent: the non-negative power
+        pow(value: bigint, exponent: int) -> bigint static is
+            if exponent < 0 then
+                throw ArgumentOutOfRangeException("exponent", "the exponent is negative")
+            fi
+
+            // Square and multiply on small values, while every step fits.
+            if _bigint_is_small(value) then
+                let result mut = one
+                let base mut = value
+                let rest mut = exponent
+
+                while rest > 0 do
+                    if rest & 1 == 1 then
+                        result = result * base
+                    fi
+
+                    rest = rest >> 1
+
+                    if rest > 0 then
+                        base = base * base
+                    fi
+
+                    if !_bigint_is_small(result) \/ !_bigint_is_small(base) then
+                        return _pow(value, exponent)
+                    fi
+                od
+
+                return result
+            fi
+
+            return _pow(value, exponent)
+        si
+
+        /// `value` raised to `exponent`, modulo `modulus`, the result taking
+        /// the sign of `value`.
+        ///
+        /// - value: the base
+        /// - exponent: the non-negative power
+        /// - modulus: the divisor
+        mod_pow(value: bigint, exponent: bigint, modulus: bigint) -> bigint static is
+            if exponent.sign < 0 then
+                throw ArgumentOutOfRangeException("exponent", "the exponent is negative")
+            fi
+
+            if modulus.is_zero then
+                throw DivideByZeroException()
+            fi
+
+            // Square and multiply on longs where the modulus is below 2^31,
+            // so that every product of two remainders fits. Remainders are
+            // truncating, so a negative value gives a result of its sign.
+            if _bigint_is_small(value) /\ _bigint_is_small(exponent) /\ _bigint_is_small(modulus) then
+                let m = _bigint_small(modulus)
+
+                if m > -2147483648L /\ m < 2147483648L then
+                    let result mut = 1L % m
+                    let base mut = _bigint_small(value) % m
+                    let rest mut = _bigint_small(exponent)
+
+                    while rest > 0L do
+                        if rest & 1L == 1L then
+                            result = (result * base) % m
+                        fi
+
+                        base = (base * base) % m
+                        rest = rest >> 1
+                    od
+
+                    return bigint(result)
+                fi
+            fi
+
+            return _mod_pow(value, exponent, modulus)
+        si
+
+        /// The greatest common divisor of `a` and `b`, never negative.
+        ///
+        /// - a: the first value
+        /// - b: the second value
+        greatest_common_divisor(a: bigint, b: bigint) -> bigint static is
+            if _bigint_is_small(a) /\ _bigint_is_small(b) /\ _bigint_small(a) != _lowest /\ _bigint_small(b) != _lowest then
+                let x mut = _bigint_small(a)
+                let y mut = _bigint_small(b)
+
+                if x < 0L then x = -x fi
+                if y < 0L then y = -y fi
+
+                while y != 0L do
+                    let rest = x % y
+                    x = y
+                    y = rest
+                od
+
+                return bigint(x)
+            fi
+
+            return _gcd(a, b)
+        si
+
+        /// The magnitude of `value`.
+        ///
+        /// - value: the value
+        abs(value: bigint) -> bigint static => if value.sign < 0 then -value else value fi
+
+        /// -1, 0 or 1 as `a` is less than, equal to or greater than `b`.
+        ///
+        /// - a: the first value
+        /// - b: the second value
+        compare(a: bigint, b: bigint) -> int static => _order(a, b)
+
+        /// The larger of `a` and `b`.
+        max(a: bigint, b: bigint) -> bigint static => if a < b then b else a fi
+
+        /// The smaller of `a` and `b`.
+        min(a: bigint, b: bigint) -> bigint static => if b < a then b else a fi
+
+        // The operators work on the i64 where both operands are small and
+        // the result fits, and ask the host otherwise.
+
+        /// The sum.
+        +(a: bigint, b: bigint) -> bigint static pure is
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                let x = _bigint_small(a)
+                let y = _bigint_small(b)
+                let sum = x + y
+
+                // The sum overflowed exactly when its sign differs from both
+                // operands' signs.
+                if ((x ^ sum) & (y ^ sum)) >= 0L then
+                    return bigint(sum)
+                fi
+            fi
+
+            return bigint._add(a, b)
+        si
+
+        /// The difference.
+        -(a: bigint, b: bigint) -> bigint static pure is
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                let x = _bigint_small(a)
+                let y = _bigint_small(b)
+                let difference = x - y
+
+                if ((x ^ y) & (x ^ difference)) >= 0L then
+                    return bigint(difference)
+                fi
+            fi
+
+            return bigint._subtract(a, b)
+        si
+
+        /// The product.
+        *(a: bigint, b: bigint) -> bigint static pure is
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                let x = _bigint_small(a)
+                let y = _bigint_small(b)
+
+                if x == 0L then
+                    return a
+                fi
+
+                // The product fits exactly when dividing it by one operand gives
+                // the other back, apart from the one case that division cannot
+                // answer: the lowest long times minus one.
+                if !(x == -1L /\ y == bigint._lowest) /\ !(y == -1L /\ x == bigint._lowest) then
+                    let product = x * y
+
+                    if product / x == y then
+                        return bigint(product)
+                    fi
+                fi
+            fi
+
+            return bigint._multiply(a, b)
+        si
+
+        /// The negation.
+        -(a: bigint) -> bigint static pure is
+            if _bigint_is_small(a) /\ _bigint_small(a) != bigint._lowest then
+                return bigint(-_bigint_small(a))
+            fi
+
+            return bigint._negate(a)
+        si
+
+        /// The bitwise complement.
+        \(a: bigint) -> bigint static pure =>
+            if _bigint_is_small(a) then bigint(\_bigint_small(a)) else bigint._not(a) fi
+
+        /// The bitwise and.
+        &(a: bigint, b: bigint) -> bigint static pure =>
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                bigint(_bigint_small(a) & _bigint_small(b))
+            else
+                bigint._and(a, b)
+            fi
+
+        /// The bitwise or.
+        |(a: bigint, b: bigint) -> bigint static pure =>
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                bigint(_bigint_small(a) | _bigint_small(b))
+            else
+                bigint._or(a, b)
+            fi
+
+        /// The bitwise exclusive or.
+        ^(a: bigint, b: bigint) -> bigint static pure =>
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                bigint(_bigint_small(a) ^ _bigint_small(b))
+            else
+                bigint._xor(a, b)
+            fi
+
+        /// `a` shifted left by `places` bits; a negative count shifts right.
+        <<(a: bigint, places: int) -> bigint static pure is
+            if _bigint_is_small(a) then
+                let x = _bigint_small(a)
+
+                if x == 0L then
+                    return a
+                fi
+
+                if places < 0 /\ places > -2147483647 - 1 then
+                    return a >> -places
+                fi
+
+                // The shift kept every bit exactly when shifting back gives the
+                // value again.
+                if places >= 0 /\ places < 63 then
+                    let shifted = x << places
+
+                    if shifted >> places == x then
+                        return bigint(shifted)
+                    fi
+                fi
+            fi
+
+            return bigint._shift_left(a, places)
+        si
+
+        /// `a` shifted right by `places` bits, the sign bit copied in; a
+        /// negative count shifts left.
+        >>(a: bigint, places: int) -> bigint static pure is
+            if _bigint_is_small(a) /\ places >= 0 then
+                let x = _bigint_small(a)
+
+                return bigint(if places >= 63 then (if x < 0L then -1L else 0L fi) else x >> places fi)
+            fi
+
+            return bigint._shift_right(a, places)
+        si
+
+        /// The quotient, truncated towards zero.
+        /(a: bigint, b: bigint) -> bigint static pure is
+            if b.is_zero then
+                throw DivideByZeroException()
+            fi
+
+            // Only the lowest long divided by minus one leaves the range.
+            if _bigint_is_small(a) /\ _bigint_is_small(b) /\ !(_bigint_small(a) == _lowest /\ _bigint_small(b) == -1L) then
+                return bigint(_bigint_small(a) / _bigint_small(b))
+            fi
+
+            return _divide(a, b)
+        si
+
+        /// The remainder, with the sign of `a`.
+        %(a: bigint, b: bigint) -> bigint static pure is
+            if b.is_zero then
+                throw DivideByZeroException()
+            fi
+
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                return if _bigint_small(b) == -1L then zero else bigint(_bigint_small(a) % _bigint_small(b)) fi
+            fi
+
+            return _remainder(a, b)
+        si
+
+        // The lowest long, which has no negation in a long.
+        _lowest: long static => -9223372036854775807L - 1L
+
+        // The form every bigint the host answers is moved into: small where
+        // the value fits in a long. Nothing here calls it: the compiler
+        // passes every bigint a host operation answers through it, so a host
+        // result that fits is small before any code here sees it.
+        _canonical(value: bigint) -> bigint static pure =>
+            if _bigint_is_small(value) \/ !_fits_long(value) then value else bigint(_bigint_to_long_host(value)) fi
+
+        @intrinsic("host.bigint_fits_long")
+        _fits_long(value: bigint) -> bool static pure
+
+        // The order of `a` and `b`: on longs where both are small, and from
+        // the host otherwise.
+        _order(a: bigint, b: bigint) -> int static pure is
+            if _bigint_is_small(a) /\ _bigint_is_small(b) then
+                let x = _bigint_small(a)
+                let y = _bigint_small(b)
+
+                return if x < y then -1 elif x > y then 1 else 0 fi
+            fi
+
+            return _compare(a, b)
+        si
+
+        // Whether `a` and `b` are the same value. A small value and one that
+        // is not are never equal, since each value has the one form.
+        _same(a: bigint, b: bigint) -> bool static pure is
+            let a_small = _bigint_is_small(a)
+
+            if a_small /\ _bigint_is_small(b) then
+                return _bigint_small(a) == _bigint_small(b)
+            fi
+
+            return a_small == _bigint_is_small(b) /\ _equals(a, b)
+        si
+
+        _text(value: bigint) -> string static pure =>
+            if _bigint_is_small(value) then "{_bigint_small(value)}" else _to_string(value) fi
+
+        _bits(value: bigint) -> int static pure is
+            if !_bigint_is_small(value) then
+                return _bit_length(value)
+            fi
+
+            let x = _bigint_small(value)
+            let rest mut = if x < 0L then \x else x fi
+            let bits mut = 0
+
+            while rest != 0L do
+                bits = bits + 1
+                rest = rest >> 1
+            od
+
+            return bits
+        si
+
+        @intrinsic("host.bigint_from_long")
+        _host_from_long(value: long) -> bigint static pure
+
+        @intrinsic("host.bigint_add")
+        _add(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_subtract")
+        _subtract(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_multiply")
+        _multiply(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_negate")
+        _negate(a: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_not")
+        _not(a: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_and")
+        _and(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_or")
+        _or(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_xor")
+        _xor(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_shift_left")
+        _shift_left(a: bigint, places: int) -> bigint static pure
+
+        @intrinsic("host.bigint_shift_right")
+        _shift_right(a: bigint, places: int) -> bigint static pure
+
+        @intrinsic("host.bigint_is_integer_text")
+        _is_integer_text(text: string) -> bool static pure
+
+        @intrinsic("host.bigint_parse")
+        _parse(text: string) -> bigint static pure
+
+        @intrinsic("host.bigint_to_string")
+        _to_string(value: bigint) -> string static pure
+
+        @intrinsic("host.bigint_divide")
+        _divide(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_remainder")
+        _remainder(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_compare")
+        _compare(a: bigint, b: bigint) -> int static pure
+
+        @intrinsic("host.bigint_equals")
+        _equals(a: bigint, b: bigint) -> bool static pure
+
+        @intrinsic("host.bigint_hash")
+        _hash(value: bigint) -> int static pure
+
+        @intrinsic("host.bigint_pow")
+        _pow(value: bigint, exponent: int) -> bigint static pure
+
+        @intrinsic("host.bigint_mod_pow")
+        _mod_pow(value: bigint, exponent: bigint, modulus: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_gcd")
+        _gcd(a: bigint, b: bigint) -> bigint static pure
+
+        @intrinsic("host.bigint_bit_length")
+        _bit_length(value: bigint) -> int static pure
+
+        @intrinsic("host.bigint_to_hex")
+        _to_hex(value: bigint, upper: bool) -> string static pure
+    si
+
+    impl Equatable[bigint] for bigint is
+        =~(other: bigint) -> bool pure => bigint._same(self, other)
+    si
+
+    impl Comparable[bigint] for bigint is
+        <>(other: bigint) -> int pure => bigint._order(self, other)
+    si
+si
+
+namespace Ghul is
+    // Whether a bigint holds its value in its i64, and that i64.
+    @intrinsic("bigint.is_small")
+    _bigint_is_small(value: bigint) -> bool pure
+
+    @intrinsic("bigint.small")
+    _bigint_small(value: bigint) -> long pure
+
+    @intrinsic("host.bigint_to_long")
+    _bigint_to_long_host(value: bigint) -> long pure
+
+    @intrinsic("host.bigint_to_double")
+    _bigint_to_double_host(value: bigint) -> double pure
+
+    // The low 64 bits of `value` in two's complement.
+    _bigint_to_long(value: bigint) -> long pure =>
+        if _bigint_is_small(value) then _bigint_small(value) else _bigint_to_long_host(value) fi
+
+    // `value` as a double, as .NET converts a bigint: the magnitude
+    // truncated to the 53 bits a double holds, where converting the long
+    // itself would round to the nearest.
+    _bigint_small_to_double(value: long) -> double pure is
+        let magnitude = if value < 0L then cast ulong(-value) else cast ulong(value) fi
+        let shift mut = 0
+
+        while (magnitude >> shift) >= 9007199254740992ul do
+            shift = shift + 1
+        od
+
+        if shift == 0 then
+            return double(value)
+        fi
+
+        let result = double(cast long(magnitude >> shift)) * double(1L << shift)
+
+        return if value < 0L then -result else result fi
+    si
+
+    // `value` as a double, as .NET converts a bigint.
+    _bigint_to_double(value: bigint) -> double pure =>
+        if _bigint_is_small(value) then _bigint_small_to_double(_bigint_small(value)) else _bigint_to_double_host(value) fi
+
+    // `value` as a long, or OverflowException where it lies outside `low`
+    // to `high`.
+    _bigint_checked(value: bigint, low: bigint, high: bigint) -> long is
+        if value < low \/ value > high then
+            throw OverflowException("the value was too large or too small for the target type")
+        fi
+
+        return _bigint_to_long(value)
+    si
+
+    // A bigint converts to each scalar with `cast` or the scalar's own
+    // constructor, throwing OverflowException where it does not fit, as
+    // .NET's explicit conversions from BigInteger do.
+
+    partial int is
+        /// `value` as an int.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> int static => cast int(_bigint_checked(value, -2147483648n, 2147483647n))
+    si
+
+    partial uint is
+        /// `value` as a uint.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> uint static => cast uint(_bigint_checked(value, 0n, 4294967295n))
+    si
+
+    partial long is
+        /// `value` as a long.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> long static => _bigint_checked(value, -9223372036854775808n, 9223372036854775807n)
+    si
+
+    partial ulong is
+        /// `value` as a ulong.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> ulong static is
+            if value.sign < 0 \/ value > 18446744073709551615n then
+                throw OverflowException("the value was too large or too small for the target type")
+            fi
+
+            return cast ulong(_bigint_to_long(value))
+        si
+    si
+
+    partial short is
+        /// `value` as a short.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> short static => cast short(_bigint_checked(value, -32768n, 32767n))
+    si
+
+    partial ushort is
+        /// `value` as a ushort.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> ushort static => cast ushort(_bigint_checked(value, 0n, 65535n))
+    si
+
+    partial byte is
+        /// `value` as a byte.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> byte static => cast byte(_bigint_checked(value, -128n, 127n))
+    si
+
+    partial ubyte is
+        /// `value` as a ubyte.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> ubyte static => cast ubyte(_bigint_checked(value, 0n, 255n))
+    si
+
+    partial char is
+        /// The character whose code is `value`.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> char static => cast char(_bigint_checked(value, 0n, 65535n))
+    si
+
+    partial double is
+        /// `value` as a double, its magnitude truncated to the 53 bits a double holds.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> double static => _bigint_to_double(value)
+    si
+
+    partial single is
+        /// `value` as a single, rounded from the double it converts to.
+        ///
+        /// - value: the bigint to convert
+        op_explicit(value: bigint) -> single static => cast single(_bigint_to_double(value))
+    si
+si

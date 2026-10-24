@@ -1,0 +1,35 @@
+// A parsed double is the nearest to the decimal written, ties to even, as
+// .NET's parse gives it: large and small exponents, the subnormal range and
+// its edge, halfway cases, and more digits than a double holds.
+use IO.Std.write_line
+
+entry() is
+    let cases = [
+        "1e308",
+        "1.7976931348623157e308",
+        "1.7976931348623159e308",
+        "2.2250738585072014e-308",
+        "2.2250738585072011e-308",
+        "4.9e-324",
+        "2.4703282292062327e-324",
+        "2.4703282292062328e-324",
+        "9007199254740993",
+        "9007199254740995",
+        "0.1",
+        "0.3",
+        "123456789012345678901234567890",
+        "1.00000000000000011102230246251565404236316680908203125",
+        "1.00000000000000011102230246251565404236316680908203126",
+        "1e23",
+        "8.98846567431158e307",
+        "1e-400",
+        "1e400",
+        "0.000000000000000000000000000000000000000001"
+    ]
+
+    for text in cases do
+        let bits = double.parse(text).to_bits()
+
+        write_line("{text} {bits:X16}")
+    od
+si

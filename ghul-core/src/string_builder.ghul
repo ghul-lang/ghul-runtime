@@ -1,0 +1,255 @@
+namespace Text is
+    /// Accumulates text a piece at a time, as an interpolated string does.
+    class STRING_BUILDER is
+        // What has been built is the first `_length` code units of `_chars`,
+        // which doubles when it fills, so appending costs the same however
+        // much has been built and `to_string` copies the text once.
+        _chars: char[]
+        _length: int
+
+        init() is
+            _chars = Ghul._array_new[char](_INITIAL_CAPACITY)
+        si
+
+        /// A builder holding `value` to start with.
+        ///
+        /// - value: the text to start with
+        init(value: string) is
+            _chars = Ghul._array_new[char](if value.length > _INITIAL_CAPACITY then value.length else _INITIAL_CAPACITY fi)
+            append(value)
+        si
+
+        /// A builder with room for `capacity` code units before it has to
+        /// grow.
+        ///
+        /// - capacity: the number of code units to make room for
+        init(capacity: int) is
+            _chars = Ghul._array_new[char](if capacity > _INITIAL_CAPACITY then capacity else _INITIAL_CAPACITY fi)
+        si
+
+        /// Appends `text` to the text built so far, and returns this builder.
+        /// A null appends nothing, as .NET's builder does.
+        ///
+        /// - text: the text to append
+        append(text: string?) -> STRING_BUILDER is
+            if !text? then
+                return self
+            fi
+
+            let count = text.length
+
+            _ensure(_length + count)
+
+            _string_copy_to(text, 0, _chars, _length, count)
+
+            _length = _length + count
+
+            return self
+        si
+
+        /// Appends `value`, and returns this builder.
+        ///
+        /// - value: the code unit to append
+        append(value: char) -> STRING_BUILDER is
+            _ensure(_length + 1)
+            Ghul._array_set(_chars, _length, value)
+            _length = _length + 1
+
+            return self
+        si
+
+        /// Appends `count` copies of `value`, and returns this builder.
+        ///
+        /// - value: the code unit to append
+        /// - count: how many copies to append
+        append(value: char, count: int) -> STRING_BUILDER is
+            if count <= 0 then
+                return self
+            fi
+
+            _ensure(_length + count)
+
+            let i mut = 0
+
+            while i < count do
+                Ghul._array_set(_chars, _length + i, value)
+                i = i + 1
+            od
+
+            _length = _length + count
+
+            return self
+        si
+
+        /// Appends the text of `value`, and returns this builder.
+        ///
+        /// - value: the value to append
+        append(value: int) -> STRING_BUILDER => append(value.to_string())
+
+        /// Appends the text of `value`, and returns this builder.
+        ///
+        /// - value: the value to append
+        append(value: long) -> STRING_BUILDER => append(value.to_string())
+
+        /// Appends the text of `value`, and returns this builder.
+        ///
+        /// - value: the value to append
+        append(value: double) -> STRING_BUILDER => append(value.to_string())
+
+        /// Appends `True` or `False`, as .NET writes a `bool`, and returns this
+        /// builder.
+        ///
+        /// - value: the value to append
+        append(value: bool) -> STRING_BUILDER => append(if value then "True" else "False" fi)
+
+        /// Appends the text of `value`, nothing where it is absent, and
+        /// returns this builder.
+        ///
+        /// - value: the value to append
+        append(value: object?) -> STRING_BUILDER =>
+            if value? then append(value.to_string()) else self fi
+
+        /// Appends a line break, and returns this builder.
+        append_line() -> STRING_BUILDER => append("\n")
+
+        /// Appends `text` and a line break, and returns this builder.
+        ///
+        /// - text: the text to append
+        append_line(text: string) -> STRING_BUILDER => append(text).append("\n")
+
+        /// The number of code units built so far.
+        length: int pure => _length
+
+        /// The code unit at `index`, which can be replaced.
+        ///
+        /// - index: the position of the code unit, from 0
+        [index: int]: char => _char_at(index),
+            = value is
+                _check_index(index)
+
+                Ghul._array_set(_chars, index, value)
+            si
+
+        /// Removes everything built so far, keeping the room it took so the
+        /// builder can be reused, and returns this builder.
+        clear() -> STRING_BUILDER is
+            _length = 0
+            return self
+        si
+
+        /// Inserts `value` at `index`, and returns this builder.
+        ///
+        /// - index: where to insert, from 0 to `length`
+        /// - value: the text to insert
+        insert(index: int, value: string) -> STRING_BUILDER is
+            if index < 0 \/ index > _length then
+                throw Ghul.ArgumentOutOfRangeException("index")
+            fi
+
+            let count = value.length
+
+            _ensure(_length + count)
+
+            let i mut = _length - 1
+
+            while i >= index do
+                Ghul._array_set(_chars, i + count, _chars[i])
+                i = i - 1
+            od
+
+            let j mut = 0
+
+            while j < count do
+                Ghul._array_set(_chars, index + j, value[j])
+                j = j + 1
+            od
+
+            _length = _length + count
+
+            return self
+        si
+
+        /// Inserts `value` at `index`, and returns this builder.
+        ///
+        /// - index: where to insert, from 0 to `length`
+        /// - value: the code unit to insert
+        insert(index: int, value: char) -> STRING_BUILDER => insert(index, _string_from_char(value))
+
+        /// Removes `count` code units from `start`, and returns this builder.
+        ///
+        /// - start: where to start removing
+        /// - count: how many code units to remove
+        remove(start: int, count: int) -> STRING_BUILDER is
+            if start < 0 \/ count < 0 \/ start + count > _length then
+                throw Ghul.ArgumentOutOfRangeException("start")
+            fi
+
+            let i mut = start + count
+
+            while i < _length do
+                Ghul._array_set(_chars, i - count, _chars[i])
+                i = i + 1
+            od
+
+            _length = _length - count
+
+            return self
+        si
+
+        // Appends `text` padded with spaces to `alignment` characters: on the
+        // left when it is positive, on the right when it is negative. An
+        // interpolated value with an alignment is appended this way.
+        _append_aligned(text: string, alignment: int) is
+            let width = if alignment < 0 then -alignment else alignment fi
+            let padding mut = ""
+            let i mut = text.length
+
+            while i < width do
+                padding = _string_concat(padding, " ")
+                i = i + 1
+            od
+
+            if alignment < 0 then
+                append(text)
+                append(padding)
+            else
+                append(padding)
+                append(text)
+            fi
+        si
+
+        /// The text built so far.
+        to_string() -> string pure => _string_from_chars(_chars, 0, _length)
+
+        _INITIAL_CAPACITY: int static => 16
+
+        // Makes room for `needed` code units, growing by about double.
+        _ensure(needed: int) is
+            if needed <= _chars.count then
+                return
+            fi
+
+            let grown = Ghul._array_new[char](Ghul._grown_capacity(_chars.count, needed))
+            let i mut = 0
+
+            while i < _length do
+                Ghul._array_set(grown, i, _chars[i])
+                i = i + 1
+            od
+
+            _chars = grown
+        si
+
+        _char_at(index: int) -> char is
+            _check_index(index)
+
+            return _chars[index]
+        si
+
+        _check_index(index: int) is
+            if index < 0 \/ index >= _length then
+                throw Ghul.ArgumentOutOfRangeException("index")
+            fi
+        si
+    si
+si

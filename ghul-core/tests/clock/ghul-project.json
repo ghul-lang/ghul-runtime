@@ -1,0 +1,10 @@
+{
+    "name": "clock",
+    "targets": ["wasm", "llvm"],
+    "sources": ["*.ghul"],
+    "options": { "suppress": ["assembly-attribute-unmatched"] },
+    "dependencies": {
+        "ghul-core": { "path": "../.." },
+        "ghul-runtime": { "path": "../../../ghul-runtime" }
+    }
+}

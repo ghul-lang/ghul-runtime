@@ -1,0 +1,9 @@
+// The built-in scalar types compare through =~ and the relational
+// operators, as they do on .NET.
+f(a: byte, b: ubyte, c: ulong, d: double, e: char, h: bool) -> bool =>
+    a =~ a /\ !(b < b) /\ c >= c /\ d =~ d /\ e <> e == 0 /\ h =~ h /\ !(h < h)
+
+entry() is
+    IO.Std.write_line("{f(1b, 2ub, 3ul, 4.5, 'c', true)}")
+    IO.Std.write_line("{1 < 2} {2.5 > 3.5} {'a' <> 'b'} {false < true} {7L =~ 7L} {0.0 / 0.0 =~ 0.0 / 0.0}")
+si

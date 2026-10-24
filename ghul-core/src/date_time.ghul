@@ -1,0 +1,944 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged. Dates are proleptic Gregorian and text follows the
+// invariant culture, since the source-core targets have no other.
+@@suppress("non-upper-snake-case-name")
+
+namespace System is
+    use Ghul.ArgumentOutOfRangeException
+    use Ghul.FormatException
+
+    /// Whether a `DateTime` is in UTC, in local time, or neither.
+    enum DateTimeKind is
+        UNSPECIFIED,
+        UTC,
+        LOCAL
+    si
+
+    /// A day of the week, counting from Sunday as .NET does.
+    enum DayOfWeek is
+        SUNDAY,
+        MONDAY,
+        TUESDAY,
+        WEDNESDAY,
+        THURSDAY,
+        FRIDAY,
+        SATURDAY
+    si
+
+    partial DateTime is
+        /// The start of `day` `month` `year`.
+        ///
+        /// - year: the year, from 1 to 9999
+        /// - month: the month, from 1 to 12
+        /// - day: the day of the month
+        init(year: int, month: int, day: int) is
+            self.init(_date_ticks(year, month, day), DateTimeKind.UNSPECIFIED)
+        si
+
+        /// The moment `hour`:`minute`:`second` on `day` `month` `year`.
+        ///
+        /// - year: the year, from 1 to 9999
+        /// - month: the month, from 1 to 12
+        /// - day: the day of the month
+        /// - hour: the hour, from 0 to 23
+        /// - minute: the minute, from 0 to 59
+        /// - second: the second, from 0 to 59
+        init(year: int, month: int, day: int, hour: int, minute: int, second: int) is
+            self.init(year, month, day, hour, minute, second, DateTimeKind.UNSPECIFIED)
+        si
+
+        /// The moment `hour`:`minute`:`second` on `day` `month` `year`, of
+        /// the kind `kind`.
+        ///
+        /// - year: the year, from 1 to 9999
+        /// - month: the month, from 1 to 12
+        /// - day: the day of the month
+        /// - hour: the hour, from 0 to 23
+        /// - minute: the minute, from 0 to 59
+        /// - second: the second, from 0 to 59
+        /// - kind: whether the moment is in UTC, local time or neither
+        init(year: int, month: int, day: int, hour: int, minute: int, second: int, kind: DateTimeKind) is
+            self.init(_date_ticks(year, month, day) + _time_ticks(hour, minute, second), kind)
+        si
+
+        /// The earliest moment, 0001-01-01T00:00:00.
+        min_value: DateTime static => DateTime(0L)
+
+        /// The latest moment, the last tick of 9999-12-31.
+        max_value: DateTime static => DateTime(_days_to_year(10000) * _TICKS_PER_DAY - 1L)
+
+        /// The start of the current day, in local time.
+        today: DateTime static => now.date
+
+        /// Whether `year` is a leap year.
+        ///
+        /// - year: the year, from 1 to 9999
+        is_leap_year(year: int) -> bool static =>
+            year % 4 == 0 /\ (year % 100 != 0 \/ year % 400 == 0)
+
+        /// The number of days in `month` of `year`.
+        ///
+        /// - year: the year, from 1 to 9999
+        /// - month: the month, from 1 to 12
+        days_in_month(year: int, month: int) -> int static is
+            if month < 1 \/ month > 12 then
+                throw ArgumentOutOfRangeException("month", "the month must be from 1 to 12")
+            fi
+
+            return _month_start(year, month + 1) - _month_start(year, month)
+        si
+
+        /// The year, from 1 to 9999.
+        year: int => _part(0)
+
+        /// The month, from 1 to 12.
+        month: int => _part(1)
+
+        /// The day of the month, from 1.
+        day: int => _part(2)
+
+        /// The day of the year, from 1.
+        day_of_year: int => _part(3)
+
+        /// The hour, from 0 to 23.
+        hour: int => cast int((ticks / 36_000_000_000L) % 24L)
+
+        /// The minute, from 0 to 59.
+        minute: int => cast int((ticks / 600_000_000L) % 60L)
+
+        /// The second, from 0 to 59.
+        second: int => cast int((ticks / 10_000_000L) % 60L)
+
+        /// The millisecond, from 0 to 999.
+        millisecond: int => cast int((ticks / 10_000L) % 1000L)
+
+        /// The day of the week.
+        day_of_week: DayOfWeek => cast DayOfWeek(cast int((ticks / _TICKS_PER_DAY + 1L) % 7L))
+
+        /// The start of the day this moment is in, of the same kind.
+        date: DateTime => DateTime(ticks - ticks % _TICKS_PER_DAY, kind)
+
+        /// How far into its day this moment is.
+        time_of_day: TimeSpan => TimeSpan(ticks % _TICKS_PER_DAY)
+
+        /// The moment `value` ticks later.
+        ///
+        /// - value: the number of ticks to move, which may be negative
+        add_ticks(value: long) -> DateTime => DateTime(ticks + value, kind)
+
+        /// The moment `value` milliseconds later, to the nearest tick.
+        ///
+        /// - value: the number of milliseconds to move, which may be negative
+        add_milliseconds(value: double) -> DateTime => _add_units(value, 10_000L)
+
+        /// The moment `value` seconds later, to the nearest tick.
+        ///
+        /// - value: the number of seconds to move, which may be negative
+        add_seconds(value: double) -> DateTime => _add_units(value, 10_000_000L)
+
+        /// The moment `value` minutes later, to the nearest tick.
+        ///
+        /// - value: the number of minutes to move, which may be negative
+        add_minutes(value: double) -> DateTime => _add_units(value, 600_000_000L)
+
+        /// The moment `value` hours later, to the nearest tick.
+        ///
+        /// - value: the number of hours to move, which may be negative
+        add_hours(value: double) -> DateTime => _add_units(value, 36_000_000_000L)
+
+        /// The moment `value` days later, to the nearest tick.
+        ///
+        /// - value: the number of days to move, which may be negative
+        add_days(value: double) -> DateTime => _add_units(value, _TICKS_PER_DAY)
+
+        /// The same time of day `months` months later, on the same day of the
+        /// month or, where that month is shorter, its last day.
+        ///
+        /// - months: the number of months to move, which may be negative
+        add_months(months: int) -> DateTime is
+            let total = year * 12 + month - 1 + months
+            let new_year = total / 12
+            let new_month = total % 12 + 1
+            let new_day = Ghul.Math.min(day, days_in_month(new_year, new_month))
+
+            return DateTime(_date_ticks(new_year, new_month, new_day) + ticks % _TICKS_PER_DAY, kind)
+        si
+
+        /// The same time of day `years` years later, on 28 February where this
+        /// is 29 February and that year is not a leap year.
+        ///
+        /// - years: the number of years to move, which may be negative
+        add_years(years: int) -> DateTime => add_months(years * 12)
+
+        /// The moment less `interval`.
+        ///
+        /// - interval: how far to move back
+        subtract(interval: TimeSpan) -> DateTime => DateTime(ticks - interval.ticks, kind)
+
+        /// The moment `interval` after `moment`.
+        ///
+        /// - moment: the moment to start from
+        /// - interval: how far to move
+        +(moment: DateTime, interval: TimeSpan) -> DateTime static => moment.add(interval)
+
+        /// The moment `interval` before `moment`.
+        ///
+        /// - moment: the moment to start from
+        /// - interval: how far to move back
+        -(moment: DateTime, interval: TimeSpan) -> DateTime static => moment.subtract(interval)
+
+        /// The interval from `earlier` to `later`.
+        ///
+        /// - later: the moment the interval ends
+        /// - earlier: the moment it starts
+        -(later: DateTime, earlier: DateTime) -> TimeSpan static => later.subtract(earlier)
+
+        /// The moment as the invariant culture writes it by default,
+        /// `MM/dd/yyyy HH:mm:ss`.
+        to_string() -> string => to_string("G")
+
+        /// The moment written in `format`. A single letter is one of .NET's
+        /// standard formats as the invariant culture spells it (`d`, `D`,
+        /// `t`, `T`, `g`, `G`, `s`, `o`, `u`); anything else is a custom
+        /// format of `yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`, `fff` and the like,
+        /// with quoted text and `\` escapes copied as they are.
+        ///
+        /// - format: the format to write in
+        to_string(format: string?) -> string =>
+            Ghul.Internal.DATE_FORMAT.write(self, _standard(format ?? ""))
+
+        /// The moment written in `format`, as `to_string(format)` writes it.
+        ///
+        /// - format: the format to write in
+        /// - format_provider: ignored; text follows the invariant culture
+        to_string(format: string?, format_provider: IFormatProvider?) -> string => to_string(format)
+
+        /// The moment `text` writes, in the invariant culture: a date as
+        /// `yyyy-MM-dd` or `MM/dd/yyyy`, optionally followed by a time as
+        /// `HH:mm`, `HH:mm:ss` or `HH:mm:ss.fffffff`, after a space or a `T`.
+        /// A trailing `Z` reads the time as UTC and gives it as local time,
+        /// which on the source-core targets is the same moment.
+        ///
+        /// - text: the text to read
+        parse(text: string) -> DateTime static =>
+            Ghul.Internal.DATE_PARSE.parse(text.trim())
+
+        // The custom format a standard format letter stands for.
+        _standard(format: string) -> string static is
+            if format.length != 1 then
+                return if format.length == 0 then "MM/dd/yyyy HH:mm:ss" else format fi
+            fi
+
+            return case format[0]
+            when 'd' then "MM/dd/yyyy"
+            when 'D' then "dddd, dd MMMM yyyy"
+            when 't' then "HH:mm"
+            when 'T' then "HH:mm:ss"
+            when 'g' then "MM/dd/yyyy HH:mm"
+            when 'G' then "MM/dd/yyyy HH:mm:ss"
+            when 's' then "yyyy-MM-dd'T'HH:mm:ss"
+            when 'o', 'O' then "yyyy-MM-dd'T'HH:mm:ss.fffffffK"
+            when 'u' then "yyyy-MM-dd HH:mm:ss'Z'"
+            else throw FormatException("the format {format} is not one a date can be written in")
+            esac
+        si
+
+        _TICKS_PER_DAY: long static => 864_000_000_000L
+
+        _add_units(value: double, scale: long) -> DateTime =>
+            DateTime(ticks + cast long(Ghul.Math.round(value * cast double(scale))), kind)
+
+        // The year, month, day or day of the year, for `part` 0, 1, 2 or 3,
+        // by the algorithm .NET's `DateTime` uses.
+        _part(part: int) -> int is
+            let n mut = cast int(ticks / _TICKS_PER_DAY)
+            let y400 = n / 146_097
+
+            n = n - y400 * 146_097
+
+            let y100 mut = n / 36_524
+
+            if y100 == 4 then
+                y100 = 3
+            fi
+
+            n = n - y100 * 36_524
+
+            let y4 = n / 1461
+
+            n = n - y4 * 1461
+
+            let y1 mut = n / 365
+
+            if y1 == 4 then
+                y1 = 3
+            fi
+
+            let year = y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1
+
+            if part == 0 then
+                return year
+            fi
+
+            n = n - y1 * 365
+
+            if part == 3 then
+                return n + 1
+            fi
+
+            let month mut = 1
+
+            while month < 12 /\ _month_start(year, month + 1) <= n do
+                month = month + 1
+            od
+
+            return if part == 1 then month else n - _month_start(year, month) + 1 fi
+        si
+
+        // Days from 0001-01-01 to the start of `year`.
+        _days_to_year(year: int) -> long static is
+            let y = cast long(year - 1)
+
+            return y * 365L + y / 4L - y / 100L + y / 400L
+        si
+
+        // Days from the start of `year` to the start of `month`, which may be
+        // 13 for the end of the year.
+        _month_start(year: int, month: int) -> int static is
+            let starts = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365]
+            let leap = if month > 2 /\ is_leap_year(year) then 1 else 0 fi
+
+            return starts[month - 1] + leap
+        si
+
+        _date_ticks(year: int, month: int, day: int) -> long static is
+            if year < 1 \/ year > 9999 \/ month < 1 \/ month > 12 then
+                throw ArgumentOutOfRangeException("year", "the year, month and day are not a date")
+            fi
+
+            if day < 1 \/ day > days_in_month(year, month) then
+                throw ArgumentOutOfRangeException("day", "the year, month and day are not a date")
+            fi
+
+            return (_days_to_year(year) + cast long(_month_start(year, month) + day - 1)) * _TICKS_PER_DAY
+        si
+
+        _time_ticks(hour: int, minute: int, second: int) -> long static is
+            if hour < 0 \/ hour > 23 \/ minute < 0 \/ minute > 59 \/ second < 0 \/ second > 59 then
+                throw ArgumentOutOfRangeException("hour", "the hour, minute and second are not a time of day")
+            fi
+
+            return cast long(hour * 3600 + minute * 60 + second) * 10_000_000L
+        si
+    si
+
+    partial TimeSpan is
+        /// An interval of `days` days, `hours` hours, `minutes` minutes and
+        /// `seconds` seconds.
+        ///
+        /// - days: the number of days
+        /// - hours: the number of hours
+        /// - minutes: the number of minutes
+        /// - seconds: the number of seconds
+        init(days: int, hours: int, minutes: int, seconds: int) is
+            self.init(((cast long(days) * 24L + cast long(hours)) * 60L + cast long(minutes)) * 600_000_000L + cast long(seconds) * 10_000_000L)
+        si
+
+        /// An interval of `hours` hours, `minutes` minutes and `seconds`
+        /// seconds.
+        ///
+        /// - hours: the number of hours
+        /// - minutes: the number of minutes
+        /// - seconds: the number of seconds
+        init(hours: int, minutes: int, seconds: int) is
+            self.init(0, hours, minutes, seconds)
+        si
+
+        /// The number of ticks in a minute.
+        ticks_per_minute: long static => 600_000_000L
+
+        /// The number of ticks in an hour.
+        ticks_per_hour: long static => 36_000_000_000L
+
+        /// The number of ticks in a day.
+        ticks_per_day: long static => 864_000_000_000L
+
+        /// An interval of `minutes` minutes, to the nearest tick.
+        ///
+        /// - minutes: the length of the interval
+        from_minutes(minutes: double) -> TimeSpan static =>
+            TimeSpan(cast long(Ghul.Math.round(minutes * 600_000_000.0)))
+
+        /// An interval of `hours` hours, to the nearest tick.
+        ///
+        /// - hours: the length of the interval
+        from_hours(hours: double) -> TimeSpan static =>
+            TimeSpan(cast long(Ghul.Math.round(hours * 36_000_000_000.0)))
+
+        /// An interval of `days` days, to the nearest tick.
+        ///
+        /// - days: the length of the interval
+        from_days(days: double) -> TimeSpan static =>
+            TimeSpan(cast long(Ghul.Math.round(days * 864_000_000_000.0)))
+
+        /// An interval of `value` ticks.
+        ///
+        /// - value: the length of the interval
+        from_ticks(value: long) -> TimeSpan static => TimeSpan(value)
+
+        /// An interval of `days` days.
+        ///
+        /// - days: the length of the interval
+        from_days(days: int) -> TimeSpan static => TimeSpan(cast long(days) * 864_000_000_000L)
+
+        /// An interval of `hours` hours.
+        ///
+        /// - hours: the length of the interval
+        from_hours(hours: int) -> TimeSpan static => TimeSpan(cast long(hours) * 36_000_000_000L)
+
+        /// An interval of `minutes` minutes.
+        ///
+        /// - minutes: the length of the interval
+        from_minutes(minutes: long) -> TimeSpan static => TimeSpan(minutes * 600_000_000L)
+
+        /// An interval of `seconds` seconds.
+        ///
+        /// - seconds: the length of the interval
+        from_seconds(seconds: long) -> TimeSpan static => TimeSpan(seconds * 10_000_000L)
+
+        /// The interval written in `format`: `c`, `g` or `G`, .NET's standard
+        /// formats as the invariant culture spells them, or a custom format of
+        /// `d`, `hh`, `mm`, `ss` and `fff` and the like, with `\` escapes and
+        /// quoted text copied as they are.
+        ///
+        /// - format: the format to write in
+        to_string(format: string?) -> string => Ghul.Internal.TIME_SPAN_TEXT.write(self, format ?? "")
+
+        /// The interval written in `format`, as `to_string(format)` writes it.
+        ///
+        /// - format: the format to write in
+        /// - format_provider: ignored; text follows the invariant culture
+        to_string(format: string?, format_provider: IFormatProvider?) -> string => to_string(format)
+
+        /// The interval `text` writes, as `[-][d.]hh:mm[:ss[.fffffff]]` or as
+        /// a whole number of days, with white space around it.
+        ///
+        /// - text: the text to read
+        parse(text: string) -> TimeSpan static => Ghul.Internal.TIME_SPAN_TEXT.parse(text.trim())
+
+        /// The interval `text` writes in the custom format `format`.
+        ///
+        /// - text: the text to read
+        /// - format: the custom format it is written in
+        /// - format_provider: ignored; text follows the invariant culture
+        parse_exact(text: string, format: string, format_provider: IFormatProvider?) -> TimeSpan static =>
+            Ghul.Internal.TIME_SPAN_TEXT.parse_exact(text, format)
+
+        /// The whole days in the interval.
+        days: int => cast int(ticks / 864_000_000_000L)
+
+        /// The hours left over after the whole days, from -23 to 23.
+        hours: int => cast int((ticks / 36_000_000_000L) % 24L)
+
+        /// The minutes left over after the whole hours, from -59 to 59.
+        minutes: int => cast int((ticks / 600_000_000L) % 60L)
+
+        /// The seconds left over after the whole minutes, from -59 to 59.
+        seconds: int => cast int((ticks / 10_000_000L) % 60L)
+
+        /// The milliseconds left over after the whole seconds, from -999 to
+        /// 999.
+        milliseconds: int => cast int((ticks / 10_000L) % 1000L)
+
+        /// The interval in minutes, with any fraction.
+        total_minutes: double => cast double(ticks) / 600_000_000.0
+
+        /// The interval in hours, with any fraction.
+        total_hours: double => cast double(ticks) / 36_000_000_000.0
+
+        /// The interval in days, with any fraction.
+        total_days: double => cast double(ticks) / 864_000_000_000.0
+
+        /// The interval of the same length, made positive.
+        duration() -> TimeSpan => TimeSpan(if ticks < 0L then -ticks else ticks fi)
+
+        /// The interval of the same length in the other direction.
+        negate() -> TimeSpan => TimeSpan(-ticks)
+
+        /// The two intervals together.
+        ///
+        /// - left: the first interval
+        /// - right: the second interval
+        +(left: TimeSpan, right: TimeSpan) -> TimeSpan static => left.add(right)
+
+        /// `left` less `right`.
+        ///
+        /// - left: the interval to take from
+        /// - right: the interval to take away
+        -(left: TimeSpan, right: TimeSpan) -> TimeSpan static => left.subtract(right)
+    si
+si
+
+namespace Ghul.Internal is
+    use System.DateTime
+    use System.DateTimeKind
+    use Text.STRING_BUILDER
+
+    // Writes a date in a custom format under the invariant culture.
+    class DATE_FORMAT is
+        write(moment: DateTime, format: string) -> string static is
+            let result = STRING_BUILDER()
+            let i mut = 0
+
+            while i < format.length do
+                let c = format[i]
+                let run mut = 1
+
+                while i + run < format.length /\ format[i + run] == c do
+                    run = run + 1
+                od
+
+                if c == 'y' then
+                    if run <= 2 then
+                        result.append(_padded(moment.year % 100, run))
+                    else
+                        result.append(_padded(moment.year, run))
+                    fi
+                elif c == 'M' then
+                    if run <= 2 then
+                        result.append(_padded(moment.month, run))
+                    elif run == 3 then
+                        result.append(_month_names[moment.month - 1].substring(0, 3))
+                    else
+                        result.append(_month_names[moment.month - 1])
+                    fi
+                elif c == 'd' then
+                    if run <= 2 then
+                        result.append(_padded(moment.day, run))
+                    elif run == 3 then
+                        result.append(_day_names[cast int(moment.day_of_week)].substring(0, 3))
+                    else
+                        result.append(_day_names[cast int(moment.day_of_week)])
+                    fi
+                elif c == 'H' then
+                    result.append(_padded(moment.hour, Ghul.Math.min(run, 2)))
+                elif c == 'h' then
+                    let twelve = moment.hour % 12
+
+                    result.append(_padded(if twelve == 0 then 12 else twelve fi, Ghul.Math.min(run, 2)))
+                elif c == 'm' then
+                    result.append(_padded(moment.minute, Ghul.Math.min(run, 2)))
+                elif c == 's' then
+                    result.append(_padded(moment.second, Ghul.Math.min(run, 2)))
+                elif c == 'f' \/ c == 'F' then
+                    let digits = "{moment.ticks % 10_000_000L + 10_000_000L}".substring(1, Ghul.Math.min(run, 7))
+
+                    if c == 'F' then
+                        result.append(digits.trim_end('0'))
+                    else
+                        result.append(digits)
+                    fi
+                elif c == 't' then
+                    let marker = if moment.hour < 12 then "AM" else "PM" fi
+
+                    result.append(if run == 1 then marker.substring(0, 1) else marker fi)
+                elif c == 'K' then
+                    if moment.kind == DateTimeKind.UTC then
+                        result.append("Z")
+                    elif moment.kind == DateTimeKind.LOCAL then
+                        result.append("+00:00")
+                    fi
+                elif c == 'z' then
+                    result.append(if run == 1 then "+0" elif run == 2 then "+00" else "+00:00" fi)
+                elif c == '\'' \/ c == '"' then
+                    let close = format.index_of(c, i + 1)
+                    let end = if close < 0 then format.length else close fi
+
+                    result.append(format.substring(i + 1, end - i - 1))
+                    run = end - i + 1
+                elif c == '\\' /\ i + 1 < format.length then
+                    result.append(format[i + 1])
+                    run = 2
+                else
+                    result.append(c, run)
+                fi
+
+                i = i + run
+            od
+
+            return result.to_string()
+        si
+
+        _padded(value: int, width: int) -> string static is
+            let text = value.to_string()
+
+            return if text.length >= width then text else text.pad_left(width, '0') fi
+        si
+
+        _month_names: string[] static =>
+            ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+        _day_names: string[] static =>
+            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    si
+
+    // Reads a date in the forms the invariant culture writes most often.
+    class DATE_PARSE is
+        parse(text: string) -> DateTime static is
+            let at mut = 0
+            let year mut = 0
+            let month mut = 0
+            let day mut = 0
+
+            let first = _number(text, at)
+
+            if first.digits == 0 then
+                _fail(text)
+            fi
+
+            at = first.next
+
+            if first.digits == 4 /\ at < text.length /\ text[at] == '-' then
+                year = first.value
+
+                let second = _number(text, at + 1)
+                let third = _number(text, second.next + 1)
+
+                if second.digits == 0 \/ second.next >= text.length \/ text[second.next] != '-' \/ third.digits == 0 then
+                    _fail(text)
+                fi
+
+                month = second.value
+                day = third.value
+                at = third.next
+            elif at < text.length /\ text[at] == '/' then
+                month = first.value
+
+                let second = _number(text, at + 1)
+                let third = _number(text, second.next + 1)
+
+                if second.digits == 0 \/ second.next >= text.length \/ text[second.next] != '/' \/ third.digits != 4 then
+                    _fail(text)
+                fi
+
+                day = second.value
+                year = third.value
+                at = third.next
+            else
+                _fail(text)
+            fi
+
+            let ticks mut = 0L
+            let kind mut = DateTimeKind.UNSPECIFIED
+
+            if at < text.length /\ (text[at] == ' ' \/ text[at] == 'T') then
+                let hour = _number(text, at + 1)
+                let minute = _number(text, hour.next + 1)
+
+                if hour.digits == 0 \/ hour.next >= text.length \/ text[hour.next] != ':' \/ minute.digits == 0 then
+                    _fail(text)
+                fi
+
+                ticks = (cast long(hour.value) * 60L + cast long(minute.value)) * 600_000_000L
+                at = minute.next
+
+                if at < text.length /\ text[at] == ':' then
+                    let second = _number(text, at + 1)
+
+                    if second.digits == 0 then
+                        _fail(text)
+                    fi
+
+                    ticks = ticks + cast long(second.value) * 10_000_000L
+                    at = second.next
+
+                    if at < text.length /\ text[at] == '.' then
+                        let start = at + 1
+                        let end mut = start
+
+                        while end < text.length /\ end - start < 7 /\ text[end] >= '0' /\ text[end] <= '9' do
+                            end = end + 1
+                        od
+
+                        if end == start then
+                            _fail(text)
+                        fi
+
+                        let fraction = "{text.substring(start, end - start)}0000000".substring(0, 7)
+
+                        ticks = ticks + cast long(int.parse(fraction))
+                        at = end
+                    fi
+                fi
+
+                if hour.value > 23 \/ minute.value > 59 then
+                    _fail(text)
+                fi
+            fi
+
+            if at < text.length /\ text[at] == 'Z' then
+                kind = DateTimeKind.LOCAL
+                at = at + 1
+            fi
+
+            if at != text.length then
+                _fail(text)
+            fi
+
+            return DateTime(DateTime(year, month, day).ticks + ticks, kind)
+        si
+
+        _number(text: string, start: int) -> (value: int, digits: int, next: int) static is
+            let value mut = 0
+            let i mut = start
+
+            while i < text.length /\ i - start < 9 /\ text[i] >= '0' /\ text[i] <= '9' do
+                value = value * 10 + (int(text[i]) - int('0'))
+                i = i + 1
+            od
+
+            return (value, i - start, i)
+        si
+
+        _fail(text: string) static is
+            throw Ghul.FormatException("the string {text} was not recognized as a valid date")
+        si
+    si
+
+    // Writes and reads a TimeSpan as text under the invariant culture.
+    class TIME_SPAN_TEXT is
+        write(span: System.TimeSpan, format: string) -> string static is
+            if format.length == 0 \/ format =~ "c" \/ format =~ "t" \/ format =~ "T" then
+                return span.to_string()
+            fi
+
+            let negative = span.ticks < 0L
+            let magnitude = if negative then -span.ticks else span.ticks fi
+            let days = magnitude / 864_000_000_000L
+            let hours = cast int((magnitude / 36_000_000_000L) % 24L)
+            let minutes = cast int((magnitude / 600_000_000L) % 60L)
+            let seconds = cast int((magnitude / 10_000_000L) % 60L)
+            let fraction = "{magnitude % 10_000_000L + 10_000_000L}".substring(1)
+            let sign = if negative then "-" else "" fi
+
+            if format =~ "g" then
+                let day_part = if days > 0L then "{days}:" else "" fi
+                let trimmed = fraction.trim_end('0')
+                let fraction_part = if trimmed.length > 0 then ".{trimmed}" else "" fi
+
+                return "{sign}{day_part}{hours}:{_padded(minutes, 2)}:{_padded(seconds, 2)}{fraction_part}"
+            fi
+
+            if format =~ "G" then
+                return "{sign}{days}:{_padded(hours, 2)}:{_padded(minutes, 2)}:{_padded(seconds, 2)}.{fraction}"
+            fi
+
+            let result = Text.STRING_BUILDER()
+            let i mut = 0
+
+            while i < format.length do
+                let c = format[i]
+                let run mut = 1
+
+                while i + run < format.length /\ format[i + run] == c do
+                    run = run + 1
+                od
+
+                if c == 'd' then
+                    let text = "{days}"
+
+                    result.append(if text.length >= run then text else text.pad_left(run, '0') fi)
+                elif c == 'h' then
+                    result.append(_padded(hours, run))
+                elif c == 'm' then
+                    result.append(_padded(minutes, run))
+                elif c == 's' then
+                    result.append(_padded(seconds, run))
+                elif c == 'f' then
+                    result.append(fraction.substring(0, Ghul.Math.min(run, 7)))
+                elif c == 'F' then
+                    result.append(fraction.substring(0, Ghul.Math.min(run, 7)).trim_end('0'))
+                elif c == '\\' /\ i + 1 < format.length then
+                    result.append(format[i + 1])
+                    run = 2
+                elif c == '\'' \/ c == '"' then
+                    let close = format.index_of(c, i + 1)
+
+                    if close < 0 then
+                        throw Ghul.FormatException("the format {format} has an unclosed quote")
+                    fi
+
+                    result.append(format.substring(i + 1, close - i - 1))
+                    run = close - i + 1
+                elif c == '%' then
+                    run = 1
+                else
+                    throw Ghul.FormatException("the format {format} has a character it must escape")
+                fi
+
+                i = i + run
+            od
+
+            return result.to_string()
+        si
+
+        parse(text: string) -> System.TimeSpan static is
+            let negative = text.starts_with("-")
+            let body = if negative then text.substring(1) else text fi
+
+            if body.length == 0 then
+                _fail(text)
+            fi
+
+            let colon = body.index_of(':')
+            let ticks mut = 0L
+
+            if colon < 0 then
+                ticks = cast long(_whole(body, text)) * 864_000_000_000L
+            else
+                let dot = body.index_of('.')
+                let days = if dot >= 0 /\ dot < colon then _whole(body.substring(0, dot), text) else 0 fi
+                let time = if dot >= 0 /\ dot < colon then body.substring(dot + 1) else body fi
+                let parts = time.split(':')
+
+                if parts.count < 2 \/ parts.count > 3 then
+                    _fail(text)
+                fi
+
+                let hours = _whole(parts[0], text)
+                let minutes = _whole(parts[1], text)
+                let seconds_text = if parts.count == 3 then parts[2] else "0" fi
+                let point = seconds_text.index_of('.')
+                let seconds = _whole(if point >= 0 then seconds_text.substring(0, point) else seconds_text fi, text)
+                let fraction = if point >= 0 then _fraction(seconds_text.substring(point + 1), text) else 0L fi
+
+                if hours > 23 \/ minutes > 59 \/ seconds > 59 then
+                    throw Ghul.OverflowException("the time span {text} has a part out of range")
+                fi
+
+                ticks = (((cast long(days) * 24L + cast long(hours)) * 60L + cast long(minutes)) * 60L + cast long(seconds)) * 10_000_000L + fraction
+            fi
+
+            return System.TimeSpan(if negative then -ticks else ticks fi)
+        si
+
+        parse_exact(text: string, format: string) -> System.TimeSpan static is
+            let days mut = 0L
+            let hours mut = 0L
+            let minutes mut = 0L
+            let seconds mut = 0L
+            let fraction mut = 0L
+            let at mut = 0
+            let i mut = 0
+
+            while i < format.length do
+                let c = format[i]
+                let run mut = 1
+
+                while i + run < format.length /\ format[i + run] == c do
+                    run = run + 1
+                od
+
+                if c == 'd' \/ c == 'h' \/ c == 'm' \/ c == 's' then
+                    let most = if c == 'd' then 8 else 2 fi
+                    let start = at
+
+                    while at < text.length /\ at - start < most /\ text[at] >= '0' /\ text[at] <= '9' do
+                        at = at + 1
+                    od
+
+                    if at - start < (if c == 'd' then run else Ghul.Math.min(run, 2) fi) then
+                        _fail(text)
+                    fi
+
+                    let value = cast long(int.parse(text.substring(start, at - start)))
+
+                    if c == 'd' then
+                        days = value
+                    elif c == 'h' then
+                        hours = value
+                    elif c == 'm' then
+                        minutes = value
+                    else
+                        seconds = value
+                    fi
+                elif c == 'f' \/ c == 'F' then
+                    let start = at
+
+                    while at < text.length /\ at - start < run /\ text[at] >= '0' /\ text[at] <= '9' do
+                        at = at + 1
+                    od
+
+                    if c == 'f' /\ at - start < run then
+                        _fail(text)
+                    fi
+
+                    fraction = if at > start then _fraction(text.substring(start, at - start), text) else 0L fi
+                else
+                    let literal =
+                        if c == '\\' /\ i + 1 < format.length then
+                            run = 2
+                            format.substring(i + 1, 1)
+                        elif c == '\'' \/ c == '"' then
+                            let close = format.index_of(c, i + 1)
+                            let end = if close < 0 then format.length else close fi
+
+                            run = end - i + 1
+                            format.substring(i + 1, end - i - 1)
+                        else
+                            throw Ghul.FormatException("the format {format} has a character it must escape")
+                        fi
+
+                    if !text.substring(at).starts_with(literal) then
+                        _fail(text)
+                    fi
+
+                    at = at + literal.length
+                fi
+
+                i = i + run
+            od
+
+            if at != text.length \/ hours > 23L \/ minutes > 59L \/ seconds > 59L then
+                _fail(text)
+            fi
+
+            return System.TimeSpan((((days * 24L + hours) * 60L + minutes) * 60L + seconds) * 10_000_000L + fraction)
+        si
+
+        _whole(text: string, whole: string) -> int static is
+            if text.length == 0 then
+                _fail(whole)
+            fi
+
+            for c in text do
+                if c < '0' \/ c > '9' then
+                    _fail(whole)
+                fi
+            od
+
+            return int.parse(text)
+        si
+
+        _fraction(text: string, whole: string) -> long static is
+            if text.length == 0 \/ text.length > 7 then
+                _fail(whole)
+            fi
+
+            for c in text do
+                if c < '0' \/ c > '9' then
+                    _fail(whole)
+                fi
+            od
+
+            return cast long(int.parse("{text}0000000".substring(0, 7)))
+        si
+
+        _padded(value: int, width: int) -> string static =>
+            if width <= 1 then "{value}" else "{value}".pad_left(width, '0') fi
+
+        _fail(text: string) static is
+            throw Ghul.FormatException("the string {text} was not recognized as a valid time span")
+        si
+    si
+si

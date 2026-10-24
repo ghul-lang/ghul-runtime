@@ -1,0 +1,21 @@
+// The range operators produce the range types the core library declares,
+// which a for loop iterates and which compare as they do on .NET. The
+// program's exit status is the sum the loops compute, plus one when two
+// equal ranges compare equal.
+total() -> int is
+    let sum mut = 0
+
+    for i in 0..10 do
+        sum = sum + i
+    od
+
+    for i in 1::3 do
+        sum = sum - i
+    od
+
+    return sum
+si
+
+same(a: Ghul.INT_RANGE, b: Ghul.INT_RANGE) -> bool => a =~ b
+
+entry() -> int => total() + if same(0..3, 0..3) then 1 else 0 fi

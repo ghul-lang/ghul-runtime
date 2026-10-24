@@ -1,0 +1,62 @@
+// Members .NET gives the built-in types, the string builder and Math, which
+// print here what the same program prints on .NET: the numeric types' ranges,
+// the floating-point special values and the tests for them, ASCII and
+// surrogate classification, string concatenation, a builder made from a
+// string, parsing a uint, and division with its remainder.
+use IO.Std.write_line
+use Text.STRING_BUILDER
+use Collections.LIST
+
+entry() is
+    write_line("{byte.min_value} {byte.max_value} {ubyte.min_value} {ubyte.max_value}")
+    write_line("{short.min_value} {short.max_value} {ushort.min_value} {ushort.max_value}")
+    write_line("{int.min_value} {int.max_value} {uint.min_value} {uint.max_value}")
+    write_line("{long.min_value} {long.max_value} {ulong.min_value} {ulong.max_value}")
+    write_line("{single.min_value} {single.max_value} {single.epsilon}")
+    write_line("{double.min_value} {double.max_value} {double.epsilon}")
+    write_line("{double.positive_infinity} {double.negative_infinity} {double.na_n}")
+    write_line("{single.positive_infinity} {single.negative_infinity} {single.na_n}")
+
+    for value in [0.0, -1.5, double.positive_infinity, double.negative_infinity, double.na_n, double.max_value] do
+        write_line("{value}: {double.is_na_n(value)} {double.is_infinity(value)} {double.is_positive_infinity(value)} {double.is_negative_infinity(value)} {double.is_finite(value)}")
+    od
+
+    for value in [0.0s, single.positive_infinity, single.negative_infinity, single.na_n] do
+        write_line("{value}: {single.is_na_n(value)} {single.is_infinity(value)} {single.is_positive_infinity(value)} {single.is_negative_infinity(value)} {single.is_finite(value)}")
+    od
+
+    write_line("{double.degrees_to_radians(180.0)} {double.radians_to_degrees(1.0)}")
+
+    for c in ['a', 'Z', '5', 'f', 'G', '_', ' ', '\u00e9', '\ud83d', '\ude00', '\u007f', '\u0080'] do
+        write_line("{cast int(c)}: {char.is_ascii(c)} {char.is_ascii_digit(c)} {char.is_ascii_hex_digit(c)} {char.is_ascii_letter(c)} {char.is_ascii_letter_lower(c)} {char.is_ascii_letter_upper(c)} {char.is_ascii_letter_or_digit(c)} {char.is_high_surrogate(c)} {char.is_low_surrogate(c)} {char.is_surrogate(c)}")
+    od
+
+    let smile = char.convert_from_utf32(0x1F600)
+    write_line("{smile.length} {cast int(smile[0])} {cast int(smile[1])} {char.convert_to_utf32(smile[0], smile[1])} {char.convert_to_utf32(smile, 0)}")
+    write_line("{char.convert_from_utf32(65)} {char.is_surrogate_pair(smile[0], smile[1])} {char.convert_to_utf32("x{smile}", 0)}")
+
+    try
+        char.convert_from_utf32(0xD800)
+    catch e: Ghul.ArgumentOutOfRangeException
+        write_line("surrogate code point refused")
+    yrt
+
+    write_line(string.concat(["a", "b", "c"]))
+    write_line(string.concat("x", "y"))
+    write_line(string.concat("x", "y", "z"))
+    write_line("[{string.concat(LIST[string]().to_array())}]")
+
+    let builder = STRING_BUILDER("start")
+    builder.append(" then more")
+    write_line("{builder.to_string()} {builder.length}")
+    write_line("[{STRING_BUILDER(16).append("sized").to_string()}]")
+
+    write_line("{uint.parse("4294967295")} {uint.parse(" 7 ")}")
+
+    let parsed: uint mut = 1u
+    write_line("{uint.try_parse("-1", parsed ref)} {parsed} {uint.try_parse("4294967296", parsed ref)} {uint.try_parse("12", parsed ref)} {parsed}")
+
+    let (quotient, remainder) = System.Math.div_rem(-17, 5)
+    let (long_quotient, long_remainder) = System.Math.div_rem(17L, -5L)
+    write_line("{quotient} {remainder} {long_quotient} {long_remainder}")
+si

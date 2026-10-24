@@ -1,0 +1,315 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged. The digests are computed in ghūl, so they need no
+// cryptography library on either source-core target.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Security.Cryptography is
+    use System.Numerics.BitOperations
+
+    /// The MD5 digest, as .NET's `System.Security.Cryptography.MD5` gives it.
+    /// MD5 is broken as a cryptographic hash and is here for checksums.
+    class MD5 is
+        /// The 16-byte MD5 digest of `source`.
+        ///
+        /// - source: the bytes to digest
+        hash_data(source: ubyte[]) -> ubyte[] static is
+            let shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+                5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+                4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+                6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
+
+            let constants: uint[] = [
+                0xd76aa478u, 0xe8c7b756u, 0x242070dbu, 0xc1bdceeeu, 0xf57c0fafu, 0x4787c62au, 0xa8304613u, 0xfd469501u,
+                0x698098d8u, 0x8b44f7afu, 0xffff5bb1u, 0x895cd7beu, 0x6b901122u, 0xfd987193u, 0xa679438eu, 0x49b40821u,
+                0xf61e2562u, 0xc040b340u, 0x265e5a51u, 0xe9b6c7aau, 0xd62f105du, 0x02441453u, 0xd8a1e681u, 0xe7d3fbc8u,
+                0x21e1cde6u, 0xc33707d6u, 0xf4d50d87u, 0x455a14edu, 0xa9e3e905u, 0xfcefa3f8u, 0x676f02d9u, 0x8d2a4c8au,
+                0xfffa3942u, 0x8771f681u, 0x6d9d6122u, 0xfde5380cu, 0xa4beea44u, 0x4bdecfa9u, 0xf6bb4b60u, 0xbebfbc70u,
+                0x289b7ec6u, 0xeaa127fau, 0xd4ef3085u, 0x04881d05u, 0xd9d4d039u, 0xe6db99e5u, 0x1fa27cf8u, 0xc4ac5665u,
+                0xf4292244u, 0x432aff97u, 0xab9423a7u, 0xfc93a039u, 0x655b59c3u, 0x8f0ccc92u, 0xffeff47du, 0x85845dd1u,
+                0x6fa87e4fu, 0xfe2ce6e0u, 0xa3014314u, 0x4e0811a1u, 0xf7537e82u, 0xbd3af235u, 0x2ad7d2bbu, 0xeb86d391u]
+
+            let message = Ghul.Internal.HASH_PADDING.pad(source, false)
+            let a0 mut = 0x67452301u
+            let b0 mut = 0xefcdab89u
+            let c0 mut = 0x98badcfeu
+            let d0 mut = 0x10325476u
+            let block mut = 0
+
+            while block < message.count do
+                let words = Ghul.Internal.HASH_PADDING.words(message, block, false)
+                let a mut = a0
+                let b mut = b0
+                let c mut = c0
+                let d mut = d0
+                let i mut = 0
+
+                while i < 64 do
+                    let f mut = 0u
+                    let g mut = 0
+
+                    if i < 16 then
+                        f = (b & c) | (\b & d)
+                        g = i
+                    elif i < 32 then
+                        f = (d & b) | (\d & c)
+                        g = (5 * i + 1) % 16
+                    elif i < 48 then
+                        f = b ^ c ^ d
+                        g = (3 * i + 5) % 16
+                    else
+                        f = c ^ (b | \d)
+                        g = (7 * i) % 16
+                    fi
+
+                    let rotated = BitOperations.rotate_left(a + f + constants[i] + words[g], shifts[i])
+
+                    a = d
+                    d = c
+                    c = b
+                    b = b + rotated
+                    i = i + 1
+                od
+
+                a0 = a0 + a
+                b0 = b0 + b
+                c0 = c0 + c
+                d0 = d0 + d
+                block = block + 64
+            od
+
+            return Ghul.Internal.HASH_PADDING.digest([a0, b0, c0, d0], false)
+        si
+    si
+
+    /// The SHA-1 digest, as .NET's `System.Security.Cryptography.SHA1` gives
+    /// it. SHA-1 is broken as a cryptographic hash and is here for checksums.
+    class SHA1 is
+        /// The 20-byte SHA-1 digest of `source`.
+        ///
+        /// - source: the bytes to digest
+        hash_data(source: ubyte[]) -> ubyte[] static is
+            let message = Ghul.Internal.HASH_PADDING.pad(source, true)
+            let h0 mut = 0x67452301u
+            let h1 mut = 0xEFCDAB89u
+            let h2 mut = 0x98BADCFEu
+            let h3 mut = 0x10325476u
+            let h4 mut = 0xC3D2E1F0u
+            let w = Ghul._array_new[uint](80)
+            let block mut = 0
+
+            while block < message.count do
+                let words = Ghul.Internal.HASH_PADDING.words(message, block, true)
+                let t mut = 0
+
+                while t < 80 do
+                    Ghul._array_set(w, t,
+                        if t < 16 then words[t]
+                        else BitOperations.rotate_left(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1)
+                        fi)
+                    t = t + 1
+                od
+
+                let a mut = h0
+                let b mut = h1
+                let c mut = h2
+                let d mut = h3
+                let e mut = h4
+                let i mut = 0
+
+                while i < 80 do
+                    let f =
+                        if i < 20 then (b & c) | (\b & d)
+                        elif i < 40 then b ^ c ^ d
+                        elif i < 60 then (b & c) | (b & d) | (c & d)
+                        else b ^ c ^ d
+                        fi
+                    let k =
+                        if i < 20 then 0x5A827999u
+                        elif i < 40 then 0x6ED9EBA1u
+                        elif i < 60 then 0x8F1BBCDCu
+                        else 0xCA62C1D6u
+                        fi
+                    let temp = BitOperations.rotate_left(a, 5) + f + e + k + w[i]
+
+                    e = d
+                    d = c
+                    c = BitOperations.rotate_left(b, 30)
+                    b = a
+                    a = temp
+                    i = i + 1
+                od
+
+                h0 = h0 + a
+                h1 = h1 + b
+                h2 = h2 + c
+                h3 = h3 + d
+                h4 = h4 + e
+                block = block + 64
+            od
+
+            return Ghul.Internal.HASH_PADDING.digest([h0, h1, h2, h3, h4], true)
+        si
+    si
+
+    /// The SHA-256 digest, as .NET's `System.Security.Cryptography.SHA256`
+    /// gives it.
+    class SHA256 is
+        /// The 32-byte SHA-256 digest of `source`.
+        ///
+        /// - source: the bytes to digest
+        hash_data(source: ubyte[]) -> ubyte[] static is
+            let k: uint[] = [
+                0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
+                0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
+                0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
+                0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
+                0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
+                0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
+                0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+                0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u]
+
+            let h = Ghul._array_new[uint](8)
+
+            for (i, value) in [0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au, 0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u] |> Ghul.Pipes.index() do
+                Ghul._array_set(h, i, value)
+            od
+
+            let message = Ghul.Internal.HASH_PADDING.pad(source, true)
+            let w = Ghul._array_new[uint](64)
+            let block mut = 0
+
+            while block < message.count do
+                let words = Ghul.Internal.HASH_PADDING.words(message, block, true)
+                let t mut = 0
+
+                while t < 64 do
+                    if t < 16 then
+                        Ghul._array_set(w, t, words[t])
+                    else
+                        let s0 = BitOperations.rotate_right(w[t - 15], 7) ^ BitOperations.rotate_right(w[t - 15], 18) ^ (w[t - 15] >> 3)
+                        let s1 = BitOperations.rotate_right(w[t - 2], 17) ^ BitOperations.rotate_right(w[t - 2], 19) ^ (w[t - 2] >> 10)
+
+                        Ghul._array_set(w, t, w[t - 16] + s0 + w[t - 7] + s1)
+                    fi
+
+                    t = t + 1
+                od
+
+                let a mut = h[0]
+                let b mut = h[1]
+                let c mut = h[2]
+                let d mut = h[3]
+                let e mut = h[4]
+                let f mut = h[5]
+                let g mut = h[6]
+                let hh mut = h[7]
+                let i mut = 0
+
+                while i < 64 do
+                    let big1 = BitOperations.rotate_right(e, 6) ^ BitOperations.rotate_right(e, 11) ^ BitOperations.rotate_right(e, 25)
+                    let choose = (e & f) ^ (\e & g)
+                    let temp1 = hh + big1 + choose + k[i] + w[i]
+                    let big0 = BitOperations.rotate_right(a, 2) ^ BitOperations.rotate_right(a, 13) ^ BitOperations.rotate_right(a, 22)
+                    let majority = (a & b) ^ (a & c) ^ (b & c)
+                    let temp2 = big0 + majority
+
+                    hh = g
+                    g = f
+                    f = e
+                    e = d + temp1
+                    d = c
+                    c = b
+                    b = a
+                    a = temp1 + temp2
+                    i = i + 1
+                od
+
+                Ghul._array_set(h, 0, h[0] + a)
+                Ghul._array_set(h, 1, h[1] + b)
+                Ghul._array_set(h, 2, h[2] + c)
+                Ghul._array_set(h, 3, h[3] + d)
+                Ghul._array_set(h, 4, h[4] + e)
+                Ghul._array_set(h, 5, h[5] + f)
+                Ghul._array_set(h, 6, h[6] + g)
+                Ghul._array_set(h, 7, h[7] + hh)
+                block = block + 64
+            od
+
+            return Ghul.Internal.HASH_PADDING.digest(h, true)
+        si
+    si
+
+si
+
+namespace Ghul.Internal is
+    // The message padding and word order the three digests share. MD5 reads
+    // and writes its words low byte first, SHA-1 and SHA-256 high byte first.
+    class HASH_PADDING is
+        pad(source: ubyte[], big_endian: bool) -> ubyte[] static is
+            let length = source.count
+            let padded = ((length + 8) / 64 + 1) * 64
+            let result = Ghul._array_new[ubyte](padded)
+            let i mut = 0
+
+            while i < length do
+                Ghul._array_set(result, i, source[i])
+                i = i + 1
+            od
+
+            Ghul._array_set(result, length, 0x80ub)
+
+            let bits = cast ulong(length) * 8ul
+            let b mut = 0
+
+            while b < 8 do
+                let at = if big_endian then padded - 1 - b else padded - 8 + b fi
+
+                Ghul._array_set(result, at, ubyte(cast int((bits >> (8 * b)) & 0xFFul)))
+                b = b + 1
+            od
+
+            return result
+        si
+
+        words(message: ubyte[], offset: int, big_endian: bool) -> uint[] static is
+            let result = Ghul._array_new[uint](16)
+            let i mut = 0
+
+            while i < 16 do
+                let at = offset + 4 * i
+                let b0 = uint(message[at])
+                let b1 = uint(message[at + 1])
+                let b2 = uint(message[at + 2])
+                let b3 = uint(message[at + 3])
+
+                Ghul._array_set(result, i,
+                    if big_endian then (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+                    else (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+                    fi)
+                i = i + 1
+            od
+
+            return result
+        si
+
+        digest(words: uint[], big_endian: bool) -> ubyte[] static is
+            let result = Ghul._array_new[ubyte](words.count * 4)
+            let i mut = 0
+
+            while i < words.count do
+                let b mut = 0
+
+                while b < 4 do
+                    let shift = if big_endian then 24 - 8 * b else 8 * b fi
+
+                    Ghul._array_set(result, 4 * i + b, ubyte(cast int((words[i] >> shift) & 0xFFu)))
+                    b = b + 1
+                od
+
+                i = i + 1
+            od
+
+            return result
+        si
+    si
+si

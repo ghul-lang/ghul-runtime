@@ -1,0 +1,238 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System is
+    /// An interval of time, counted in ticks of 100 nanoseconds, as .NET's
+    /// `System.TimeSpan` counts it.
+    struct TimeSpan: IFormattable, Ghul.Comparable[TimeSpan] is
+        /// The interval in ticks of 100 nanoseconds.
+        ticks: long
+
+        /// An interval of `ticks` ticks of 100 nanoseconds.
+        ///
+        /// - ticks: the length of the interval
+        init(ticks: long) is
+            self.ticks = ticks
+        si
+
+        /// The interval of no length.
+        zero: TimeSpan static => TimeSpan(0L)
+
+        /// The number of ticks in a millisecond.
+        ticks_per_millisecond: long static => 10_000L
+
+        /// The number of ticks in a second.
+        ticks_per_second: long static => 10_000_000L
+
+        /// An interval of `milliseconds` milliseconds, to the nearest tick.
+        ///
+        /// - milliseconds: the length of the interval
+        from_milliseconds(milliseconds: double) -> TimeSpan static =>
+            TimeSpan(cast long(Ghul.Math.round(milliseconds * 10_000.0)))
+
+        /// An interval of `seconds` seconds, to the nearest tick.
+        ///
+        /// - seconds: the length of the interval
+        from_seconds(seconds: double) -> TimeSpan static =>
+            TimeSpan(cast long(Ghul.Math.round(seconds * 10_000_000.0)))
+
+        /// The interval in milliseconds, with any fraction.
+        total_milliseconds: double => cast double(ticks) / 10_000.0
+
+        /// The interval in seconds, with any fraction.
+        total_seconds: double => cast double(ticks) / 10_000_000.0
+
+        /// This interval and `other` together.
+        ///
+        /// - other: the interval to add
+        add(other: TimeSpan) -> TimeSpan => TimeSpan(ticks + other.ticks)
+
+        /// This interval less `other`.
+        ///
+        /// - other: the interval to take away
+        subtract(other: TimeSpan) -> TimeSpan => TimeSpan(ticks - other.ticks)
+
+        /// This interval divided by `divisor`, to the nearest tick.
+        ///
+        /// - divisor: what to divide the interval by
+        divide(divisor: double) -> TimeSpan =>
+            TimeSpan(cast long(Ghul.Math.round(cast double(ticks) / divisor)))
+
+        /// How this interval is ordered against `other`: negative when it is
+        /// the shorter, zero when they are equal, positive otherwise.
+        ///
+        /// - other: the interval to compare with
+        <>(other: TimeSpan) -> int pure =>
+            if ticks < other.ticks then -1 elif ticks > other.ticks then 1 else 0 fi
+
+        /// The interval as .NET writes it by default, `[-][d.]hh:mm:ss[.fffffff]`.
+        to_string() -> string is
+            let negative = ticks < 0L
+            let magnitude = if negative then -ticks else ticks fi
+
+            let days = magnitude / 864_000_000_000L
+            let hours = (magnitude / 36_000_000_000L) % 24L
+            let minutes = (magnitude / 600_000_000L) % 60L
+            let seconds = (magnitude / 10_000_000L) % 60L
+            let fraction = magnitude % 10_000_000L
+
+            let sign = if negative then "-" else "" fi
+            let day_part = if days > 0L then "{days}." else "" fi
+            let fraction_part = if fraction > 0L then ".{"{fraction + 10_000_000L}".substring(1)}" else "" fi
+
+            return "{sign}{day_part}{_two(hours)}:{_two(minutes)}:{_two(seconds)}{fraction_part}"
+        si
+
+        _two(value: long) -> string static =>
+            if value < 10L then "0{value}" else "{value}" fi
+    si
+
+    /// A moment in time, counted in ticks of 100 nanoseconds since
+    /// 0001-01-01T00:00:00, as .NET's `System.DateTime` counts it. The
+    /// source-core targets know no time zone, so the time is always UTC.
+    struct DateTime: IFormattable, Ghul.Comparable[DateTime] is
+        /// The moment in ticks of 100 nanoseconds since 0001-01-01T00:00:00.
+        ticks: long
+
+        /// Whether the moment is in UTC, in local time, or neither.
+        kind: DateTimeKind
+
+        /// The moment `ticks` ticks of 100 nanoseconds after 0001-01-01T00:00:00.
+        ///
+        /// - ticks: the moment
+        init(ticks: long) is
+            self.ticks = ticks
+            kind = DateTimeKind.UNSPECIFIED
+        si
+
+        /// The moment `ticks` ticks of 100 nanoseconds after 0001-01-01T00:00:00,
+        /// of the kind `kind`.
+        ///
+        /// - ticks: the moment
+        /// - kind: whether it is in UTC, local time or neither
+        init(ticks: long, kind: DateTimeKind) is
+            self.ticks = ticks
+            self.kind = kind
+        si
+
+        /// The current time. With no time zone to convert to, this is
+        /// `utc_now` marked as local.
+        now: DateTime static => DateTime(utc_now.ticks, DateTimeKind.LOCAL)
+
+        /// The current time, in UTC.
+        utc_now: DateTime static =>
+            DateTime(_unix_epoch_ticks + cast long(_wall_clock_milliseconds() * 10_000.0), DateTimeKind.UTC)
+
+        /// The interval from `other` to this moment.
+        ///
+        /// - other: the earlier moment
+        subtract(other: DateTime) -> TimeSpan => TimeSpan(ticks - other.ticks)
+
+        /// The moment `interval` after this one.
+        ///
+        /// - interval: how far to move
+        add(interval: TimeSpan) -> DateTime => DateTime(ticks + interval.ticks, kind)
+
+        /// How this moment is ordered against `other`: negative when it is
+        /// the earlier, zero when they are the same, positive otherwise.
+        ///
+        /// - other: the moment to compare with
+        <>(other: DateTime) -> int pure =>
+            if ticks < other.ticks then -1 elif ticks > other.ticks then 1 else 0 fi
+
+        // 1970-01-01T00:00:00, in ticks since 0001-01-01T00:00:00.
+        _unix_epoch_ticks: long static => 621_355_968_000_000_000L
+
+        // Milliseconds since 1970-01-01T00:00:00Z, as the host's clock reads.
+        @intrinsic("host.wall_clock_milliseconds")
+        _wall_clock_milliseconds() -> double static
+    si
+si
+
+namespace System.Diagnostics is
+    /// Measures elapsed time from a clock that never goes back, as .NET's
+    /// `System.Diagnostics.Stopwatch` does.
+    class Stopwatch is
+        // The time accumulated while running, before the current run.
+        _accumulated: double
+
+        // When the current run started, by the host's monotonic clock.
+        _started_at: double
+
+        _is_running: bool
+
+        /// A stopwatch that is not running and has measured nothing.
+        init() is
+        si
+
+        /// A stopwatch that has just started.
+        start_new() -> Stopwatch static is
+            let result = Stopwatch()
+
+            result.start()
+
+            return result
+        si
+
+        /// Whether the stopwatch is running.
+        is_running: bool => _is_running
+
+        /// Starts, or carries on, measuring.
+        start() is
+            if !_is_running then
+                _started_at = _monotonic_milliseconds()
+                _is_running = true
+            fi
+        si
+
+        /// Stops measuring, keeping what has been measured.
+        stop() is
+            if _is_running then
+                _accumulated = _accumulated + (_monotonic_milliseconds() - _started_at)
+                _is_running = false
+            fi
+        si
+
+        /// Stops, and forgets what has been measured.
+        reset() is
+            _accumulated = 0.0
+            _is_running = false
+        si
+
+        /// Forgets what has been measured, and starts again.
+        restart() is
+            reset()
+            start()
+        si
+
+        /// The time measured, in milliseconds, with any fraction.
+        _elapsed: double =>
+            if _is_running then _accumulated + (_monotonic_milliseconds() - _started_at) else _accumulated fi
+
+        /// The time measured.
+        elapsed: System.TimeSpan => System.TimeSpan.from_milliseconds(_elapsed)
+
+        /// The time measured, in whole milliseconds.
+        elapsed_milliseconds: long => cast long(_elapsed)
+
+        /// The time measured, in ticks of the stopwatch's timer: `frequency`
+        /// of them a second.
+        elapsed_ticks: long => cast long(_elapsed * 1_000_000.0)
+
+        /// The number of ticks a second the stopwatch's timer counts: one a
+        /// nanosecond, as on .NET under Linux.
+        frequency: long static => 1_000_000_000L
+
+        /// Whether the timer counts finer than milliseconds.
+        is_high_resolution: bool static => true
+
+        /// The timer's current count, in ticks of `frequency` a second, from
+        /// an arbitrary start that does not change while the program runs.
+        get_timestamp() -> long static => cast long(_monotonic_milliseconds() * 1_000_000.0)
+
+        // Milliseconds since the program started, which only ever increase.
+        @intrinsic("host.monotonic_milliseconds")
+        _monotonic_milliseconds() -> double static
+    si
+si

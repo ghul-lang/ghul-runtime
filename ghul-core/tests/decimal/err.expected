@@ -1,0 +1,4 @@
+decimal.ghul: 5,1..5,2: error: code generation for a struct method call is not supported on the wasm target
+decimal.ghul: 5,1..5,2: error: code generation for an argument of type decimal is not supported on the wasm target
+decimal.ghul: 5,1..5,2: error: code generation for decimal arithmetic is not supported on the wasm target
+decimal.ghul: 8,1..8,6: error: code generation for a decimal literal is not supported on the wasm target

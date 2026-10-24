@@ -1,0 +1,471 @@
+namespace Collections is
+    /// Thrown on reading a key a map does not have.
+    class KeyNotFoundException: Ghul.Exception is
+        /// - message: what was not found
+        init(message: string) is
+            super.init(message);
+        si
+    si
+
+    /// A map from keys to values, held in a hash table over the keys' `=~`
+    /// and `get_hash_code`. Iterates its entries in the order they were
+    /// added while none has been removed.
+    class MAP[K, V]: Map[K, V], MutableMap[K, V] is
+        // Each bucket holds one more than the index of the first entry in
+        // its chain, or zero when empty; `_next` links a chain the same way.
+        // A removed entry's hash is -1, and it heads the free list. A map
+        // that has never held an entry has no table at all.
+        _buckets: int[]?;
+        _hashes: int[]?;
+        _next: int[]?;
+        _keys: K[]?;
+        _values: V[]?;
+        _used: int;
+        _count: int;
+        _free: int;
+
+        // Compares and hashes the keys in place of their own `=~` and
+        // `get_hash_code`, where the map was given one.
+        _comparer: EqualityComparer[K]?;
+
+        /// An empty map. It allocates nothing until its first entry is added.
+        init() is
+        si
+
+        /// An empty map with room for `capacity` entries before it grows.
+        ///
+        /// - capacity: the number of entries to make room for
+        init(capacity: int) is
+            if capacity < 0 then
+                throw Ghul.ArgumentOutOfRangeException("capacity");
+            fi
+
+            if capacity > 0 then
+                _allocate(if capacity < 4 then 4 else capacity fi);
+            fi
+        si
+
+        /// An empty map whose keys are compared and hashed by `comparer`.
+        ///
+        /// - comparer: what says whether two keys are the same key
+        init(comparer: EqualityComparer[K]) is
+            _comparer = comparer;
+        si
+
+        /// A map holding the entries of `source`; throws if a key appears
+        /// twice.
+        ///
+        /// - source: the entries to copy
+        init(source: Iterable[KEY_VALUE_PAIR[K, V]]) is
+            _add_all(source);
+        si
+
+        /// The number of entries.
+        count: int pure => _count;
+
+        /// The value `key` maps to; throws if the map has no such key.
+        /// Assigning adds the key or replaces its value.
+        [key: K]: V pure => _get(key),
+            = value is
+                _store(key, value, true);
+            si
+
+        /// Adds `key` mapping to `value`; throws if the map already has
+        /// `key`.
+        ///
+        /// - key: the key to add
+        /// - value: the value it maps to
+        add(key: K, value: V) is
+            if !_store(key, value, false) then
+                throw Ghul.ArgumentException("an entry with the same key is already in the map");
+            fi
+        si
+
+        /// Adds `pair`'s key mapping to its value; throws if the map already
+        /// has the key.
+        ///
+        /// - pair: the entry to add
+        add(pair: KEY_VALUE_PAIR[K, V]) is
+            add(pair.key, pair.value);
+        si
+
+        /// Adds `key` mapping to `value` unless the map already has `key`,
+        /// answering whether it was added.
+        ///
+        /// - key: the key to add
+        /// - value: the value it maps to
+        try_add(key: K, value: V) -> bool => _store(key, value, false);
+
+        /// Removes `key`, answering whether the map had it.
+        ///
+        /// - key: the key to remove
+        remove(key: K) -> bool is
+            let buckets = _buckets;
+            let hashes = _hashes;
+            let next = _next;
+            let keys = _keys;
+            let values = _values;
+
+            if !buckets? \/ !hashes? \/ !next? \/ !keys? \/ !values? then
+                return false;
+            fi
+
+            let hash = _hash(key);
+            let bucket = hash % buckets.count;
+            let previous mut = -1;
+            let entry mut = buckets[bucket] - 1;
+
+            while entry >= 0 do
+                if hashes[entry] == hash /\ _same(keys[entry], key) then
+                    if previous < 0 then
+                        Ghul._array_set(buckets, bucket, next[entry]);
+                    else
+                        Ghul._array_set(next, previous, next[entry]);
+                    fi
+
+                    Ghul._array_set(hashes, entry, -1);
+                    Ghul._array_set(keys, entry, _[K]);
+                    Ghul._array_set(values, entry, _[V]);
+                    Ghul._array_set(next, entry, _free);
+
+                    _free = entry + 1;
+                    _count = _count - 1;
+
+                    return true;
+                fi
+
+                previous = entry;
+                entry = next[entry] - 1;
+            od
+
+            return false;
+        si
+
+        /// Whether the map has `key`.
+        ///
+        /// - key: the key to look for
+        contains_key(key: K) -> bool pure => _find(key) >= 0;
+
+        /// Writes the value `key` maps to into `value`, answering whether
+        /// the map has `key`; `value` is set to the default of `V` when it
+        /// does not.
+        ///
+        /// - key: the key to look for
+        /// - value: where the value goes
+        try_get_value(key: K, value: V ref) -> bool pure is
+            let entry = _find(key);
+
+            if entry < 0 then
+                value! = _[V];
+
+                return false;
+            fi
+
+            value! = _values![entry];
+
+            return true;
+        si
+
+        /// Whether any key maps to `value`.
+        ///
+        /// - value: the value to look for
+        contains_value(value: V) -> bool is
+            let hashes = _hashes;
+            let values = _values;
+
+            if !hashes? \/ !values? then
+                return false;
+            fi
+
+            let i mut = 0;
+
+            while i < _used do
+                if hashes[i] >= 0 /\ values[i] =~ value then
+                    return true;
+                fi
+
+                i = i + 1;
+            od
+
+            return false;
+        si
+
+        /// Removes every entry.
+        clear() is
+            _buckets = null;
+            _hashes = null;
+            _next = null;
+            _keys = null;
+            _values = null;
+            _used = 0;
+            _count = 0;
+            _free = 0;
+        si
+
+        /// The keys, in the order the entries are iterated. This is a view of
+        /// the map, not a copy: each iteration reads the map as it is when the
+        /// iteration starts.
+        keys: Iterable[K] => MAP_VIEW[K](() -> Iterator[K] => MAP_TABLE_ITERATOR[K](_hashes, _keys, _used));
+
+        /// The values, in the order the entries are iterated. This is a view of
+        /// the map, not a copy: each iteration reads the map as it is when the
+        /// iteration starts.
+        values: Iterable[V] => MAP_VIEW[V](() -> Iterator[V] => MAP_TABLE_ITERATOR[V](_hashes, _values, _used));
+
+        /// An iterator over the entries.
+        iterator: Iterator[KEY_VALUE_PAIR[K, V]] => MAP_ITERATOR[K, V](_hashes, _keys, _values, _used);
+
+        _allocate(size: int) is
+            _buckets = Ghul._array_new[int](size);
+            _hashes = Ghul._array_new[int](size);
+            _next = Ghul._array_new[int](size);
+            _keys = Ghul._array_new[K](size);
+            _values = Ghul._array_new[V](size);
+            _used = 0;
+            _count = 0;
+            _free = 0;
+        si
+
+        _get(key: K) -> V is
+            let entry = _find(key);
+
+            if entry < 0 then
+                throw KeyNotFoundException("the key is not in the map");
+            fi
+
+            return _values![entry];
+        si
+
+        _add_all(source: Iterable[KEY_VALUE_PAIR[K, V]]) is
+            for pair in source do
+                add(pair.key, pair.value);
+            od
+        si
+
+        // A null key hashes to zero, so a set can hold null in insertion order
+        // as .NET's hash set does.
+        _hash(key: K) -> int =>
+            if let comparer = _comparer then
+                comparer.get_hash_code(key) & 0x7FFF_FFFF
+            elif _is_null(key) then
+                0
+            else
+                key.get_hash_code() & 0x7FFF_FFFF
+            fi;
+
+        _is_null(key: K) -> bool pure => !(cast object?(key))?;
+
+        _same(a: K, b: K) -> bool =>
+            if let comparer = _comparer then comparer.equals(a, b) else a =~ b fi;
+
+        _find(key: K) -> int pure is
+            let buckets = _buckets;
+            let hashes = _hashes;
+            let next = _next;
+            let keys = _keys;
+
+            if !buckets? \/ !hashes? \/ !next? \/ !keys? then
+                return -1;
+            fi
+
+            let hash = _hash(key);
+            let entry mut = buckets[hash % buckets.count] - 1;
+
+            while entry >= 0 do
+                if hashes[entry] == hash /\ _same(keys[entry], key) then
+                    return entry;
+                fi
+
+                entry = next[entry] - 1;
+            od
+
+            return -1;
+        si
+
+        // Stores `value` for `key`, replacing an existing value only when
+        // `replace` says so, and answers whether it stored anything.
+        _store(key: K, value: V, replace: bool) -> bool is
+            let existing = _find(key);
+
+            if existing >= 0 then
+                if replace then
+                    Ghul._array_set(_values!, existing, value);
+                fi
+
+                return replace;
+            fi
+
+            let current_keys = _keys;
+
+            if _free == 0 /\ (!current_keys? \/ _used == current_keys.count) then
+                _grow();
+            fi
+
+            let buckets = _buckets!;
+            let hashes = _hashes!;
+            let next = _next!;
+            let keys = _keys!;
+            let values = _values!;
+
+            let entry mut = 0;
+
+            if _free > 0 then
+                entry = _free - 1;
+                _free = next[entry];
+            else
+                entry = _used;
+                _used = _used + 1;
+            fi
+
+            let hash = _hash(key);
+            let bucket = hash % buckets.count;
+
+            Ghul._array_set(hashes, entry, hash);
+            Ghul._array_set(keys, entry, key);
+            Ghul._array_set(values, entry, value);
+            Ghul._array_set(next, entry, buckets[bucket]);
+            Ghul._array_set(buckets, bucket, entry + 1);
+
+            _count = _count + 1;
+
+            return true;
+        si
+
+        // Doubles the table, or makes the first one. Nothing is free when it
+        // grows, since a free entry is reused before a new one is taken, so
+        // every entry below `_used` is live and keeps its index.
+        _grow() is
+            let old_hashes = _hashes;
+            let old_keys = _keys;
+            let old_values = _values;
+
+            let capacity = if old_keys? then old_keys.count else 0 fi;
+            let size = Ghul._grown_capacity(capacity, capacity + 1);
+
+            let buckets = Ghul._array_new[int](size);
+            let hashes = Ghul._array_new[int](size);
+            let next = Ghul._array_new[int](size);
+            let keys = Ghul._array_new[K](size);
+            let values = Ghul._array_new[V](size);
+
+            if old_hashes? /\ old_keys? /\ old_values? then
+                let i mut = 0;
+
+                while i < _used do
+                    let bucket = old_hashes[i] % size;
+
+                    Ghul._array_set(hashes, i, old_hashes[i]);
+                    Ghul._array_set(keys, i, old_keys[i]);
+                    Ghul._array_set(values, i, old_values[i]);
+                    Ghul._array_set(next, i, buckets[bucket]);
+                    Ghul._array_set(buckets, bucket, i + 1);
+
+                    i = i + 1;
+                od
+            fi
+
+            _buckets = buckets;
+            _hashes = hashes;
+            _next = next;
+            _keys = keys;
+            _values = values;
+        si
+    si
+
+    /// Iterates the entries a map held when the iterator was made.
+    class MAP_ITERATOR[K, V]: Iterator[KEY_VALUE_PAIR[K, V]] is
+        _hashes: int[]?;
+        _keys: K[]?;
+        _values: V[]?;
+        _used: int;
+        _index: int;
+
+        /// An iterator positioned before the first entry of the map's
+        /// table.
+        ///
+        /// - hashes: each entry's hash, or -1 where the entry was removed; absent
+        ///   where the map has no table, with `used` zero
+        /// - keys: each entry's key
+        /// - values: each entry's value
+        /// - used: the number of entries in use or removed
+        init(hashes: int[]?, keys: K[]?, values: V[]?, used: int) is
+            _hashes = hashes;
+            _keys = keys;
+            _values = values;
+            _used = used;
+            _index = -1;
+        si
+
+        /// Moves to the next entry, answering whether there is one.
+        move_next() -> bool is
+            _index = _index + 1;
+
+            while _index < _used /\ _hashes![_index] < 0 do
+                _index = _index + 1;
+            od
+
+            return _index < _used;
+        si
+
+        /// The entry the iterator is positioned at.
+        current: KEY_VALUE_PAIR[K, V] => KEY_VALUE_PAIR[K, V](_keys![_index], _values![_index]);
+
+        /// Releases nothing: a map holds no resource.
+        dispose() is si
+    si
+
+    /// The keys or the values of a map, read from the map each time they are
+    /// iterated rather than copied out of it.
+    class MAP_VIEW[T]: Iterable[T] is
+        _make: () -> Iterator[T];
+
+        /// A view whose iterations come from `make`.
+        ///
+        /// - make: starts an iteration over the map as it then stands
+        init(make: () -> Iterator[T]) is
+            _make = make;
+        si
+
+        /// An iterator over the map as it stands now.
+        iterator: Iterator[T] => _make();
+    si
+
+    /// Iterates one column of a map's table, the keys or the values, skipping
+    /// the entries that were removed.
+    class MAP_TABLE_ITERATOR[T]: Iterator[T] is
+        _hashes: int[]?;
+        _items: T[]?;
+        _used: int;
+        _index: int;
+
+        /// An iterator positioned before the first entry of the table.
+        ///
+        /// - hashes: each entry's hash, or -1 where the entry was removed; absent
+        ///   where the map has no table, with `used` zero
+        /// - items: the column to read, the keys or the values
+        /// - used: the number of entries in use or removed
+        init(hashes: int[]?, items: T[]?, used: int) is
+            _hashes = hashes;
+            _items = items;
+            _used = used;
+            _index = -1;
+        si
+
+        /// Moves to the next entry, answering whether there is one.
+        move_next() -> bool is
+            _index = _index + 1;
+
+            while _index < _used /\ _hashes![_index] < 0 do
+                _index = _index + 1;
+            od
+
+            return _index < _used;
+        si
+
+        /// The key or value of the entry the iterator is positioned at.
+        current: T => _items![_index];
+
+        /// Releases nothing: a map holds no resource.
+        dispose() is si
+    si
+si

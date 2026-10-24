@@ -1,0 +1,17 @@
+// bigint's operators and members on the wasm target, where each is a host
+// operation on the host's BigInt; the expected text is what .NET prints.
+let f mut = 1n
+
+for i in 1::30 do
+    f = f * bigint(i)
+od
+
+IO.Std.write_line("{f}")
+IO.Std.write_line("{f / 7n} {f % 1000007n} {-f / 3n} {-17n % 5n}")
+IO.Std.write_line("{bigint.pow(2n, 100)} {bigint.mod_pow(3n, 200n, 1000000007n)} {bigint.greatest_common_divisor(-48n, 180n)}")
+IO.Std.write_line("{bigint.parse("  -123456789012345678901234567890 ")} {123456789012345678901234567890n}")
+IO.Std.write_line("{2n < 3n} {5n =~ 5n} {(1n << 70) >> 3} {-1n >> 5} {255n & 15n} {(5n).is_even} {(64n).is_power_of_two}")
+let xs = [5n, 1n, 4n]
+IO.Std.write_line("{bigint.abs(-42n)} {(-42n).sign} {(255n).get_bit_length()} {(-256n).get_bit_length()} {bigint.max(3n, 9n)} {bigint.min(3n, 9n)}")
+IO.Std.write_line("{bigint.compare(10n, 3n)} {(0n).is_zero} {(1n).is_one} {bigint.zero} {bigint.one} {bigint.minus_one}")
+IO.Std.write_line("{(6n ^ 3n)} {(6n | 3n)} {\5n}")

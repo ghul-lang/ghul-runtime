@@ -1,0 +1,35 @@
+// The ASCII, UTF-16 and UTF-32 encodings, and the byte counts and ranged
+// decoding every encoding has, answering as .NET does.
+use IO.Std.write_line
+use Ghul.Pipes
+use System.Text.Encoding
+
+bytes(values: ubyte[]) -> string => values |> map(b => "{b}") |> join(" ")
+
+codes(text: string) -> string => text |> map(c => "{int(c)}") |> join(" ")
+
+entry() is
+    let text = "Aé€😀"
+    let lone = "x\uD800y"
+
+    write_line(bytes(Encoding.ascii.get_bytes(text)))
+    write_line(bytes(Encoding.ascii.get_bytes(lone)))
+    write_line(codes(Encoding.ascii.get_string([72ub, 105ub, 200ub, 33ub])))
+
+    write_line(bytes(Encoding.unicode.get_bytes(text)))
+    write_line(codes(Encoding.unicode.get_string(Encoding.unicode.get_bytes(text))))
+    write_line(codes(Encoding.unicode.get_string([65ub, 0ub, 66ub])))
+    write_line(codes(Encoding.unicode.get_string([0xFFub, 0xFEub, 65ub, 0ub])))
+
+    write_line(bytes(Encoding.utf32.get_bytes(text)))
+    write_line(bytes(Encoding.utf32.get_bytes(lone)))
+    write_line(codes(Encoding.utf32.get_string(Encoding.utf32.get_bytes(text))))
+    write_line(codes(Encoding.utf32.get_string([0ub, 0ub, 0x11ub, 0ub, 65ub, 0ub, 0ub, 0ub, 66ub])))
+
+    write_line("{Encoding.utf8.get_byte_count(text)} {Encoding.unicode.get_byte_count(text)} {Encoding.utf32.get_byte_count(text)} {Encoding.ascii.get_byte_count(text)}")
+
+    let record: ubyte[] = [65ub, 66ub, 67ub, 68ub, 69ub, 70ub]
+
+    write_line(Encoding.ascii.get_string(record, 2, 3))
+    write_line(Encoding.utf8.get_string(record, 0, 2))
+si
