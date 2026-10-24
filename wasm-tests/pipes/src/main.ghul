@@ -28,7 +28,7 @@ entry() is
         write_line("{ordering[0]}{ordering[1]}{ordering[2]}")
     od
 
-    let b = buffered(1, 2, [3, 4].iterator)
+    let b = buffered(1, 2, [3, 4], 0)
     write_line("{b |> join(", ")}")
     write_line("{b |> join(", ")}")
 si
