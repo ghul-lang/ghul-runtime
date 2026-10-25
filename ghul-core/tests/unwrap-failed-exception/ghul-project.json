@@ -3,7 +3,6 @@
     "targets": ["wasm"],
     "sources": ["*.ghul"],
     "dependencies": {
-        "ghul-core": { "path": "../.." },
-        "ghul-runtime": { "path": "../../../ghul-runtime" }
+        "ghul-runtime": { "path": "../../.." }
     }
 }

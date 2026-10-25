@@ -2,7 +2,6 @@
     "name": "pipe-functions",
     "targets": ["wasm"],
     "dependencies": {
-        "ghul-core": { "path": "../../ghul-core" },
-        "ghul-runtime": { "path": "../../ghul-runtime" }
+        "ghul-runtime": { "path": "../.." }
     }
 }
