@@ -42,7 +42,11 @@ itself, built on .NET as the `ghul.runtime` package by `ghul-runtime.ghulproj`.
 targets the types .NET supplies on the other; it is not compiled on .NET, and
 was brought here from [ghul-core](https://github.com/ghul-lang/ghul-core), which
 this repository supersedes. Each tree carries its own `ghul-project.json`, so a
-ghul-cli project can depend on either by path.
+ghul-cli project can depend on either by path, and the manifest at the
+repository's root covers both trees' sources: the single `ghul-runtime`
+library a version or tag dependency resolves carries the whole compilation
+unit. The .NET package is unaffected - `ghul-runtime.ghulproj` globs only the
+runtime tree's sources.
 
 ## The WebAssembly target
 
