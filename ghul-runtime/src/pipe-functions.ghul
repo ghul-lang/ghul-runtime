@@ -84,7 +84,7 @@ namespace Ghul.Pipes is
     /// `source`'s elements as runs of adjacent equal ones, each a read-only list, comparing
     /// with `=~`. A new run starts wherever an element differs from the one before it.
     group[T](source: Iterable[T]) -> Iterable[List[T]] pure =>
-        GROUP_PIPE[T](source, (previous: T, next: T) => previous =~ next)
+        GROUP_PIPE[T](source)
 
     /// `source`'s elements as runs, each a read-only list. A new run starts wherever
     /// `joins` rejects an element and the one before it.

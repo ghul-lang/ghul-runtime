@@ -21,6 +21,10 @@ namespace Ghul.Pipes is
         // it has said it is done.
         _done: bool
 
+        init(source: Iterable[T]) is
+            self.init(source, (previous: T, next: T) => previous =~ next)
+        si
+
         init(source: Iterable[T], joins: (T, T) -> bool) is
             super.init()
 
