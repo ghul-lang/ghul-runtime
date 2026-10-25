@@ -1,0 +1,12 @@
+// A program reads and writes its environment as it does on .NET: a variable
+// the host set, one it did not, and one the program sets and then removes.
+entry(env: Ghul.Environment) is
+    IO.Std.write_line(if env.contains_key("PATH") then "PATH is set" else "PATH is not set" fi)
+    IO.Std.write_line(env["GHUL_TEST_UNSET"] ?? "absent")
+
+    env["GHUL_TEST_WRITTEN"] = "written"
+    IO.Std.write_line("{env.contains_key("GHUL_TEST_WRITTEN")} {env["GHUL_TEST_WRITTEN"] ?? "absent"}")
+
+    env["GHUL_TEST_WRITTEN"] = null
+    IO.Std.write_line(env["GHUL_TEST_WRITTEN"] ?? "absent")
+si

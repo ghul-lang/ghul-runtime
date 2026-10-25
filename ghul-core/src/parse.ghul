@@ -1,0 +1,550 @@
+namespace Ghul is
+    // Parsing integers and doubles from text, as .NET parses them under the
+    // invariant culture with the default number styles: white space around
+    // the number, an optional leading sign, digits, and for a double a
+    // decimal point and an exponent. Group separators, currency, hex and
+    // the infinity and NaN names are not accepted.
+
+    partial int is
+        /// The `int` that `text` holds; throws where it holds none, or one
+        /// outside `int`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> int static is
+            let (status, value) = _parse_integer(text, -2147483648L, 2147483647L)
+
+            _throw_unless_parsed(status)
+
+            return cast int(value)
+        si
+
+        /// Whether `text` holds an `int`, writing it to `result` where it does
+        /// and zero where it does not.
+        ///
+        /// - text: the text to parse
+        /// - result: where the value is written
+        try_parse(text: string?, result: int ref) -> bool static is
+            if text? then
+                let (status, value) = _parse_integer(text, -2147483648L, 2147483647L)
+
+                if status == 0 then
+                    result! = cast int(value)
+                    return true
+                fi
+            fi
+
+            result! = 0
+            return false
+        si
+    si
+
+    partial uint is
+        /// The `uint` that `text` holds; throws where it holds none, or one
+        /// outside `uint`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> uint static is
+            let (status, value) = _parse_integer(text, 0L, 4294967295L)
+
+            _throw_unless_parsed(status)
+
+            return cast uint(value)
+        si
+
+        /// Whether `text` holds a `uint`, writing it to `result` where it does
+        /// and zero where it does not.
+        ///
+        /// - text: the text to parse
+        /// - result: where the value is written
+        try_parse(text: string?, result: uint ref) -> bool static is
+            if text? then
+                let (status, value) = _parse_integer(text, 0L, 4294967295L)
+
+                if status == 0 then
+                    result! = cast uint(value)
+                    return true
+                fi
+            fi
+
+            result! = 0u
+            return false
+        si
+    si
+
+    partial ulong is
+        /// The `ulong` that `text` holds; throws where it holds none, or one
+        /// outside `ulong`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> ulong static is
+            let (status, value) = _parse_unsigned(text)
+
+            _throw_unless_parsed(status)
+
+            return value
+        si
+
+        /// Whether `text` holds a `ulong`, writing it to `result` where it does
+        /// and zero where it does not.
+        ///
+        /// - text: the text to parse
+        /// - result: where the value is written
+        try_parse(text: string?, result: ulong ref) -> bool static is
+            if text? then
+                let (status, value) = _parse_unsigned(text)
+
+                if status == 0 then
+                    result! = value
+                    return true
+                fi
+            fi
+
+            result! = 0UL
+            return false
+        si
+    si
+
+    partial long is
+        /// The `long` that `text` holds; throws where it holds none, or one
+        /// outside `long`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> long static is
+            let (status, value) = _parse_integer(text, -9223372036854775807L - 1L, 9223372036854775807L)
+
+            _throw_unless_parsed(status)
+
+            return value
+        si
+
+        /// Whether `text` holds a `long`, writing it to `result` where it does
+        /// and zero where it does not.
+        ///
+        /// - text: the text to parse
+        /// - result: where the value is written
+        try_parse(text: string?, result: long ref) -> bool static is
+            if text? then
+                let (status, value) = _parse_integer(text, -9223372036854775807L - 1L, 9223372036854775807L)
+
+                if status == 0 then
+                    result! = value
+                    return true
+                fi
+            fi
+
+            result! = 0L
+            return false
+        si
+    si
+
+    partial double is
+        /// The `double` that `text` holds; throws where it holds none.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> double static is
+            let (status, value) = _parse_double(text)
+
+            _throw_unless_parsed(status)
+
+            return value
+        si
+
+        /// Whether `text` holds a `double`, writing it to `result` where it
+        /// does and zero where it does not.
+        ///
+        /// - text: the text to parse
+        /// - result: where the value is written
+        try_parse(text: string?, result: double ref) -> bool static is
+            if text? then
+                let (status, value) = _parse_double(text)
+
+                if status == 0 then
+                    result! = value
+                    return true
+                fi
+            fi
+
+            result! = 0.0
+            return false
+        si
+    si
+
+    // The outcome of a parse: 0 parsed, 1 not a number, 2 out of range.
+    _throw_unless_parsed(status: int) is
+        if status == 1 then
+            throw FormatException()
+        elif status == 2 then
+            throw OverflowException("the value was either too large or too small")
+        fi
+    si
+
+    _parse_integer(text: string, minimum: long, maximum: long) -> (status: int, value: long) is
+        let end = _end_of_number(text)
+        let i mut = _start_of_number(text)
+
+        let is_negative = i < end /\ text[i] == '-'
+
+        if i < end /\ (text[i] == '-' \/ text[i] == '+') then
+            i = i + 1
+        fi
+
+        if i >= end then
+            return (1, 0L)
+        fi
+
+        // Accumulated as a negative number, whose range reaches one further
+        // than the positive one, so the most negative value parses.
+        let limit = if is_negative then minimum else -maximum fi
+        let value mut = 0L
+
+        while i < end do
+            let c = text[i]
+
+            if !char.is_digit(c) then
+                return (1, 0L)
+            fi
+
+            let digit = cast long(cast int(c) - 48)
+
+            if value < (limit + digit) / 10L then
+                return (2, 0L)
+            fi
+
+            value = value * 10L - digit
+
+            // The check above divides towards zero, which lets one digit past
+            // a limit of zero through.
+            if value < limit then
+                return (2, 0L)
+            fi
+
+            i = i + 1
+        od
+
+        return (0, if is_negative then value else -value fi)
+    si
+
+    // Accumulated upwards in a `ulong`, whose range no `long` reaches.
+    _parse_unsigned(text: string) -> (status: int, value: ulong) is
+        let end = _end_of_number(text)
+        let i mut = _start_of_number(text)
+
+        if i < end /\ text[i] == '+' then
+            i = i + 1
+        fi
+
+        if i >= end then
+            return (1, 0UL)
+        fi
+
+        let value mut = 0UL
+
+        while i < end do
+            let c = text[i]
+
+            if !char.is_digit(c) then
+                return (1, 0UL)
+            fi
+
+            let digit = cast ulong(cast int(c) - 48)
+
+            if value > (18446744073709551615UL - digit) / 10UL then
+                return (2, 0UL)
+            fi
+
+            value = value * 10UL + digit
+            i = i + 1
+        od
+
+        return (0, value)
+    si
+
+    _parse_double(text: string) -> (status: int, value: double) is
+        let end = _end_of_number(text)
+        let i mut = _start_of_number(text)
+
+        let is_negative = i < end /\ text[i] == '-'
+
+        if i < end /\ (text[i] == '-' \/ text[i] == '+') then
+            i = i + 1
+        fi
+
+        let mantissa mut = 0L
+        let significant mut = 0
+        let scale mut = 0
+        let digits mut = 0
+
+        // Every digit, for the exact conversion where the mantissa above
+        // drops some or one floating-point operation would not round once.
+        let all_digits = Text.STRING_BUILDER()
+        let fraction_digits mut = 0
+
+        while i < end /\ char.is_digit(text[i]) do
+            all_digits.append(text[i])
+            _accumulate_digit(text[i], mantissa ref, significant ref, scale ref, false)
+            digits = digits + 1
+            i = i + 1
+        od
+
+        if i < end /\ text[i] == '.' then
+            i = i + 1
+
+            while i < end /\ char.is_digit(text[i]) do
+                all_digits.append(text[i])
+                fraction_digits = fraction_digits + 1
+                _accumulate_digit(text[i], mantissa ref, significant ref, scale ref, true)
+                digits = digits + 1
+                i = i + 1
+            od
+        fi
+
+        if digits == 0 then
+            return (1, 0.0)
+        fi
+
+        let written_exponent mut = 0
+
+        if i < end /\ (text[i] == 'e' \/ text[i] == 'E') then
+            i = i + 1
+
+            let exponent_negative = i < end /\ text[i] == '-'
+
+            if i < end /\ (text[i] == '-' \/ text[i] == '+') then
+                i = i + 1
+            fi
+
+            if i >= end then
+                return (1, 0.0)
+            fi
+
+            let exponent mut = 0
+
+            while i < end do
+                if !char.is_digit(text[i]) then
+                    return (1, 0.0)
+                fi
+
+                if exponent < 100000 then
+                    exponent = exponent * 10 + (cast int(text[i]) - 48)
+                fi
+
+                i = i + 1
+            od
+
+            scale = scale + if exponent_negative then -exponent else exponent fi
+            written_exponent = if exponent_negative then -exponent else exponent fi
+        fi
+
+        if i != end then
+            return (1, 0.0)
+        fi
+
+        let magnitude =
+            if significant <= 18 /\ mantissa <= 9007199254740992L /\ scale >= -22 /\ scale <= 22 /\ !_drops_digits(all_digits) then
+                _scale(cast double(mantissa), scale)
+            else
+                _exact(all_digits.to_string(), written_exponent - fraction_digits)
+            fi
+
+        return (0, if is_negative then -magnitude else magnitude fi)
+    si
+
+    // Takes one more digit into the mantissa. Past 18 significant digits a
+    // digit no longer fits, so it only moves the decimal point: a digit
+    // dropped before the point scales up, one dropped after it is ignored.
+    _accumulate_digit(c: char, mantissa: long ref, significant: int ref, scale: int ref, is_fraction: bool) is
+        let digit = cast long(cast int(c) - 48)
+
+        if significant! < 18 then
+            if mantissa! != 0L \/ digit != 0L then
+                significant! = significant! + 1
+            fi
+
+            mantissa! = mantissa! * 10L + digit
+
+            if is_fraction then
+                scale! = scale! - 1
+            fi
+        elif !is_fraction then
+            scale! = scale! + 1
+        fi
+    si
+
+    // `value` times ten to the power `scale`. Up to 22 either way the power
+    // is exact, so a mantissa of no more than 15 digits rounds once, exactly
+    // as .NET's parse does; beyond that the result can differ from it in
+    // the last bit.
+    _scale(value: double, scale: int) -> double is
+        if scale == 0 \/ value == 0.0 then
+            return value
+        fi
+
+        if scale > 308 + 18 then
+            return value * 1.0e308 * 10.0
+        elif scale < -324 - 18 then
+            return 0.0
+        fi
+
+        let remaining mut = if scale < 0 then -scale else scale fi
+        let result mut = value
+
+        while remaining > 0 do
+            let step = if remaining > 22 then 22 else remaining fi
+            let power = _power_of_ten(step)
+
+            result = if scale < 0 then result / power else result * power fi
+            remaining = remaining - step
+        od
+
+        return result
+    si
+
+    // Whether the mantissa left out some of `digits`: it keeps 18
+    // significant digits.
+    _drops_digits(digits: Text.STRING_BUILDER) -> bool is
+        let kept mut = 0
+        let started mut = false
+
+        for c in digits.to_string() do
+            if c != '0' then
+                started = true
+            fi
+
+            if started then
+                kept = kept + 1
+            fi
+        od
+
+        return kept > 18
+    si
+
+    // The double nearest the decimal digits `text` times ten to the power
+    // `exponent`, ties to even, as .NET's parse gives it: the exact
+    // quotient is taken to 53 bits with the remainder deciding the
+    // rounding, then scaled by a power of two in steps that are each exact.
+    _exact(text: string, exponent: int) -> double is
+        let first mut = 0
+
+        while first < text.length /\ text[first] == '0' do
+            first = first + 1
+        od
+
+        if first == text.length then
+            return 0.0
+        fi
+
+        // A value this far outside the range of a double is infinity or
+        // zero without dividing.
+        let magnitude = text.length - first + exponent
+
+        if magnitude > 310 then
+            return 1.0e308 * 10.0
+        elif magnitude < -330 then
+            return 0.0
+        fi
+
+        let digits = bigint.parse(text.substring(first))
+
+        let numerator = if exponent > 0 then digits * bigint.pow(10n, exponent) else digits fi
+        let denominator = if exponent < 0 then bigint.pow(10n, -exponent) else 1n fi
+
+        // The binary exponent of the result's least significant bit: the
+        // quotient at this exponent holds 53 bits, or fewer for a subnormal.
+        let shift mut = cast int(numerator.get_bit_length() - denominator.get_bit_length()) - 53
+        let quotient mut = 0n
+        let remainder mut = 0n
+        let divisor mut = 1n
+
+        do
+            if shift < -1074 then
+                shift = -1074
+            fi
+
+            let scaled = if shift < 0 then numerator << -shift else numerator fi
+
+            divisor = if shift > 0 then denominator << shift else denominator fi
+            quotient = scaled / divisor
+            remainder = scaled - quotient * divisor
+
+            if _bits(quotient) > 53 then
+                shift = shift + 1
+            elif _bits(quotient) < 53 /\ shift > -1074 then
+                shift = shift - 1
+            else
+                break
+            fi
+        od
+
+        let twice = remainder << 1
+
+        if twice > divisor \/ (twice =~ divisor /\ !quotient.is_even) then
+            quotient = quotient + 1n
+
+            if _bits(quotient) > 53 then
+                quotient = quotient >> 1
+                shift = shift + 1
+            fi
+        fi
+
+        if shift > 971 then
+            return 1.0e308 * 10.0
+        fi
+
+        let significand = cast double(cast long(quotient))
+
+        if shift < -1000 then
+            return significand * _power_of_two(-1000) * _power_of_two(shift + 1000)
+        fi
+
+        return significand * _power_of_two(shift)
+    si
+
+    _bits(value: bigint) -> int => cast int(value.get_bit_length())
+
+    // Two to the power `exponent`, exact for any exponent from -1022 to
+    // 1023.
+    _power_of_two(exponent: int) -> double is
+        let result mut = 1.0
+        let factor = if exponent < 0 then 0.5 else 2.0 fi
+        let i mut = if exponent < 0 then -exponent else exponent fi
+
+        while i > 0 do
+            result = result * factor
+            i = i - 1
+        od
+
+        return result
+    si
+
+    _power_of_ten(exponent: int) -> double is
+        let result mut = 1.0
+        let i mut = 0
+
+        while i < exponent do
+            result = result * 10.0
+            i = i + 1
+        od
+
+        return result
+    si
+
+    _start_of_number(text: string) -> int is
+        let i mut = 0
+
+        while i < text.length /\ char.is_white_space(text[i]) do
+            i = i + 1
+        od
+
+        return i
+    si
+
+    _end_of_number(text: string) -> int is
+        let end mut = text.length
+
+        while end > 0 /\ char.is_white_space(text[end - 1]) do
+            end = end - 1
+        od
+
+        return end
+    si
+si

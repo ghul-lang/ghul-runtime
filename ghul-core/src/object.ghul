@@ -1,0 +1,51 @@
+namespace Ghul is
+    partial object is
+        /// The name of the object's type, unless the type gives text of its
+        /// own.
+        @trusted_store_free()
+        to_string() -> string =>
+            _type_name(self);
+
+        /// Creates an object with no state of its own.
+        init() is si
+
+        /// A hash that is the same for objects `equals` counts as equal. By
+        /// default that is a hash of the object's identity, so distinct objects
+        /// of one type spread across a map's buckets.
+        get_hash_code() -> int => _identity_hash(self);
+
+        /// Whether `other` is this same object.
+        ///
+        /// - other: the object to compare with
+        equals(other: object?) -> bool => reference_equals(self, other);
+
+        /// Whether `a` and `b` are the same object, or both absent.
+        ///
+        /// - a: the first object
+        /// - b: the second object
+        reference_equals(a: object?, b: object?) -> bool static => a == b;
+
+        /// The type of the object. A member of the same name declared on a
+        /// type hides this rather than overriding it.
+        @intrinsic("object.get_type")
+        get_type() -> Type pure =>
+            _type_of(self);
+
+        /// A shallow copy of the object: a new object of the same type whose
+        /// fields hold what this one's hold.
+        memberwise_clone() -> object protected => _memberwise_clone(self);
+    si
+
+    @intrinsic("object.type_name")
+    _type_name(value: object) -> string pure
+
+    @intrinsic("object.get_type")
+    _type_of(value: object) -> Type pure
+
+    @intrinsic("object.memberwise_clone")
+    _memberwise_clone(value: object) -> object
+
+    // A hash of `value`'s identity, the same for as long as it lives.
+    @intrinsic("object.identity_hash")
+    _identity_hash(value: object) -> int pure
+si

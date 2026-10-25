@@ -1,0 +1,22 @@
+// A member reached through null throws NullReferenceException, with .NET's
+// message, and the library's own exceptions carry .NET's messages too.
+class BOX is
+    value: int public
+
+    init() is si
+si
+
+find(present: bool) -> BOX? => if present then BOX() else null fi
+
+entry() is
+    try
+        let box = find(false)
+        IO.Std.write_line("{box!.value}")
+    catch e: Ghul.NullReferenceException
+        IO.Std.write_line("caught: {e.message}")
+    yrt
+
+    let index_out_of_range: Ghul.Exception = Ghul.IndexOutOfRangeException()
+
+    IO.Std.write_line(index_out_of_range.message)
+si

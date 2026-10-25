@@ -1,0 +1,27 @@
+// .NET's names for these traits are kept, so source written against .NET
+// builds here unchanged.
+namespace System is
+    /// Supplies an object that controls formatting, as .NET's
+    /// `System.IFormatProvider` does. The source-core targets format under
+    /// the invariant culture whatever provider is given.
+    trait IFormatProvider is
+        /// An object that formats values of `format_type`, or null where this
+        /// provider has none.
+        ///
+        /// - format_type: the type of formatting object wanted
+        get_format(format_type: Ghul.Type?) -> object?
+    si
+
+    /// A value that can be written in a format, as .NET's
+    /// `System.IFormattable` is. An interpolation that names a format, as in
+    /// `{value:yyyy-MM-dd}`, writes a value of such a type through this.
+    trait IFormattable is
+        /// The value written in `format`, or in its default format where
+        /// `format` is null.
+        ///
+        /// - format: the format to write in
+        /// - format_provider: ignored on the source-core targets, which format
+        ///   under the invariant culture
+        to_string(format: string?, format_provider: IFormatProvider?) -> string
+    si
+si

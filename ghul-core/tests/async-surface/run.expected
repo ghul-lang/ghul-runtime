@@ -1,0 +1,7 @@
+stepped 2 times
+resumed through on_completed
+resumed through unsafe_on_completed
+stepped 3 times
+first failure
+thrown again: first failure
+true true true

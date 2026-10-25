@@ -1,0 +1,64 @@
+// bigint at the edges of the i64 its value is held in while it fits: every
+// operator on pairs of values either side of 2^31, 2^62 and 2^63, of both
+// signs, so that each result lands in the i64, on the host, or crosses
+// between them. The expected text is what .NET prints for the same program.
+let values = [
+    0n, 1n, -1n, 7n, -7n,
+    2147483647n, 2147483648n, -2147483648n, -2147483649n,
+    4611686018427387904n, -4611686018427387904n,
+    9223372036854775807n, -9223372036854775808n,
+    9223372036854775808n, -9223372036854775809n,
+    18446744073709551616n, -18446744073709551616n,
+    12157665459056928801n
+]
+
+for a in values do
+    IO.Std.write_line("{a}: {-a} {\a} {a << 1} {a << 40} {a << -3} {a >> 1} {a >> 70} {a >> -2}")
+    IO.Std.write_line("  bits {a.get_bit_length()} sign {a.sign} zero {a.is_zero} one {a.is_one} even {a.is_even} abs {bigint.abs(a)}")
+    IO.Std.write_line("  hash {a.get_hash_code() == bigint.parse("{a}").get_hash_code()} pow {bigint.pow(a, 3)}")
+    IO.Std.write_line("  mod_pow {bigint.mod_pow(a, 65537n, 1000003n)} {bigint.mod_pow(a, 3n, 18446744073709551629n)}")
+
+    for b in values do
+        let quotient = if b.is_zero then "-" else "{a / b} {a % b}" fi
+
+        IO.Std.write_line("  {b}: {a + b} {a - b} {a * b} {quotient} {a & b} {a | b} {a ^ b} {a <> b} {a =~ b} {bigint.greatest_common_divisor(a, b)}")
+    od
+od
+
+// Results the host computes that land back in the i64's range compare,
+// test and hash as the same value made directly.
+let back_in_range = [
+    9223372036854775808n + -1n,
+    -9223372036854775809n + 1n,
+    18446744073709551616n - 18446744073709551616n,
+    18446744073709551616n / 18446744073709551616n,
+    -18446744073709551616n / 18446744073709551616n,
+    (18446744073709551616n * 3n) % 18446744073709551616n,
+    bigint.pow(2n, 64) >> 64
+]
+
+let made_directly = [9223372036854775807n, -9223372036854775808n, 0n, 1n, -1n, 0n, 1n]
+
+for i in 0..back_in_range.count do
+    let computed = back_in_range[i]
+    let direct = made_directly[i]
+
+    IO.Std.write_line("{computed}: {computed =~ direct} {computed.is_zero} {computed.is_one} {computed.sign} {computed.get_hash_code() == direct.get_hash_code()} {computed + 1n} {computed - 1n}")
+od
+
+// A value too wide for a double converts with its magnitude truncated to
+// the 53 bits a double holds, whether the i64 or the host holds it.
+let wide = [
+    9007199254740993n, 9007199254740995n, -9007199254740995n,
+    9223372036854775807n, -9223372036854775807n, -9223372036854775808n,
+    9223372036854775809n, 18446744073709553665n,
+    -123456789012345678901234567890123456789n
+]
+
+for a in values do
+    IO.Std.write_line("{a}: {cast double(a)} {cast single(a)}")
+od
+
+for a in wide do
+    IO.Std.write_line("{a}: {cast double(a)} {cast single(a)} {bigint(cast double(a))}")
+od

@@ -1,0 +1,41 @@
+// A field narrowed by a presence test stays narrowed across a lookup in a
+// list, a set or a map, since a lookup stores nothing.
+use IO.Std.write_line
+
+class HOLDER is
+    _names: Collections.SET[string]?
+    _items: Collections.LIST[string]?
+    _counts: Collections.MAP[string, int]?
+
+    init() is
+        _names = Collections.SET[string]()
+        _items = Collections.LIST[string]()
+        _counts = Collections.MAP[string, int]()
+    si
+
+    add(name: string) is
+        if _names? /\ !_names.contains(name) then
+            _names.add(name)
+        fi
+
+        if _items? /\ !_items.contains(name) /\ _items.index_of(name) < 0 then
+            _items.add(name)
+        fi
+
+        if _counts? /\ !_counts.contains_key(name) then
+            _counts.add(name, _counts.count)
+        fi
+    si
+
+    report() -> string => "{_names?.count} {_items?.count} {_counts?.count}"
+si
+
+entry() is
+    let holder = HOLDER()
+
+    holder.add("a")
+    holder.add("b")
+    holder.add("a")
+
+    write_line(holder.report())
+si

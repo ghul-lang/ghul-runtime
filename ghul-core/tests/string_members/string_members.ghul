@@ -1,0 +1,30 @@
+// The string members behave as they do on .NET: ordinal search and
+// comparison, .NET's white space, ASCII casing.
+check() -> int is
+    let text = "  Hello, World  "
+    let trimmed = text.trim()
+    let pieces = "a,b,,c".split(',')
+    let joined = string.join("-", pieces)
+
+    let score mut = 0
+
+    score = score + trimmed.index_of("World") + trimmed.last_index_of('o')
+    score = score + trimmed.substring(7).length + trimmed.to_upper().length
+    score = score + "abc".pad_left(5).length + "abc".pad_right(5, '.').length
+    score = score + "a-b".replace("-", "+").length + joined.length
+    score = score + string.compare("a", "b") + "b".compare_to("a")
+
+    if trimmed.starts_with("Hello") /\ trimmed.ends_with('d') /\ trimmed.contains(',') then
+        score = score + 1
+    fi
+
+    if string.is_null_or_empty("") /\ string.is_null_or_white_space(" \t") then
+        score = score + 1
+    fi
+
+    return score
+si
+
+entry() is
+    IO.Std.write_line("{check()}")
+si

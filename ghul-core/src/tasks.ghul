@@ -1,0 +1,700 @@
+namespace Tasks is
+    use Collections.LIST
+    use Collections.Queue
+
+    use System.Runtime.CompilerServices.AsyncMethodBuilder
+    use System.Runtime.CompilerServices.IAsyncStateMachine
+    use System.Runtime.CompilerServices.INotifyCompletion
+    use System.Runtime.CompilerServices.ICriticalNotifyCompletion
+
+    // Tasks on a target with one thread. Nothing runs concurrently: a
+    // continuation is queued when what it waits for completes, and the
+    // queue is run by whatever waits for a task's result, until that task
+    // completes. A wait that can never be satisfied, because nothing is
+    // queued and no delay is pending, throws rather than hangs.
+
+    /// An operation that completes later, with no result.
+    @AsyncMethodBuilder(typeof(TASK_BUILDER))
+    class TASK is
+        _state: TASK_STATE
+
+        /// A task that has not completed.
+        init() is
+            _state = TASK_STATE()
+        si
+
+        /// Whether the task has completed, successfully or not.
+        is_completed: bool => _state.is_completed
+
+        /// Whether the task completed by throwing.
+        is_faulted: bool => _state.is_faulted
+
+        /// Whether the task completed without throwing.
+        is_completed_successfully: bool => _state.is_completed /\ !_state.is_faulted
+
+        /// What the task threw, or null where it has not thrown.
+        exception: Ghul.Exception? => _state.exception
+
+        /// The awaiter `await` reads the task through.
+        get_awaiter() -> TASK_AWAITER => TASK_AWAITER(self)
+
+        /// The task itself: there is no context to return to.
+        ///
+        /// - continue_on_captured_context: ignored
+        configure_await(continue_on_captured_context: bool) -> TASK => self
+
+        /// Runs queued work until the task completes. A task that threw
+        /// throws an `AggregateException` holding what it threw.
+        wait() is
+            SCHEDULER.run_until(_state)
+            _state.throw_aggregate()
+        si
+
+        /// A task that runs `action` with this one once it completes.
+        ///
+        /// - action: what to run
+        continue_with(action: TASK -> void) -> TASK is
+            let result = TASK()
+
+            _state.on_completed(() is
+                try
+                    action(self)
+                    result.state.complete()
+                catch e: Ghul.Exception
+                    result.state.fail(e)
+                yrt
+            si)
+
+            return result
+        si
+
+        /// A task whose result is what `function` answers for this one once
+        /// it completes.
+        ///
+        /// - function: what to run
+        continue_with[U](function: TASK -> U) -> TASK[U] is
+            let result = TASK[U]()
+
+            _state.on_completed(() is
+                try
+                    result.set_result(function(self))
+                catch e: Ghul.Exception
+                    result.state.fail(e)
+                yrt
+            si)
+
+            return result
+        si
+
+        /// What completes the task, for the library's own use.
+        state: TASK_STATE => _state
+
+        /// A task that has already completed.
+        completed_task: TASK static is
+            let task = TASK()
+
+            task.state.complete()
+
+            return task
+        si
+
+        /// A task that has already completed with `result`.
+        ///
+        /// - result: the task's result
+        from_result[T](result: T) -> TASK[T] static is
+            let task = TASK[T]()
+
+            task.set_result(result)
+
+            return task
+        si
+
+        /// A task that has already thrown `exception`.
+        ///
+        /// - exception: what the task threw
+        from_exception(exception: Ghul.Exception) -> TASK static is
+            let task = TASK()
+
+            task.state.fail(exception)
+
+            return task
+        si
+
+        /// A task that completes once `milliseconds` have passed, measured
+        /// on the host's monotonic clock while something waits.
+        ///
+        /// - milliseconds: how long to wait
+        delay(milliseconds: int) -> TASK static is
+            let task = TASK()
+
+            SCHEDULER.after(milliseconds, task.state)
+
+            return task
+        si
+
+        /// What an `await` reads to let queued work run before carrying on.
+        `yield() -> YIELD_AWAITABLE static => YIELD_AWAITABLE()
+
+        /// A task that runs `action` when queued work next runs.
+        ///
+        /// - action: what to run
+        run(action: () -> void) -> TASK static is
+            let task = TASK()
+
+            SCHEDULER.post(() is
+                try
+                    action()
+                    task.state.complete()
+                catch e: Ghul.Exception
+                    task.state.fail(e)
+                yrt
+            si)
+
+            return task
+        si
+
+        /// A task whose result is what `function` answers when queued work
+        /// next runs.
+        ///
+        /// - function: what to run
+        run[T](function: () -> T) -> TASK[T] static is
+            let task = TASK[T]()
+
+            SCHEDULER.post(() is
+                try
+                    task.set_result(function())
+                catch e: Ghul.Exception
+                    task.state.fail(e)
+                yrt
+            si)
+
+            return task
+        si
+
+        /// A task whose result is the results of `tasks`, in order, once all
+        /// of them complete. It throws what the first of them that threw
+        /// threw.
+        ///
+        /// - tasks: the tasks to wait for
+        when_all[T](tasks: Collections.Iterable[TASK[T]]) -> TASK[T[]] static is
+            let all = LIST[TASK[T]](tasks)
+            let result = TASK[T[]]()
+            let remaining mut = all.count
+
+            let finish = () is
+                let results = LIST[T]()
+
+                for task in all do
+                    if task.is_faulted then
+                        result.state.fail(task.exception!)
+                        return
+                    fi
+
+                    results.add(task.state_result)
+                od
+
+                result.set_result(results.to_array())
+            si
+
+            if remaining == 0 then
+                finish()
+            fi
+
+            for task in all do
+                task.state.on_completed(() is
+                    remaining = remaining - 1
+
+                    if remaining == 0 then
+                        finish()
+                    fi
+                si)
+            od
+
+            return result
+        si
+    si
+
+    /// An operation that completes later, with a result.
+    @AsyncMethodBuilder(typeof(TASK_BUILDER[_]))
+    class TASK[T]: TASK is
+        _result: T
+
+        /// A task that has not completed.
+        init() is
+            super.init()
+        si
+
+        /// The task's result, running queued work until it completes. A task
+        /// that threw throws an `AggregateException` holding what it threw.
+        result: T is
+            wait()
+
+            return _result
+        si
+
+        /// The result as it stands, for the library's own use: only read
+        /// once the task has completed successfully.
+        state_result: T => _result
+
+        /// The awaiter `await` reads the task through, which answers the
+        /// result. Awaiting the task as a `TASK` reaches the base's instead,
+        /// which drops it.
+        @suppress("hides-inherited")
+        get_awaiter() -> TASK_AWAITER[T] => TASK_AWAITER[T](self)
+
+        /// The task itself: there is no context to return to.
+        ///
+        /// - continue_on_captured_context: ignored
+        configure_await(continue_on_captured_context: bool) -> TASK[T] => self
+
+        /// A task that runs `action` with this one once it completes.
+        ///
+        /// - action: what to run
+        continue_with(action: TASK[T] -> void) -> TASK is
+            let result = TASK()
+
+            state.on_completed(() is
+                try
+                    action(self)
+                    result.state.complete()
+                catch e: Ghul.Exception
+                    result.state.fail(e)
+                yrt
+            si)
+
+            return result
+        si
+
+        /// A task whose result is what `function` answers for this one once
+        /// it completes.
+        ///
+        /// - function: what to run
+        continue_with[U](function: TASK[T] -> U) -> TASK[U] is
+            let result = TASK[U]()
+
+            state.on_completed(() is
+                try
+                    result.set_result(function(self))
+                catch e: Ghul.Exception
+                    result.state.fail(e)
+                yrt
+            si)
+
+            return result
+        si
+
+        /// Completes the task with `result`, for the library's own use.
+        ///
+        /// - result: the task's result
+        set_result(result: T) is
+            _result = result
+            state.complete()
+        si
+    si
+
+    /// Helpers over tasks of tasks.
+    class TaskExtensions is
+        /// A task that completes as the task `task` answers does.
+        ///
+        /// - task: a task whose result is a task
+        unwrap[T](task: TASK[TASK[T]]) -> TASK[T] static is
+            let result = TASK[T]()
+
+            task.state.on_completed(() is
+                if task.is_faulted then
+                    result.state.fail(task.exception!)
+                    return
+                fi
+
+                let inner = task.state_result
+
+                inner.state.on_completed(() is
+                    if inner.is_faulted then
+                        result.state.fail(inner.exception!)
+                    else
+                        result.set_result(inner.state_result)
+                    fi
+                si)
+            si)
+
+            return result
+        si
+
+        /// A task that completes as the task `task` answers does.
+        ///
+        /// - task: a task whose result is a task
+        unwrap(task: TASK[TASK]) -> TASK static is
+            let result = TASK()
+
+            task.state.on_completed(() is
+                if task.is_faulted then
+                    result.state.fail(task.exception!)
+                    return
+                fi
+
+                let inner = task.state_result
+
+                inner.state.on_completed(() is
+                    if inner.is_faulted then
+                        result.state.fail(inner.exception!)
+                    else
+                        result.state.complete()
+                    fi
+                si)
+            si)
+
+            return result
+        si
+    si
+
+    /// How a task stands, and what runs once it completes.
+    class TASK_STATE is
+        _is_completed: bool
+        _exception: Ghul.Exception?
+        _continuations: LIST[() -> void]
+
+        /// A task that has not completed.
+        init() is
+            _continuations = LIST[() -> void]()
+        si
+
+        /// Whether the task has completed, successfully or not.
+        is_completed: bool => _is_completed
+
+        /// Whether the task completed by throwing.
+        is_faulted: bool => _exception?
+
+        /// What the task threw, or null where it has not thrown.
+        exception: Ghul.Exception? => _exception
+
+        /// Completes the task successfully, queueing what waits for it.
+        complete() is
+            _finish(null)
+        si
+
+        /// Completes the task with `exception`, queueing what waits for it.
+        ///
+        /// - exception: what the task threw
+        fail(exception: Ghul.Exception) is
+            _finish(exception)
+        si
+
+        /// Queues `continuation` once the task completes, at once where it
+        /// already has.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void) is
+            if _is_completed then
+                SCHEDULER.post(continuation)
+            else
+                _continuations.add(continuation)
+            fi
+        si
+
+        /// Throws an `AggregateException` holding what the task threw, where
+        /// it threw.
+        throw_aggregate() is
+            if let e = _exception then
+                throw Ghul.AggregateException(e)
+            fi
+        si
+
+        _finish(exception: Ghul.Exception?) is
+            if _is_completed then
+                throw Ghul.InvalidOperationException("An attempt was made to transition a task to a final state when it had already completed.")
+            fi
+
+            _is_completed = true
+            _exception = exception
+
+            for continuation in _continuations do
+                SCHEDULER.post(continuation)
+            od
+
+            _continuations.clear()
+        si
+    si
+
+    /// What `await` reads a `TASK` through.
+    class TASK_AWAITER: ICriticalNotifyCompletion is
+        _task: TASK
+
+        /// - task: the task awaited
+        init(task: TASK) is
+            _task = task
+        si
+
+        /// Whether the task has completed.
+        is_completed: bool => _task.is_completed
+
+        /// Throws what the task threw, where it threw.
+        get_result() is
+            if let e = _task.exception then
+                throw e
+            fi
+        si
+
+        /// Queues `continuation` once the task completes.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void) is
+            _task.state.on_completed(continuation)
+        si
+
+        /// Queues `continuation` once the task completes.
+        ///
+        /// - continuation: what to run
+        unsafe_on_completed(continuation: () -> void) is
+            _task.state.on_completed(continuation)
+        si
+    si
+
+    /// What `await` reads a `TASK[T]` through.
+    class TASK_AWAITER[T]: ICriticalNotifyCompletion is
+        _task: TASK[T]
+
+        /// - task: the task awaited
+        init(task: TASK[T]) is
+            _task = task
+        si
+
+        /// Whether the task has completed.
+        is_completed: bool => _task.is_completed
+
+        /// The task's result, or what it threw thrown again.
+        get_result() -> T is
+            if let e = _task.exception then
+                throw e
+            fi
+
+            return _task.state_result
+        si
+
+        /// Queues `continuation` once the task completes.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void) is
+            _task.state.on_completed(continuation)
+        si
+
+        /// Queues `continuation` once the task completes.
+        ///
+        /// - continuation: what to run
+        unsafe_on_completed(continuation: () -> void) is
+            _task.state.on_completed(continuation)
+        si
+    si
+
+    /// What `await TASK.yield()` reads: it never completes at once, so the
+    /// awaiting function carries on only once queued work ahead of it has
+    /// run.
+    class YIELD_AWAITABLE: ICriticalNotifyCompletion is
+        init() is si
+
+        /// The awaitable itself.
+        get_awaiter() -> YIELD_AWAITABLE => self
+
+        /// Always false.
+        is_completed: bool => false
+
+        /// Nothing to answer.
+        get_result() is si
+
+        /// Queues `continuation`.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void) is
+            SCHEDULER.post(continuation)
+        si
+
+        /// Queues `continuation`.
+        ///
+        /// - continuation: what to run
+        unsafe_on_completed(continuation: () -> void) is
+            SCHEDULER.post(continuation)
+        si
+    si
+
+    /// The builder an asynchronous function returning `TASK` is driven by.
+    class TASK_BUILDER is
+        _task: TASK
+
+        init() is
+            _task = TASK()
+        si
+
+        /// A builder for a new task.
+        create() -> TASK_BUILDER static => TASK_BUILDER()
+
+        /// Runs the function until it first suspends.
+        ///
+        /// - state_machine: the function's state machine
+        start[S: IAsyncStateMachine](state_machine: S ref) is
+            state_machine!.move_next()
+        si
+
+        /// The task the function answers.
+        task: TASK => _task
+
+        /// Completes the task.
+        set_result() is
+            _task.state.complete()
+        si
+
+        /// Completes the task with what the function threw.
+        ///
+        /// - exception: what the function threw
+        set_exception(exception: Ghul.Exception) is
+            _task.state.fail(exception)
+        si
+
+        /// Has nothing to keep: the state machine is an object already.
+        ///
+        /// - state_machine: ignored
+        set_state_machine(state_machine: IAsyncStateMachine) is si
+
+        /// Resumes the function once `awaiter` completes.
+        ///
+        /// - awaiter: what the function waits for
+        /// - state_machine: the function's state machine
+        await_on_completed[A: INotifyCompletion, S: IAsyncStateMachine](awaiter: A ref, state_machine: S ref) is
+            let machine = state_machine!
+
+            awaiter!.on_completed(() is machine.move_next() si)
+        si
+
+        /// Resumes the function once `awaiter` completes.
+        ///
+        /// - awaiter: what the function waits for
+        /// - state_machine: the function's state machine
+        await_unsafe_on_completed[A: ICriticalNotifyCompletion, S: IAsyncStateMachine](awaiter: A ref, state_machine: S ref) is
+            let machine = state_machine!
+
+            awaiter!.unsafe_on_completed(() is machine.move_next() si)
+        si
+    si
+
+    /// The builder an asynchronous function returning `TASK[T]` is driven by.
+    class TASK_BUILDER[T] is
+        _task: TASK[T]
+
+        init() is
+            _task = TASK[T]()
+        si
+
+        /// A builder for a new task.
+        create() -> TASK_BUILDER[T] static => TASK_BUILDER[T]()
+
+        /// Runs the function until it first suspends.
+        ///
+        /// - state_machine: the function's state machine
+        start[S: IAsyncStateMachine](state_machine: S ref) is
+            state_machine!.move_next()
+        si
+
+        /// The task the function answers.
+        task: TASK[T] => _task
+
+        /// Completes the task with `result`.
+        ///
+        /// - result: what the function answered
+        set_result(result: T) is
+            _task.set_result(result)
+        si
+
+        /// Completes the task with what the function threw.
+        ///
+        /// - exception: what the function threw
+        set_exception(exception: Ghul.Exception) is
+            _task.state.fail(exception)
+        si
+
+        /// Has nothing to keep: the state machine is an object already.
+        ///
+        /// - state_machine: ignored
+        set_state_machine(state_machine: IAsyncStateMachine) is si
+
+        /// Resumes the function once `awaiter` completes.
+        ///
+        /// - awaiter: what the function waits for
+        /// - state_machine: the function's state machine
+        await_on_completed[A: INotifyCompletion, S: IAsyncStateMachine](awaiter: A ref, state_machine: S ref) is
+            let machine = state_machine!
+
+            awaiter!.on_completed(() is machine.move_next() si)
+        si
+
+        /// Resumes the function once `awaiter` completes.
+        ///
+        /// - awaiter: what the function waits for
+        /// - state_machine: the function's state machine
+        await_unsafe_on_completed[A: ICriticalNotifyCompletion, S: IAsyncStateMachine](awaiter: A ref, state_machine: S ref) is
+            let machine = state_machine!
+
+            awaiter!.unsafe_on_completed(() is machine.move_next() si)
+        si
+    si
+
+    // The one queue of work, and the delays waiting on the clock.
+    class SCHEDULER is
+        _ready: Queue[() -> void] static
+        _timers: LIST[(due: long, state: TASK_STATE)] static
+
+        init() static is
+            _ready = Queue[() -> void]()
+            _timers = LIST[(due: long, state: TASK_STATE)]()
+        si
+
+        /// Queues `work` to run when queued work next runs.
+        ///
+        /// - work: what to run
+        post(work: () -> void) static is
+            _ready.enqueue(work)
+        si
+
+        /// Completes `state` once `milliseconds` have passed.
+        ///
+        /// - milliseconds: how long to wait
+        /// - state: what completes
+        after(milliseconds: int, state: TASK_STATE) static is
+            _timers.add((System.Environment.tick_count64 + cast long(milliseconds), state))
+        si
+
+        /// Runs queued work, and completes delays as they fall due, until
+        /// `state` completes. Throws where nothing could ever complete it.
+        ///
+        /// - state: what to wait for
+        run_until(state: TASK_STATE) static is
+            while !state.is_completed do
+                if _ready.count > 0 then
+                    let work = _ready.dequeue()
+
+                    work()
+                elif _timers.count > 0 then
+                    _complete_earliest_timer()
+                else
+                    throw Ghul.InvalidOperationException("a task was waited for that nothing can complete")
+                fi
+            od
+        si
+
+        _complete_earliest_timer() static is
+            let earliest mut = 0
+
+            for i in 1.._timers.count do
+                if _timers[i].due < _timers[earliest].due then
+                    earliest = i
+                fi
+            od
+
+            let (due, state) = _timers[earliest]
+
+            _timers.remove_at(earliest)
+
+            while System.Environment.tick_count64 < due do
+            od
+
+            state.complete()
+        si
+    si
+si

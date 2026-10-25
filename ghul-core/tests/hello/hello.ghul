@@ -1,0 +1,12 @@
+// Writes a line for each name through interpolation, then throws an
+// exception nothing catches, which ends the program with status 134.
+
+entry() is
+    let names = ["a", "b"];
+
+    for name in names do
+        IO.Std.write_line("hello {name}");
+    od
+
+    throw Ghul.Exception("done");
+si

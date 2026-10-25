@@ -1,0 +1,27 @@
+// System.Numerics.Complex's arithmetic, polar form, powers and text,
+// answering as .NET does.
+use IO.Std.write_line
+use System.Numerics.Complex
+
+show(z: Complex) -> string => "({z.real:F6}, {z.imaginary:F6})"
+
+entry() is
+    let a = Complex(3.0, 4.0)
+    let b = Complex(1.0, -2.0)
+
+    write_line("{a} {Complex.zero} {Complex.one} {Complex.imaginary_one}")
+    write_line("{a + b} {a - b} {a * b} {a / b} {-a}")
+    write_line("{a + 1.5} {2.0 + a} {a - 1.0} {10.0 - a} {a * 2.0} {0.5 * a} {a / 2.0}")
+    write_line("{a.magnitude} {Complex.abs(b):F6} {a.phase:F6} {Complex.conjugate(a)} {Complex.reciprocal(Complex.zero)}")
+    write_line(show(Complex.from_polar_coordinates(2.0, Ghul.Math.pi / 3.0)))
+    write_line(show(Complex.exp(Complex(0.0, Ghul.Math.pi))))
+    write_line(show(Complex.log(a)))
+    write_line("{show(Complex.sqrt(Complex(-4.0, 0.0)))} {show(Complex.sqrt(b))}")
+    write_line("{show(Complex.pow(a, 2.0))} {show(Complex.pow(Complex.imaginary_one, Complex.imaginary_one))} {Complex.pow(Complex.zero, 3.0)} {Complex.pow(a, Complex.zero)}")
+    write_line("{a / Complex(0.5, 4.0)} {Complex(1.0, 1.0) / Complex(1.0e-300, 1.0e-300)}")
+    write_line("{show(Complex.sin(b))} {show(Complex.cos(b))} {show(Complex.tan(b))}")
+    write_line("{show(Complex.sinh(b))} {show(Complex.cosh(b))} {show(Complex.tanh(b))}")
+    write_line("{show(Complex.asin(b))} {show(Complex.acos(b))} {show(Complex.atan(b))}")
+    write_line("{show(Complex.log10(a))} {show(Complex.log(a, 2.0))}")
+    write_line("{a =~ Complex(3.0, 4.0)} {a =~ b}")
+si

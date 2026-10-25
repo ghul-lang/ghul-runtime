@@ -1,0 +1,214 @@
+namespace IO is
+    /// The console: standard output and standard error, written either
+    /// through `Std`'s own members or through the writers `out` and `error`.
+    class Std is
+        _in: TextReader static
+        _out: TextWriter static
+        _error: TextWriter static
+
+        init() static is
+            _in = _HOST_READER()
+            _out = _HOST_WRITER(1)
+            _error = _HOST_WRITER(2)
+        si
+
+        /// The reader for standard input.
+        `in: TextReader static => _in
+
+        /// Whether standard input comes from something other than a terminal,
+        /// such as a pipe or a file.
+        is_input_redirected: bool static => !_is_terminal(0)
+
+        /// Whether standard output goes somewhere other than a terminal, such
+        /// as a pipe or a file.
+        is_output_redirected: bool static => !_is_terminal(1)
+
+        /// Whether standard error goes somewhere other than a terminal, such
+        /// as a pipe or a file.
+        is_error_redirected: bool static => !_is_terminal(2)
+
+        /// Whether a read would return without waiting: a complete line is
+        /// waiting in standard input, or the end of the input has not been
+        /// read yet. Once the end has been read this is false again, where
+        /// `wait_for_input` stays true. Never waits, and never reads: the
+        /// line stays there for `read_line` to take.
+        ///
+        /// A host with no way to watch the input - a page supplying it
+        /// through the loader's `stdin` option, say - answers whether a
+        /// complete line is already buffered.
+        has_pending_input() -> bool static =>
+            _pending_input()
+
+        /// Waits up to `timeout_ms` for a complete line of standard input,
+        /// answering whether one arrived before the timeout ran out. A
+        /// timeout of zero or less waits indefinitely. Answers true at the
+        /// end of the input as well, so a caller that keeps waiting keeps
+        /// being told there is something to read.
+        ///
+        /// - timeout_ms: how long to wait, in milliseconds
+        wait_for_input(timeout_ms: int) -> bool static =>
+            _wait_for_input(timeout_ms)
+
+        /// Reads the next line of standard input, without its line break,
+        /// or null at the end of the input.
+        read_line() -> string? static => _in.read_line()
+
+        /// Reads the next character of standard input, or -1 at the end of
+        /// the input.
+        read() -> int static => _in.read()
+
+        /// The writer for standard output.
+        out: TextWriter static pure => _out
+
+        /// The writer for standard error.
+        error: TextWriter static pure => _error
+
+        /// Writes a line break to standard output.
+        write_line() static pure =>
+            _write("\n", 1)
+
+        /// Writes `text` and then a line break to standard output.
+        ///
+        /// - text: the text to write
+        write_line(text: string) static pure is
+            _write(text, 1)
+            _write("\n", 1)
+        si
+
+        /// Writes `value` as its `to_string` text, then a line break, to
+        /// standard output.
+        ///
+        /// - value: the value to write
+        write_line(value: object) static pure =>
+            write_line(value.to_string())
+
+        /// Writes `text` to standard output.
+        ///
+        /// - text: the text to write
+        write(text: string) static pure =>
+            _write(text, 1)
+
+        /// Writes `value` as its `to_string` text to standard output.
+        ///
+        /// - value: the value to write
+        write(value: object) static pure =>
+            _write(value.to_string(), 1)
+
+        // Hands `text` to the host's stream: 1 is standard output and 2
+        // standard error.
+        @intrinsic("host.write")
+        _write(text: string, stream: int) static
+
+        // Whether stream 0, 1 or 2 is a terminal.
+        @intrinsic("host.is_terminal")
+        _is_terminal(stream: int) -> bool static
+    si
+
+    /// Reads text from a stream, a line or a character at a time.
+    class TextReader: Ghul.Disposable abstract is
+        init() is si
+
+        /// Releases the reader.
+        dispose() is si
+
+        /// Reads the next line, without its line break, or null at the end
+        /// of the text. A line ends at a line feed, a carriage return, or a
+        /// carriage return followed by a line feed.
+        read_line() -> string?;
+
+        /// Reads the next character, or -1 at the end of the text.
+        read() -> int;
+
+        /// The next character, left unread, or -1 at the end of the text.
+        peek() -> int;
+
+        /// Reads everything left, which is empty at the end of the text.
+        read_to_end() -> string;
+    si
+
+    // Standard input, read through the host.
+    class _HOST_READER: TextReader is
+        init() is super.init() si
+
+        read_line() -> string? => _read_line()
+        read() -> int => _read()
+        peek() -> int => _peek()
+        read_to_end() -> string => _read_to_end()
+
+        @intrinsic("host.stdin_read_line")
+        _read_line() -> string? static
+
+        @intrinsic("host.stdin_read")
+        _read() -> int static
+
+        @intrinsic("host.stdin_peek")
+        _peek() -> int static
+
+        @intrinsic("host.stdin_read_to_end")
+        _read_to_end() -> string static
+
+        @intrinsic("host.stdin_pending")
+        _pending_input() -> bool static
+
+        @intrinsic("host.stdin_wait")
+        _wait_for_input(timeout_ms: int) -> bool static
+    si
+
+    /// Writes text to a stream, a line or a piece at a time.
+    class TextWriter: Ghul.Disposable abstract is
+        init() is si
+
+        /// Releases the writer.
+        dispose() is si
+
+        /// Writes `text`.
+        ///
+        /// - text: the text to write
+        write(text: string) pure;
+
+        /// Writes `value` as its `to_string` text.
+        ///
+        /// - value: the value to write
+        write(value: object) pure =>
+            write(value.to_string())
+
+        /// Writes a line break.
+        write_line() pure =>
+            write("\n")
+
+        /// Writes `text` and then a line break.
+        ///
+        /// - text: the text to write
+        write_line(text: string) pure is
+            write(text)
+            write("\n")
+        si
+
+        /// Writes `value` as its `to_string` text, then a line break.
+        ///
+        /// - value: the value to write
+        write_line(value: object) pure =>
+            write_line(value.to_string())
+
+        /// Writes out anything the writer holds back. The host's streams
+        /// hold nothing back, so this does nothing there.
+        flush() is si
+    si
+
+    // A writer over one of the host's streams: 1 is standard output and 2
+    // standard error.
+    class _HOST_WRITER: TextWriter is
+        _stream: int
+
+        init(stream: int) is
+            super.init()
+            _stream = stream
+        si
+
+        write(text: string) pure =>
+            _write(text, _stream)
+
+        @intrinsic("host.write")
+        _write(text: string, stream: int) static
+    si
+si

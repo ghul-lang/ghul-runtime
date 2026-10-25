@@ -1,0 +1,151 @@
+@@IF.dotnet()
+namespace Ghul is
+    use Collections
+    use System.Numerics.IBinaryInteger
+    use System.Numerics.IAdditionOperators.`+
+
+    // Ranges over any of the primitive integer types, over `char`, and
+    // over `bigint` - everything .NET's `IBinaryInteger[T]` covers. `int`
+    // keeps its own `INT_RANGE` and `INT_RANGE_INCLUSIVE`, which the
+    // compiler constructs directly from the two bounds, so an ordinary
+    // `1..5` never pays for the generic instantiation.
+    //
+    // The cursor is the element about to be yielded rather than the one
+    // before it: `from - 1` is not available on a type whose lowest value
+    // is where a range legitimately starts, and `char` and the unsigned
+    // types both have one.
+
+    /// The half-open range from `from` up to but not including `to`, over any type `IBinaryInteger[T]` covers.
+    struct RANGE[T: IBinaryInteger[T]]: Range[T], Iterable[T], Iterator[T], Resettable is
+        /// This range, as its own iterator.
+        iterator: Iterator[T] => self
+
+        /// The first element.
+        from: T
+        /// The exclusive upper bound.
+        to: T
+
+        /// The element the range is currently at.
+        current: T
+
+        _started: bool field
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: T, to: T) is
+            self.from = from
+            self.to = to
+
+            current = from
+            _started = false
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _started then
+                current = current + T.one
+            else
+                _started = true
+            fi
+
+            return current < to
+        si
+
+        /// Rewinds to `from`, as though the range had not been read yet.
+        reset() is
+            current = from
+            _started = false
+        si
+
+        /// Renders as `from..to`, with the current element appended once the range has started.
+        to_string() -> string =>
+            if _started then
+                "{from}..{to} @ {current}"
+            else
+                "{from}..{to}"
+            fi
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The closed range from `from` to `to`, including both, over any type `IBinaryInteger[T]` covers.
+    struct RANGE_INCLUSIVE[T: IBinaryInteger[T]]: Range[T], Iterable[T], Iterator[T], Resettable is
+        /// This range, as its own iterator.
+        iterator: Iterator[T] => self
+
+        /// The first element.
+        from: T
+        /// The last element.
+        to: T
+
+        /// The element the range is currently at.
+        current: T
+
+        _started: bool field
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: T, to: T) is
+            self.from = from
+            self.to = to
+
+            current = from
+            _started = false
+        si
+
+        // The last element is the largest value of `T` when `to` is, so
+        // the step is taken only once the cursor is known to be short of
+        // it. Incrementing first and comparing after would wrap round.
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if !_started then
+                _started = true
+
+                return current <= to
+            fi
+
+            if current < to then
+                current = current + T.one
+
+                return true
+            fi
+
+            return false
+        si
+
+        /// Rewinds to `from`, as though the range had not been read yet.
+        reset() is
+            current = from
+            _started = false
+        si
+
+        /// Renders as `from::to`, with the current element appended once the range has started.
+        to_string() -> string =>
+            if _started then
+                "{from}::{to} @ {current}"
+            else
+                "{from}::{to}"
+            fi
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+si
+
+// `..` and `::` over `int` are intrinsics, so these are what makes the
+// same spelling work for every other integer type. They belong beside
+// them rather than among the library's globals.
+namespace Ghul.Intrinsics is
+    use Ghul
+    use System.Numerics.IBinaryInteger
+
+    /// The range from `from` up to but not including `to`.
+    ..[T: IBinaryInteger[T]](from: T, to: T) -> RANGE[T] pure =>
+        RANGE[T](from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::[T: IBinaryInteger[T]](from: T, to: T) -> RANGE_INCLUSIVE[T] pure =>
+        RANGE_INCLUSIVE[T](from, to)
+si

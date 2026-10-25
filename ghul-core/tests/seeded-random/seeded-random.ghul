@@ -1,0 +1,27 @@
+// A seeded generator gives the sequence .NET's System.Random gives for the
+// same seed, through every member. The expected output is .NET's.
+use IO.Std.write_line
+
+show(seed: int) is
+    let r = Ghul.RANDOM(seed)
+
+    write_line("seed {seed}")
+    write_line("  next {r.next()} {r.next()} {r.next()}")
+    write_line("  next(100) {r.next(100)} {r.next(100)} {r.next(100)}")
+    write_line("  next(-50, 50) {r.next(-50, 50)} {r.next(-50, 50)}")
+    write_line("  next(large) {r.next(-2000000000, 2000000000)} {r.next(-2000000000, 2000000000)}")
+    write_line("  next_double {r.next_double()} {r.next_double()}")
+    write_line("  next_int64 {r.next_int64()} {r.next_int64()}")
+    write_line("  next_int64(1000) {r.next_int64(1000L)} {r.next_int64(1000L)}")
+    write_line("  next_int64(range) {r.next_int64(-5000000000L, 5000000000L)} {r.next_int64(10L, 20L)}")
+    write_line("  next(0) {r.next(0)} next(5, 5) {r.next(5, 5)}")
+si
+
+entry() is
+    show(0)
+    show(1)
+    show(42)
+    show(-7)
+    show(123456789)
+    show(-2147483647 - 1)
+si

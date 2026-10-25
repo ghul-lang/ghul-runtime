@@ -1,0 +1,100 @@
+// Path takes paths apart and puts them together as .NET does on Linux, and
+// the file system, which under Node is the real one, answers as .NET does
+// over the same files. Paths the program prints are made relative to the
+// current directory, so the output does not depend on where it runs.
+
+use default
+
+let here = IO.Directory.get_current_directory()
+
+relative(path: string) -> string => path.replace("{here}/", "")
+
+for p in ["/a/b/c.txt", "a/b", "/", "", "c.tar.gz", "dir/", "/x", ".hidden", "noext."] do
+    write_line("[{p}] name=[{IO.Path.get_file_name(p)}] stem=[{IO.Path.get_file_name_without_extension(p)}] ext=[{IO.Path.get_extension(p)}] has={IO.Path.has_extension(p)} dir=[{IO.Path.get_directory_name(p) ?? "null"}] rooted={IO.Path.is_path_rooted(p)}")
+od
+write_line(IO.Path.combine("a", "b"))
+write_line(IO.Path.combine("a/", "b"))
+write_line(IO.Path.combine("a", "/b"))
+write_line(IO.Path.combine("", "b"))
+write_line(IO.Path.combine("a", ""))
+write_line(IO.Path.combine("a", "b", "c"))
+write_line(IO.Path.combine("a", "b", "c", "d"))
+write_line(IO.Path.combine(["x", "y", "z"]))
+write_line(IO.Path.change_extension("/a/b.txt", ".md")!)
+write_line(IO.Path.change_extension("/a/b.txt", "md")!)
+write_line(IO.Path.change_extension("/a/b", ".md")!)
+write_line(IO.Path.get_full_path("/a/./b/../c"))
+write_line(IO.Path.get_full_path("/a/b/"))
+write_line(IO.Path.get_relative_path("/a/b", "/a/c/d"))
+write_line(IO.Path.get_relative_path("/a/b", "/a/b"))
+write_line("{IO.File.exists("/x")} {IO.Directory.exists("/x")}")
+try
+    IO.File.read_all_lines("/data.txt")
+catch e: IO.FileNotFoundException
+    write_line("missing: {e.message}")
+yrt
+
+IO.File.write_all_text("notes.txt", "first\nsecond\r\nthird\rfourth\n")
+write_line("{IO.File.exists("notes.txt")} {IO.File.exists(IO.Path.get_full_path("notes.txt"))} {IO.File.exists("missing.txt")}")
+write_line(IO.File.read_all_lines("notes.txt") |> join("|"))
+IO.File.append_all_text("notes.txt", "fifth")
+write_line(IO.File.read_all_lines(IO.Path.get_full_path("notes.txt")) |> join("|"))
+write_line("{IO.FileInfo("notes.txt").length} {relative(IO.FileInfo("notes.txt").full_name)}")
+
+IO.File.write_all_text("unicode.txt", "café € 😀")
+let encoded = IO.File.read_all_bytes("unicode.txt")
+write_line(encoded |> map(b => "{b}") |> join(" "))
+write_line("{IO.File.read_all_text("unicode.txt") =~ "café € 😀"} {IO.File.read_all_text("unicode.txt").length}")
+
+let bytes = [137ub, 80ub, 78ub, 71ub]
+IO.File.write_all_bytes("image.png", bytes)
+let back = IO.File.read_all_bytes("image.png")
+write_line("{back.count} {back[0]} {back[3]}")
+
+try
+    IO.File.write_all_text("/nowhere/file.txt", "x")
+catch e: IO.DirectoryNotFoundException
+    write_line("no directory: {e.message}")
+yrt
+
+IO.Directory.create_directory("scratch/frames")
+IO.File.write_all_text("scratch/frames/a.txt", "a")
+IO.File.write_all_text("scratch/frames/b.log", "b")
+IO.File.write_all_text("scratch/top.txt", "t")
+write_line("{IO.Directory.exists("scratch")} {IO.Directory.exists("scratch/frames")} {IO.Directory.exists("scratch/none")}")
+write_line(IO.Directory.get_files("scratch") |> join(" "))
+write_line(IO.Directory.get_files("scratch", "*.txt", IO.SearchOption.ALL_DIRECTORIES) |> join(" "))
+write_line(IO.Directory.get_directories("scratch") |> join(" "))
+write_line(IO.Directory.get_file_system_entries("scratch/frames") |> join(" "))
+
+try
+    IO.Directory.delete("scratch")
+catch e: IO.IOException
+    write_line("not empty")
+yrt
+
+IO.File.copy("scratch/top.txt", "copy.txt")
+IO.File.move("copy.txt", "moved.txt")
+write_line("{IO.File.exists("copy.txt")} {IO.File.read_all_text("moved.txt")}")
+IO.File.delete("moved.txt")
+IO.Directory.delete("scratch", true)
+write_line("{IO.File.exists("moved.txt")} {IO.Directory.exists("scratch")}")
+
+let writer = IO.File.create_text("log.txt")
+writer.write_line("one")
+writer.write("two")
+writer.close()
+write_line(IO.File.read_all_text("log.txt").replace("\n", "|"))
+
+let stream = IO.File.create("data.bin")
+stream.write_byte(1ub)
+stream.write([2ub, 3ub, 4ub], 0, 3)
+stream.close()
+let input = IO.File.open_read("data.bin")
+write_line("{input.length} {input.read_byte()} {input.read_byte()}")
+
+try
+    IO.File.read_all_bytes("gone.bin")
+catch e: IO.FileNotFoundException
+    write_line("missing: {relative(e.message)}")
+yrt

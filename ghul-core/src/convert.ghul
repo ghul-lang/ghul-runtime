@@ -1,0 +1,390 @@
+namespace System is
+    use Ghul.ArgumentException
+    use Ghul.ArgumentOutOfRangeException
+    use Ghul.FormatException
+    use Ghul.OverflowException
+
+    /// .NET's conversions between integers and their text in a base, and
+    /// between bytes and hexadecimal or base64 text, under the name .NET
+    /// gives them.
+    class Convert is
+        /// `value` written in `to_base`, which is 2, 8, 10 or 16. In any base
+        /// but 10 a negative value is written as its bits, so -1 in base 16
+        /// is `ff`.
+        ///
+        /// - value: the value to write
+        /// - to_base: the base to write it in
+        to_string(value: ubyte, to_base: int) -> string static =>
+            _in_base(cast long(value), cast ulong(value), to_base)
+
+        /// `value` written in `to_base`, which is 2, 8, 10 or 16. In any base
+        /// but 10 a negative value is written as its 16 bits.
+        ///
+        /// - value: the value to write
+        /// - to_base: the base to write it in
+        to_string(value: short, to_base: int) -> string static =>
+            _in_base(cast long(value), cast ulong(value) & 0xFFFFul, to_base)
+
+        /// `value` written in `to_base`, which is 2, 8, 10 or 16. In any base
+        /// but 10 a negative value is written as its 32 bits.
+        ///
+        /// - value: the value to write
+        /// - to_base: the base to write it in
+        to_string(value: int, to_base: int) -> string static =>
+            _in_base(cast long(value), cast ulong(value) & 0xFFFF_FFFFul, to_base)
+
+        /// `value` written in `to_base`, which is 2, 8, 10 or 16. In any base
+        /// but 10 a negative value is written as its 64 bits.
+        ///
+        /// - value: the value to write
+        /// - to_base: the base to write it in
+        to_string(value: long, to_base: int) -> string static =>
+            _in_base(value, cast ulong(value), to_base)
+
+        /// The `int` `value` holds, or 0 where it is null.
+        ///
+        /// - value: the text to read
+        to_int32(value: string?) -> int static =>
+            if let text = value then int.parse(text) else 0 fi
+
+        /// The `int` `value` holds in `from_base`, which is 2, 8, 10 or 16, or
+        /// 0 where it is null. In any base but 10 the text is read as the
+        /// value's 32 bits, so `FFFFFFFF` in base 16 is -1.
+        ///
+        /// - value: the text to read
+        /// - from_base: the base it is written in
+        to_int32(value: string?, from_base: int) -> int static =>
+            cast int(_parse(value, from_base, 32))
+
+        /// The `long` `value` holds, or 0 where it is null.
+        ///
+        /// - value: the text to read
+        to_int64(value: string?) -> long static =>
+            if let text = value then long.parse(text) else 0L fi
+
+        /// The `long` `value` holds in `from_base`, which is 2, 8, 10 or 16,
+        /// or 0 where it is null. In any base but 10 the text is read as the
+        /// value's 64 bits.
+        ///
+        /// - value: the text to read
+        /// - from_base: the base it is written in
+        to_int64(value: string?, from_base: int) -> long static =>
+            _parse(value, from_base, 64)
+
+        /// The `ubyte` `value` holds, or 0 where it is null.
+        ///
+        /// - value: the text to read
+        to_byte(value: string?) -> ubyte static is
+            let result = to_int32(value)
+
+            if result < 0 \/ result > 255 then
+                throw OverflowException("value was either too large or too small for an unsigned byte")
+            fi
+
+            return cast ubyte(result)
+        si
+
+        /// The `ubyte` `value` holds in `from_base`, which is 2, 8, 10 or 16,
+        /// or 0 where it is null.
+        ///
+        /// - value: the text to read
+        /// - from_base: the base it is written in
+        to_byte(value: string?, from_base: int) -> ubyte static is
+            let result = _parse(value, from_base, 32)
+
+            if result < 0L \/ result > 255L then
+                throw OverflowException("value was either too large or too small for an unsigned byte")
+            fi
+
+            return cast ubyte(result)
+        si
+
+        /// `bytes` as hexadecimal text, two upper-case digits a byte.
+        ///
+        /// - bytes: the bytes to write
+        to_hex_string(bytes: ubyte[]) -> string static => _hex(bytes, "0123456789ABCDEF")
+
+        /// `bytes` as hexadecimal text, two lower-case digits a byte.
+        ///
+        /// - bytes: the bytes to write
+        to_hex_string_lower(bytes: ubyte[]) -> string static => _hex(bytes, "0123456789abcdef")
+
+        /// The bytes hexadecimal text holds, two digits a byte in either case.
+        ///
+        /// - text: the text to read, of even length
+        from_hex_string(text: string) -> ubyte[] static is
+            if text.length % 2 != 0 then
+                throw FormatException("the input is not a valid hex string as its length is not a multiple of 2")
+            fi
+
+            let result = Ghul._array_new[ubyte](text.length / 2)
+            let i mut = 0
+
+            while i < result.count do
+                let high = _digit(text[2 * i], 16)
+                let low = _digit(text[2 * i + 1], 16)
+
+                if high < 0 \/ low < 0 then
+                    throw FormatException("the input is not a valid hex string as it contains a non-hex character")
+                fi
+
+                Ghul._array_set(result, i, cast ubyte(high * 16 + low))
+                i = i + 1
+            od
+
+            return result
+        si
+
+        /// `bytes` as base64 text, padded with `=` to a multiple of four
+        /// characters.
+        ///
+        /// - bytes: the bytes to write
+        to_base64_string(bytes: ubyte[]) -> string static is
+            let alphabet = _base64_alphabet
+            let result = Ghul._array_new[char]((bytes.count + 2) / 3 * 4)
+            let i mut = 0
+            let at mut = 0
+
+            while i < bytes.count do
+                let remaining = bytes.count - i
+                let first = int(bytes[i])
+                let second = if remaining > 1 then int(bytes[i + 1]) else 0 fi
+                let third = if remaining > 2 then int(bytes[i + 2]) else 0 fi
+                let group = (first << 16) | (second << 8) | third
+
+                Ghul._array_set(result, at, alphabet[(group >> 18) & 63])
+                Ghul._array_set(result, at + 1, alphabet[(group >> 12) & 63])
+                Ghul._array_set(result, at + 2, if remaining > 1 then alphabet[(group >> 6) & 63] else '=' fi)
+                Ghul._array_set(result, at + 3, if remaining > 2 then alphabet[group & 63] else '=' fi)
+                at = at + 4
+
+                i = i + 3
+            od
+
+            return string(result)
+        si
+
+        /// The bytes base64 text holds. White space in the text is skipped.
+        ///
+        /// - text: the text to read
+        from_base64_string(text: string) -> ubyte[] static is
+            let values = Collections.LIST[int]()
+            let padding mut = 0
+
+            for c in text do
+                if c == ' ' \/ c == '\t' \/ c == '\r' \/ c == '\n' then
+                    continue
+                fi
+
+                if c == '=' then
+                    padding = padding + 1
+                    values.add(0)
+                    continue
+                fi
+
+                let value = _base64_value(c)
+
+                if value < 0 \/ padding > 0 then
+                    throw FormatException("the input is not a valid base-64 string")
+                fi
+
+                values.add(value)
+            od
+
+            if values.count % 4 != 0 \/ padding > 2 then
+                throw FormatException("the input is not a valid base-64 string")
+            fi
+
+            let result = Ghul._array_new[ubyte](values.count / 4 * 3 - padding)
+            let i mut = 0
+            let out mut = 0
+
+            while i < values.count do
+                let group = (values[i] << 18) | (values[i + 1] << 12) | (values[i + 2] << 6) | values[i + 3]
+
+                for shift in [16, 8, 0] do
+                    if out < result.count then
+                        Ghul._array_set(result, out, cast ubyte((group >> shift) & 255))
+                        out = out + 1
+                    fi
+                od
+
+                i = i + 4
+            od
+
+            return result
+        si
+
+        _base64_alphabet: string static => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+        _base64_value(c: char) -> int static is
+            if c >= 'A' /\ c <= 'Z' then
+                return int(c) - int('A')
+            elif c >= 'a' /\ c <= 'z' then
+                return int(c) - int('a') + 26
+            elif c >= '0' /\ c <= '9' then
+                return int(c) - int('0') + 52
+            elif c == '+' then
+                return 62
+            elif c == '/' then
+                return 63
+            fi
+
+            return -1
+        si
+
+        _hex(bytes: ubyte[], digits: string) -> string static is
+            let result = Ghul._array_new[char](bytes.count * 2)
+            let i mut = 0
+
+            while i < bytes.count do
+                Ghul._array_set(result, 2 * i, digits[int(bytes[i]) >> 4])
+                Ghul._array_set(result, 2 * i + 1, digits[int(bytes[i]) & 15])
+                i = i + 1
+            od
+
+            return string(result)
+        si
+
+        _check_base(base: int) static is
+            if base != 2 /\ base != 8 /\ base != 10 /\ base != 16 then
+                throw ArgumentException("invalid base")
+            fi
+        si
+
+        // `signed` in base 10, otherwise `bits`, the value's bits with any
+        // above its width cleared, in `base`.
+        _in_base(signed: long, bits: ulong, base: int) -> string static is
+            _check_base(base)
+
+            if base == 10 then
+                return signed.to_string()
+            fi
+
+            if bits == 0ul then
+                return "0"
+            fi
+
+            let digits = "0123456789abcdef"
+            let shift = if base == 2 then 1 elif base == 8 then 3 else 4 fi
+            let mask = cast ulong(base - 1)
+            let count mut = 0
+            let rest mut = bits
+
+            while rest != 0ul do
+                count = count + 1
+                rest = rest >> shift
+            od
+
+            let result = Ghul._array_new[char](count)
+
+            rest = bits
+
+            while rest != 0ul do
+                count = count - 1
+                Ghul._array_set(result, count, digits[cast int(rest & mask)])
+                rest = rest >> shift
+            od
+
+            return string(result)
+        si
+
+        // The digit `c` stands for in `base`, or -1 where it is not one.
+        _digit(c: char, base: int) -> int static is
+            let value =
+                if c >= '0' /\ c <= '9' then int(c) - int('0')
+                elif c >= 'a' /\ c <= 'f' then int(c) - int('a') + 10
+                elif c >= 'A' /\ c <= 'F' then int(c) - int('A') + 10
+                else -1
+                fi
+
+            return if value < base then value else -1 fi
+        si
+
+        // The value `value` holds in `base`, read as a signed number of
+        // `width` bits in base 10 and as the bits of one in any other base.
+        _parse(value: string?, base: int, width: int) -> long static is
+            _check_base(base)
+
+            if !value? then
+                return 0L
+            fi
+
+            let text = value
+
+            if text.length == 0 then
+                throw ArgumentOutOfRangeException("value", "the text is empty")
+            fi
+
+            let i mut = 0
+            let negative mut = false
+
+            if text[0] == '-' then
+                if base != 10 then
+                    throw ArgumentException("the text cannot contain a minus sign if the base is not 10")
+                fi
+
+                negative = true
+                i = 1
+            elif text[0] == '+' then
+                i = 1
+            fi
+
+            if base == 16 /\ i + 1 < text.length /\ text[i] == '0' /\ (text[i + 1] == 'x' \/ text[i + 1] == 'X') then
+                i = i + 2
+            fi
+
+            let first = i
+            let limit: ulong =
+                if base == 10 then
+                    if width == 32 then
+                        if negative then 0x8000_0000ul else 0x7FFF_FFFFul fi
+                    else
+                        if negative then 0x8000_0000_0000_0000ul else 0x7FFF_FFFF_FFFF_FFFFul fi
+                    fi
+                elif width == 32 then
+                    0xFFFF_FFFFul
+                else
+                    0xFFFF_FFFF_FFFF_FFFFul
+                fi
+
+            let ubase = cast ulong(base)
+            let result mut = 0ul
+
+            while i < text.length do
+                let digit = _digit(text[i], base)
+
+                if digit < 0 then
+                    break
+                fi
+
+                let d = cast ulong(digit)
+
+                if result > (limit - d) / ubase then
+                    throw OverflowException("value was either too large or too small")
+                fi
+
+                result = result * ubase + d
+                i = i + 1
+            od
+
+            if i == first then
+                throw FormatException("could not find any recognizable digits")
+            fi
+
+            if i < text.length then
+                throw FormatException("additional non-parsable characters are at the end of the string")
+            fi
+
+            if negative then
+                return -cast long(result)
+            fi
+
+            if width == 32 then
+                return cast long(cast int(cast uint(result)))
+            fi
+
+            return cast long(result)
+        si
+    si
+si

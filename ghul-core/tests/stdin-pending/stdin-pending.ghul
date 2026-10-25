@@ -1,0 +1,19 @@
+// Standard input asked about before it is read: waiting for a line to
+// arrive, and reading it once it has. The input is supplied whole and
+// closed, so every wait is answered true and the end of the input is itself
+// something to wait for.
+
+use default
+
+while IO.Std.wait_for_input(5000) do
+    let line = IO.Std.read_line()
+
+    if !line? then
+        break
+    fi
+
+    write_line("line: [{line}]")
+od
+
+write_line("ended: {IO.Std.wait_for_input(5000)} {IO.Std.has_pending_input()}")
+write_line("heap: {System.GC.get_total_memory(false) > 0L} {System.GC.get_total_memory(true) > 0L}")

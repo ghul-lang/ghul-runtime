@@ -1,0 +1,35 @@
+// A string is Comparable[string], Equatable[string] and Iterable[char], so
+// it goes through a generic bound and a trait-typed value as on .NET.
+use IO.Std.write_line
+
+larger[T: Ghul.Comparable[T]](a: T, b: T) -> T => if a <> b > 0 then a else b fi
+
+same[T: Ghul.Equatable[T]](a: T, b: T) -> bool => a =~ b
+
+count_letters(text: Collections.Iterable[char]) -> int is
+    let count mut = 0
+
+    for c in text do
+        if char.is_letter(c) then
+            count = count + 1
+        fi
+    od
+
+    return count
+si
+
+entry() is
+    write_line(larger("pear", "apple"))
+    write_line(if same("ab", "ab") /\ !same("ab", "ba") then "same" else "different" fi)
+
+    let ordered: Ghul.Comparable[string] = "b"
+    write_line("{ordered <> "a" > 0}")
+
+    write_line("{count_letters("a1 b2 c3")}")
+
+    let units: Collections.Iterable[char] = "xyz"
+
+    for c in units do
+        write_line(c.to_string())
+    od
+si

@@ -1,0 +1,31 @@
+// The builder an interpolation accumulates its text in, and the text the
+// core library gives the scalars. The program's exit status is the length
+// of the text built: 2, 10 and 1 characters, then 4 for True and one for
+// each of the eight numbers.
+f(count: int, wide: long, letter: char) -> string is
+    let builder = Text.STRING_BUILDER()
+
+    builder.append(count.to_string())
+    builder.append(wide.to_string())
+    builder.append(letter.to_string())
+
+    return builder.to_string()
+si
+
+g(flag: bool, small: byte, half: short, native: word, unsigned_small: ubyte, unsigned_half: ushort, unsigned: uint, unsigned_wide: ulong, unsigned_native: uword) -> string is
+    let builder = Text.STRING_BUILDER()
+
+    builder.append(flag.to_string())
+    builder.append(small.to_string())
+    builder.append(half.to_string())
+    builder.append(native.to_string())
+    builder.append(unsigned_small.to_string())
+    builder.append(unsigned_half.to_string())
+    builder.append(unsigned.to_string())
+    builder.append(unsigned_wide.to_string())
+    builder.append(unsigned_native.to_string())
+
+    return builder.to_string()
+si
+
+entry() -> int => f(42, 9000000000L, 'Z').length + g(true, 1b, 2s, 3w, 4ub, 5us, 6u, 7ul, 8uw).length

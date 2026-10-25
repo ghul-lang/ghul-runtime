@@ -1,0 +1,27 @@
+// A field narrowed by a presence test stays narrowed across asking an object
+// for its text, which the core library is trusted to answer without storing.
+use IO.Std.write_line
+
+class HOLDER is
+    _name: string?
+
+    init(name: string) is
+        _name = name
+    si
+
+    report(value: object) -> string is
+        if _name? then
+            let text = value.to_string()
+
+            return "{_name.length} {text.length > 0}"
+        fi
+
+        return "absent"
+    si
+si
+
+entry() is
+    let holder = HOLDER("name")
+
+    write_line(holder.report(holder))
+si

@@ -1,0 +1,264 @@
+namespace Ghul is
+    use Collections
+
+    /// Implemented by a range type, giving its two endpoints.
+    trait Range[T] is
+        /// The first element.
+        from: T
+        /// The upper bound.
+        to: T
+    si
+
+    /// The half-open range of `int` from `from` up to but not including `to`, produced by `..`.
+    struct INT_RANGE: Range[int], Iterable[int], Iterator[int] is
+        /// This range, as its own iterator.
+        iterator: Iterator[int] => self
+
+        /// The first element.
+        from: int
+        /// The exclusive upper bound.
+        to: int
+
+        /// The element the range is currently at.
+        current: int
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: int, to: int) is
+            self.from = from
+            self.to = to
+
+            current = from - 1
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            current = current + 1
+            return current < to
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The closed range of `int` from `from` to `to`, including both, produced by `::`.
+    struct INT_RANGE_INCLUSIVE: Range[int], Iterable[int], Iterator[int] is
+        /// This range, as its own iterator.
+        iterator: Iterator[int] => self
+
+        /// The first element.
+        from: int
+        /// The inclusive upper bound.
+        to: int
+
+        /// The element the range is currently at.
+        current: int
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: int, to: int) is
+            self.from = from
+            self.to = to
+
+            current = from - 1
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            current = current + 1
+            return current <= to
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+si
+
+namespace Ghul is
+    use Collections
+
+    /// The half-open range of `long` from `from` up to but not including `to`, produced by `..`.
+    struct LONG_RANGE: Range[long], Iterable[long], Iterator[long] is
+        /// This range, as its own iterator.
+        iterator: Iterator[long] => self
+
+        /// The first element.
+        from: long
+        /// The exclusive upper bound.
+        to: long
+
+        /// The element the range is currently at.
+        current: long
+
+        _next: long
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: long, to: long) is
+            self.from = from
+            self.to = to
+
+            _next = from
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _next >= to then
+                return false
+            fi
+
+            current = _next
+            _next = _next + 1L
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The closed range of `long` from `from` to `to`, including both, produced by `::`.
+    struct LONG_RANGE_INCLUSIVE: Range[long], Iterable[long], Iterator[long] is
+        /// This range, as its own iterator.
+        iterator: Iterator[long] => self
+
+        /// The first element.
+        from: long
+        /// The inclusive upper bound.
+        to: long
+
+        /// The element the range is currently at.
+        current: long
+
+        _next: long
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: long, to: long) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1L
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The half-open range of `char` from `from` up to but not including `to`, produced by `..`.
+    struct CHAR_RANGE: Range[char], Iterable[char], Iterator[char] is
+        /// This range, as its own iterator.
+        iterator: Iterator[char] => self
+
+        /// The first element.
+        from: char
+        /// The exclusive upper bound.
+        to: char
+
+        /// The element the range is currently at.
+        current: char
+
+        _next: int
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: char, to: char) is
+            self.from = from
+            self.to = to
+
+            _next = int(from)
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _next >= int(to) then
+                return false
+            fi
+
+            current = cast char(_next)
+            _next = _next + 1
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The closed range of `char` from `from` to `to`, including both, produced by `::`.
+    struct CHAR_RANGE_INCLUSIVE: Range[char], Iterable[char], Iterator[char] is
+        /// This range, as its own iterator.
+        iterator: Iterator[char] => self
+
+        /// The first element.
+        from: char
+        /// The inclusive upper bound.
+        to: char
+
+        /// The element the range is currently at.
+        current: char
+
+        _next: int
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: char, to: char) is
+            self.from = from
+            self.to = to
+
+            _next = int(from)
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _next > int(to) then
+                return false
+            fi
+
+            current = cast char(_next)
+            _next = _next + 1
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+si
+
+namespace Ghul.Intrinsics is
+    use Ghul
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: long, to: long) -> LONG_RANGE pure => LONG_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: long, to: long) -> LONG_RANGE_INCLUSIVE pure =>
+        LONG_RANGE_INCLUSIVE(from, to)
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: char, to: char) -> CHAR_RANGE pure => CHAR_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: char, to: char) -> CHAR_RANGE_INCLUSIVE pure =>
+        CHAR_RANGE_INCLUSIVE(from, to)
+si

@@ -1,0 +1,169 @@
+namespace Ghul is
+    // The range of each numeric type, and for the floating-point types their
+    // special values and the tests for them, as .NET gives the types
+    // themselves.
+
+    partial byte is
+        /// The least `byte`, -128.
+        min_value: byte static => cast byte(-128)
+
+        /// The greatest `byte`, 127.
+        max_value: byte static => cast byte(127)
+    si
+
+    partial ubyte is
+        /// The least `ubyte`, 0.
+        min_value: ubyte static => 0ub
+
+        /// The greatest `ubyte`, 255.
+        max_value: ubyte static => 255ub
+    si
+
+    partial short is
+        /// The least `short`, -32768.
+        min_value: short static => cast short(-32768)
+
+        /// The greatest `short`, 32767.
+        max_value: short static => cast short(32767)
+    si
+
+    partial ushort is
+        /// The least `ushort`, 0.
+        min_value: ushort static => 0us
+
+        /// The greatest `ushort`, 65535.
+        max_value: ushort static => 65535us
+    si
+
+    partial int is
+        /// The least `int`, -2147483648.
+        min_value: int static => -2147483647 - 1
+
+        /// The greatest `int`, 2147483647.
+        max_value: int static => 2147483647
+    si
+
+    partial uint is
+        /// The least `uint`, 0.
+        min_value: uint static => 0u
+
+        /// The greatest `uint`, 4294967295.
+        max_value: uint static => 4294967295u
+    si
+
+    partial long is
+        /// The least `long`, -9223372036854775808.
+        min_value: long static => -9223372036854775807L - 1L
+
+        /// The greatest `long`, 9223372036854775807.
+        max_value: long static => 9223372036854775807L
+    si
+
+    partial ulong is
+        /// The least `ulong`, 0.
+        min_value: ulong static => 0ul
+
+        /// The greatest `ulong`, 18446744073709551615.
+        max_value: ulong static => 18446744073709551615ul
+    si
+
+    partial single is
+        /// The least finite `single`.
+        min_value: single static => -3.40282347e38s
+
+        /// The greatest finite `single`.
+        max_value: single static => 3.40282347e38s
+
+        /// The smallest positive `single`.
+        epsilon: single static => 1.40129846e-45s
+
+        /// Positive infinity.
+        positive_infinity: single static => 1.0s / 0.0s
+
+        /// Negative infinity.
+        negative_infinity: single static => -1.0s / 0.0s
+
+        /// A value that is not a number.
+        na_n: single static => 0.0s / 0.0s
+
+        /// Whether `value` is not a number.
+        ///
+        /// - value: the value to test
+        is_na_n(value: single) -> bool static pure => value != value
+
+        /// Whether `value` is positive or negative infinity.
+        ///
+        /// - value: the value to test
+        is_infinity(value: single) -> bool static pure => value == value /\ value - value != value - value
+
+        /// Whether `value` is positive infinity.
+        ///
+        /// - value: the value to test
+        is_positive_infinity(value: single) -> bool static pure => value > 0.0s /\ is_infinity(value)
+
+        /// Whether `value` is negative infinity.
+        ///
+        /// - value: the value to test
+        is_negative_infinity(value: single) -> bool static pure => value < 0.0s /\ is_infinity(value)
+
+        /// Whether `value` is neither infinite nor not a number.
+        ///
+        /// - value: the value to test
+        is_finite(value: single) -> bool static pure => value - value == value - value
+    si
+
+    partial double is
+        /// The least finite `double`.
+        min_value: double static => -1.7976931348623157e308
+
+        /// The greatest finite `double`.
+        max_value: double static => 1.7976931348623157e308
+
+        /// The smallest positive `double`.
+        epsilon: double static => 4.9406564584124654e-324
+
+        /// Positive infinity.
+        positive_infinity: double static => 1.0 / 0.0
+
+        /// Negative infinity.
+        negative_infinity: double static => -1.0 / 0.0
+
+        /// A value that is not a number.
+        na_n: double static => 0.0 / 0.0
+
+        /// Whether `value` is not a number.
+        ///
+        /// - value: the value to test
+        is_na_n(value: double) -> bool static pure => value != value
+
+        /// Whether `value` is positive or negative infinity.
+        ///
+        /// - value: the value to test
+        is_infinity(value: double) -> bool static pure => value == value /\ value - value != value - value
+
+        /// Whether `value` is positive infinity.
+        ///
+        /// - value: the value to test
+        is_positive_infinity(value: double) -> bool static pure => value > 0.0 /\ is_infinity(value)
+
+        /// Whether `value` is negative infinity.
+        ///
+        /// - value: the value to test
+        is_negative_infinity(value: double) -> bool static pure => value < 0.0 /\ is_infinity(value)
+
+        /// Whether `value` is neither infinite nor not a number.
+        ///
+        /// - value: the value to test
+        is_finite(value: double) -> bool static pure => value - value == value - value
+
+        /// `degrees` converted to radians.
+        ///
+        /// - degrees: the angle in degrees
+        degrees_to_radians(degrees: double) -> double static pure => degrees * Math.pi / 180.0
+
+        /// `radians` converted to degrees.
+        ///
+        /// - radians: the angle in radians
+        radians_to_degrees(radians: double) -> double static pure => radians * 180.0 / Math.pi
+    si
+si

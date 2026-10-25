@@ -1,0 +1,5 @@
+use IO.Std.write_line
+
+write_line("input: {IO.Std.is_input_redirected}")
+write_line("output: {IO.Std.is_output_redirected}")
+write_line("error: {IO.Std.is_error_redirected}")

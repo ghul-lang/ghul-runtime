@@ -1,0 +1,6 @@
+first: [one]
+char: 116 peek: 119
+line: [wo]
+rest: [three
+four]
+after: null -1

@@ -1,0 +1,128 @@
+namespace Collections is
+    /// A first-in, first-out collection: elements are removed in the order
+    /// they were added. This is .NET's `Queue<T>`, which keeps its .NET name
+    /// in ghūl.
+    @suppress("non-upper-snake-case-name")
+    class Queue[T]: Bag[T] is
+        _items: T[];
+        _head: int;
+        _count: int;
+
+        /// An empty queue.
+        init() is
+            _items = Ghul._array_new[T](0);
+            _head = 0;
+            _count = 0;
+        si
+
+        /// A queue holding the elements of `source`, in order.
+        ///
+        /// - source: the elements to add
+        init(source: Iterable[T]) is
+            _items = Ghul._array_new[T](0);
+            _head = 0;
+            _count = 0;
+
+            for value in source do
+                enqueue(value);
+            od
+        si
+
+        /// The number of elements.
+        count: int pure => _count;
+
+        /// Adds `value` at the back.
+        ///
+        /// - value: the element to add
+        enqueue(value: T) is
+            if _count == _items.count then
+                _grow();
+            fi
+
+            Ghul._array_set(_items, (_head + _count) % _items.count, value);
+            _count = _count + 1;
+        si
+
+        /// Removes and returns the element at the front. Throws
+        /// `Ghul.InvalidOperationException` when the queue is empty.
+        dequeue() -> T is
+            if _count == 0 then
+                throw Ghul.InvalidOperationException("Queue empty.");
+            fi
+
+            let value = _items[_head];
+
+            Ghul._array_set(_items, _head, _[T]);
+
+            _head = (_head + 1) % _items.count;
+            _count = _count - 1;
+
+            return value;
+        si
+
+        /// The element at the front, left in place. Throws
+        /// `Ghul.InvalidOperationException` when the queue is empty.
+        peek() -> T pure is
+            if _count == 0 then
+                throw Ghul.InvalidOperationException("Queue empty.");
+            fi
+
+            return _items[_head];
+        si
+
+        /// Removes every element.
+        clear() is
+            _items = Ghul._array_new[T](0);
+            _head = 0;
+            _count = 0;
+        si
+
+        /// Whether any element is `=~` to `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: T) -> bool is
+            let i mut = 0;
+
+            while i < _count do
+                if _at(i) =~ value then
+                    return true;
+                fi
+
+                i = i + 1;
+            od
+
+            return false;
+        si
+
+        /// The elements from front to back, copied into a new array.
+        to_array() -> T[] is
+            let result = Ghul._array_new[T](_count);
+            let i mut = 0;
+
+            while i < _count do
+                Ghul._array_set(result, i, _at(i));
+                i = i + 1;
+            od
+
+            return result;
+        si
+
+        /// An iterator over the elements from front to back.
+        iterator: Iterator[T] => LIST_ITERATOR[T](to_array(), _count);
+
+        _at(index: int) -> T => _items[(_head + index) % _items.count];
+
+        _grow() is
+            let grown = Ghul._array_new[T](if _items.count == 0 then 4 else _items.count * 2 fi);
+            let i mut = 0;
+
+            while i < _count do
+                Ghul._array_set(grown, i, _at(i));
+                i = i + 1;
+            od
+
+            _items = grown;
+            _head = 0;
+        si
+    si
+si

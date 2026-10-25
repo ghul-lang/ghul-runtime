@@ -1,0 +1,116 @@
+namespace System is
+    use Ghul.ArgumentOutOfRangeException
+
+    /// .NET's static operations on arrays, under the name .NET gives them.
+    /// The sort and the reversals change the array in place.
+    class Array is
+        /// The position of the first element of `array` that is `=~` to
+        /// `value`, or -1 where none is.
+        ///
+        /// - array: the array to search
+        /// - value: the element to look for
+        index_of[T](array: T[], value: T) -> int static => index_of(array, value, 0)
+
+        /// The position of the first element of `array` at or after
+        /// `start_index` that is `=~` to `value`, or -1 where none is.
+        ///
+        /// - array: the array to search
+        /// - value: the element to look for
+        /// - start_index: the position to start from
+        index_of[T](array: T[], value: T, start_index: int) -> int static is
+            if start_index < 0 \/ start_index > array.count then
+                throw ArgumentOutOfRangeException("start_index", "the start is outside the array")
+            fi
+
+            let i mut = start_index
+
+            while i < array.count do
+                if array[i] =~ value then
+                    return i
+                fi
+
+                i = i + 1
+            od
+
+            return -1
+        si
+
+        /// The position of the last element of `array` that is `=~` to
+        /// `value`, or -1 where none is.
+        ///
+        /// - array: the array to search
+        /// - value: the element to look for
+        last_index_of[T](array: T[], value: T) -> int static is
+            let i mut = array.count - 1
+
+            while i >= 0 do
+                if array[i] =~ value then
+                    return i
+                fi
+
+                i = i - 1
+            od
+
+            return -1
+        si
+
+        /// Sorts `array` in place in its elements' own order: each must be a
+        /// `Ghul.Comparable[T]`.
+        ///
+        /// - array: the array to sort
+        sort[T](array: T[]) static is
+            Ghul._introsort(array, array.count, Ghul._DEFAULT_COMPARER[T]())
+        si
+
+        /// Sorts `array` in place in the order `comparer` gives.
+        ///
+        /// - array: the array to sort
+        /// - comparer: orders two elements
+        sort[T](array: T[], comparer: Collections.Comparer[T]) static is
+            Ghul._introsort(array, array.count, comparer)
+        si
+
+        /// Reverses the order of the elements of `array` in place.
+        ///
+        /// - array: the array to reverse
+        reverse[T](array: T[]) static => reverse(array, 0, array.count)
+
+        /// Reverses the order of `length` elements of `array` from `index`,
+        /// in place.
+        ///
+        /// - array: the array to change
+        /// - index: the first element to move
+        /// - length: the number of elements to reverse
+        reverse[T](array: T[], index: int, length: int) static is
+            if index < 0 \/ length < 0 \/ index > array.count - length then
+                throw ArgumentOutOfRangeException("index", "the range is outside the array")
+            fi
+
+            let low mut = index
+            let high mut = index + length - 1
+
+            while low < high do
+                let held = array[low]
+
+                Ghul._array_set(array, low, array[high])
+                Ghul._array_set(array, high, held)
+
+                low = low + 1
+                high = high - 1
+            od
+        si
+
+        /// Sets every element of `array` to `value`.
+        ///
+        /// - array: the array to fill
+        /// - value: the value to store
+        fill[T](array: T[], value: T) static is
+            let i mut = 0
+
+            while i < array.count do
+                Ghul._array_set(array, i, value)
+                i = i + 1
+            od
+        si
+    si
+si

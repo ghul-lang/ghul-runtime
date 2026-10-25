@@ -1,0 +1,40 @@
+use default
+
+let xs = LIST([5, 3, 9, 1, 7])
+xs.sort()
+write_line(xs |> join(","))
+xs.reverse()
+write_line(xs |> join(","))
+xs.reverse(1, 3)
+write_line(xs |> join(","))
+xs.remove_range(1, 2)
+write_line(xs |> join(","))
+xs.insert_range(1, [40, 50])
+write_line(xs |> join(","))
+write_line("{xs.remove_all(x => x > 10)} {xs |> join(",")}")
+let ws = LIST(["pear", "apple", "fig"])
+ws.sort()
+write_line(ws |> join(","))
+let ds = LIST([2.5, -1.0, 0.5])
+ds.sort()
+write_line(ds |> join(","))
+write_line("{int.max(3, 7)} {int.min(3, 7)} {int.abs(-4)} {long.abs(-5L)} {int.clamp(12, 0, 10)} {int.sign(-3)}")
+write_line("{double.sqrt(16.0)} {double.abs(-2.5)} {double.pow(2.0, 10.0)} {double.round(2.5)} {double.log(1.0)} {double.max(1.5, 2.5)}")
+write_line("{Ghul.Math.ieeeremainder(10.0, 3.0)}")
+try
+    xs.remove_range(3, 5)
+catch e: Ghul.ArgumentException
+    write_line("range")
+yrt
+let gs = LIST([10, 20, 30, 40, 50])
+write_line(gs.get_range(1, 3) |> join(","))
+let target = Ghul._array_new[int](7)
+gs.copy_to(target)
+gs.copy_to(target, 5 - 3)
+gs.copy_to(3, target, 5, 2)
+write_line(target |> join(","))
+try
+    gs.copy_to(Ghul._array_new[int](3))
+catch e: Ghul.ArgumentException
+    write_line("too short")
+yrt

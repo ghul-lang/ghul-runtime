@@ -1,0 +1,38 @@
+// A seed fixes the sequence, and every value falls within the bounds asked
+// for; an unseeded generator draws its seed from the host.
+use IO.Std.write_line
+
+entry() is
+    let first = Ghul.RANDOM(42)
+    let second = Ghul.RANDOM(42)
+
+    let same mut = true
+    let in_range mut = true
+
+    for i in 0..1000 do
+        let a = first.next(10)
+        let b = second.next(10)
+
+        if a != b then same = false fi
+        if a < 0 \/ a >= 10 then in_range = false fi
+
+        let c = first.next(-5, 5)
+        second.next(-5, 5)
+        if c < -5 \/ c >= 5 then in_range = false fi
+
+        let d = first.next_double()
+        second.next_double()
+        if d < 0.0 \/ d >= 1.0 then in_range = false fi
+
+        let e = first.next()
+        second.next()
+        if e < 0 then in_range = false fi
+    od
+
+    write_line("same sequence: {same}")
+    write_line("in range: {in_range}")
+
+    let unseeded = Ghul.RANDOM()
+    let n = unseeded.next(3)
+    write_line("unseeded in range: {n >= 0 /\ n < 3}")
+si

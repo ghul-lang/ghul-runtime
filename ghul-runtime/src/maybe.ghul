@@ -1,0 +1,87 @@
+@@IF.dotnet()
+namespace Ghul is
+    // Open because a type declares itself option-shaped by implementing
+    // this, which downstream assemblies have to be able to do.
+    /// Implemented by a type that is optional-shaped: it either holds a `T` or is absent.
+    trait Maybe[T] open is
+        /// Whether a value is present.
+        has_value: bool
+        /// The value, when present.
+        value: T
+    si
+
+    /// The optional representation ghūl uses for `T?` when `T` is an unconstrained type parameter.
+    struct MAYBE[T]: Maybe[T] is
+        _has_value: bool
+        _value: T
+
+        /// Whether a value is present.
+        has_value: bool pure => _has_value
+
+        /// The value; throws if none is present.
+        value: T pure =>
+            if _has_value then
+                _value
+            else
+                throw System.InvalidOperationException("maybe has no value")
+            fi
+
+        /// Two `MAYBE` values are equal when both are absent, or both hold equal values.
+        =~(other: MAYBE[T]) -> bool pure is
+            if _has_value != other._has_value then
+                return false
+            fi
+
+            if !_has_value then
+                return true
+            fi
+
+            _value =~ other._value
+        si
+
+        // Absent hashes as zero, as `Nullable[T]` does. `T` is unconstrained
+        // and can be an optional reference, so a present value can still be
+        // null, which also hashes as zero. The null test is the only place
+        // the value is viewed as an object, and the JIT folds that box away
+        // for a value type, so hashing an optional value type allocates
+        // nothing.
+        /// Hashes like `Nullable[T]`: zero when absent, otherwise the value's hash.
+        get_hash_code() -> int pure =>
+            if _has_value /\ cast object?(_value)? then
+                _value.get_hash_code()
+            else
+                0
+            fi
+
+        /// Destructures into whether a value is present and, if so, the value.
+        deconstruct(has_value: bool ref, value: T ref) is
+            has_value! = _has_value
+            value! = _value
+        si
+
+        init() pure is
+        si
+
+        /// Creates a `MAYBE` holding `value`.
+        init(value: T) pure is
+            _has_value = true
+            _value = value
+        si
+
+        /// `value`'s own text when present, otherwise `"none"`.
+        to_string() -> string =>
+            if _has_value then
+                "{_value}"
+            else
+                "none"
+            fi
+
+        /// `T` for a `MAYBE[T]` type, mirroring `System.Nullable.get_underlying_type`; null for any other type.
+        underlying_type(type: System.Type) -> System.Type? static =>
+            if type.is_generic_type /\ type.get_generic_type_definition() =~ typeof MAYBE[_] then
+                type.get_generic_arguments()[0]
+            else
+                null
+            fi
+    si
+si

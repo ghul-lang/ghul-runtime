@@ -1,0 +1,524 @@
+namespace Ghul is
+    // The text .NET gives a number under a standard or custom numeric format
+    // string, in the invariant culture.
+    //
+    // A value is held as a decimal: its sign, its significant digits with no
+    // zeros at either end, and `point`, where the value is 0.digits times ten
+    // to the `point`. An integer's digits are exact; a floating value's are
+    // the exact decimal expansion of its binary value, rounded as .NET rounds
+    // them before laying them out.
+
+    _format_double_as(value: double, format: string) -> string is
+        let bits = _double_bits(value)
+        let negative = (bits >> 63) != 0ul
+        let biased = cast int((bits >> 52) & 2047ul)
+        let fraction = bits & ((1ul << 52) - 1ul)
+
+        if biased == 2047 then
+            return _non_finite_text(fraction != 0ul, negative)
+        fi
+
+        let spec = _parsed_format(format)
+
+        if spec.kind == 'R' \/ (spec.kind == 'G' /\ spec.precision <= 0) then
+            return _format_double(value)
+        fi
+
+        let exact = _exact_float(fraction, biased, 52, 1075)
+
+        return _format_float(negative, exact.digits, exact.point, spec, format, 15, 15)
+    si
+
+    _format_single_as(value: single, format: string) -> string is
+        let bits = _single_bits(value)
+        let negative = (bits >> 31) != 0u
+        let biased = cast int((bits >> 23) & 255u)
+        let fraction = cast ulong(bits & ((1u << 23) - 1u))
+
+        if biased == 255 then
+            return _non_finite_text(fraction != 0ul, negative)
+        fi
+
+        let spec = _parsed_format(format)
+
+        if spec.kind == 'R' \/ (spec.kind == 'G' /\ spec.precision <= 0) then
+            return _format_single(value)
+        fi
+
+        let exact = _exact_float(fraction, biased, 23, 150)
+
+        return _format_float(negative, exact.digits, exact.point, spec, format, 7, 7)
+    si
+
+    // A signed integer of `bits` bits, held in a long.
+    _format_signed_as(value: long, format: string, bits: int) -> string is
+        let negative = value < 0L
+        let magnitude = if negative then cast ulong(-(value + 1L)) + 1ul else cast ulong(value) fi
+        let mask = if bits >= 64 then 18446744073709551615ul else (1ul << bits) - 1ul fi
+
+        return _format_integer(negative, magnitude, cast ulong(value) & mask, format)
+    si
+
+    // An unsigned integer, held in a ulong.
+    _format_unsigned_as(value: ulong, format: string) -> string =>
+        _format_integer(false, value, value, format)
+
+    _format_integer(negative: bool, magnitude: ulong, raw: ulong, format: string) -> string is
+        let spec = _parsed_format(format)
+
+        if spec.kind == 'X' then
+            return _padded_left(_hex_text(raw, spec.upper), spec.precision, '0')
+        fi
+
+        return _format_integer_text(negative /\ magnitude != 0ul, _unsigned_text(magnitude), format)
+    si
+
+    // An integer of any size given as its sign and the decimal digits of its
+    // magnitude, "0" for zero, under any format but `X`.
+    _format_integer_text(shown_negative: bool, text: string, format: string) -> string is
+        let spec = _parsed_format(format)
+        let digits = _trimmed_digits(text)
+        let point = text.length
+
+        case spec.kind
+        when 'D' then
+            let padded = _padded_left(text, spec.precision, '0')
+
+            return if shown_negative then _string_concat("-", padded) else padded fi
+
+        when 'G' then
+            if spec.precision <= 0 then
+                return if shown_negative then _string_concat("-", text) else text fi
+            fi
+
+            let rounded = _rounded(digits, point, spec.precision, false)
+
+            return _general_layout(shown_negative, rounded.digits, rounded.point, spec.precision, spec.upper, 2)
+
+        when 'R' then
+            return if shown_negative then _string_concat("-", text) else text fi
+
+        when 'C' then
+            return _custom_layout(shown_negative, digits, point, format, false)
+
+        else
+            return _fixed_family(shown_negative, digits, point, spec, false, false)
+        esac
+    si
+
+    _format_float(negative: bool, digits: string, point: int, spec: (kind: char, precision: int, upper: bool), format: string, general_precision: int, custom_precision: int) -> string is
+        case spec.kind
+        when 'D', 'X' then
+            throw FormatException("Format specifier was invalid.")
+
+        when 'G' then
+            let rounded = _rounded(digits, point, spec.precision, true)
+
+            return _general_layout(negative, rounded.digits, rounded.point, spec.precision, spec.upper, 2)
+
+        when 'C' then
+            let rounded = _rounded(digits, point, custom_precision, true)
+
+            return _custom_layout(negative, rounded.digits, rounded.point, format, true)
+
+        else
+            return _fixed_family(negative, digits, point, spec, true, true)
+        esac
+    si
+
+    // F, N and E: a fixed count of digits after the point, or after the
+    // first digit for E.
+    _fixed_family(negative: bool, digits: string, point: int, spec: (kind: char, precision: int, upper: bool), half_even: bool, keep_negative_zero: bool) -> string is
+        let precision = if spec.precision < 0 then (if spec.kind == 'E' then 6 else 2 fi) else spec.precision fi
+
+        if spec.kind == 'E' then
+            let rounded = _rounded(digits, point, precision + 1, half_even)
+            let shown = negative /\ (keep_negative_zero \/ rounded.digits.length > 0)
+
+            return _scientific_layout(shown, rounded.digits, rounded.point, precision, spec.upper, 3, true)
+        fi
+
+        let rounded = _rounded(digits, point, point + precision, half_even)
+        let shown = negative /\ (keep_negative_zero \/ rounded.digits.length > 0)
+        let whole mut = _whole_digits(rounded.digits, rounded.point)
+
+        if spec.kind == 'N' then
+            whole = _grouped(whole)
+        fi
+
+        let text mut = whole
+
+        if precision > 0 then
+            text = _string_concat(_string_concat(text, "."), _fraction_digits(rounded.digits, rounded.point, precision))
+        fi
+
+        return if shown then _string_concat("-", text) else text fi
+    si
+
+    // G with a precision: plain while the exponent is from -4 to one less
+    // than the precision, E notation otherwise, with no trailing zeros.
+    _general_layout(negative: bool, digits: string, point: int, precision: int, upper: bool, exponent_digits: int) -> string is
+        if digits.length == 0 then
+            return if negative then "-0" else "0" fi
+        fi
+
+        let exponent = point - 1
+        let text mut = ""
+
+        if exponent > -5 /\ exponent < precision then
+            let whole = _whole_digits(digits, point)
+            let fraction_count = digits.length - point
+
+            text = whole
+
+            if fraction_count > 0 then
+                text = _string_concat(_string_concat(text, "."), _fraction_digits(digits, point, fraction_count))
+            fi
+
+            return if negative then _string_concat("-", text) else text fi
+        fi
+
+        return _scientific_layout(negative, digits, point, digits.length - 1, upper, exponent_digits, false)
+    si
+
+    // d.ddd followed by the exponent, with `places` digits after the point.
+    _scientific_layout(negative: bool, digits: string, point: int, places: int, upper: bool, exponent_digits: int, pad: bool) -> string is
+        let exponent = if digits.length == 0 then 0 else point - 1 fi
+        let text mut = if digits.length == 0 then "0" else _string_from_char(digits[0]) fi
+
+        if places > 0 then
+            let rest mut = ""
+            let i mut = 1
+
+            while i <= places do
+                rest = _string_concat(rest, if i < digits.length then _string_from_char(digits[i]) else "0" fi)
+                i = i + 1
+            od
+
+            if pad \/ rest.length > 0 then
+                text = _string_concat(_string_concat(text, "."), rest)
+            fi
+        fi
+
+        let magnitude = if exponent < 0 then -exponent else exponent fi
+
+        text = _string_concat(text, if upper then "E" else "e" fi)
+        text = _string_concat(text, if exponent < 0 then "-" else "+" fi)
+        text = _string_concat(text, _padded_left(_decimal_text(magnitude), exponent_digits, '0'))
+
+        return if negative then _string_concat("-", text) else text fi
+    si
+
+    // A custom format of `0` and `#` placeholders, at most one `.`, and `,`
+    // between the integer placeholders to group thousands.
+    _custom_layout(negative: bool, digits: string, point: int, format: string, keep_negative_zero: bool) -> string is
+        let dot = format.index_of('.')
+        let integer_part = if dot < 0 then format else format.substring(0, dot) fi
+        let fraction_part = if dot < 0 then "" else format.substring(dot + 1) fi
+
+        let first_zero = integer_part.index_of('0')
+        let whole_minimum mut = 0
+        let grouped mut = false
+        let i mut = 0
+
+        while i < integer_part.length do
+            let c = integer_part[i]
+
+            if c == '0' \/ c == '#' then
+                if first_zero >= 0 /\ i >= first_zero then
+                    whole_minimum = whole_minimum + 1
+                fi
+            elif c == ',' then
+                grouped = true
+            else
+                throw FormatException("Format specifier was invalid.")
+            fi
+
+            i = i + 1
+        od
+
+        let places = fraction_part.length
+        let fraction_minimum mut = 0
+        i = 0
+
+        while i < places do
+            let c = fraction_part[i]
+
+            if c == '0' then
+                fraction_minimum = i + 1
+            elif c != '#' then
+                throw FormatException("Format specifier was invalid.")
+            fi
+
+            i = i + 1
+        od
+
+        let rounded = _rounded(digits, point, point + places, false)
+        let whole_digits = if rounded.point > 0 then _whole_digits(rounded.digits, rounded.point) else "" fi
+        let whole mut = _padded_left(whole_digits, whole_minimum, '0')
+
+        if grouped then
+            whole = _grouped(whole)
+        fi
+
+        let fraction mut = _fraction_digits(rounded.digits, rounded.point, places)
+
+        while fraction.length > fraction_minimum /\ fraction[fraction.length - 1] == '0' do
+            fraction = fraction.substring(0, fraction.length - 1)
+        od
+
+        let text = if fraction.length > 0 then _string_concat(_string_concat(whole, "."), fraction) else whole fi
+        let shown = negative /\ text.length > 0 /\ (keep_negative_zero \/ rounded.digits.length > 0)
+
+        return if shown then _string_concat("-", text) else text fi
+    si
+
+    // A format string read as a standard specifier and its precision, or as
+    // `C` for a custom pattern. The precision is -1 where none is given.
+    _parsed_format(format: string) -> (kind: char, precision: int, upper: bool) is
+        if format.length == 0 then
+            return (kind = 'G', precision = -1, upper = true)
+        fi
+
+        let letter = format[0]
+        let upper = letter >= 'A' /\ letter <= 'Z'
+        let kind = if upper then letter else cast char(cast int(letter) - 32) fi
+
+        if !(kind == 'D' \/ kind == 'E' \/ kind == 'F' \/ kind == 'G' \/ kind == 'N' \/ kind == 'R' \/ kind == 'X') then
+            return (kind = 'C', precision = -1, upper = true)
+        fi
+
+        let precision mut = -1
+        let i mut = 1
+
+        while i < format.length do
+            let c = format[i]
+
+            if c < '0' \/ c > '9' then
+                return (kind = 'C', precision = -1, upper = true)
+            fi
+
+            precision = (if precision < 0 then 0 else precision fi) * 10 + (cast int(c) - 48)
+            i = i + 1
+        od
+
+        return (kind = kind, precision = precision, upper = upper)
+    si
+
+    // `digits` rounded to the first `keep` of them; at an exact tie the last
+    // digit kept goes to even when `half_even`, and away from zero
+    // otherwise.
+    _rounded(digits: string, point: int, keep: int, half_even: bool) -> (digits: string, point: int) is
+        if keep >= digits.length then
+            return (digits = digits, point = point)
+        fi
+
+        if keep < 0 then
+            return (digits = "", point = 0)
+        fi
+
+        let first_dropped = cast int(digits[keep]) - 48
+        let tie = first_dropped == 5 /\ keep + 1 == digits.length
+        let last_kept = if keep > 0 then cast int(digits[keep - 1]) - 48 else 0 fi
+        let up = first_dropped > 5 \/ (first_dropped == 5 /\ (!tie \/ !half_even \/ last_kept % 2 == 1))
+
+        let kept mut = digits.substring(0, keep)
+
+        if !up then
+            return (digits = _trimmed_digits(kept), point = if kept.length == 0 then 0 else point fi)
+        fi
+
+        let i mut = keep - 1
+        let result mut = ""
+
+        while i >= 0 /\ kept[i] == '9' do
+            i = i - 1
+        od
+
+        if i < 0 then
+            return (digits = "1", point = point + 1)
+        fi
+
+        result = _string_concat(kept.substring(0, i), _digit_text(cast int(kept[i]) - 47))
+
+        return (digits = result, point = point)
+    si
+
+    // The digits before the point, "0" where there are none.
+    _whole_digits(digits: string, point: int) -> string is
+        if point <= 0 then
+            return "0"
+        fi
+
+        if point <= digits.length then
+            return digits.substring(0, point)
+        fi
+
+        return _string_concat(digits, _zeros(point - digits.length))
+    si
+
+    // `count` digits after the point.
+    _fraction_digits(digits: string, point: int, count: int) -> string is
+        let text mut = ""
+        let i mut = 0
+
+        while i < count do
+            let at = point + i
+
+            text = _string_concat(text, if at >= 0 /\ at < digits.length then _string_from_char(digits[at]) else "0" fi)
+            i = i + 1
+        od
+
+        return text
+    si
+
+    _grouped(whole: string) -> string is
+        let text mut = ""
+        let i mut = 0
+
+        while i < whole.length do
+            if i > 0 /\ (whole.length - i) % 3 == 0 then
+                text = _string_concat(text, ",")
+            fi
+
+            text = _string_concat(text, _string_from_char(whole[i]))
+            i = i + 1
+        od
+
+        return text
+    si
+
+    _padded_left(text: string, width: int, pad: char) -> string is
+        let result mut = text
+
+        while result.length < width do
+            result = _string_concat(_string_from_char(pad), result)
+        od
+
+        return result
+    si
+
+    _trimmed_digits(digits: string) -> string is
+        let end mut = digits.length
+
+        while end > 0 /\ digits[end - 1] == '0' do
+            end = end - 1
+        od
+
+        return digits.substring(0, end)
+    si
+
+    _unsigned_text(value: ulong) -> string is
+        if value == 0ul then
+            return "0"
+        fi
+
+        let text mut = ""
+        let rest mut = value
+
+        while rest != 0ul do
+            text = _string_concat(_digit_text(cast int(rest % 10ul)), text)
+            rest = rest / 10ul
+        od
+
+        return text
+    si
+
+    _hex_text(value: ulong, upper: bool) -> string is
+        if value == 0ul then
+            return "0"
+        fi
+
+        let letters = if upper then "0123456789ABCDEF" else "0123456789abcdef" fi
+        let text mut = ""
+        let rest mut = value
+
+        while rest != 0ul do
+            text = _string_concat(_string_from_char(letters[cast int(rest & 15ul)]), text)
+            rest = rest >> 4
+        od
+
+        return text
+    si
+
+    // The exact decimal expansion of the finite value whose fraction field,
+    // biased exponent and format are given, with no zeros at either end.
+    _exact_float(fraction: ulong, biased: int, fraction_bits: int, bias: int) -> (digits: string, point: int) is
+        if biased == 0 /\ fraction == 0ul then
+            return (digits = "", point = 0)
+        fi
+
+        let mantissa = if biased == 0 then fraction else fraction | (1ul << fraction_bits) fi
+        let binary_exponent = if biased == 0 then 1 - bias else biased - bias fi
+
+        if binary_exponent >= 0 then
+            let text = _big_decimal_text(_big_shifted(_big_of(mantissa), binary_exponent))
+
+            return (digits = _trimmed_digits(text), point = text.length)
+        fi
+
+        // m / 2^k is m * 5^k / 10^k.
+        let places = -binary_exponent
+        let scaled mut = _big_of(mantissa)
+        let remaining mut = places
+
+        while remaining >= 13 do
+            scaled = _big_multiplied(scaled, 1220703125ul)
+            remaining = remaining - 13
+        od
+
+        while remaining > 0 do
+            scaled = _big_multiplied(scaled, 5ul)
+            remaining = remaining - 1
+        od
+
+        let text = _big_decimal_text(scaled)
+
+        return (digits = _trimmed_digits(text), point = text.length - places)
+    si
+
+    _big_decimal_text(value: Collections.LIST[uint]) -> string is
+        if value.count == 0 then
+            return "0"
+        fi
+
+        let chunks = Collections.LIST[ulong]()
+        let rest mut = value
+
+        while rest.count > 0 do
+            let quotient = Collections.LIST[uint]()
+            let remainder mut = 0ul
+            let i mut = rest.count - 1
+
+            while i >= 0 do
+                let current = (remainder << 32) | cast ulong(rest[i])
+
+                quotient.add(cast uint(current / 1000000000ul))
+                remainder = current % 1000000000ul
+                i = i - 1
+            od
+
+            chunks.add(remainder)
+
+            let reversed = Collections.LIST[uint]()
+            let j mut = quotient.count - 1
+
+            while j >= 0 do
+                reversed.add(quotient[j])
+                j = j - 1
+            od
+
+            rest = _big_trimmed(reversed)
+        od
+
+        let text mut = _unsigned_text(chunks[chunks.count - 1])
+        let k mut = chunks.count - 2
+
+        while k >= 0 do
+            text = _string_concat(text, _padded_left(_unsigned_text(chunks[k]), 9, '0'))
+            k = k - 1
+        od
+
+        return text
+    si
+si

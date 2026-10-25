@@ -1,0 +1,31 @@
+// A field narrowed by a presence test stays narrowed across writing to
+// the console and reading back a string builder.
+use IO.Std.write_line
+
+class HOLDER is
+    _name: string?
+
+    init(name: string) is
+        _name = name
+    si
+
+    report() -> string is
+        if _name? then
+            IO.Std.write("a")
+            IO.Std.write_line("b")
+            IO.Std.out.write("c")
+            IO.Std.out.write_line("d")
+
+            let builder = Text.STRING_BUILDER()
+            builder.append("xyz")
+
+            return "{_name.length} {builder.to_string()} {builder.length}"
+        fi
+
+        return "absent"
+    si
+si
+
+entry() is
+    write_line(HOLDER("name").report())
+si

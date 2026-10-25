@@ -1,0 +1,48 @@
+// A builder grows by doubling, so a million short appends cost the same as
+// one long one, and clear() keeps its room for the next string. Inserting,
+// removing and replacing code units in place agree with what was built.
+use IO.Std.write_line
+use Text.STRING_BUILDER
+
+checksum(text: string) -> int is
+    let sum mut = 0
+    let i mut = 0
+
+    while i < text.length do
+        sum = (sum * 31 + int(text[i])) & 0x7FFF_FFFF
+        i = i + 1
+    od
+
+    return sum
+si
+
+entry() is
+    let builder = STRING_BUILDER()
+    let i mut = 0
+
+    while i < 1000000 do
+        builder.append("ab")
+        i = i + 1
+    od
+
+    let built = builder.to_string()
+    write_line("{built.length} {checksum(built)}")
+
+    builder.clear()
+    write_line("{builder.length} [{builder}]")
+
+    builder.append("hello").append(' ').append("world")
+    builder.insert(5, ",")
+    builder.remove(0, 1)
+    builder[0] = 'E'
+    write_line("{builder} {builder.length} {builder[4]}")
+
+    let sized = STRING_BUILDER(64)
+    sized.append('x', 100)
+    write_line("{sized.length} {sized.to_string().substring(95)}")
+
+    let joined = string.join("-", ["one", "two", "three"])
+    write_line(joined)
+
+    write_line(string(['g', 'h', 'u', 'l']))
+si

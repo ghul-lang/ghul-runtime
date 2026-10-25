@@ -1,0 +1,15 @@
+// The string constructors .NET declares build the same strings here.
+use IO.Std.write_line
+
+entry() is
+    write_line("[{string(['a', 'b', 'c'])}]")
+    write_line("[{string('-', 4)}]")
+    write_line("[{string('x', 0)}]")
+    write_line("[{string("hello".to_char_array())}]")
+
+    try
+        string('x', -1)
+    catch e: Ghul.ArgumentOutOfRangeException
+        write_line("out of range")
+    yrt
+si

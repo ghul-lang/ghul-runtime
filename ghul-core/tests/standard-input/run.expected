@@ -1,0 +1,8 @@
+first: [one]
+char: 88 peek: 116
+line: [two]
+line: [three]
+line: [stop]
+rest: [left
+over]
+after: null -1

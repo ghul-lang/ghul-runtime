@@ -1,0 +1,16 @@
+listing/a.txt listing/b.log
+listing/a.txt
+listing/nested
+listing/a.txt listing/b.log listing/nested
+listing/a.txt listing/nested/c.txt listing/nested/deep/d.txt
+not empty
+
+false
+/a/b -> /a/b
+/a/b/ -> /a/b/
+/ -> /
+/a//b -> /a/b
+/a/./b -> /a/b
+/a/../b -> /b
+/a/.b -> /a/.b
+/a/..b/c -> /a/..b/c

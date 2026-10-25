@@ -1,0 +1,338 @@
+namespace Ghul is
+    /// A source of pseudo-random numbers. A generator given a seed produces
+    /// the same sequence .NET's `System.Random` does for that seed; one
+    /// seeded from the host produces a sequence of its own.
+    class RANDOM is
+        // The state of a generator seeded from the host: xoshiro256**.
+        _s0: ulong
+        _s1: ulong
+        _s2: ulong
+        _s3: ulong
+
+        // The state of a generator given a seed: the subtractive generator
+        // .NET's seeded System.Random uses.
+        _is_compatible: bool
+        _seed_array: int[]?
+        _inext: int
+        _inextp: int
+
+        /// A generator seeded from the host's random source.
+        init() is
+            _seed((cast ulong(_random_u32()) << 32) | cast ulong(cast uint(_random_u32())))
+        si
+
+        /// A generator whose sequence is fixed by `seed`, the sequence .NET's
+        /// `System.Random` gives for the same seed.
+        ///
+        /// - seed: the value the sequence is derived from
+        init(seed: int) is
+            _seed_compat(seed)
+        si
+
+        /// A non-negative integer less than `int.max_value`.
+        next() -> int is
+            if _is_compatible then
+                return _internal_sample()
+            fi
+
+            return cast int(_next_u64() >> 33)
+        si
+
+        /// Replaces every element of `buffer` with a random byte.
+        ///
+        /// - buffer: the array to fill
+        next_bytes(buffer: ubyte[]) is
+            for index in 0..buffer.count do
+                Ghul._array_set(buffer, index, cast ubyte(next() & 255))
+            od
+        si
+
+        /// A non-negative integer less than `max`.
+        ///
+        /// - max: the exclusive upper bound; must not be negative
+        next(max: int) -> int is
+            if max < 0 then
+                throw ArgumentOutOfRangeException("max")
+            fi
+
+            if _is_compatible then
+                return cast int(_sample() * cast double(max))
+            fi
+
+            return cast int(((_next_u64() >> 32) * cast ulong(max)) >> 32)
+        si
+
+        /// An integer at least `min` and less than `max`.
+        ///
+        /// - min: the inclusive lower bound
+        /// - max: the exclusive upper bound; must not be less than `min`
+        next(min: int, max: int) -> int is
+            if max < min then
+                throw ArgumentOutOfRangeException("min")
+            fi
+
+            if _is_compatible then
+                let range = cast long(max) - cast long(min)
+
+                if range <= 2147483647L then
+                    return cast int(_sample() * cast double(range)) + min
+                fi
+
+                return cast int(cast long(_sample_for_large_range() * cast double(range)) + cast long(min))
+            fi
+
+            let range = cast ulong(cast long(max) - cast long(min))
+
+            return cast int(cast long(min) + cast long(((_next_u64() >> 32) * range) >> 32))
+        si
+
+        /// A non-negative long integer less than `long.max_value`.
+        next_int64() -> long is
+            if _is_compatible then
+                do
+                    let result = _compat_next_u64() >> 1
+
+                    if result != 9223372036854775807UL then
+                        return cast long(result)
+                    fi
+                od
+            fi
+
+            return cast long(_next_u64() >> 1)
+        si
+
+        /// A non-negative long integer less than `max`.
+        ///
+        /// - max: the exclusive upper bound; must not be negative
+        next_int64(max: long) -> long is
+            if max < 0L then
+                throw ArgumentOutOfRangeException("max")
+            fi
+
+            if _is_compatible then
+                return next_int64(0L, max)
+            fi
+
+            if max == 0L then
+                return 0L
+            fi
+
+            return cast long(_next_u64() % cast ulong(max))
+        si
+
+        /// A long integer at least `min` and less than `max`.
+        ///
+        /// - min: the inclusive lower bound
+        /// - max: the exclusive upper bound; must not be less than `min`
+        next_int64(min: long, max: long) -> long is
+            if max < min then
+                throw ArgumentOutOfRangeException("min")
+            fi
+
+            let range = cast ulong(max) - cast ulong(min)
+
+            if _is_compatible then
+                if range > 1UL then
+                    let bits = _log2_ceiling(range)
+
+                    do
+                        let result = _compat_next_u64() >> (64 - bits)
+
+                        if result < range then
+                            return cast long(result) + min
+                        fi
+                    od
+                fi
+
+                return min
+            fi
+
+            if range == 0UL then
+                return min
+            fi
+
+            return cast long(cast ulong(min) + _next_u64() % range)
+        si
+
+        /// A value at least 0.0 and less than 1.0.
+        next_double() -> double is
+            if _is_compatible then
+                return _sample()
+            fi
+
+            return cast double(_next_u64() >> 11) * 1.1102230246251565e-16
+        si
+
+        // Fills the seed array as .NET's seeded System.Random does: Knuth's
+        // subtractive generator, from Numerical Recipes in C.
+        _seed_compat(seed: int) is
+            let seed_array = _array_new[int](56)
+            let subtraction = if seed == -2147483647 - 1 then 2147483647 elif seed < 0 then -seed else seed fi
+            let mj mut = 161803398 - subtraction
+
+            _array_set(seed_array, 55, mj)
+
+            let mk mut = 1
+            let ii mut = 0
+            let i mut = 1
+
+            while i < 55 do
+                ii = ii + 21
+
+                if ii >= 55 then
+                    ii = ii - 55
+                fi
+
+                _array_set(seed_array, ii, mk)
+
+                mk = mj - mk
+
+                if mk < 0 then
+                    mk = mk + 2147483647
+                fi
+
+                mj = seed_array[ii]
+                i = i + 1
+            od
+
+            let k mut = 1
+
+            while k < 5 do
+                let j mut = 1
+
+                while j < 56 do
+                    let n mut = j + 30
+
+                    if n >= 55 then
+                        n = n - 55
+                    fi
+
+                    let value mut = seed_array[j] - seed_array[1 + n]
+
+                    if value < 0 then
+                        value = value + 2147483647
+                    fi
+
+                    _array_set(seed_array, j, value)
+                    j = j + 1
+                od
+
+                k = k + 1
+            od
+
+            _seed_array = seed_array
+            _is_compatible = true
+            _inext = 0
+            _inextp = 21
+        si
+
+        _internal_sample() -> int is
+            let seed_array = _seed_array!
+
+            let next mut = _inext + 1
+
+            if next >= 56 then
+                next = 1
+            fi
+
+            let nextp mut = _inextp + 1
+
+            if nextp >= 56 then
+                nextp = 1
+            fi
+
+            let result mut = seed_array[next] - seed_array[nextp]
+
+            if result == 2147483647 then
+                result = result - 1
+            fi
+
+            if result < 0 then
+                result = result + 2147483647
+            fi
+
+            _array_set(seed_array, next, result)
+
+            _inext = next
+            _inextp = nextp
+
+            return result
+        si
+
+        _sample() -> double => cast double(_internal_sample()) * (1.0 / 2147483647.0)
+
+        _sample_for_large_range() -> double is
+            let result mut = _internal_sample()
+
+            if _internal_sample() % 2 == 0 then
+                result = -result
+            fi
+
+            let d = cast double(result) + 2147483646.0
+
+            return d / 4294967293.0
+        si
+
+        // Sixty-four random bits from three samples, as .NET's seeded
+        // System.Random builds them.
+        _compat_next_u64() -> ulong =>
+            cast ulong(cast uint(next(1 << 22))) |
+            (cast ulong(cast uint(next(1 << 22))) << 22) |
+            (cast ulong(cast uint(next(1 << 20))) << 44)
+
+        // The smallest number of bits that holds every value below `value`.
+        _log2_ceiling(value: ulong) -> int static is
+            let bits mut = 0
+
+            while bits < 64 /\ (1UL << bits) < value do
+                bits = bits + 1
+            od
+
+            return bits
+        si
+
+        // splitmix64 spreads a single seed over the four words of state,
+        // so no seed leaves the state all zero.
+        _seed(seed: ulong) is
+            let state mut = seed
+
+            state = state + 0x9E3779B97F4A7C15UL
+            _s0 = _mix(state)
+            state = state + 0x9E3779B97F4A7C15UL
+            _s1 = _mix(state)
+            state = state + 0x9E3779B97F4A7C15UL
+            _s2 = _mix(state)
+            state = state + 0x9E3779B97F4A7C15UL
+            _s3 = _mix(state)
+        si
+
+        _mix(value: ulong) -> ulong static is
+            let z mut = value
+
+            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL
+            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL
+
+            return z ^ (z >> 31)
+        si
+
+        // xoshiro256**.
+        _next_u64() -> ulong is
+            let result = _rotate_left(_s1 * 5UL, 7) * 9UL
+            let t = _s1 << 17
+
+            _s2 = _s2 ^ _s0
+            _s3 = _s3 ^ _s1
+            _s1 = _s1 ^ _s2
+            _s0 = _s0 ^ _s3
+            _s2 = _s2 ^ t
+            _s3 = _rotate_left(_s3, 45)
+
+            return result
+        si
+
+        _rotate_left(value: ulong, count: int) -> ulong static => (value << count) | (value >> (64 - count))
+
+        @intrinsic("host.random_u32")
+        _random_u32() -> int static
+    si
+si

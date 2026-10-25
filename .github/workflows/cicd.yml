@@ -71,7 +71,7 @@ jobs:
       run: dotnet test tests/tests.ghulproj
                     
     - name: Create package
-      run: dotnet pack -p:Version=${{ needs.version.outputs.package }}
+      run: dotnet pack ghul-runtime/ghul-runtime.ghulproj -p:Version=${{ needs.version.outputs.package }}
 
     - name: Upload package artefact
       uses: actions/upload-artifact@v7
@@ -212,6 +212,12 @@ jobs:
       run: |
         dotnet ghul-test wasm-tests
 
+    - name: Build and run the core library's tests
+      working-directory: ghul-core
+      run: |
+        dotnet ghul-test tests
+        dotnet ghul-test --config dotnet dotnet-tests
+
   # The same programs built for the llvm target and run as native
   # executables. ghul-cli fetches the ghul-llvm release pinned for the
   # compiler, as a user's build does; a test that does not pass on llvm yet
@@ -236,6 +242,11 @@ jobs:
     - name: Build and run the llvm tests
       run: |
         dotnet ghul-test --config llvm wasm-tests
+
+    - name: Build and run the core library's llvm tests
+      working-directory: ghul-core
+      run: |
+        dotnet ghul-test --config llvm tests
 
   publish-beta-package:
     # for pull requests, only publish the beta package

@@ -1,0 +1,17 @@
+namespace System is
+    /// The collector, as far as a program can observe it.
+    class GC is
+        /// The bytes the program holds on the managed heap.
+        ///
+        /// - force_full_collection: whether to collect first, so the answer
+        ///   is what is live rather than what has not yet been reclaimed
+        get_total_memory(force_full_collection: bool) -> long static is
+            return cast long(_heap_bytes(force_full_collection))
+        si
+
+        /// The engine's own account of the heap: a forced collection first
+        /// where asked, then what the engine says is in use.
+        @intrinsic("host.heap_bytes")
+        _heap_bytes(force_full_collection: bool) -> double static
+    si
+si

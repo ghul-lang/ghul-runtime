@@ -1,0 +1,94 @@
+// Tasks on a target with one thread: asynchronous functions returning TASK
+// and TASK[T], awaits on yields, delays and other tasks, results read by
+// running queued work, failures through await and through result, and the
+// combinators the library offers.
+use IO.Std.write_line
+
+double_later(n: int) -> Tasks.TASK[int] is
+    await Tasks.TASK.`yield()
+
+    return n * 2
+si
+
+sum_of_doubles(count: int) -> Tasks.TASK[int] is
+    let total mut = 0
+
+    for i in 1::count do
+        total = total + await double_later(i)
+    od
+
+    return total
+si
+
+after_delay(label: string) -> Tasks.TASK is
+    await Tasks.TASK.delay(1)
+
+    write_line("after a delay: {label}")
+si
+
+fails() -> Tasks.TASK[int] is
+    await Tasks.TASK.`yield()
+
+    throw Ghul.InvalidOperationException("failed inside")
+si
+
+awaits_through_the_base() -> Tasks.TASK is
+    let task: Tasks.TASK = double_later(5)
+
+    await task
+
+    write_line("awaited through the base: {task.is_completed}")
+si
+
+catches() -> Tasks.TASK[string] is
+    try
+        await fails()
+
+        return "not reached"
+    catch e: Ghul.InvalidOperationException
+        return "caught: {e.message}"
+    yrt
+si
+
+entry() is
+    write_line("sum: {sum_of_doubles(4).result}")
+
+    after_delay("first").wait()
+
+    write_line(catches().result)
+
+    awaits_through_the_base().wait()
+
+    let tasks: Tasks.TASK[] = [Tasks.TASK.from_result(1), Tasks.TASK.completed_task]
+
+    write_line("a task with a result is a task: {tasks[0].is_completed} {tasks[1].is_completed}")
+
+    try
+        let _ = fails().result
+    catch e: Ghul.AggregateException
+        write_line("aggregate: {e.inner_exception.message}")
+    yrt
+
+    write_line("from_result: {Tasks.TASK.from_result(7).result}")
+    write_line("completed: {Tasks.TASK.completed_task.is_completed}")
+
+    let continued = Tasks.TASK.from_result(20).continue_with((t: Tasks.TASK[int]) -> int => t.result + 1)
+
+    write_line("continue_with: {continued.result}")
+
+    let all = Tasks.TASK.when_all([double_later(1), double_later(2), double_later(3)])
+
+    write_line("when_all: {all.result[0]} {all.result[1]} {all.result[2]}")
+
+    let nested = Tasks.TASK.from_result(5).continue_with((t: Tasks.TASK[int]) -> Tasks.TASK[int] => double_later(t.result))
+
+    write_line("unwrap: {Tasks.TaskExtensions.unwrap(nested).result}")
+
+    write_line("run: {Tasks.TASK.run(() => 41 + 1).result}")
+
+    try
+        Tasks.TASK().wait()
+    catch e: Ghul.InvalidOperationException
+        write_line("never completes: {e.message}")
+    yrt
+si

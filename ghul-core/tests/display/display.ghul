@@ -1,0 +1,63 @@
+// $ and inspect over the values whose text the core library writes
+// itself: strings, characters, booleans and absent values, and a type
+// that implements Displayable. Records and sequences take the display
+// the compiler synthesises (ghul-lang/ghul#3339).
+use Ghul.Displayable
+use Ghul.DISPLAY_STATE
+use Ghul.inspect
+
+class SCORE(points: int): Displayable is
+    display(state: DISPLAY_STATE) is
+        state.append("[")
+        state.render(points)
+        state.append("]")
+    si
+si
+
+class POINT(x: int public, y: int public)
+
+class LABEL(text: string public, mark: char public)
+
+class EMPTY is
+    init() is si
+si
+
+
+union Shape is
+    DOT(size: int)
+    BLANK
+si
+
+entry() is
+
+    IO.Std.write_line($("top"))
+    IO.Std.write_line(inspect("top"))
+    IO.Std.write_line($('c'))
+    IO.Std.write_line($(true))
+    IO.Std.write_line($(null))
+    IO.Std.write_line($(SCORE(3)))
+    IO.Std.write_line(inspect(SCORE(3)))
+    IO.Std.write_line($(POINT(3, 4)))
+    IO.Std.write_line($(LABEL("top", 'x')))
+    IO.Std.write_line(inspect(LABEL("top", 'x')))
+    IO.Std.write_line($(EMPTY()))
+    IO.Std.write_line($(Shape.DOT(2)))
+    IO.Std.write_line($(Shape.BLANK))
+    IO.Std.write_line($((1, "one")))
+    IO.Std.write_line($([1, 2, 3]))
+    IO.Std.write_line(inspect(["one", "two"]))
+    IO.Std.write_line($([POINT(1, 2), POINT(3, 4)]))
+    IO.Std.write_line("{[[1, 2], [3]]}")
+
+    let names = Collections.LIST[string]()
+    names.add("a")
+    names.add("b")
+    IO.Std.write_line($(names))
+
+    let short = DISPLAY_STATE(Ghul.DisplayMode.CLEAN, 3)
+    short.render([1, 2, 3, 4, 5])
+    IO.Std.write_line(short.to_string())
+    IO.Std.write_line("{POINT(5, 6)} {true} {(2, 'z')}")
+    IO.Std.write_line(inspect((1, "one", 'c', true)))
+    IO.Std.write_line("top" |> $)
+si

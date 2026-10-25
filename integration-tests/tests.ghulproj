@@ -22,5 +22,5 @@
     <GhulOptions Include="--define hello" />
   </ItemGroup>
 
-  <Import Project="../build/ghul.runtime.targets" />
+  <Import Project="../ghul-runtime/build/ghul.runtime.targets" />
 </Project>

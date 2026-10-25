@@ -1,0 +1,13 @@
+sum: 20
+after a delay: first
+caught: failed inside
+awaited through the base: true
+a task with a result is a task: true true
+aggregate: failed inside
+from_result: 7
+completed: true
+continue_with: 21
+when_all: 2 4 6
+unwrap: 10
+run: 42
+never completes: a task was waited for that nothing can complete

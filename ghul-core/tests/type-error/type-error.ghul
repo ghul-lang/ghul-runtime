@@ -1,0 +1,5 @@
+entry() is
+    let name = "abc";
+
+    IO.Std.write_line(name.missing_thing());
+si

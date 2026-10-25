@@ -1,0 +1,60 @@
+// MemoryStream reads and writes bytes held in memory as .NET's does.
+
+use default
+
+let out = IO.MemoryStream()
+out.write([1ub, 2ub, 3ub, 4ub, 5ub], 1, 3)
+out.write_byte(9ub)
+write_line("{out.length} {out.position} {out.to_array() |> join(",")}")
+
+out.position = 1L
+out.write_byte(7ub)
+write_line("{out.length} {out.position} {out.to_array() |> join(",")}")
+
+out.seek(0L, IO.SeekOrigin.END)
+out.position = 6L
+out.write_byte(8ub)
+write_line(out.to_array() |> join(","))
+
+out.position = 0L
+let buffer = Ghul._array_new[ubyte](4)
+let got = out.read(buffer, 0, 4)
+write_line("{got} {buffer |> join(",")} {out.read_byte()}")
+
+let source = [10ub, 20ub, 30ub, 40ub, 50ub, 60ub]
+let window = IO.MemoryStream(source, 2, 3)
+write_line("{window.length} {window.read_byte()} {window.to_array() |> join(",")}")
+
+let copy = IO.MemoryStream()
+window.position = 0L
+window.copy_to(copy)
+write_line(copy.to_array() |> join(","))
+
+window.position = 0L
+window.write_byte(99ub)
+write_line(source |> join(","))
+
+try
+    window.position = 3L
+    window.write_byte(1ub)
+catch e: Ghul.NotSupportedException
+    write_line("not expandable")
+yrt
+
+let fixed = IO.MemoryStream([1ub, 2ub], false)
+try
+    fixed.write_byte(3ub)
+catch e: Ghul.NotSupportedException
+    write_line("read only")
+yrt
+
+out.set_length(2L)
+write_line("{out.length} {out.position} {out.to_array() |> join(",")}")
+
+out.close()
+write_line(out.to_array() |> join(","))
+try
+    out.write_byte(1ub)
+catch e: Ghul.ObjectDisposedException
+    write_line("closed")
+yrt

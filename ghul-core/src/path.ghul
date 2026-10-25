@@ -1,0 +1,236 @@
+namespace IO is
+    use Collections.LIST
+
+    /// Builds and takes apart file and directory paths, as text. Paths are
+    /// written as on Linux, with `/` between their parts and a leading `/`
+    /// for a path from the root.
+    class Path is
+        /// The character between the parts of a path.
+        directory_separator_char: char static => '/'
+
+        /// The other character a path may use between its parts, which is
+        /// the same one here.
+        alt_directory_separator_char: char static => '/'
+
+        /// The character between the paths of a list of paths.
+        path_separator: char static => ':'
+
+        /// Whether `path` starts at the root.
+        ///
+        /// - path: the path to look at
+        is_path_rooted(path: string?) -> bool static pure =>
+            if let p = path then p.starts_with('/') else false fi
+
+        /// `first` and `second` joined into one path. Where `second` starts at
+        /// the root it is the answer on its own.
+        ///
+        /// - first: the path to start from
+        /// - second: the path to add
+        combine(first: string, second: string) -> string static pure is
+            if second.length == 0 then
+                return first
+            fi
+
+            if first.length == 0 \/ is_path_rooted(second) then
+                return second
+            fi
+
+            if first.ends_with('/') then
+                return "{first}{second}"
+            fi
+
+            return "{first}/{second}"
+        si
+
+        /// The three paths joined into one path.
+        ///
+        /// - first: the path to start from
+        /// - second: the path to add next
+        /// - third: the path to add last
+        combine(first: string, second: string, third: string) -> string static pure =>
+            combine(combine(first, second), third)
+
+        /// The four paths joined into one path.
+        ///
+        /// - first: the path to start from
+        /// - second: the path to add next
+        /// - third: the path to add after that
+        /// - fourth: the path to add last
+        combine(first: string, second: string, third: string, fourth: string) -> string static pure =>
+            combine(combine(combine(first, second), third), fourth)
+
+        /// The paths joined into one path, in order.
+        ///
+        /// - paths: the paths to join
+        combine(paths: string[]) -> string static pure is
+            let result mut = ""
+
+            for path in paths do
+                result = combine(result, path)
+            od
+
+            return result
+        si
+
+        /// The last part of `path`: the name of the file or directory it ends
+        /// at, or empty where it ends with a `/`.
+        ///
+        /// - path: the path to take the name from
+        get_file_name(path: string) -> string? static pure => _name_of(path)
+
+        _name_of(path: string) -> string static pure =>
+            path.substring(path.last_index_of('/') + 1)
+
+        /// The name `get_file_name` answers, without its extension.
+        ///
+        /// - path: the path to take the name from
+        get_file_name_without_extension(path: string) -> string? static pure is
+            let name = _name_of(path)
+            let dot = name.last_index_of('.')
+
+            return if dot < 0 then name else name.substring(0, dot) fi
+        si
+
+        /// The extension of the last part of `path`, with its leading `.`,
+        /// or empty where it has none.
+        ///
+        /// - path: the path to take the extension from
+        get_extension(path: string) -> string? static pure is
+            let name = _name_of(path)
+            let dot = name.last_index_of('.')
+
+            return if dot < 0 \/ dot == name.length - 1 then "" else name.substring(dot) fi
+        si
+
+        /// Whether the last part of `path` has an extension.
+        ///
+        /// - path: the path to look at
+        has_extension(path: string) -> bool static pure =>
+            get_extension(path)!.length > 0
+
+        /// `path` with the extension of its last part replaced by
+        /// `extension`, or removed where `extension` is null.
+        ///
+        /// - path: the path to change
+        /// - extension: the new extension, with or without its leading `.`
+        change_extension(path: string, extension: string?) -> string? static pure is
+            let name = _name_of(path)
+            let dot = name.last_index_of('.')
+            let stem = if dot < 0 then path else path.substring(0, path.length - name.length + dot) fi
+
+            if let e = extension then
+                return if e.starts_with('.') then "{stem}{e}" else "{stem}.{e}" fi
+            fi
+
+            return stem
+        si
+
+        /// Everything in `path` above its last part, or null where `path` is
+        /// the root or empty.
+        ///
+        /// - path: the path to take the directory from
+        get_directory_name(path: string) -> string? static pure is
+            if path.length == 0 \/ path =~ "/" then
+                return null
+            fi
+
+            let slash = path.last_index_of('/')
+
+            if slash < 0 then
+                return ""
+            fi
+
+            if slash == 0 then
+                return "/"
+            fi
+
+            return path.substring(0, slash)
+        si
+
+        /// `path` from the root, with `.` and `..` parts resolved. A path not
+        /// from the root is taken from the current directory.
+        ///
+        /// - path: the path to resolve
+        get_full_path(path: string) -> string static pure is
+            if is_path_rooted(path) /\ _is_resolved(path) then
+                return path
+            fi
+
+            let rooted = if is_path_rooted(path) then path else combine(Directory.get_current_directory(), path) fi
+            let parts = LIST[string]()
+
+            for part in rooted.split('/') do
+                if part.length == 0 \/ part =~ "." then
+                    continue
+                fi
+
+                if part =~ ".." then
+                    if parts.count > 0 then
+                        parts.remove_at(parts.count - 1)
+                    fi
+
+                    continue
+                fi
+
+                parts.add(part)
+            od
+
+            let result = "/{string.join("/", parts)}"
+
+            return if path.ends_with('/') /\ result.length > 1 then "{result}/" else result fi
+        si
+
+        // Whether the rooted `path` is already as get_full_path would answer
+        // it: no empty part, and no `.` or `..` part.
+        _is_resolved(path: string) -> bool static pure is
+            let i mut = 1
+
+            while i < path.length do
+                let start = i
+
+                while i < path.length /\ path[i] != '/' do
+                    i = i + 1
+                od
+
+                let length = i - start
+
+                if length == 0 \/ (path[start] == '.' /\ (length == 1 \/ (length == 2 /\ path[start + 1] == '.'))) then
+                    return false
+                fi
+
+                i = i + 1
+            od
+
+            return true
+        si
+
+        /// The path that leads from the directory `relative_to` to `path`.
+        ///
+        /// - relative_to: the directory to start from
+        /// - path: the path to reach
+        get_relative_path(relative_to: string, path: string) -> string static pure is
+            let from = get_full_path(relative_to).split('/', Ghul.StringSplitOptions.REMOVE_EMPTY_ENTRIES)
+            let to = get_full_path(path).split('/', Ghul.StringSplitOptions.REMOVE_EMPTY_ENTRIES)
+            let shared mut = 0
+
+            while shared < from.count /\ shared < to.count /\ from[shared] =~ to[shared] do
+                shared = shared + 1
+            od
+
+            let parts = LIST[string]()
+
+            for i in shared..from.count do
+                parts.add("..")
+            od
+
+            for i in shared..to.count do
+                parts.add(to[i])
+            od
+
+            return if parts.count == 0 then "." else string.join("/", parts) fi
+        si
+
+        /// The directory for temporary files, ending with a `/`.
+        get_temp_path() -> string static => "/tmp/"
+    si
+si

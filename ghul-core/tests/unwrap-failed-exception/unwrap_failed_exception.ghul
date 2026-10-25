@@ -1,0 +1,31 @@
+// UnwrapFailedException[T]: the typed payload a host reads after catching,
+// with a struct payload and a union payload.
+namespace Test is
+    use IO.Std.write_line
+
+    struct POINT(x: int, y: int)
+
+    union OUTCOME is
+        GOOD
+        BAD
+    si
+
+    entry() is
+        try
+            throw Ghul.UnwrapFailedException[POINT](POINT(3, 4))
+        catch e: Ghul.UnwrapFailedException[POINT]
+            write_line("{e.payload.x},{e.payload.y}")
+            write_line(e.message)
+        yrt
+
+        try
+            throw Ghul.UnwrapFailedException[OUTCOME](OUTCOME.BAD)
+        catch e: Ghul.UnwrapFailedException[OUTCOME]
+            if e.payload =~ OUTCOME.BAD then
+                write_line("bad")
+            else
+                write_line("good")
+            fi
+        yrt
+    si
+si

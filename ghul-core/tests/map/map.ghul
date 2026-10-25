@@ -1,0 +1,68 @@
+// MAP and SET hold entries in a hash table over =~ and get_hash_code, as
+// they do on .NET, and LIST finds elements by =~. The keys are ints:
+// get_hash_code over a type parameter instantiated at string does not yet
+// reach string's own hash on the wasm target.
+
+use IO.Std.write_line
+
+entry() is
+    let ages = Collections.MAP[int, int]()
+
+    ages.add(1, 36)
+    ages[2] = 41
+    ages[1] = 37
+
+    write_line("{ages.count} {ages[1]} {ages[2]}")
+    write_line("{ages.contains_key(1)} {ages.contains_key(3)} {ages.contains_value(41)}")
+    write_line("{ages.try_add(1, 1)} {ages.try_add(3, 85)} {ages.count}")
+
+    let found mut = 0
+
+    write_line("{ages.try_get_value(2, found ref)} {found} {ages.try_get_value(9, found ref)} {found}")
+
+    let i mut = 0
+
+    while i < 100 do
+        ages[i + 100] = i
+        i = i + 1
+    od
+
+    write_line("{ages.count} {ages[157]}")
+
+    i = 0
+
+    while i < 100 do
+        ages.remove(i + 100)
+        i = i + 1
+    od
+
+    write_line("{ages.remove(2)} {ages.remove(2)} {ages.count}")
+
+    ages[4] = 72
+
+    let total mut = 0
+
+    for pair in ages do
+        total = total + pair.value
+    od
+
+    write_line("{total}")
+
+    try
+        let missing = ages[5]
+    catch e: Collections.KeyNotFoundException
+        write_line("not found")
+    yrt
+
+    let seen = Collections.SET[int]()
+
+    write_line("{seen.add(3)} {seen.add(3)} {seen.add(4)} {seen.count}")
+    write_line("{seen.contains(3)} {seen.remove(3)} {seen.contains(3)} {seen.count}")
+
+    let names = Collections.LIST[int]()
+
+    names.add(10)
+    names.add(11)
+
+    write_line("{names.index_of(11)} {names.contains(12)} {names.remove(10)} {names.count}")
+si

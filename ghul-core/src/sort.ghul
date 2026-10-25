@@ -1,0 +1,183 @@
+namespace Ghul is
+    // The introspective sort .NET's List.Sort and Array.Sort run when given a
+    // comparer, step for step, so elements the comparer calls equal end up in
+    // the order .NET leaves them in.
+    //
+    // Partitions of up to sixteen elements are insertion sorted; larger ones
+    // are split around a median-of-three pivot, falling back to a heap sort
+    // once the recursion is twice as deep as the length's binary logarithm.
+
+    _introsort[T](items: T[], count: int, comparer: Collections.Comparer[T]) is
+        if count < 2 then
+            return
+        fi
+
+        _introsort_range(items, 0, count, 2 * (_floor_log2(count) + 1), comparer)
+    si
+
+    _introsort_range[T](items: T[], start: int, length: int, depth: int, comparer: Collections.Comparer[T]) is
+        let size mut = length
+        let limit mut = depth
+
+        while size > 1 do
+            if size <= 16 then
+                if size == 2 then
+                    _swap_if_greater(items, start, start + 1, comparer)
+
+                    return
+                fi
+
+                if size == 3 then
+                    _swap_if_greater(items, start, start + 1, comparer)
+                    _swap_if_greater(items, start, start + 2, comparer)
+                    _swap_if_greater(items, start + 1, start + 2, comparer)
+
+                    return
+                fi
+
+                _insertion_sort(items, start, size, comparer)
+
+                return
+            fi
+
+            if limit == 0 then
+                _heap_sort(items, start, size, comparer)
+
+                return
+            fi
+
+            limit = limit - 1
+
+            let pivot = _partition(items, start, size, comparer)
+
+            _introsort_range(items, start + pivot + 1, size - (pivot + 1), limit, comparer)
+
+            size = pivot
+        od
+    si
+
+    // Partitions the `length` elements from `start` around the median of the
+    // first, middle and last, and returns the pivot's final offset.
+    _partition[T](items: T[], start: int, length: int, comparer: Collections.Comparer[T]) -> int is
+        let high = length - 1
+        let middle = high >> 1
+
+        _swap_if_greater(items, start, start + middle, comparer)
+        _swap_if_greater(items, start, start + high, comparer)
+        _swap_if_greater(items, start + middle, start + high, comparer)
+
+        let pivot = items[start + middle]
+
+        _swap(items, start + middle, start + high - 1)
+
+        let left mut = 0
+        let right mut = high - 1
+
+        while left < right do
+            left = left + 1
+
+            while comparer.compare(items[start + left], pivot) < 0 do
+                left = left + 1
+            od
+
+            right = right - 1
+
+            while comparer.compare(pivot, items[start + right]) < 0 do
+                right = right - 1
+            od
+
+            if left >= right then
+                break
+            fi
+
+            _swap(items, start + left, start + right)
+        od
+
+        if left != high - 1 then
+            _swap(items, start + left, start + high - 1)
+        fi
+
+        return left
+    si
+
+    _insertion_sort[T](items: T[], start: int, length: int, comparer: Collections.Comparer[T]) is
+        let i mut = 0
+
+        while i < length - 1 do
+            let t = items[start + i + 1]
+            let j mut = i
+
+            while j >= 0 /\ comparer.compare(t, items[start + j]) < 0 do
+                _array_set(items, start + j + 1, items[start + j])
+                j = j - 1
+            od
+
+            _array_set(items, start + j + 1, t)
+            i = i + 1
+        od
+    si
+
+    _heap_sort[T](items: T[], start: int, length: int, comparer: Collections.Comparer[T]) is
+        let i mut = length >> 1
+
+        while i >= 1 do
+            _down_heap(items, start, i, length, comparer)
+            i = i - 1
+        od
+
+        i = length
+
+        while i > 1 do
+            _swap(items, start, start + i - 1)
+            _down_heap(items, start, 1, i - 1, comparer)
+            i = i - 1
+        od
+    si
+
+    _down_heap[T](items: T[], start: int, from: int, length: int, comparer: Collections.Comparer[T]) is
+        let d = items[start + from - 1]
+        let i mut = from
+
+        while i <= length >> 1 do
+            let child mut = 2 * i
+
+            if child < length /\ comparer.compare(items[start + child - 1], items[start + child]) < 0 then
+                child = child + 1
+            fi
+
+            if !(comparer.compare(d, items[start + child - 1]) < 0) then
+                break
+            fi
+
+            _array_set(items, start + i - 1, items[start + child - 1])
+            i = child
+        od
+
+        _array_set(items, start + i - 1, d)
+    si
+
+    _swap_if_greater[T](items: T[], i: int, j: int, comparer: Collections.Comparer[T]) is
+        if comparer.compare(items[i], items[j]) > 0 then
+            _swap(items, i, j)
+        fi
+    si
+
+    _swap[T](items: T[], i: int, j: int) is
+        let t = items[i]
+
+        _array_set(items, i, items[j])
+        _array_set(items, j, t)
+    si
+
+    _floor_log2(value: int) -> int is
+        let result mut = 0
+        let rest mut = value
+
+        while rest > 1 do
+            rest = rest >> 1
+            result = result + 1
+        od
+
+        return result
+    si
+si

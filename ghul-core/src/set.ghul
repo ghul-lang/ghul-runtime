@@ -1,0 +1,143 @@
+namespace Collections is
+    /// A set held in a hash table over its elements' `=~` and
+    /// `get_hash_code`.
+    class SET[T]: Set[T], MutableSet[T] is
+        _map: MAP[T, bool];
+
+        /// An empty set.
+        init() is
+            _map = MAP[T, bool]();
+        si
+
+        /// An empty set whose elements are compared and hashed by `comparer`.
+        ///
+        /// - comparer: what says whether two elements are the same element
+        init(comparer: EqualityComparer[T]) is
+            _map = MAP[T, bool](comparer);
+        si
+
+        /// A set holding the elements of `source`, each once.
+        ///
+        /// - source: the elements to add
+        init(source: Iterable[T]) is
+            _map = MAP[T, bool]();
+
+            for value in source do
+                add(value);
+            od
+        si
+
+        /// The number of elements.
+        count: int pure => _map.count;
+
+        /// Adds `value`, answering whether the set did not already hold it.
+        ///
+        /// - value: the element to add
+        add(value: T) -> bool => _map.try_add(value, true);
+
+        /// Removes `value`, answering whether the set held it.
+        ///
+        /// - value: the element to remove
+        remove(value: T) -> bool => _map.remove(value);
+
+        /// Whether the set holds `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: T) -> bool pure => _map.contains_key(value);
+
+        /// Adds every element of `other` the set does not already hold.
+        ///
+        /// - other: the elements to add
+        union_with(other: Iterable[T]) is
+            for value in other do
+                add(value);
+            od
+        si
+
+        /// Keeps only the elements `other` also holds.
+        ///
+        /// - other: the elements to keep
+        intersect_with(other: Iterable[T]) is
+            let keep = SET[T](other);
+            let dropped = LIST[T]();
+
+            for value in self do
+                if !keep.contains(value) then
+                    dropped.add(value);
+                fi
+            od
+
+            for value in dropped do
+                remove(value);
+            od
+        si
+
+        /// Removes every element `other` holds.
+        ///
+        /// - other: the elements to remove
+        except_with(other: Iterable[T]) is
+            for value in other do
+                remove(value);
+            od
+        si
+
+        /// Whether `other` holds every element of this set.
+        ///
+        /// - other: the elements to compare with
+        is_subset_of(other: Iterable[T]) -> bool is
+            let them = SET[T](other);
+
+            for value in self do
+                if !them.contains(value) then
+                    return false;
+                fi
+            od
+
+            return true;
+        si
+
+        /// Whether this set holds every element of `other`.
+        ///
+        /// - other: the elements to compare with
+        is_superset_of(other: Iterable[T]) -> bool is
+            for value in other do
+                if !contains(value) then
+                    return false;
+                fi
+            od
+
+            return true;
+        si
+
+        /// Whether this set and `other` hold the same elements, in any order
+        /// and however many times `other` repeats one.
+        ///
+        /// - other: the elements to compare with
+        set_equals(other: Iterable[T]) -> bool is
+            let them = SET[T](other);
+
+            return them.count == count /\ is_subset_of(them);
+        si
+
+        /// Whether this set and `other` hold any element in common.
+        ///
+        /// - other: the elements to compare with
+        overlaps(other: Iterable[T]) -> bool is
+            for value in other do
+                if contains(value) then
+                    return true;
+                fi
+            od
+
+            return false;
+        si
+
+        /// Removes every element.
+        clear() is
+            _map.clear();
+        si
+
+        /// An iterator over the elements.
+        iterator: Iterator[T] => _map.keys.iterator;
+    si
+si

@@ -21,3 +21,4 @@ temp/
 
 # per-target builds of a test, beside it
 .targets-*/
+ghul-core/tests/*/out/

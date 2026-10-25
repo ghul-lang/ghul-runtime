@@ -1,0 +1,38 @@
+use IO.Std.write_line
+
+// UTF-8 text, a string writer, an auto-flushing file writer and a moving
+// file that replaces another behave as they do on .NET.
+entry() is
+    let bytes = System.Text.Encoding.utf8.get_bytes("héllo ☃")
+
+    write_line("{bytes.count} {System.Text.UTF8Encoding().get_string(bytes)}")
+
+    let text = IO.StringWriter()
+
+    text.write("one")
+    text.write_line(" two")
+    text.write(3)
+
+    write_line(text.to_string().replace("\n", "|"))
+
+    let writer = IO.StreamWriter("log.txt", false)
+
+    writer.auto_flush = true
+    writer.write("flushed")
+
+    write_line(IO.File.read_all_text("log.txt"))
+
+    IO.File.write_all_text("old.txt", "old")
+    IO.File.write_all_text("new.txt", "new")
+
+    try
+        IO.File.move("new.txt", "old.txt")
+        write_line("moved over a file without overwrite")
+    catch e: IO.IOException
+        write_line("refused without overwrite")
+    yrt
+
+    IO.File.move("new.txt", "old.txt", true)
+
+    write_line("{IO.File.read_all_text("old.txt")} {IO.File.exists("new.txt")}")
+si

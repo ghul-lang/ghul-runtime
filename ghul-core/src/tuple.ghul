@@ -1,0 +1,284 @@
+namespace Ghul is
+    // The compiler constructs the tuple families itself, with type
+    // parameters T1 to Tn; the library supplies the elements, which are
+    // what `.`0`, `.`1` and so on read, a constructor taking every
+    // element, and a hash of the elements to go with the element-wise `=~`
+    // the compiler gives tuples.
+
+    partial TUPLE_1 is
+        /// The first element.
+        `0: T1 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        init(e0: T1) is
+            `0 = e0
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+
+            return hash
+        si
+    si
+
+    partial TUPLE_2 is
+        /// The first element.
+        `0: T1 field
+
+        /// The second element.
+        `1: T2 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        /// - e1: the second element
+        init(e0: T1, e1: T2) is
+            `0 = e0
+            `1 = e1
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+            hash = hash * 31 + _hash_of(`1)
+
+            return hash
+        si
+    si
+
+    partial TUPLE_3 is
+        /// The first element.
+        `0: T1 field
+
+        /// The second element.
+        `1: T2 field
+
+        /// The third element.
+        `2: T3 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        /// - e1: the second element
+        /// - e2: the third element
+        init(e0: T1, e1: T2, e2: T3) is
+            `0 = e0
+            `1 = e1
+            `2 = e2
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+            hash = hash * 31 + _hash_of(`1)
+            hash = hash * 31 + _hash_of(`2)
+
+            return hash
+        si
+    si
+
+    partial TUPLE_4 is
+        /// The first element.
+        `0: T1 field
+
+        /// The second element.
+        `1: T2 field
+
+        /// The third element.
+        `2: T3 field
+
+        /// The fourth element.
+        `3: T4 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        /// - e1: the second element
+        /// - e2: the third element
+        /// - e3: the fourth element
+        init(e0: T1, e1: T2, e2: T3, e3: T4) is
+            `0 = e0
+            `1 = e1
+            `2 = e2
+            `3 = e3
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+            hash = hash * 31 + _hash_of(`1)
+            hash = hash * 31 + _hash_of(`2)
+            hash = hash * 31 + _hash_of(`3)
+
+            return hash
+        si
+    si
+
+    partial TUPLE_5 is
+        /// The first element.
+        `0: T1 field
+
+        /// The second element.
+        `1: T2 field
+
+        /// The third element.
+        `2: T3 field
+
+        /// The fourth element.
+        `3: T4 field
+
+        /// The fifth element.
+        `4: T5 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        /// - e1: the second element
+        /// - e2: the third element
+        /// - e3: the fourth element
+        /// - e4: the fifth element
+        init(e0: T1, e1: T2, e2: T3, e3: T4, e4: T5) is
+            `0 = e0
+            `1 = e1
+            `2 = e2
+            `3 = e3
+            `4 = e4
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+            hash = hash * 31 + _hash_of(`1)
+            hash = hash * 31 + _hash_of(`2)
+            hash = hash * 31 + _hash_of(`3)
+            hash = hash * 31 + _hash_of(`4)
+
+            return hash
+        si
+    si
+
+    partial TUPLE_6 is
+        /// The first element.
+        `0: T1 field
+
+        /// The second element.
+        `1: T2 field
+
+        /// The third element.
+        `2: T3 field
+
+        /// The fourth element.
+        `3: T4 field
+
+        /// The fifth element.
+        `4: T5 field
+
+        /// The sixth element.
+        `5: T6 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        /// - e1: the second element
+        /// - e2: the third element
+        /// - e3: the fourth element
+        /// - e4: the fifth element
+        /// - e5: the sixth element
+        init(e0: T1, e1: T2, e2: T3, e3: T4, e4: T5, e5: T6) is
+            `0 = e0
+            `1 = e1
+            `2 = e2
+            `3 = e3
+            `4 = e4
+            `5 = e5
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+            hash = hash * 31 + _hash_of(`1)
+            hash = hash * 31 + _hash_of(`2)
+            hash = hash * 31 + _hash_of(`3)
+            hash = hash * 31 + _hash_of(`4)
+            hash = hash * 31 + _hash_of(`5)
+
+            return hash
+        si
+    si
+
+    partial TUPLE_7 is
+        /// The first element.
+        `0: T1 field
+
+        /// The second element.
+        `1: T2 field
+
+        /// The third element.
+        `2: T3 field
+
+        /// The fourth element.
+        `3: T4 field
+
+        /// The fifth element.
+        `4: T5 field
+
+        /// The sixth element.
+        `5: T6 field
+
+        /// The seventh element.
+        `6: T7 field
+
+        /// A tuple of the given elements.
+        ///
+        /// - e0: the first element
+        /// - e1: the second element
+        /// - e2: the third element
+        /// - e3: the fourth element
+        /// - e4: the fifth element
+        /// - e5: the sixth element
+        /// - e6: the seventh element
+        init(e0: T1, e1: T2, e2: T3, e3: T4, e4: T5, e5: T6, e6: T7) is
+            `0 = e0
+            `1 = e1
+            `2 = e2
+            `3 = e3
+            `4 = e4
+            `5 = e5
+            `6 = e6
+        si
+
+        /// A hash of the elements, alike for tuples whose elements are equal.
+        get_hash_code() -> int is
+            let hash mut = 17
+
+            hash = hash * 31 + _hash_of(`0)
+            hash = hash * 31 + _hash_of(`1)
+            hash = hash * 31 + _hash_of(`2)
+            hash = hash * 31 + _hash_of(`3)
+            hash = hash * 31 + _hash_of(`4)
+            hash = hash * 31 + _hash_of(`5)
+            hash = hash * 31 + _hash_of(`6)
+
+            return hash
+        si
+    si
+
+    // The hash of `value`, which is zero where it is absent.
+    _hash_of[T](value: T) -> int =>
+        if (cast object?(value))? then value.get_hash_code() else 0 fi
+si

@@ -1,0 +1,338 @@
+namespace Ghul is
+    use Text.STRING_BUILDER
+
+    /// Implemented by a type that controls how `$` and `inspect` render it.
+    trait Displayable open is
+        /// Writes this value's rendering to `state`.
+        display(state: DISPLAY_STATE)
+    si
+
+    /// How a value is rendered: `CLEAN` for `$`, `DETAILED` for `inspect`.
+    enum DisplayMode is
+        /// The plain rendering `$` uses.
+        CLEAN,
+
+        /// The detailed rendering `inspect` uses, with strings and characters quoted.
+        DETAILED
+    si
+
+    /// Holds the text, the element budget and the values being rendered that
+    /// `$`, `inspect` and an implementation of `Displayable` write through.
+    class DISPLAY_STATE is
+        _text: STRING_BUILDER
+        _path: _DISPLAY_LINK?
+        _counts: _DISPLAY_COUNT
+        _depth: int
+
+        /// The default limit on how many elements of a sequence are rendered.
+        default_max_elements: int static => 100
+
+        /// Whether this state renders in the clean mode or the detailed mode.
+        mode: DisplayMode
+
+        /// The most elements of any one sequence this state renders.
+        max_elements: int
+
+        /// A state that renders as `$` does.
+        init() is
+            init(DisplayMode.CLEAN, default_max_elements)
+        si
+
+        /// A state that renders in `mode`, showing at most `max_elements`
+        /// elements of any one sequence.
+        ///
+        /// - mode: clean, as `$` renders, or detailed, as `inspect` does
+        /// - max_elements: the most elements of any one sequence to show
+        init(mode: DisplayMode, max_elements: int) is
+            self.mode = mode
+            self.max_elements = max_elements
+
+            _text = STRING_BUILDER()
+            _counts = _DISPLAY_COUNT(null)
+        si
+
+        /// Appends `text` to the rendering.
+        ///
+        /// - text: the text to append
+        append(text: string) is
+            _text.append(text)
+        si
+
+        /// Renders `value` into this state: a string or character as itself,
+        /// a `bool` as `true` or `false`, a `Displayable` however it says, a
+        /// value whose type has a `to_string` of its own as that, and
+        /// anything else as its elements or its type and members.
+        ///
+        /// - value: the value to render
+        render(value: object?) is
+            if !value? then
+                append("null")
+                return
+            fi
+
+            if let text: string = value then
+                if _is_quoted then
+                    _append_quoted(text, '"')
+                else
+                    append(text)
+                fi
+
+                return
+            fi
+
+            if let unit: char = value then
+                if _is_quoted then
+                    _append_quoted(_string_from_char(unit), '\'')
+                else
+                    append(_string_from_char(unit))
+                fi
+
+                return
+            fi
+
+            if let flag: bool = value then
+                append(if flag then "true" else "false" fi)
+                return
+            fi
+
+            if _is_on_path(value) then
+                append("<cycle>")
+                return
+            fi
+
+            _path = _DISPLAY_LINK(value, _path)
+
+            if let displayable: Displayable = value then
+                // What a type writes through the state is inside it, so a
+                // string it renders is quoted as one inside any other
+                // value is.
+                _depth = _depth + 1
+                displayable.display(self)
+                _depth = _depth - 1
+            elif !_display(value, self) then
+                append(value.to_string())
+            fi
+
+            if let link = _path then
+                _path = link.next
+            fi
+        si
+
+        /// The rendering written so far.
+        to_string() -> string => _text.to_string()
+
+        // A string or a character is quoted in the detailed mode anywhere
+        // but at the top.
+        _is_quoted: bool => mode == DisplayMode.DETAILED /\ _depth > 0
+
+        _is_on_path(value: object) -> bool is
+            let link mut = _path
+
+            while link? do
+                if link.value == value then
+                    return true
+                fi
+
+                link = link.next
+            od
+
+            return false
+        si
+
+        _append_quoted(text: string, mark: char) is
+            let mark_text = _string_from_char(mark)
+
+            append(mark_text)
+
+            let i mut = 0
+
+            while i < text.length do
+                let unit = text[i]
+                i = i + 1
+
+                if unit == '\\' then
+                    append("\\\\")
+                elif unit == mark then
+                    append("\\")
+                    append(mark_text)
+                elif unit == '\n' then
+                    append("\\n")
+                elif unit == '\t' then
+                    append("\\t")
+                else
+                    append(_string_from_char(unit))
+                fi
+            od
+
+            append(mark_text)
+        si
+
+        _pop_count() is
+            if let outer = _counts.next then
+                _counts = outer
+            fi
+        si
+
+        _render_child(value: object?) is
+            _depth = _depth + 1
+
+            render(value)
+
+            _depth = _depth - 1
+        si
+
+        // The compiler-synthesised display of a type writes through these:
+        // a sequence's elements in brackets, a record's members after its
+        // type's name, and a tuple's parts in parentheses. Each answers
+        // false once the element budget is spent, after writing the
+        // ellipsis that stands for the rest.
+
+        _begin_sequence() is
+            append("[")
+            _counts = _DISPLAY_COUNT(_counts)
+        si
+
+        _render_element(value: object?) -> bool is
+            let counter = _counts
+            let count = counter.count
+
+            if count >= max_elements then
+                append(", ...")
+                return false
+            fi
+
+            if count > 0 then
+                append(", ")
+            fi
+
+            _render_child(value)
+
+            counter.count = count + 1
+
+            return true
+        si
+
+        _elements[T](items: Collections.Iterable[T]) is
+            _begin_sequence()
+
+            for item in items do
+                if !_render_element(item) then
+                    break
+                fi
+            od
+
+            _end_sequence()
+        si
+
+        _end_sequence() is
+            _pop_count()
+            append("]")
+        si
+
+        _begin_members(type_name: string) is
+            append(type_name)
+            _counts = _DISPLAY_COUNT(_counts)
+        si
+
+        _render_member(name: string, value: object?) -> bool is
+            let counter = _counts
+            let count = counter.count
+
+            if count >= max_elements then
+                append(", ...")
+                return false
+            fi
+
+            append(if count == 0 then "(" else ", " fi)
+            append(name)
+            append(" = ")
+
+            _render_child(value)
+
+            counter.count = count + 1
+
+            return true
+        si
+
+        _member[T](name: string, value: T) -> bool => _render_member(name, value)
+
+        _end_members() is
+            if _counts.count > 0 then
+                append(")")
+            fi
+
+            _pop_count()
+        si
+
+        _begin_parts() is
+            append("(")
+            _counts = _DISPLAY_COUNT(_counts)
+        si
+
+        _render_part(value: object?) is
+            let counter = _counts
+
+            if counter.count > 0 then
+                append(", ")
+            fi
+
+            _render_child(value)
+
+            counter.count = counter.count + 1
+        si
+
+        _part[T](value: T) => _render_part(value)
+
+        _end_parts() is
+            _pop_count()
+            append(")")
+        si
+    si
+
+    // A value on the path from the top of a rendering to the value being
+    // rendered, which a cycle would reach again.
+    class _DISPLAY_LINK(value: object, next: _DISPLAY_LINK?);
+
+    // How many elements, members or parts of one value have been rendered.
+    class _DISPLAY_COUNT(next: _DISPLAY_COUNT?) is
+        count: int public
+    si
+
+    /// Renders `value` the way `inspect` shows it: like `$`, but with a
+    /// string or character inside another value quoted.
+    ///
+    /// - value: the value to render
+    inspect(value: object?) -> string is
+        let state = DISPLAY_STATE(DisplayMode.DETAILED, DISPLAY_STATE.default_max_elements)
+
+        state.render(value)
+
+        return state.to_string()
+    si
+
+    // Writes `value`'s compiler-synthesised display into `state`: its
+    // elements where its type is a sequence, its type and members
+    // otherwise. False where its type has a `to_string` of its own, which
+    // the compiler gives no display.
+    @intrinsic("object.display")
+    _display(value: object, state: DISPLAY_STATE) -> bool
+si
+
+namespace Ghul.Intrinsics is
+    /// Renders `value` for display, as program output and interpolation
+    /// show it.
+    ///
+    /// - value: the value to render
+    $(value: object?) -> string is
+        let state = Ghul.DISPLAY_STATE()
+
+        state.render(value)
+
+        return state.to_string()
+    si
+
+    /// Renders `value` for display: a string reads as itself.
+    ///
+    /// - value: the string to render
+    $(value: string) -> string pure => value
+si

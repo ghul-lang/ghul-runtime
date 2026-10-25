@@ -1,0 +1,8 @@
+// Stands in for the core library's string and bit intrinsics on .NET, so the
+// numeric formatter can be checked against .NET's own text.
+namespace Ghul is
+    _string_concat(left: string?, right: string?) -> string => "{left}{right}"
+    _string_from_char(unit: char) -> string => "{unit}"
+    _double_bits(value: double) -> ulong => cast ulong(System.BitConverter.double_to_int64_bits(value))
+    _single_bits(value: single) -> uint => cast uint(System.BitConverter.single_to_int32_bits(value))
+si

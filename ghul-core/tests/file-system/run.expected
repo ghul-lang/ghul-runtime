@@ -1,0 +1,45 @@
+[/a/b/c.txt] name=[c.txt] stem=[c] ext=[.txt] has=true dir=[/a/b] rooted=true
+[a/b] name=[b] stem=[b] ext=[] has=false dir=[a] rooted=false
+[/] name=[] stem=[] ext=[] has=false dir=[null] rooted=true
+[] name=[] stem=[] ext=[] has=false dir=[null] rooted=false
+[c.tar.gz] name=[c.tar.gz] stem=[c.tar] ext=[.gz] has=true dir=[] rooted=false
+[dir/] name=[] stem=[] ext=[] has=false dir=[dir] rooted=false
+[/x] name=[x] stem=[x] ext=[] has=false dir=[/] rooted=true
+[.hidden] name=[.hidden] stem=[] ext=[.hidden] has=true dir=[] rooted=false
+[noext.] name=[noext.] stem=[noext] ext=[] has=false dir=[] rooted=false
+a/b
+a/b
+/b
+b
+a
+a/b/c
+a/b/c/d
+x/y/z
+/a/b.md
+/a/b.md
+/a/b.md
+/a/c
+/a/b/
+../c/d
+.
+false false
+missing: Could not find file '/data.txt'.
+true true false
+first|second|third|fourth
+first|second|third|fourth|fifth
+32 notes.txt
+99 97 102 195 169 32 226 130 172 32 240 159 152 128
+true 9
+4 137 71
+no directory: Could not find a part of the path '/nowhere/file.txt'.
+true true false
+scratch/top.txt
+scratch/frames/a.txt scratch/top.txt
+scratch/frames
+scratch/frames/a.txt scratch/frames/b.log
+not empty
+false t
+false false
+one|two
+4 1 2
+missing: Could not find file 'gone.bin'.

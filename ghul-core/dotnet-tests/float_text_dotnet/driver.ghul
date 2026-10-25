@@ -1,0 +1,72 @@
+// Compares the core library's floating-point text with .NET's for fixed
+// boundary values and for random bit patterns, and prints how many differ.
+namespace Harness is
+    use IO.Std.write_line
+
+    entry() is
+        let invariant = System.Globalization.CultureInfo.invariant_culture
+        let random = System.Random(987)
+        let failures mut = 0
+        let checked mut = 0
+
+        let fixed = [
+            0.0, -0.0, 1.0, -1.0, 0.1, 0.2, 0.3, 1.5, 100.0, 1.0e14, 1.0e15, 123456789012345.0, 1234567890123456.0,
+            0.0001, 0.00001, 1.5e-7, 1.0e308, 1.7976931348623157e308, 5.0e-324, 2.2250738585072014e-308,
+            2.2250738585072009e-308, 9007199254740993.0, 3.141592653589793, 2.718281828459045, 1.0e21, 1.0e-21,
+            123.456, 0.1 + 0.2, 1.0 / 3.0, 2.0 / 3.0, 4.35, 9.95, 1.0e23, 8.41e21, 5.0e-310, 1.0e100, 1.0e-100, double.positive_infinity, double.negative_infinity, 1.0e16, 1.0e17, 1.0e18, 123456789012345678.0, 0.001, 0.0001234
+        ]
+
+        for v in fixed do
+            checked = checked + 1
+            let mine = Ghul._format_double(v)
+            let theirs = v.to_string(invariant)
+
+            if !(mine =~ theirs) then
+                failures = failures + 1
+                write_line("double {theirs} -> {mine}")
+            fi
+        od
+
+        let i mut = 0
+
+        while i < 100000 do
+            let bits = random.next_int64()
+            let v = System.BitConverter.int64_bits_to_double(bits)
+
+            if !double.is_na_n(v) then
+                checked = checked + 1
+                let mine = Ghul._format_double(v)
+                let theirs = v.to_string(invariant)
+
+                if !(mine =~ theirs) then
+                    failures = failures + 1
+
+                    if failures < 20 then
+                        write_line("double {theirs} -> {mine}")
+                    fi
+                fi
+            fi
+
+            let fbits = random.next(int.min_value, int.max_value)
+            let f = System.BitConverter.int32_bits_to_single(fbits)
+
+            if !single.is_na_n(f) then
+                checked = checked + 1
+                let mine = Ghul._format_single(f)
+                let theirs = f.to_string(invariant)
+
+                if !(mine =~ theirs) then
+                    failures = failures + 1
+
+                    if failures < 20 then
+                        write_line("single {theirs} -> {mine}")
+                    fi
+                fi
+            fi
+
+            i = i + 1
+        od
+
+        write_line("checked {checked}, failures {failures}")
+    si
+si

@@ -1,0 +1,252 @@
+namespace Ghul is
+    partial char is
+        /// The string holding just this UTF-16 code unit.
+        to_string() -> string pure => _string_from_char(self)
+    si
+
+    partial int is
+        /// The value in decimal, with a leading `-` when it is negative.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial bool is
+        /// `True` or `False`, as .NET writes a bool.
+        to_string() -> string pure => if self then "True" else "False" fi
+    si
+
+    partial byte is
+        /// The value in decimal, with a leading `-` when it is negative.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial short is
+        /// The value in decimal, with a leading `-` when it is negative.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial word is
+        /// The value in decimal, with a leading `-` when it is negative.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial ubyte is
+        /// The value in decimal.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial ushort is
+        /// The value in decimal.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial uint is
+        /// The value in decimal.
+        to_string() -> string pure is
+            let wide: long = cast long(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial uword is
+        /// The value in decimal.
+        to_string() -> string pure is
+            let wide: ulong = cast ulong(self)
+
+            return wide.to_string()
+        si
+    si
+
+    partial ulong is
+        /// The value in decimal.
+        to_string() -> string pure is
+            if self == 0UL then
+                return "0"
+            fi
+
+            // The digits come out lowest first, so they fill a buffer from its
+            // end and the text is copied out of it once.
+            let digits = Ghul._array_new[char](20)
+            let at mut = 20
+            let rest mut = self
+
+            while !(rest == 0UL) do
+                at = at - 1
+                Ghul._array_set(digits, at, cast char(48 + cast int(rest % 10UL)))
+                rest = rest / 10UL
+            od
+
+            return _string_from_chars(digits, at, 20 - at)
+        si
+    si
+
+    partial long is
+        /// The value in decimal, with a leading `-` when it is negative.
+        to_string() -> string pure is
+            if self == 0L then
+                return "0"
+            fi
+
+            let digits = Ghul._array_new[char](20)
+            let at mut = 20
+            let rest mut = self
+
+            // The digits come out lowest first, so they fill a buffer from
+            // its end and the text is copied out of it once. A negative
+            // value's remainders are negative too, so each is turned to its
+            // magnitude rather than the value as a whole, which has no
+            // positive counterpart at its minimum.
+            while !(rest == 0L) do
+                let digit mut = cast int(rest % 10L)
+
+                if digit < 0 then
+                    digit = -digit
+                fi
+
+                at = at - 1
+                Ghul._array_set(digits, at, cast char(48 + digit))
+                rest = rest / 10L
+            od
+
+            if self < 0L then
+                at = at - 1
+                Ghul._array_set(digits, at, '-')
+            fi
+
+            return _string_from_chars(digits, at, 20 - at)
+        si
+    si
+
+    partial double is
+        /// The shortest text that reads back as the same value, as .NET
+        /// writes it in the invariant culture.
+        to_string() -> string pure => _format_double(self)
+    si
+
+    partial single is
+        /// The shortest text that reads back as the same value, as .NET
+        /// writes it in the invariant culture.
+        to_string() -> string pure => _format_single(self)
+    si
+
+    // The text of each numeric type under a .NET numeric format string, as
+    // .NET writes it in the invariant culture: the standard formats `D`,
+    // `E`, `F`, `G`, `N`, `R` and `X` with an optional precision, and custom
+    // patterns of `0`, `#`, `.` and `,`.
+
+    partial byte is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_signed_as(cast long(self), format, 8)
+    si
+
+    partial short is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_signed_as(cast long(self), format, 16)
+    si
+
+    partial int is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_signed_as(cast long(self), format, 32)
+    si
+
+    partial long is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_signed_as(self, format, 64)
+    si
+
+    partial word is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_signed_as(cast long(self), format, 64)
+    si
+
+    partial ubyte is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_unsigned_as(cast ulong(self), format)
+    si
+
+    partial ushort is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_unsigned_as(cast ulong(self), format)
+    si
+
+    partial uint is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_unsigned_as(cast ulong(self), format)
+    si
+
+    partial ulong is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_unsigned_as(self, format)
+    si
+
+    partial uword is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_unsigned_as(cast ulong(self), format)
+    si
+
+    partial double is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_double_as(self, format)
+    si
+
+    partial single is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        to_string(format: string) -> string pure => _format_single_as(self, format)
+    si
+
+    // The IEEE 754 bits of `value`.
+    @intrinsic("double.bits")
+    _double_bits(value: double) -> ulong pure
+
+    // The IEEE 754 bits of `value`.
+    @intrinsic("single.bits")
+    _single_bits(value: single) -> uint pure
+si
