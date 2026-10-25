@@ -1,0 +1,48 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// `seed`, then `next` applied to it, then `next` applied to that, without end.
+    class ITERATE_PIPE[T]: PipeStage[T] is
+        /// The most recently produced element.
+        current: T
+
+        _seed: T
+        _next: T -> T
+
+        // Set once the seed has been produced.
+        _started: bool
+
+        init(seed: T, next: T -> T) is
+            super.init()
+
+            assert next?
+
+            _seed = seed
+            _next = next
+            _started = false
+        si
+
+        /// A new sequence from the seed, not yet read.
+        fresh() -> PipeStage[T] => ITERATE_PIPE[T](_seed, _next)
+
+        /// Produces the seed first, then `next` of the previous element. Never ends.
+        move_next() -> bool is
+            if _started then
+                current = _next(current)
+            else
+                _started = true
+                current = _seed
+            fi
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Has no effect.
+        dispose() is
+        si
+    si
+si

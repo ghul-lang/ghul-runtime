@@ -1,8 +1,8 @@
 namespace Ghul.Pipes is
     use Collections
 
-    /// `source`'s elements as runs of adjacent equal ones: a new run
-    /// begins wherever an element is not `=~` to the one before it.
+    /// `source`'s elements as runs: a new run begins wherever `joins`
+    /// rejects an element and the one before it.
     class GROUP_PIPE[T]: PipeStage[List[T]] is
 
         /// The most recently produced run.
@@ -10,6 +10,7 @@ namespace Ghul.Pipes is
 
         _source: Iterable[T]
         _iterator: Iterator[T]
+        _joins: (T, T) -> bool
 
         // The element that ended the previous run. It belongs to the next
         // one, and the source has already been advanced past it, so it is
@@ -20,20 +21,21 @@ namespace Ghul.Pipes is
         // it has said it is done.
         _done: bool
 
-        init(source: Iterable[T]) is
+        init(source: Iterable[T], joins: (T, T) -> bool) is
             super.init()
 
             _source = source
             _iterator = source.iterator
+            _joins = joins
             _carried = MAYBE[T]()
             _done = false
         si
 
         /// A new stage over the same source, not yet read.
-        fresh() -> PipeStage[List[T]] => GROUP_PIPE[T](_source)
+        fresh() -> PipeStage[List[T]] => GROUP_PIPE[T](_source, _joins)
 
-        /// Collects elements equal to the run's first until one differs,
-        /// which is carried over to start the run after it.
+        /// Collects elements while each joins the one before it; the first that
+        /// does not is carried over to start the run after it.
         move_next() -> bool is
             if _done then
                 return false
@@ -56,7 +58,7 @@ namespace Ghul.Pipes is
             while _iterator.move_next() do
                 let element = _iterator.current
 
-                if element =~ run[0] then
+                if _joins(run[run.count - 1], element) then
                     run.add(element)
                 else
                     _carried = MAYBE(element)

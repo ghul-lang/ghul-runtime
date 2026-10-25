@@ -84,7 +84,18 @@ namespace Ghul.Pipes is
     /// `source`'s elements as runs of adjacent equal ones, each a read-only list, comparing
     /// with `=~`. A new run starts wherever an element differs from the one before it.
     group[T](source: Iterable[T]) -> Iterable[List[T]] pure =>
-        GROUP_PIPE[T](source)
+        GROUP_PIPE[T](source, (previous: T, next: T) => previous =~ next)
+
+    /// `source`'s elements as runs, each a read-only list. A new run starts wherever
+    /// `joins` rejects an element and the one before it.
+    ///
+    /// - source: the sequence to split into runs.
+    /// - joins: given an element and the one after it, whether they belong to the same run.
+    ///
+    /// Only neighbours are compared, so `[1, 2, 3, 5, 6] |> group((a, b) => b == a + 1)`
+    /// gives the runs of consecutive integers `[1, 2, 3]` and `[5, 6]`.
+    group[T](source: Iterable[T], joins: (T, T) -> bool pure) -> Iterable[List[T]] pure =>
+        GROUP_PIPE[T](source, joins)
 
     // Both of these read the whole source before yielding anything, so
     // neither is lazy in its input; they are pipes because that is what
@@ -219,6 +230,18 @@ namespace Ghul.Pipes is
 
         return mapper(running)
     si
+
+    /// `seed`, then each running total of folding `source` into it with `accumulator`:
+    /// the intermediate values of `reduce`, which is the last element.
+    ///
+    /// - source: the elements to fold.
+    /// - seed: the first element, and the total before any element is folded in.
+    /// - accumulator: combines the running total with the next element.
+    ///
+    /// The result has one more element than `source`, so
+    /// `[1, 2, 3] |> scan(0, (total, n) => total + n)` reads 0, 1, 3, 6.
+    scan[T..,TRunning](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure) -> Iterable[TRunning] pure =>
+        SCAN_PIPE[T,TRunning](source, seed, accumulator)
 
     /// The elements of `source`, collected into an array.
     collect[T](source: Iterable[T]) -> T[] pure =>
@@ -864,4 +887,15 @@ namespace Ghul.Pipes is
     /// `value`, repeated `count` times. Yields no elements when `count` is zero or less.
     repeat[T](value: T, count: int) -> Iterable[T] pure =>
         REPEAT_PIPE[T](value, if count < 0 then 0 else count fi)
+
+    /// `seed`, then `next` applied to it, then `next` applied to that, without end.
+    ///
+    /// - seed: the first element.
+    /// - next: produces each element from the one before it.
+    ///
+    /// `iterate(1, n => n * 2) |> take(5)` reads 1, 2, 4, 8, 16. A tuple seed is
+    /// spread over `next`'s parameters: `iterate((0, 1), (a, b) => (b, a + b))`.
+    /// Use `stream` when the element and the state that produces the next one differ.
+    iterate[T..](seed: T, next: T.. -> T pure) -> Iterable[T] pure =>
+        ITERATE_PIPE[T](seed, next)
 si

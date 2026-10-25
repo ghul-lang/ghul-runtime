@@ -1,0 +1,56 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// `seed`, then each running total of folding `source` into it with `accumulator`.
+    class SCAN_PIPE[T,TRunning]: PipeStage[TRunning] is
+        /// The most recently produced running total.
+        current: TRunning
+
+        _source: Iterable[T]
+        _iterator: Iterator[T]
+
+        _seed: TRunning
+        _accumulator: (TRunning, T) -> TRunning
+
+        // Set once the seed has been produced: the seed is the first element,
+        // before anything is read from the source.
+        _started: bool
+
+        init(source: Iterable[T], seed: TRunning, accumulator: (TRunning, T) -> TRunning) is
+            super.init()
+
+            _source = source
+            _iterator = source.iterator
+            _seed = seed
+            _accumulator = accumulator
+            _started = false
+        si
+
+        /// A new stage over the same source, not yet read.
+        fresh() -> PipeStage[TRunning] => SCAN_PIPE[T,TRunning](_source, _seed, _accumulator)
+
+        /// Produces the seed first, then folds each source element into the
+        /// previous running total.
+        move_next() -> bool is
+            if !_started then
+                _started = true
+                current = _seed
+                return true
+            fi
+
+            if _iterator.move_next() then
+                current = _accumulator(current, _iterator.current)
+                return true
+            fi
+
+            return false
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Disposes the underlying iterator.
+        dispose() => _iterator.dispose()
+    si
+si
