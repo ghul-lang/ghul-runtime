@@ -147,6 +147,30 @@ namespace Tests is
         si
 
         @Test()
+        FindIndex_IsThePositionOfTheFirstMatch() is
+            let at = ["pear", "fig", "kiwi", "fig"] |> find_index(* =~ "fig")
+
+            is_true(at?)
+            are_equal(1, at!)
+        si
+
+        @Test()
+        FindIndex_OverAString_CountsCharacters() is
+            are_equal(2, ("hello" |> find_index(* == 'l'))!)
+        si
+
+        @Test()
+        FindIndex_WithNoMatch_IsAbsent() is
+            is_false(([1, 2, 3] |> find_index(* > 5))?)
+            is_false((empty`[int]() |> find_index(* > 5))?)
+        si
+
+        @Test()
+        FindIndex_OverAnUnboundedSource_StopsAtTheMatch() is
+            are_equal(9, (from(1) |> find_index(n => n * n > 90))!)
+        si
+
+        @Test()
         Reduce_WithoutASeed_FoldsFromTheFirstElement() is
             let product = [1, 2, 3, 4] |> reduce((a, b) => a * b)
 

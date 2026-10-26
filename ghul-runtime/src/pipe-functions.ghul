@@ -460,6 +460,30 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
+    /// The position of the first element of `source` that `predicate` accepts, counting from
+    /// zero, or absent if none does.
+    ///
+    /// `["pear", "fig", "kiwi"] |> find_index(* =~ "fig")` is 1, and
+    /// `"hello" |> find_index(* == 'l')` is 2. The answer is absent rather than -1, so it
+    /// cannot be used as an index by mistake.
+    find_index[T..](source: Iterable[T], predicate: T.. -> bool pure) -> MAYBE[int] pure is
+        let it = source.iterator
+        let position mut = 0
+
+        while it.move_next() do
+            if predicate(it.current) then
+                it.dispose()
+                return MAYBE(position)
+            fi
+
+            position = position + 1
+        od
+
+        it.dispose()
+
+        return MAYBE[int]()
+    si
+
     /// The first present result of applying `mapper` to the elements of `source`, in order.
     find_map[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> MAYBE[U] pure is
         let it = source.iterator
