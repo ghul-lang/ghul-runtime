@@ -898,4 +898,45 @@ namespace Ghul.Pipes is
     /// Use `stream` when the element and the state that produces the next one differ.
     iterate[T..](seed: T, next: T.. -> T pure) -> Iterable[T] pure =>
         ITERATE_PIPE[T](seed, next)
+
+    /// The decimal digits of `value`, most significant first.
+    ///
+    /// `digits(1234)` reads 1, 2, 3, 4, and `digits(0)` reads 0. A negative
+    /// value gives the digits of its magnitude, so `digits(-12) |> sum()` is 3.
+    digits(value: int) -> Iterable[int] pure =>
+        digits(value, 10)
+
+    /// The digits of `value` in `base`, most significant first.
+    ///
+    /// - value: the number to take apart; a negative value gives the digits of its magnitude.
+    /// - base: the base to write it in; must be 2 or more.
+    ///
+    /// `digits(10, 2)` reads 1, 0, 1, 0, and `digits(255, 16)` reads 15, 15.
+    digits(value: int, base: int) -> Iterable[int] pure =>
+        assert base >= 2 else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        DIGITS_PIPE(long(value), long(base)) |> map(digit => int(digit))
+
+    /// The same as `digits`, over a `long`.
+    digits(value: long) -> Iterable[long] pure =>
+        digits(value, 10L)
+
+    /// The same as `digits`, over a `long`.
+    digits(value: long, base: long) -> Iterable[long] pure =>
+        assert base >= 2L else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        DIGITS_PIPE(value, base)
+
+    /// The words of `text`: its runs of characters that are not white space, in order.
+    ///
+    /// White space of any kind and length separates words, and leading or trailing
+    /// white space produces nothing, so `words("  the quick\tfox ")` reads "the",
+    /// "quick", "fox", and `words("")` reads nothing.
+    words(text: string) -> Iterable[string] pure =>
+        WORDS_PIPE(text)
+
+    /// The elements of each sequence in `source`, concatenated in order.
+    ///
+    /// `[[1, 2], [], [3]] |> flatten()` reads 1, 2, 3. One level only: a sequence
+    /// of sequences of sequences flattens to a sequence of sequences.
+    flatten[T](source: Iterable[Iterable[T]]) -> Iterable[T] pure =>
+        FLAT_MAP_PIPE[Iterable[T],T](source, inner => inner)
 si

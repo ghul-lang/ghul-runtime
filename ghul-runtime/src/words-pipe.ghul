@@ -1,0 +1,56 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// The runs of non-white-space characters in a string, in order. White
+    /// space of any length separates them, and leading or trailing white
+    /// space produces nothing.
+    class WORDS_PIPE: PipeStage[string] is
+        /// The most recently produced word.
+        current: string
+
+        _text: string
+
+        // Where the scan for the next word starts.
+        _at: int
+
+        init(text: string) is
+            super.init()
+
+            _text = text
+            _at = 0
+            current = ""
+        si
+
+        /// A new sequence of the same words, not yet read.
+        fresh() -> PipeStage[string] => WORDS_PIPE(_text)
+
+        /// Produces the next word; ends when only white space is left.
+        move_next() -> bool is
+            while _at < _text.length /\ char.is_white_space(_text[_at]) do
+                _at = _at + 1
+            od
+
+            if _at >= _text.length then
+                return false
+            fi
+
+            let start = _at
+
+            while _at < _text.length /\ !char.is_white_space(_text[_at]) do
+                _at = _at + 1
+            od
+
+            current = _text.substring(start, _at - start)
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Has no effect.
+        dispose() is
+        si
+    si
+si

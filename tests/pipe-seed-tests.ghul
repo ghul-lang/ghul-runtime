@@ -134,5 +134,67 @@ namespace Tests is
             are_equal(3, three |> count())
             are_equal(3, three |> count())
         si
+
+        @Test()
+        Digits_OfADecimal_MostSignificantFirst() is
+            assert_are_equal([1, 2, 3, 4], digits(1234))
+        si
+
+        @Test()
+        Digits_OfZero_IsTheOneDigitZero() is
+            assert_are_equal([0], digits(0))
+        si
+
+        @Test()
+        Digits_OfANegative_AreThoseOfItsMagnitude() is
+            assert_are_equal([1, 2], digits(-12))
+        si
+
+        @Test()
+        Digits_InABase_UseThatBase() is
+            assert_are_equal([1, 0, 1, 0], digits(10, 2))
+            assert_are_equal([15, 15], digits(255, 16))
+        si
+
+        @Test()
+        Digits_OfALong_StayLong() is
+            assert_are_equal([9L, 0L, 0L, 7L, 1L, 9L, 9L, 2L, 5L, 4L, 7L, 4L, 0L, 9L, 9L, 2L], digits(9007199254740992L))
+        si
+
+        @Test()
+        Digits_ReadTwice_YieldTheSameElements() is
+            let ds = digits(907)
+
+            are_equal(16, ds |> sum())
+            are_equal(16, ds |> sum())
+        si
+
+        @Test()
+        Digits_WithABaseBelowTwo_Throws() is
+            try
+                digits(5, 1) |> count()
+                fail("expected digits(5, 1) to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        Words_SplitAtRunsOfWhiteSpace() is
+            assert_are_equal(["the", "quick", "fox"], words("  the quick\tfox\n"))
+        si
+
+        @Test()
+        Words_OfBlankText_AreNone() is
+            are_equal(0, words("") |> count())
+            are_equal(0, words(" \t ") |> count())
+        si
+
+        @Test()
+        Words_ReadTwice_YieldTheSameElements() is
+            let ws = words("a b c")
+
+            are_equal(3, ws |> count())
+            are_equal(3, ws |> count())
+        si
     si
 si

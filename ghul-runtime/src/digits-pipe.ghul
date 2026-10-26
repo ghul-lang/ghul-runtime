@@ -1,0 +1,57 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// The digits of a `long` in a base, most significant first. Zero is
+    /// the one digit 0, and a negative value gives the digits of its
+    /// magnitude.
+    class DIGITS_PIPE: PipeStage[long] is
+        /// The most recently produced digit.
+        current: long
+
+        _value: long
+        _base: long
+
+        // What is left of the value once the digits produced so far are
+        // removed, and the power of the base that selects the next digit;
+        // a divisor of 0 means the sequence has ended.
+        _remaining: long
+        _divisor: long
+
+        init(value: long, base: long) is
+            super.init()
+
+            _value = value
+            _base = base
+            _remaining = if value < 0L then -value else value fi
+            _divisor = 1L
+
+            while _remaining / _divisor >= _base do
+                _divisor = _divisor * _base
+            od
+        si
+
+        /// A new sequence of the same digits, not yet read.
+        fresh() -> PipeStage[long] => DIGITS_PIPE(_value, _base)
+
+        /// Produces the next digit; ends after the least significant one.
+        move_next() -> bool is
+            if _divisor == 0L then
+                return false
+            fi
+
+            current = _remaining / _divisor
+            _remaining = _remaining % _divisor
+            _divisor = _divisor / _base
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Has no effect.
+        dispose() is
+        si
+    si
+si
