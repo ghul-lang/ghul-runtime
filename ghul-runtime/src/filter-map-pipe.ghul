@@ -1,0 +1,47 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// The present results of `mapper` over each element of `source`, in
+    /// order; an element whose result is absent produces nothing.
+    class FILTER_MAP_PIPE[TFrom,TTo]: PipeStage[TTo] is
+        /// The most recently produced element.
+        current: TTo
+
+        _source: Iterable[TFrom]
+        _iterator: Iterator[TFrom]
+
+        _mapper: (TFrom) -> MAYBE[TTo]
+
+        init(source: Iterable[TFrom], mapper: (TFrom) -> MAYBE[TTo]) is
+            super.init()
+
+            _source = source
+            _iterator = source.iterator
+            _mapper = mapper
+        si
+
+        /// A new stage over the same source, not yet read.
+        fresh() -> PipeStage[TTo] => FILTER_MAP_PIPE[TFrom,TTo](_source, _mapper)
+
+        /// Advances the source until `mapper` produces a present result.
+        move_next() -> bool is
+            while _iterator.move_next() do
+                let result = _mapper(_iterator.current)
+
+                if result? then
+                    current = result!
+                    return true
+                fi
+            od
+
+            return false
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Disposes the underlying iterator.
+        dispose() => _iterator.dispose()
+    si
+si
