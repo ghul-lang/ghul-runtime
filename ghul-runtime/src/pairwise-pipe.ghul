@@ -1,0 +1,56 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// Each element of `source` paired with the one after it: a source of
+    /// n elements gives n - 1 pairs, and one of fewer than two gives none.
+    class PAIRWISE_PIPE[T]: PipeStage[(T, T)] is
+        /// The most recently produced pair.
+        current: (T, T)
+
+        _source: Iterable[T]
+        _iterator: Iterator[T]
+
+        // The element that opens the next pair, once the first has been read.
+        _previous: T
+        _started: bool
+
+        init(source: Iterable[T]) is
+            super.init()
+
+            _source = source
+            _iterator = source.iterator
+            _started = false
+        si
+
+        /// A new stage over the same source, not yet read.
+        fresh() -> PipeStage[(T, T)] => PAIRWISE_PIPE[T](_source)
+
+        /// Advances the source and pairs its element with the one before.
+        move_next() -> bool is
+            if !_started then
+                if !_iterator.move_next() then
+                    return false
+                fi
+
+                _previous = _iterator.current
+                _started = true
+            fi
+
+            if !_iterator.move_next() then
+                return false
+            fi
+
+            current = (_previous, _iterator.current)
+            _previous = _iterator.current
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Disposes the underlying iterator.
+        dispose() => _iterator.dispose()
+    si
+si

@@ -1,0 +1,148 @@
+namespace Ghul.Pipes is
+    use Collections
+
+    /// The last `count` elements of `source`, or all of them when there
+    /// are fewer. Reads the whole source before producing anything.
+    class TAKE_LAST_PIPE[T]: PipeStage[T] is
+        /// The most recently produced element.
+        current: T
+
+        _source: Iterable[T]
+        _count: int
+
+        // The elements kept, filled on the first read; the next one to
+        // produce is at `_at`, and `_left` is how many remain to produce.
+        _kept: LIST[T]
+        _at: int
+        _left: int
+        _started: bool
+
+        init(source: Iterable[T], count: int) is
+            super.init()
+
+            _source = source
+            _count = count
+            _kept = LIST[T]()
+            _at = 0
+            _left = 0
+            _started = false
+        si
+
+        /// A new stage over the same source, not yet read.
+        fresh() -> PipeStage[T] => TAKE_LAST_PIPE[T](_source, _count)
+
+        /// On the first call reads the whole source, keeping the last
+        /// `count` elements in a ring; then produces them in order.
+        move_next() -> bool is
+            if !_started then
+                _started = true
+
+                if _count <= 0 then
+                    return false
+                fi
+
+                // The ring: once full, each new element overwrites the
+                // oldest, and `_at` ends up on the oldest kept element.
+                let it = _source.iterator
+
+                while it.move_next() do
+                    if _kept.count < _count then
+                        _kept.add(it.current)
+                    else
+                        _kept[_at] = it.current
+                        _at = (_at + 1) % _count
+                    fi
+                od
+
+                it.dispose()
+
+                if _kept.count < _count then
+                    _at = 0
+                fi
+
+                _left = _kept.count
+            fi
+
+            if _left == 0 then
+                return false
+            fi
+
+            current = _kept[_at]
+            _at = (_at + 1) % _kept.count
+            _left = _left - 1
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Has no effect: the source is read and released on the first read.
+        dispose() is
+        si
+    si
+
+    /// `source` without its last `count` elements, or nothing when it has
+    /// no more than `count`. Produces each element once `count` more have
+    /// been read past it, so an unbounded source stays unbounded.
+    class SKIP_LAST_PIPE[T]: PipeStage[T] is
+        /// The most recently produced element.
+        current: T
+
+        _source: Iterable[T]
+        _iterator: Iterator[T]
+        _count: int
+
+        // The last `count` elements read and not yet produced, as a ring
+        // whose oldest element is at `_at`.
+        _held: LIST[T]
+        _at: int
+
+        init(source: Iterable[T], count: int) is
+            super.init()
+
+            _source = source
+            _iterator = source.iterator
+            _count = if count < 0 then 0 else count fi
+            _held = LIST[T]()
+            _at = 0
+        si
+
+        /// A new stage over the same source, not yet read.
+        fresh() -> PipeStage[T] => SKIP_LAST_PIPE[T](_source, _count)
+
+        /// Reads ahead until `count` elements are held, then produces the
+        /// oldest held element each time a new one is read.
+        move_next() -> bool is
+            while _held.count < _count do
+                if !_iterator.move_next() then
+                    return false
+                fi
+
+                _held.add(_iterator.current)
+            od
+
+            if !_iterator.move_next() then
+                return false
+            fi
+
+            if _count == 0 then
+                current = _iterator.current
+            else
+                current = _held[_at]
+                _held[_at] = _iterator.current
+                _at = (_at + 1) % _count
+            fi
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        /// Disposes the underlying iterator.
+        dispose() => _iterator.dispose()
+    si
+si

@@ -939,4 +939,117 @@ namespace Ghul.Pipes is
     /// of sequences of sequences flattens to a sequence of sequences.
     flatten[T](source: Iterable[Iterable[T]]) -> Iterable[T] pure =>
         FLAT_MAP_PIPE[Iterable[T],T](source, inner => inner)
+
+    /// The present results of `mapper` over the elements of `source`, in order.
+    ///
+    /// An element whose result is absent produces nothing, so
+    /// `["1", "x", "3"] |> filter_map(parse)` reads 1, 3 when `parse` gives
+    /// `int?`. `find_map` is the same test stopping at the first present result.
+    filter_map[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> Iterable[U] pure =>
+        FILTER_MAP_PIPE[T,U](source, mapper)
+
+    /// Each element of `source` with the one after it, as a pair.
+    ///
+    /// `[1, 2, 4] |> pairwise()` reads (1, 2), (2, 4); a source of fewer than
+    /// two elements reads nothing. `windows(2)` is the same with lists.
+    pairwise[T](source: Iterable[T]) -> Iterable[(T, T)] pure =>
+        PAIRWISE_PIPE[T](source)
+
+    /// The last `count` elements of `source`, or all of them when there are fewer.
+    ///
+    /// Reads the whole source before producing anything, so it does not end
+    /// on an unbounded one. A `count` of zero or less reads nothing.
+    take_last[T](source: Iterable[T], count: int) -> Iterable[T] pure =>
+        TAKE_LAST_PIPE[T](source, count)
+
+    /// `source` without its last `count` elements, or nothing when it has no more than `count`.
+    ///
+    /// Each element is produced once `count` more have been read past it, so
+    /// an unbounded source stays unbounded. A `count` of zero or less skips nothing.
+    skip_last[T](source: Iterable[T], count: int) -> Iterable[T] pure =>
+        SKIP_LAST_PIPE[T](source, count)
+
+    /// The element of `source` at `index`, counting from zero, or absent when
+    /// `source` has no more than `index` elements or `index` is negative.
+    nth[T](source: Iterable[T], index: int) -> MAYBE[T] pure is
+        if index < 0 then
+            return MAYBE[T]()
+        fi
+
+        let it = source.iterator
+        let remaining mut = index
+
+        while it.move_next() do
+            if remaining == 0 then
+                let result = MAYBE(it.current)
+                it.dispose()
+                return result
+            fi
+
+            remaining = remaining - 1
+        od
+
+        it.dispose()
+
+        return MAYBE[T]()
+    si
+
+    /// Whether some element of `source` equals `value`, as `distinct` and
+    /// `collect_set` judge equality.
+    contains[T](source: Iterable[T], value: T) -> bool pure is
+        let wanted = SET[T]()
+        wanted.add(value)
+
+        for element in source do
+            if wanted.contains(element) then
+                return true
+            fi
+        od
+
+        return false
+    si
+
+    /// How many times each distinct element of `source` occurs, keyed by the
+    /// element, in order of first occurrence.
+    ///
+    /// `"hello" |> frequencies()` maps 'h' to 1, 'e' to 1, 'l' to 2 and 'o' to 1.
+    /// Elements are equal as `distinct` and `group_by` judge equality.
+    frequencies[T](source: Iterable[T]) -> Map[T, int] pure is
+        let result = MAP[T, int]()
+
+        for element in source do
+            let seen: int mut
+
+            if result.try_get_value(element, seen ref) then
+                result[element] = seen + 1
+            else
+                result.add(element, 1)
+            fi
+        od
+
+        return result
+    si
+
+    /// `source` folded with `accumulator`, starting from its first element.
+    ///
+    /// `[1, 2, 3, 4] |> reduce((a, b) => a * b)` is 24, and an empty source
+    /// gives absent. The two-argument `reduce` takes a seed instead.
+    reduce[T](source: Iterable[T], accumulator: (T, T) -> T pure) -> MAYBE[T] pure is
+        let it = source.iterator
+
+        if !it.move_next() then
+            it.dispose()
+            return MAYBE[T]()
+        fi
+
+        let running mut = it.current
+
+        while it.move_next() do
+            running = accumulator(running, it.current)
+        od
+
+        it.dispose()
+
+        return MAYBE(running)
+    si
 si

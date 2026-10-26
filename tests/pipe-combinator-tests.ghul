@@ -1,0 +1,167 @@
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    parse_digit(text: string) -> int? =>
+        if text.length == 1 /\ char.is_digit(text[0]) then int(text[0]) - int('0') else null fi
+
+    // filter_map, pairwise, take_last, skip_last, nth, contains, frequencies
+    // and the seedless reduce.
+    @TestClass()
+    class PipeCombinatorsShould is
+        init() is
+        si
+
+        @Test()
+        FilterMap_KeepsPresentResults() is
+            assert_are_equal([1, 3], ["1", "x", "3"] |> filter_map(parse_digit))
+        si
+
+        @Test()
+        FilterMap_OfNoPresentResults_IsEmpty() is
+            are_equal(0, ["x", "yy"] |> filter_map(parse_digit) |> count())
+        si
+
+        @Test()
+        FilterMap_ReadTwice_YieldsTheSameElements() is
+            let digits = ["1", "x", "3"] |> filter_map(parse_digit)
+
+            are_equal(4, digits |> sum())
+            are_equal(4, digits |> sum())
+        si
+
+        @Test()
+        Pairwise_PairsEachElementWithTheNext() is
+            assert_are_equal([(1, 2), (2, 4), (4, 7)], [1, 2, 4, 7] |> pairwise())
+        si
+
+        @Test()
+        Pairwise_OfFewerThanTwo_IsEmpty() is
+            are_equal(0, [1] |> pairwise() |> count())
+            are_equal(0, empty`[int]() |> pairwise() |> count())
+        si
+
+        @Test()
+        Pairwise_ReadTwice_YieldsTheSameElements() is
+            let steps = [1, 2, 4] |> pairwise() |> map((a, b) => b - a)
+
+            assert_are_equal([1, 2], steps)
+            assert_are_equal([1, 2], steps)
+        si
+
+        @Test()
+        TakeLast_KeepsTheLastElements() is
+            assert_are_equal([3, 4, 5], [1, 2, 3, 4, 5] |> take_last(3))
+        si
+
+        @Test()
+        TakeLast_OfAShortSource_KeepsAllOfIt() is
+            assert_are_equal([1, 2], [1, 2] |> take_last(3))
+        si
+
+        @Test()
+        TakeLast_OfZero_IsEmpty() is
+            are_equal(0, [1, 2, 3] |> take_last(0) |> count())
+            are_equal(0, [1, 2, 3] |> take_last(-1) |> count())
+        si
+
+        @Test()
+        TakeLast_ReadTwice_YieldsTheSameElements() is
+            let tail = [1, 2, 3, 4, 5] |> take_last(2)
+
+            assert_are_equal([4, 5], tail)
+            assert_are_equal([4, 5], tail)
+        si
+
+        @Test()
+        SkipLast_DropsTheLastElements() is
+            assert_are_equal([1, 2, 3], [1, 2, 3, 4, 5] |> skip_last(2))
+        si
+
+        @Test()
+        SkipLast_OfAShortSource_IsEmpty() is
+            are_equal(0, [1, 2] |> skip_last(2) |> count())
+            are_equal(0, [1] |> skip_last(2) |> count())
+        si
+
+        @Test()
+        SkipLast_OfZero_KeepsEverything() is
+            assert_are_equal([1, 2, 3], [1, 2, 3] |> skip_last(0))
+        si
+
+        @Test()
+        SkipLast_OverAnUnboundedSource_StaysLazy() is
+            assert_are_equal([0, 1, 2], from(0) |> skip_last(5) |> take(3))
+        si
+
+        @Test()
+        Nth_ReadsTheElementAtTheIndex() is
+            let third = [10, 20, 30, 40] |> nth(2)
+
+            is_true(third?)
+            are_equal(30, third!)
+        si
+
+        @Test()
+        Nth_PastTheEnd_IsAbsent() is
+            is_false(([10, 20] |> nth(2))?)
+            is_false(([10, 20] |> nth(-1))?)
+        si
+
+        @Test()
+        Contains_FindsAnEqualElement() is
+            is_true([1, 2, 3] |> contains(2))
+            is_false([1, 2, 3] |> contains(4))
+        si
+
+        @Test()
+        Contains_ComparesStringsByContent() is
+            let built = "{"ab"}{"c"}"
+
+            is_true(["x", "abc"] |> contains(built))
+        si
+
+        @Test()
+        Frequencies_CountsEachElement() is
+            let counts = "hello" |> frequencies()
+
+            are_equal(4, counts.count)
+            are_equal(2, counts['l'])
+            are_equal(1, counts['h'])
+        si
+
+        @Test()
+        Frequencies_KeepsFirstOccurrenceOrder() is
+            assert_are_equal(['b', 'a', 'c'], "baabc" |> frequencies() |> map(kv => kv.key))
+        si
+
+        @Test()
+        Frequencies_OfNothing_IsEmpty() is
+            are_equal(0, (empty`[int]() |> frequencies()).count)
+        si
+
+        @Test()
+        Reduce_WithoutASeed_FoldsFromTheFirstElement() is
+            let product = [1, 2, 3, 4] |> reduce((a, b) => a * b)
+
+            is_true(product?)
+            are_equal(24, product!)
+        si
+
+        @Test()
+        Reduce_WithoutASeed_OfOneElement_IsThatElement() is
+            are_equal(7, ([7] |> reduce((a, b) => a + b))!)
+        si
+
+        @Test()
+        Reduce_WithoutASeed_OfNothing_IsAbsent() is
+            is_false((empty`[int]() |> reduce((a, b) => a + b))?)
+        si
+    si
+si
