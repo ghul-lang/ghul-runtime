@@ -16,7 +16,26 @@ namespace Ghul.Pipes is
 
         /// Creates a slice of `count` elements of `source` starting at `from`; throws if it doesn't fit within `source`.
         init(source: List[T], from: int, count: int) is
-            if from < 0 \/ count < 0 \/ from + count > source.count then
+            if from < 0 \/ count < 0 then
+                throw
+                    Ghul.ArgumentOutOfRangeException(
+                        "from",
+                        "{from} for {count} starts or counts below zero")
+            fi
+
+            // A memoised source materialises only as far as it is read, so
+            // asking for its count pulls the whole sequence - which over an
+            // unbounded source never returns. Ask it instead for the slice's
+            // last element, which pulls only that far. A zero-count slice
+            // asks nothing: it is empty wherever it starts.
+            if let memoised: MEMO_PIPE[T] = source then
+                if count > 0 /\ !(memoised.try_get(from + count - 1))? then
+                    throw
+                        Ghul.ArgumentOutOfRangeException(
+                            "from",
+                            "{from} for {count} runs past the end of the memoised sequence")
+                fi
+            elif from + count > source.count then
                 throw
                     Ghul.ArgumentOutOfRangeException(
                         "from",

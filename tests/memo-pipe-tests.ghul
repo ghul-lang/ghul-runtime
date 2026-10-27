@@ -220,5 +220,44 @@ namespace Tests is
             is_false((p |> nth(3))?)
             is_false((p |> nth(-1))?)
         si
+
+        @Test()
+        Slice_PullsTheSourceOnlyAsFarAsTheSliceEnd() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let p = memo(source)
+
+            assert_elements([2, 3, 4], p[1..4])
+            are_equal(4, source.handed_out)
+
+            assert_elements([2, 3, 4], p[1..4])
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Slice_OverInfiniteStream_PullsOnlyAsFarAsTheSliceEnd() is
+            let squares = from(0) |> map(n => n * n) |> memo()
+
+            assert_elements([25, 36, 49], squares[5..8])
+        si
+
+        @Test()
+        Slice_PastTheEnd_ThrowsWithoutMaterialisingTheSequence() is
+            let p = memo(COUNTING_SOURCE[int]([1, 2, 3]))
+
+            try
+                p[2..6]
+                fail("expected p[2..6] to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        Slice_OfZeroElements_PullsNothingFromTheSource() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = memo(source)
+
+            assert_elements([], p[2..2])
+            are_equal(0, source.handed_out)
+        si
     si
 si
