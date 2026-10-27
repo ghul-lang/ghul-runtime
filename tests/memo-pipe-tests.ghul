@@ -144,5 +144,81 @@ namespace Tests is
             // the stream for more.
             are_equal("0, 1, 2, 3", p |> take(4) |> join(", "))
         si
+
+        @Test()
+        Index_PullsTheSourceOnlyAsFarAsTheIndexRead() is
+            let source = COUNTING_SOURCE[int]([10, 20, 30, 40, 50])
+            let p = memo(source)
+
+            are_equal(30, p[2])
+            are_equal(3, source.handed_out)
+
+            are_equal(10, p[0])
+            are_equal(30, p[2])
+            are_equal(3, source.handed_out)
+
+            are_equal(50, p[4])
+            are_equal(5, source.handed_out)
+        si
+
+        @Test()
+        Index_SharesTheCacheWithReadsThroughTheIterator() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4])
+            let p = memo(source)
+
+            are_equal(2, p[1])
+            assert_elements([1, 2, 3, 4], drain(p))
+            are_equal(4, p[3])
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Index_OverInfiniteStream_ReachesAnyPosition() is
+            let squares = from(0) |> map(n => n * n) |> memo()
+
+            are_equal(10_000, squares[100])
+            are_equal(49, squares[7])
+        si
+
+        @Test()
+        Index_PastTheEndOrNegative_Throws() is
+            let p = memo(COUNTING_SOURCE[int]([1, 2, 3]))
+
+            try
+                p[3]
+                fail("expected p[3] to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+
+            try
+                p[-1]
+                fail("expected p[-1] to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        Count_IsTheWholeSequenceWhateverHasBeenRead() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5])
+            let p = memo(source)
+
+            are_equal(1, p[0])
+            are_equal(5, p.count)
+            are_equal(5, source.handed_out)
+            are_equal(5, p.count)
+        si
+
+        @Test()
+        Nth_ReadsFromTheCacheWithoutWalkingIt() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = memo(source)
+
+            are_equal(2, (p |> nth(1))!)
+            are_equal(2, source.handed_out)
+            are_equal(1, (p |> nth(0))!)
+            are_equal(2, source.handed_out)
+            is_false((p |> nth(3))?)
+            is_false((p |> nth(-1))?)
+        si
     si
 si
