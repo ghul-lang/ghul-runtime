@@ -137,11 +137,19 @@ namespace Tests is
         si
 
         @Test()
-        RangePastTheEnd_ThrowsWhereTheSliceIsTaken() is
-            let source = LIST[int]([1, 2, 3])
+        RangePastTheEnd_ReadsWithinTheSource() is
+            let result = LIST[int]([1, 2, 3]) |> slice(1..5)
+
+            are_equal(2, result[0])
+            are_equal(3, result[1])
+        si
+
+        @Test()
+        RangePastTheEnd_ThrowsWhenReadPastTheSource() is
+            let result = LIST[int]([1, 2, 3]) |> slice(1..5)
 
             try
-                source |> slice(1..5)
+                result[2]
 
                 fail("should have thrown")
             catch ex: System.ArgumentOutOfRangeException
@@ -149,11 +157,40 @@ namespace Tests is
         si
 
         @Test()
-        EmptyRangePastTheEnd_ThrowsWhereTheSliceIsTaken() is
-            let source = LIST[int]([1, 2, 3])
+        RangePastTheEnd_ThrowsWhenCounted() is
+            let result = LIST[int]([1, 2, 3]) |> slice(1..5)
 
             try
-                source |> slice(5..5)
+                result.count
+
+                fail("should have thrown")
+            catch ex: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        RangePastTheEnd_ThrowsWhenIteratedPastTheSource() is
+            let result = LIST[int]([1, 2, 3]) |> slice(1..5)
+            let seen = LIST[int]()
+
+            try
+                for i in result do
+                    seen.add(i)
+                od
+
+                fail("should have thrown")
+            catch ex: System.ArgumentOutOfRangeException
+            yrt
+
+            assert_elements([2, 3], seen)
+        si
+
+        @Test()
+        EmptyRangePastTheEnd_ThrowsWhenCounted() is
+            let result = LIST[int]([1, 2, 3]) |> slice(5..5)
+
+            try
+                result.count
 
                 fail("should have thrown")
             catch ex: System.ArgumentOutOfRangeException

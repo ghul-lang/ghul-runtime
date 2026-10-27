@@ -222,7 +222,34 @@ namespace Tests is
         si
 
         @Test()
-        Slice_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
+        Slice_TakingIt_PullsNothingFromTheSource() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let p = memo(source)
+
+            p[1..4]
+            are_equal(0, source.handed_out)
+        si
+
+        @Test()
+        Slice_Index_PullsTheSourceOnlyAsFarAsTheIndexRead() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let s = memo(source)[1..5]
+
+            are_equal(3, s[1])
+            are_equal(3, source.handed_out)
+        si
+
+        @Test()
+        Slice_Count_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let s = memo(source)[1..4]
+
+            are_equal(3, s.count)
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Slice_Read_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
             let p = memo(source)
 
@@ -241,14 +268,23 @@ namespace Tests is
         si
 
         @Test()
-        Slice_PastTheEnd_ThrowsWhereTheSliceIsTaken() is
-            let p = memo(COUNTING_SOURCE[int]([1, 2, 3]))
+        Slice_PastTheEnd_ThrowsWhenReadPastTheSource() is
+            let s = memo(COUNTING_SOURCE[int]([1, 2, 3]))[1..6]
+
+            are_equal(3, s[1])
 
             try
-                p[2..6]
-                fail("expected p[2..6] to throw")
+                s[2]
+                fail("expected s[2] to throw")
             catch e: System.ArgumentOutOfRangeException
             yrt
+        si
+
+        @Test()
+        Slice_OverInfiniteStream_CountsWithoutMaterialisingTheStream() is
+            let squares = from(0) |> map(n => n * n) |> memo()
+
+            are_equal(3, squares[1_000..1_003].count)
         si
     si
 si
