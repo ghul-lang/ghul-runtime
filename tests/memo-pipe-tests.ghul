@@ -220,5 +220,71 @@ namespace Tests is
             is_false((p |> nth(3))?)
             is_false((p |> nth(-1))?)
         si
+
+        @Test()
+        Slice_TakingIt_PullsNothingFromTheSource() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let p = memo(source)
+
+            p[1..4]
+            are_equal(0, source.handed_out)
+        si
+
+        @Test()
+        Slice_Index_PullsTheSourceOnlyAsFarAsTheIndexRead() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let s = memo(source)[1..5]
+
+            are_equal(3, s[1])
+            are_equal(3, source.handed_out)
+        si
+
+        @Test()
+        Slice_Count_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let s = memo(source)[1..4]
+
+            are_equal(3, s.count)
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Slice_Read_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
+            let p = memo(source)
+
+            assert_elements([2, 3, 4], p[1..4])
+            are_equal(4, source.handed_out)
+            assert_elements([2, 3, 4], p[1..4])
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Slice_OverInfiniteStream_ReachesAnyRange() is
+            let squares = from(0) |> map(n => n * n) |> memo()
+
+            assert_elements([25, 36, 49], squares[5..8])
+            assert_elements([100, 121], squares[10::11])
+        si
+
+        @Test()
+        Slice_PastTheEnd_ThrowsWhenReadPastTheSource() is
+            let s = memo(COUNTING_SOURCE[int]([1, 2, 3]))[1..6]
+
+            are_equal(3, s[1])
+
+            try
+                s[2]
+                fail("expected s[2] to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        Slice_OverInfiniteStream_CountsWithoutMaterialisingTheStream() is
+            let squares = from(0) |> map(n => n * n) |> memo()
+
+            are_equal(3, squares[1_000..1_003].count)
+        si
     si
 si
