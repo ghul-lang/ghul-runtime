@@ -67,8 +67,9 @@ namespace Ghul.Pipes is
         PEEK_PIPE[T](source, action)
 
     /// The elements of `source`, cached on the first pass so a later pass replays them
-    /// without reading `source` again.
-    memo[T](source: Iterable[T]) -> Iterable[T] pure =>
+    /// without reading `source` again. Reading by position pulls `source` only as far
+    /// as the position read; `count` pulls all of it.
+    memo[T](source: Iterable[T]) -> List[T] pure =>
         MEMO_PIPE[T](MEMO_CACHE[T](source))
 
 
@@ -998,6 +999,10 @@ namespace Ghul.Pipes is
     nth[T](source: Iterable[T], index: int) -> MAYBE[T] pure is
         if index < 0 then
             return MAYBE[T]()
+        fi
+
+        if let memoised: MEMO_PIPE[T] = source then
+            return memoised.try_get(index)
         fi
 
         let it = source.iterator

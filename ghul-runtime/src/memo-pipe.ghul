@@ -21,11 +21,13 @@ namespace Ghul.Pipes is
 
             let it = iterator
 
-            if it? /\ it.move_next() then
+            while it? /\ it.move_next() do
                 elements.add(it.current)
 
-                return true
-            fi
+                if at < elements.count then
+                    return true
+                fi
+            od
 
             it?.dispose()
             iterator = null
@@ -41,8 +43,9 @@ namespace Ghul.Pipes is
     // dropped once the source is exhausted, since nothing will ask it
     // for more.
     /// A pipe that pulls its upstream once and replays the cached elements
-    /// on every later read.
-    class MEMO_PIPE[T]: PipeStage[T] is
+    /// on every later read. It is also a list: reading by position pulls
+    /// the source only as far as the position read.
+    class MEMO_PIPE[T]: PipeStage[T], List[T] is
         _cache: MEMO_CACHE[T]
         _at: int
 
@@ -54,6 +57,36 @@ namespace Ghul.Pipes is
 
         /// A new read of the same cache, from its start.
         fresh() -> PipeStage[T] => MEMO_PIPE[T](_cache)
+
+        /// The element at `index`, counting from zero, pulling the source
+        /// until it is cached; throws when the source ends before `index`.
+        [index: int]: T pure is
+            if index < 0 \/ !_cache.has_element(index) then
+                throw Ghul.ArgumentOutOfRangeException("index", "{index} is not within the memoised sequence")
+            fi
+
+            return _cache.elements[index]
+        si
+
+        /// The number of elements in the whole sequence, pulling the rest
+        /// of the source to count them. Never returns over an unbounded
+        /// source.
+        count: int pure is
+            while _cache.has_element(_cache.elements.count) do
+            od
+
+            return _cache.elements.count
+        si
+
+        /// The element at `index`, or absent when the source ends before
+        /// `index` or `index` is negative, pulling the source only as far
+        /// as `index`.
+        try_get(index: int) -> MAYBE[T] =>
+            if index >= 0 /\ _cache.has_element(index) then
+                MAYBE(_cache.elements[index])
+            else
+                MAYBE[T]()
+            fi
 
         /// The most recently produced element.
         current: T => _cache.elements[_at - 1]
