@@ -149,6 +149,23 @@ namespace Tests is
         si
 
         @Test()
+        EmptyRangePastTheEnd_ThrowsWhereTheSliceIsTaken() is
+            let source = LIST[int]([1, 2, 3])
+
+            try
+                source |> slice(5..5)
+
+                fail("should have thrown")
+            catch ex: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        EmptyRangeAtTheEnd_ReturnsAnEmptySlice() is
+            assert_elements(LIST[int](), LIST[int]([1, 2, 3]) |> slice(3..3))
+        si
+
+        @Test()
         NegativeStart_ThrowsWhereTheSliceIsTaken() is
             let source = LIST[int]([1, 2, 3])
 

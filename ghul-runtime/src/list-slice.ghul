@@ -16,11 +16,20 @@ namespace Ghul.Pipes is
 
         /// Creates a slice of `count` elements of `source` starting at `from`; throws if it doesn't fit within `source`.
         init(source: List[T], from: int, count: int) is
-            if from < 0 \/ count < 0 \/ from + count > source.count then
+            if from < 0 \/ count < 0 then
                 throw
                     Ghul.ArgumentOutOfRangeException(
                         "from",
-                        "{from} for {count} is not within a source of {source.count}")
+                        "{from} for {count} starts or counts below zero")
+            fi
+
+            // Reading the slice's last position, rather than comparing with
+            // `source.count`, checks that the slice fits: the source throws if
+            // it doesn't. A source that materialises as it is read, such as a
+            // memoised pipe over an unbounded sequence, then only has to
+            // produce as far as the slice ends.
+            if from + count > 0 then
+                source[from + count - 1]
             fi
 
             _source = source
