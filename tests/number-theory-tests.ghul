@@ -5,6 +5,7 @@ namespace Tests is
     use Microsoft.VisualStudio.TestTools.UnitTesting
 
     use Ghul.Pipes
+    use Ghul.Numerics
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 

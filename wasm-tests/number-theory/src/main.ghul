@@ -2,6 +2,7 @@
 // target, print what the same program prints on .NET.
 use IO.Std.write_line
 use Ghul.Pipes
+use Ghul.Numerics
 
 write_line("{1::30 |> filter(is_prime) |> join(", ")}")
 write_line("{is_prime(-7)} {is_prime(0)} {is_prime(1)} {is_prime(2147483647)} {is_prime(2147483646)} {is_prime(1000003)}")

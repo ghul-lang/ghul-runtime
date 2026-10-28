@@ -1,5 +1,6 @@
-namespace Ghul.Pipes is
+namespace Ghul.Numerics is
     use Collections
+    use Ghul.Pipes
 
     // Number theory over int, long and bigint: primality, factorisation and
     // the functions built on it, and the integer helpers solutions keep
