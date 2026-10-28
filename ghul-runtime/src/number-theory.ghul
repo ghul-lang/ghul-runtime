@@ -1101,7 +1101,8 @@ namespace Ghul.Numerics is
             _NUMBER_THEORY.is_strong_lucas_probable_prime(n)
     si
 
-    /// The primes in increasing order, without end: 2, 3, 5, 7, ...
+    /// The primes in increasing order, 2, 3, 5, 7, ..., to the largest `int`
+    /// prime. `primes(start)` over `long` or `bigint` reads further.
     ///
     /// Read from the shared sieve, which grows as reads go past its end, so
     /// `primes() |> take_while(p => p < limit)` and `primes() |> skip(9_999) |> first()`
@@ -1114,7 +1115,8 @@ namespace Ghul.Numerics is
     /// - start: where to begin; the first prime read is the least prime at or above it
     primes(start: int) -> Iterable[int] pure => _PRIMES_PIPE(start)
 
-    /// The primes at or above `start`, in increasing order, without end.
+    /// The primes at or above `start`, in increasing order, to the largest
+    /// `long` prime.
     ///
     /// - start: where to begin; the first prime read is the least prime at or above it
     primes(start: long) -> Iterable[long] pure => _LONG_PRIMES_PIPE(start)
