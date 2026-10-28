@@ -407,6 +407,25 @@ namespace Ghul.Numerics is
         // A Miller-Rabin test of the odd n, larger than every witness, with
         // the first `rounds` primes as witnesses.
         miller_rabin(n: bigint, rounds: int) -> bool static is
+            _PRIME_SIEVE.has_prime(rounds)
+
+            let primes = _PRIME_SIEVE.primes
+            let round mut = 0
+
+            while round < rounds do
+                if !is_strong_probable_prime(n, bigint(primes[round])) then
+                    return false
+                fi
+
+                round = round + 1
+            od
+
+            return true
+        si
+
+        // Whether the odd n, larger than `base`, is a strong probable prime
+        // to `base`.
+        is_strong_probable_prime(n: bigint, base: bigint) -> bool static is
             let n_minus_one = n - 1n
             let d mut = n_minus_one
             let s mut = 0
@@ -416,42 +435,171 @@ namespace Ghul.Numerics is
                 s = s + 1
             od
 
-            _PRIME_SIEVE.has_prime(rounds)
+            let x mut = bigint.mod_pow(base, d, n)
 
-            let primes = _PRIME_SIEVE.primes
-            let round mut = 0
+            if x.is_one \/ x =~ n_minus_one then
+                return true
+            fi
 
-            while round < rounds do
-                let x mut = bigint.mod_pow(bigint(primes[round]), d, n)
+            let i mut = 1
 
-                if !(x.is_one \/ x =~ n_minus_one) then
-                    let i mut = 1
-                    let witnessed mut = true
+            while i < s do
+                x = (x * x) % n
 
-                    while i < s do
-                        x = (x * x) % n
-
-                        if x =~ n_minus_one then
-                            witnessed = false
-                            break
-                        fi
-
-                        if x.is_one then
-                            break
-                        fi
-
-                        i = i + 1
-                    od
-
-                    if witnessed then
-                        return false
-                    fi
+                if x =~ n_minus_one then
+                    return true
                 fi
 
-                round = round + 1
+                if x.is_one then
+                    return false
+                fi
+
+                i = i + 1
             od
 
-            return true
+            return false
+        si
+
+        // The Jacobi symbol (a/n) for odd positive n.
+        jacobi(a: bigint, n: bigint) -> int static is
+            let x mut = a % n
+
+            if x.sign < 0 then
+                x = x + n
+            fi
+
+            let m mut = n
+            let result mut = 1
+
+            while !x.is_zero do
+                while x.is_even do
+                    x = x >> 1
+
+                    let r = cast int(m % 8n)
+
+                    if r == 3 \/ r == 5 then
+                        result = -result
+                    fi
+                od
+
+                let t = x
+                x = m
+                m = t
+
+                if cast int(x % 4n) == 3 /\ cast int(m % 4n) == 3 then
+                    result = -result
+                fi
+
+                x = x % m
+            od
+
+            return if m.is_one then result else 0 fi
+        si
+
+        // x / 2 modulo the odd n, for x in [0, n).
+        half_mod(x: bigint, n: bigint) -> bigint static =>
+            if x.is_even then x >> 1 else (x + n) >> 1 fi
+
+        // A strong Lucas probable-prime test of the odd n, which must not be
+        // a perfect square and must have no factor below 1000, with D, P and
+        // Q chosen by Selfridge's method A.
+        is_strong_lucas_probable_prime(n: bigint) -> bool static is
+            let d_value mut = 5
+            let found mut = false
+
+            while !found do
+                let j = jacobi(bigint(d_value), n)
+
+                if j == 0 then
+                    return false
+                fi
+
+                if j == -1 then
+                    found = true
+                else
+                    d_value = if d_value > 0 then -(d_value + 2) else -d_value + 2 fi
+                fi
+            od
+
+            let d_big = bigint(d_value)
+            let q = bigint((1 - d_value) / 4)
+            let q_mod = ((q % n) + n) % n
+            let d_mod = ((d_big % n) + n) % n
+
+            let k mut = n + 1n
+            let s mut = 0
+
+            while k.is_even do
+                k = k >> 1
+                s = s + 1
+            od
+
+            // U, V and Q^m for m running over the prefixes of k's bits, P = 1.
+            let u mut = 1n
+            let v mut = 1n
+            let q_power mut = q_mod
+
+            let bit mut = cast int(k.get_bit_length()) - 2
+
+            while bit >= 0 do
+                u = (u * v) % n
+                v = ((v * v - 2n * q_power) % n + n) % n
+                q_power = (q_power * q_power) % n
+
+                if !((k >> bit) & 1n).is_zero then
+                    let next_u = half_mod((u + v) % n, n)
+                    v = half_mod((d_mod * u + v) % n, n)
+                    u = next_u
+                    q_power = (q_power * q_mod) % n
+                fi
+
+                bit = bit - 1
+            od
+
+            if u.is_zero \/ v.is_zero then
+                return true
+            fi
+
+            let r mut = 1
+
+            while r < s do
+                v = ((v * v - 2n * q_power) % n + n) % n
+
+                if v.is_zero then
+                    return true
+                fi
+
+                q_power = (q_power * q_power) % n
+                r = r + 1
+            od
+
+            return false
+        si
+
+        // Whether the odd n has a prime factor from 3 to below 1000; n must
+        // be larger than 1000.
+        has_small_factor(n: bigint) -> bool static is
+            let products = _PRIME_SIEVE.chunk_products
+            let ends = _PRIME_SIEVE.chunk_ends
+            let primes = _PRIME_SIEVE.primes
+            let i mut = 1
+            let chunk mut = 0
+
+            while chunk < products.count do
+                let rest = cast long(n % bigint(products[chunk]))
+
+                while i < ends[chunk] do
+                    if rest % cast long(primes[i]) == 0L then
+                        return true
+                    fi
+
+                    i = i + 1
+                od
+
+                chunk = chunk + 1
+            od
+
+            return false
         si
 
         gcd(a: ulong, b: ulong) -> ulong static is
@@ -951,13 +1099,26 @@ namespace Ghul.Numerics is
         return _NUMBER_THEORY.is_prime_long(n)
     si
 
-    /// Whether `n` is prime. Exact where `n` fits in a `long`. Beyond that
-    /// it is a Miller-Rabin test with the first twelve primes as witnesses,
-    /// which is deterministic below 3.18 * 10^23 and gives a probable prime
-    /// above it.
+    /// Whether `n` is prime. Exact where `n` fits in a `long`. Beyond that it
+    /// is the Baillie-PSW test: a strong probable-prime test to base 2 and a
+    /// strong Lucas probable-prime test. It answers for a probable prime, but
+    /// no composite is known to pass it.
     ///
     /// - n: the value to test; anything below 2 is not prime
-    is_prime(n: bigint) -> bool pure => is_prime(n, 12)
+    is_prime(n: bigint) -> bool pure is
+        if _NUMBER_THEORY.fits_long(n) then
+            return is_prime(cast long(n))
+        fi
+
+        if n.sign < 0 \/ n.is_even \/ _NUMBER_THEORY.has_small_factor(n) then
+            return false
+        fi
+
+        return
+            _NUMBER_THEORY.is_strong_probable_prime(n, 2n) /\
+            !is_square(n) /\
+            _NUMBER_THEORY.is_strong_lucas_probable_prime(n)
+    si
 
     /// Whether `n` is prime, with `rounds` Miller-Rabin witnesses where `n`
     /// does not fit in a `long`.
@@ -970,29 +1131,9 @@ namespace Ghul.Numerics is
             return is_prime(cast long(n))
         fi
 
-        if n.sign < 0 \/ n.is_even then
+        if n.sign < 0 \/ n.is_even \/ _NUMBER_THEORY.has_small_factor(n) then
             return false
         fi
-
-        let products = _PRIME_SIEVE.chunk_products
-        let ends = _PRIME_SIEVE.chunk_ends
-        let primes = _PRIME_SIEVE.primes
-        let i mut = 1
-        let chunk mut = 0
-
-        while chunk < products.count do
-            let rest = cast long(n % bigint(products[chunk]))
-
-            while i < ends[chunk] do
-                if rest % cast long(primes[i]) == 0L then
-                    return false
-                fi
-
-                i = i + 1
-            od
-
-            chunk = chunk + 1
-        od
 
         return _NUMBER_THEORY.miller_rabin(n, if rounds < 1 then 1 else rounds fi)
     si

@@ -71,6 +71,31 @@ namespace Tests is
         si
 
         @Test()
+        IsPrime_RejectsCompositesThatFoolFixedWitnesses() is
+            // Strong pseudoprimes to every one of the first 12 and first 13
+            // prime bases, so only the Lucas half of the test rejects them.
+            is_false(is_prime(bigint.parse("318665857834031151167461")))
+            is_false(is_prime(bigint.parse("3317044064679887385961981")))
+
+            // A Carmichael number, 58625167 * 117250333 * 175875499.
+            is_false(is_prime(bigint.parse("1208936584608027321999889")))
+
+            is_false(is_prime(bigint(1_000_000_007L) * bigint(1_000_000_009L) * bigint(998_244_353L)))
+        si
+
+        @Test()
+        IsPrime_CountsPrimesAboveTheLongRange() is
+            let above_long = bigint.pow(2n, 64)
+            let above_thirty_digits = bigint.pow(10n, 30)
+
+            are_equal(425, 0::19_999 |> count(i => is_prime(above_long + bigint(i))))
+            are_equal(52, 0::4_999 |> count(i => is_prime(above_thirty_digits + bigint(i))))
+            is_true(is_prime(bigint.pow(2n, 521) - 1n))
+            is_true(is_prime(bigint.pow(2n, 607) - 1n))
+            is_false(is_prime(bigint.pow(2n, 523) - 1n))
+        si
+
+        @Test()
         IsPrime_DecidesLargeBigints() is
             is_true(is_prime(bigint.pow(2n, 127) - 1n))
             is_false(is_prime(bigint.pow(2n, 128) + 1n))

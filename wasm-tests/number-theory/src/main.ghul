@@ -60,3 +60,5 @@ overflowed(f: () -> int) -> string is
         return "overflow"
     yrt
 si
+write_line("{is_prime(bigint.parse("318665857834031151167461"))} {is_prime(bigint.parse("1208936584608027321999889"))} {is_prime(bigint.pow(2n, 521) - 1n)}")
+write_line("{0::1_999 |> count(i => is_prime(bigint.pow(2n, 64) + bigint(i)))}")
