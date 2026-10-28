@@ -1034,6 +1034,7 @@ namespace Ghul.Numerics is
     /// Whether `n` is prime. Exact for every `int`: small values are read
     /// from a shared sieve, which grows on demand, and larger ones are
     /// decided by a deterministic Miller-Rabin test.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to test; anything below 2 is not prime
     is_prime(n: int) -> bool pure is
@@ -1066,6 +1067,7 @@ namespace Ghul.Numerics is
     /// are decided as `is_prime` over `int` decides them, and larger ones
     /// by a Miller-Rabin test with a witness set that is deterministic
     /// below 2^64.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to test; anything below 2 is not prime
     is_prime(n: long) -> bool pure is
@@ -1084,6 +1086,7 @@ namespace Ghul.Numerics is
     /// is the Baillie-PSW test: a strong probable-prime test to base 2 and a
     /// strong Lucas probable-prime test. It answers for a probable prime, but
     /// no composite is known to pass it.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to test; anything below 2 is not prime
     is_prime(n: bigint) -> bool pure is
@@ -1103,6 +1106,7 @@ namespace Ghul.Numerics is
 
     /// The primes in increasing order, 2, 3, 5, 7, ..., to the largest `int`
     /// prime. `primes(start)` over `long` or `bigint` reads further.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// Read from the shared sieve, which grows as reads go past its end, so
     /// `primes() |> take_while(p => p < limit)` and `primes() |> skip(9_999) |> first()`
@@ -1111,24 +1115,28 @@ namespace Ghul.Numerics is
 
     /// The primes at or above `start`, in increasing order, to the end of
     /// `int`'s range.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - start: where to begin; the first prime read is the least prime at or above it
     primes(start: int) -> Iterable[int] pure => _PRIMES_PIPE(start)
 
     /// The primes at or above `start`, in increasing order, to the largest
     /// `long` prime.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - start: where to begin; the first prime read is the least prime at or above it
     primes(start: long) -> Iterable[long] pure => _LONG_PRIMES_PIPE(start)
 
     /// The primes at or above `start`, in increasing order, without end, each
     /// decided as `is_prime` over `bigint` decides it.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - start: where to begin; the first prime read is the least prime at or above it
     primes(start: bigint) -> Iterable[bigint] pure => _BIG_PRIMES_PIPE(start)
 
     /// The prime factors of `n` in increasing order, each as often as it
     /// divides `n`: `prime_factors(360)` is 2, 2, 2, 3, 3, 5.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to factorise; must be positive, and 1 has no prime factors
     prime_factors(n: int) -> List[int] pure is
@@ -1151,6 +1159,7 @@ namespace Ghul.Numerics is
     si
 
     /// The prime factors of `n` in increasing order, each as often as it divides `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to factorise; must be positive, and 1 has no prime factors
     prime_factors(n: long) -> List[long] pure is
@@ -1169,6 +1178,7 @@ namespace Ghul.Numerics is
     /// The prime factors of `n` in increasing order, each as often as it divides `n`.
     /// A factor beyond `long`'s range is found by Pollard's rho, which slows
     /// sharply as the second-largest prime factor grows.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to factorise; must be positive, and 1 has no prime factors
     prime_factors(n: bigint) -> List[bigint] pure is
@@ -1186,6 +1196,7 @@ namespace Ghul.Numerics is
 
     /// The distinct prime factors of `n` in increasing order, each with how
     /// many times it divides `n`: `factorize(360)` is (2, 3), (3, 2), (5, 1).
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to factorise; must be positive, and 1 has no prime factors
     factorize(n: int) -> List[(prime: int, exponent: int)] pure is
@@ -1209,6 +1220,7 @@ namespace Ghul.Numerics is
 
     /// The distinct prime factors of `n` in increasing order, each with how
     /// many times it divides `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to factorise; must be positive, and 1 has no prime factors
     factorize(n: long) -> List[(prime: long, exponent: int)] pure is
@@ -1225,6 +1237,7 @@ namespace Ghul.Numerics is
 
     /// The distinct prime factors of `n` in increasing order, each with how
     /// many times it divides `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value to factorise; must be positive, and 1 has no prime factors
     factorize(n: bigint) -> List[(prime: bigint, exponent: int)] pure is
@@ -1241,6 +1254,7 @@ namespace Ghul.Numerics is
 
     /// The positive divisors of `n` in increasing order, 1 and `n` included:
     /// `divisors(12)` is 1, 2, 3, 4, 6, 12.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to list; must be positive
     divisors(n: int) -> List[int] pure is
@@ -1254,6 +1268,7 @@ namespace Ghul.Numerics is
     si
 
     /// The positive divisors of `n` in increasing order, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to list; must be positive
     divisors(n: long) -> List[long] pure is
@@ -1286,6 +1301,7 @@ namespace Ghul.Numerics is
     si
 
     /// The positive divisors of `n` in increasing order, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to list; must be positive
     divisors(n: bigint) -> List[bigint] pure is
@@ -1318,11 +1334,13 @@ namespace Ghul.Numerics is
     si
 
     /// How many positive divisors `n` has, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to count; must be positive
     divisor_count(n: int) -> int pure => int(divisor_count(cast long(n)))
 
     /// How many positive divisors `n` has, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to count; must be positive
     divisor_count(n: long) -> long pure is
@@ -1336,6 +1354,7 @@ namespace Ghul.Numerics is
     si
 
     /// How many positive divisors `n` has, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to count; must be positive
     divisor_count(n: bigint) -> bigint pure is
@@ -1351,6 +1370,7 @@ namespace Ghul.Numerics is
     /// The sum of the positive divisors of `n`, `n` itself included; the sum
     /// of its proper divisors is `divisor_sum(n) - n`. Throws
     /// `OverflowException` where the sum does not fit in an `int`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to sum; must be positive
     divisor_sum(n: int) -> int pure is
@@ -1365,6 +1385,7 @@ namespace Ghul.Numerics is
 
     /// The sum of the positive divisors of `n`, `n` itself included. Throws
     /// `OverflowException` where the sum does not fit in a `long`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to sum; must be positive
     divisor_sum(n: long) -> long pure is
@@ -1399,6 +1420,7 @@ namespace Ghul.Numerics is
     si
 
     /// The sum of the positive divisors of `n`, `n` itself included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value whose divisors to sum; must be positive
     divisor_sum(n: bigint) -> bigint pure is
@@ -1422,11 +1444,13 @@ namespace Ghul.Numerics is
     si
 
     /// Euler's totient of `n`: how many of 1 to `n` share no factor with `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value; must be positive
     totient(n: int) -> int pure => int(totient(cast long(n)))
 
     /// Euler's totient of `n`: how many of 1 to `n` share no factor with `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value; must be positive
     totient(n: long) -> long pure is
@@ -1440,6 +1464,7 @@ namespace Ghul.Numerics is
     si
 
     /// Euler's totient of `n`: how many of 1 to `n` share no factor with `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
     ///
     /// - n: the value; must be positive
     totient(n: bigint) -> bigint pure is
