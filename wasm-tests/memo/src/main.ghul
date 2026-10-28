@@ -1,0 +1,48 @@
+use default
+use Ghul
+
+slow_square(n: int) -> int => n * n
+
+add_pair(a: int, b: int) -> int => a + b
+
+let calls mut = 0
+
+let square = memo((n: int) => (
+    calls = calls + 1
+    n * n
+))
+
+write_line("{square(4)} {square(4)} {square(5)} calls {calls}")
+
+let named = memo(slow_square)
+write_line("{named(7)}")
+
+let added = Ghul.memo(add_pair)
+write_line("{added(3, 4)} {added(3, 4)}")
+
+let fib = memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fib(n - 2) fi)
+write_line("{fib(90)}")
+
+calls = 0
+let paths = memo_rec((paths, i: int, j: int) => (
+    calls = calls + 1
+    if i == 0 \/ j == 0 then 1L else paths(i - 1, j) + paths(i, j - 1) fi
+))
+write_line("{paths(16, 16)} calls {calls}")
+
+let three = memo_rec((three, a: int, b: int, c: int) => if a == 0 then b * c else three(a - 1, b, c) + 1 fi)
+let four = memo_rec((_, a: int, b: string, c: int, d: int) => "{a}{b}{c}{d}")
+write_line("{three(5, 2, 3)} {four(1, "x", 3, 4)}")
+
+let words = memo_rec((count, s: string) => if s.length == 0 then 0 else 1 + count(s.substring(1)) fi)
+write_line("{words("hello")}")
+
+let reads mut = 0
+let cached = [1, 2, 3] |> map(x => (reads = reads + 1; x * 10)) |> memo()
+write_line("{cached |> sum()} {cached |> sum()} reads {reads}")
+
+let direct = memo([4, 5, 6])
+write_line("{direct[1]} {direct.count}")
+
+let nested = [[1, 2], [3]] |> map(xs => xs |> memo()) |> map(m => m.count) |> join(",")
+write_line(nested)

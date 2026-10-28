@@ -72,10 +72,10 @@ namespace Tests is
         si
 
         @Test()
-        Memoize_ComputesEachArgumentOnce() is
+        Memo_ComputesEachArgumentOnce() is
             let calls mut = 0
 
-            let counted = memoize(n => (
+            let counted = memo(n => (
                 calls = calls + 1
                 square(n)
             ))
@@ -130,15 +130,50 @@ namespace Tests is
         si
 
         @Test()
-        Memoize_KeysOnTheWholeTuple() is
+        Memo_KeysOnTheWholeTuple() is
             calls_of_counted = 0
 
-            let counted = memoize(counted_with)
+            let counted = memo(counted_with)
 
             are_equal(45, counted(4, 5))
             are_equal(45, counted(4, 5))
             are_equal(46, counted(4, 6))
             are_equal(2, calls_of_counted)
+        si
+
+        @Test()
+        MemoRec_CachesRecursiveCalls() is
+            let calls mut = 0
+
+            let fib = memo_rec((fib, n: int) => (
+                calls = calls + 1
+                if n < 2 then bigint(n) else fib(n - 1) + fib(n - 2) fi
+            ))
+
+            are_equal(bigint.parse("2880067194370816120"), fib(90))
+            are_equal(91, calls)
+        si
+
+        @Test()
+        MemoRec_CachesRecursiveCallsOverSeveralArguments() is
+            let calls mut = 0
+
+            let paths = memo_rec((paths, i: int, j: int) => (
+                calls = calls + 1
+                if i == 0 \/ j == 0 then 1L else paths(i - 1, j) + paths(i, j - 1) fi
+            ))
+
+            are_equal(601080390L, paths(16, 16))
+            are_equal(288, calls)
+        si
+
+        @Test()
+        MemoRec_TakesThreeAndFourArguments() is
+            let three = memo_rec((three, a: int, b: int, c: int) => if a == 0 then b * c else three(a - 1, b, c) + 1 fi)
+            let four = memo_rec((_, a: int, b: int, c: int, d: int) => a + b + c + d)
+
+            are_equal(11, three(5, 2, 3))
+            are_equal(10, four(1, 2, 3, 4))
         si
 
         flaky_target(a: int, b: int) -> int is

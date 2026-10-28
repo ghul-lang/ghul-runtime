@@ -1,0 +1,196 @@
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class NumberTheoryShould is
+        init() is si
+
+        // Trial division, as the answer is_prime has to agree with.
+        is_prime_by_division(n: long) -> bool is
+            if n < 2L then
+                return false
+            fi
+
+            let d mut = 2L
+
+            while d * d <= n do
+                if n % d == 0L then
+                    return false
+                fi
+
+                d = d + 1L
+            od
+
+            return true
+        si
+
+        @Test()
+        IsPrime_AgreesWithTrialDivisionAcrossTheSieve() is
+            for n in -5::100_000 do
+                are_equal(is_prime_by_division(cast long(n)), is_prime(n), "{n}")
+            od
+        si
+
+        @Test()
+        IsPrime_AgreesWithTrialDivisionAboveTheSieve() is
+            for n in 2_147_000_000::2_147_001_000 do
+                are_equal(is_prime_by_division(cast long(n)), is_prime(n), "{n}")
+            od
+        si
+
+        @Test()
+        IsPrime_RejectsStrongPseudoprimes() is
+            // Strong pseudoprimes to bases 2, 3, 5 and 7, and to 2, 7 and 61.
+            is_false(is_prime(3215031751L))
+            is_false(is_prime(4759123141L))
+            is_false(is_prime(3825123056546413051L))
+        si
+
+        @Test()
+        IsPrime_AgreesAcrossWidths() is
+            for wide in 2_147_483_000L::2_147_483_647L do
+                let n = cast int(wide)
+
+                are_equal(is_prime(n), is_prime(wide), "{n}")
+                are_equal(is_prime(n), is_prime(bigint(n)), "{n}")
+            od
+
+            for n in 0L::2_000L do
+                let big = 9_223_372_036_854_773_807L + n
+
+                are_equal(is_prime(big), is_prime(bigint(big)), "{big}")
+            od
+        si
+
+        @Test()
+        IsPrime_DecidesLargeBigints() is
+            is_true(is_prime(bigint.pow(2n, 127) - 1n))
+            is_false(is_prime(bigint.pow(2n, 128) + 1n))
+            is_false(is_prime(bigint(1_000_000_007L) * bigint(998_244_353L)))
+        si
+
+        @Test()
+        Primes_ReadFromTheSieveAndPastIt() is
+            are_equal(104729, primes() |> skip(9_999) |> first())
+            are_equal(78498, primes() |> take_while(p => p < 1_000_000) |> count())
+            are_equal("2147483629, 2147483647", primes(2_147_483_600) |> join(", "))
+            are_equal("1000000007, 1000000009", primes(1_000_000_000L) |> take(2) |> join(", "))
+            are_equal("100000000000000000039", primes(bigint.pow(10n, 20)) |> take(1) |> join(", "))
+        si
+
+        @Test()
+        Primes_ReplayFromTheStart() is
+            let ps = primes() |> take(5)
+
+            are_equal("2, 3, 5, 7, 11", ps |> join(", "))
+            are_equal("2, 3, 5, 7, 11", ps |> join(", "))
+        si
+
+        @Test()
+        PrimeFactors_MultiplyBackToTheValue() is
+            for n in 1::20_000 do
+                are_equal(n, prime_factors(n) |> reduce(1, (a, b) => a * b))
+            od
+
+            let large = [
+                9_223_372_036_854_775_807L,
+                600_851_475_143L,
+                998_244_353L * 1_000_000_007L,
+                4_611_686_014_132_420_609L,
+                1_000_000_000_000_000_000L
+            ]
+
+            for n in large do
+                let factors = prime_factors(n)
+
+                are_equal(n, factors |> reduce(1L, (a, b) => a * b))
+                is_true(factors |> all(is_prime))
+            od
+        si
+
+        @Test()
+        PrimeFactors_SplitBigintsBeyondLong() is
+            are_equal("193707721, 761838257287", prime_factors(bigint.pow(2n, 67) - 1n) |> join(", "))
+            are_equal("274177, 67280421310721", prime_factors(bigint.pow(2n, 64) + 1n) |> join(", "))
+        si
+
+        @Test()
+        Factorize_GroupsPrimesWithExponents() is
+            are_equal("2^3 3^2 5^1", factorize(360) |> map(f => "{f.prime}^{f.exponent}") |> join(" "))
+            are_equal(0, factorize(1L).count)
+        si
+
+        @Test()
+        Divisors_ListAndSummarise() is
+            are_equal("1, 2, 3, 4, 6, 12", divisors(12) |> join(", "))
+            are_equal(1344L, divisor_count(735_134_400L))
+            are_equal(56, divisor_sum(28))
+            are_equal(12, totient(36))
+
+            for n in 1::2_000 do
+                let ds = divisors(n)
+
+                are_equal(ds.count, divisor_count(n))
+                are_equal(ds |> sum(), divisor_sum(n))
+                are_equal(1::n |> count(k => gcd(k, n) == 1), totient(n))
+            od
+        si
+
+        @Test()
+        Gcd_AndLcm_AreNonNegative() is
+            are_equal(6, gcd(12, -18))
+            are_equal(0, gcd(0, 0))
+            are_equal(42L, lcm(-21L, 6L))
+            are_equal(bigint(300L), lcm(bigint(100L), bigint(75L)))
+        si
+
+        @Test()
+        FactorialAndBinomial_ThrowWhereTheTypeOverflows() is
+            are_equal(479001600, factorial(12))
+            are_equal(bigint.parse("15511210043330985984000000"), factorial(25n))
+            are_equal(7_219_428_434_016_265_740L, binomial(66L, 33L))
+            are_equal(bigint.parse("100891344545564193334812497256"), binomial(100n, 50n))
+
+            let thrown mut = false
+
+            try
+                factorial(13)
+            catch e: System.OverflowException
+                thrown = true
+            yrt
+
+            is_true(thrown)
+        si
+
+        @Test()
+        ModPow_IsNonNegative() is
+            are_equal(2, mod_pow(-2, 3, 5))
+            are_equal(4_611_686_018_427_387_904L, mod_pow(2L, 62L, 9_223_372_036_854_775_783L))
+            are_equal(3_364_590_214_127_469_231L, mod_pow(3L, 1000L, 9_223_372_036_854_775_782L))
+            are_equal(1n, mod_pow(-3n, 3n, 7n))
+        si
+
+        @Test()
+        Isqrt_IsTheFloorOfTheRoot() is
+            are_equal(3_037_000_499L, isqrt(9_223_372_036_854_775_807L))
+            are_equal(bigint.pow(10n, 20) - 1n, isqrt(bigint.pow(10n, 40) - 1n))
+            is_true(is_square(9_223_372_030_926_249_001L))
+            is_false(is_square(bigint.pow(10n, 40) + 1n))
+        si
+
+        @Test()
+        DigitSum_TakesTheMagnitude() is
+            are_equal(10, digit_sum(-1234))
+            are_equal(30, digit_sum(255, 16))
+            are_equal(89L, digit_sum(-9_223_372_036_854_775_807L - 1L))
+            are_equal(bigint(1366L), digit_sum(bigint.pow(2n, 1000)))
+        si
+    si
+si

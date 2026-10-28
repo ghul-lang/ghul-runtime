@@ -1,0 +1,7 @@
+{
+    "name": "number-theory",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

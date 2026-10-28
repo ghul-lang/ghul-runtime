@@ -1,0 +1,7 @@
+{
+    "name": "memo",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

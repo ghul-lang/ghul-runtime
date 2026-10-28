@@ -1,0 +1,61 @@
+// The number-theory functions over int, long and bigint, compiled for each
+// target, print what the same program prints on .NET.
+use IO.Std.write_line
+use Ghul.Pipes
+
+write_line("{1::30 |> filter(is_prime) |> join(", ")}")
+write_line("{is_prime(-7)} {is_prime(0)} {is_prime(1)} {is_prime(2147483647)} {is_prime(2147483646)} {is_prime(1000003)}")
+write_line("{is_prime(4759123141L)} {is_prime(3215031751L)} {is_prime(9223372036854775783L)} {is_prime(998244353L * 1000000007L)}")
+write_line("{is_prime(618970019642690137449562111n)} {is_prime(170141183460469231731687303715884105727n)} {is_prime(340282366920938463463374607431768211457n)}")
+write_line("{is_prime(1000000007n * 998244353n)} {is_prime(2n)} {is_prime(-13n)} {is_prime(170141183460469231731687303715884105727n, 3)}")
+write_line("{[3L, 4L, 5L] |> filter(is_prime) |> join(", ")}")
+
+write_line("{primes() |> take(10) |> join(", ")}")
+write_line("{primes() |> skip(9999) |> first()}")
+write_line("{primes() |> take_while(p => p < 1000000) |> count()}")
+write_line("{primes(2147483600) |> join(", ")}")
+write_line("{primes(1000000000L) |> take(3) |> join(", ")}")
+write_line("{primes(100000000000000000000n) |> take(2) |> join(", ")}")
+write_line("{primes(0n) |> take(5) |> join(", ")}")
+
+write_line("{prime_factors(360) |> join(", ")} {prime_factors(1) |> count()}")
+write_line("{factorize(360) |> map(f => "{f.prime}^{f.exponent}") |> join(" ")}")
+write_line("{factorize(9223372036854775807L) |> map(f => "{f.prime}^{f.exponent}") |> join(" ")}")
+write_line("{prime_factors(600851475143L) |> join(", ")}")
+write_line("{prime_factors(998244353L * 1000000007L) |> join(", ")}")
+write_line("{prime_factors(4611686014132420609L) |> join(", ")}")
+write_line("{prime_factors(18446744073709551617n) |> join(", ")}")
+write_line("{prime_factors(147573952589676412927n) |> join(", ")}")
+write_line("{factorize(1000000000000000000000n) |> map(f => "{f.prime}^{f.exponent}") |> join(" ")}")
+
+write_line("{divisors(12) |> join(", ")} {divisors(1L) |> join(", ")} {divisors(36n) |> join(", ")}")
+write_line("{divisor_count(360)} {divisor_count(735134400L)} {divisor_count(1000000000000000000000n)}")
+write_line("{divisor_sum(28)} {divisor_sum(1L)} {divisor_sum(9223372036854775807n)}")
+write_line("{totient(36)} {totient(1)} {totient(9223372036854775807L)} {totient(1000000000000000000000n)}")
+
+write_line("{gcd(12, -18)} {gcd(0, 0)} {gcd(1071L, 462L)} {gcd(100000000000000000000n, 75n)}")
+write_line("{lcm(4, 6)} {lcm(0, 5)} {lcm(-21L, 6L)} {lcm(100000000000000000000n, 75n)}")
+
+write_line("{factorial(0)} {factorial(12)} {factorial(20L)} {factorial(25n)}")
+write_line("{binomial(52, 5)} {binomial(5, 7)} {binomial(60L, 30L)} {binomial(100n, 50n)}")
+write_line("{binomial(66L, 33L)} {binomial(10n, 0n)}")
+
+write_line("{mod_pow(2, 10, 1000)} {mod_pow(-2, 3, 5)} {mod_pow(3L, 200L, 1000000007L)} {mod_pow(2L, 62L, 9223372036854775783L)}")
+write_line("{mod_pow(3L, 1000L, 9223372036854775782L)} {mod_pow(-3n, 3n, 7n)} {mod_pow(2n, 1000n, 1000000007n)}")
+
+write_line("{isqrt(99)} {isqrt(9223372036854775807L)} {isqrt(10000000000000000000000000000000000000000n)} {isqrt(10000000000000000000000000000000000000001n - 2n)}")
+write_line("{is_square(144)} {is_square(145)} {is_square(-4)} {is_square(9223372030926249001L)} {is_square(10000000000000000000000000000000000000001n)}")
+
+write_line("{digit_sum(1234)} {digit_sum(-1234)} {digit_sum(255, 16)} {digit_sum(-9223372036854775807L - 1L)}")
+write_line("{digit_sum(bigint.pow(2n, 1000))} {digit_sum(bigint.pow(2n, 100), 2n)} {digit_sum(factorial(100n))}")
+
+write_line("{overflowed(() => factorial(13))} {overflowed(() => binomial(34, 17))} {overflowed(() => lcm(65536, 65537))}")
+
+overflowed(f: () -> int) -> string is
+    try
+        f()
+        return "no"
+    catch e: System.OverflowException
+        return "overflow"
+    yrt
+si

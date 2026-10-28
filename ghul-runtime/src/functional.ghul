@@ -47,8 +47,7 @@ namespace Ghul is
     // pack binds to: single-threaded use.
     /// `f`, wrapped to remember each call's result and skip calling `f` again for
     /// arguments already seen. Not safe to call from more than one thread at a time.
-    @IF.dotnet()
-    memoize[T.., U](f: T.. -> U) -> T.. -> U is
+    memo[T.., U](f: T.. -> U) -> T.. -> U is
         let cache mut = MAP[T, U]()
 
         return v => (
@@ -57,6 +56,83 @@ namespace Ghul is
                 let r = f(v)
                 cache.add(v, r)
                 r
+            fi
+        )
+    si
+
+    // memo_rec hands `f` the memoised function itself as its first
+    // argument, so a recursive call made through it is answered from the
+    // cache too: a function that calls itself directly would bypass any
+    // wrapper. One overload per arity, rather than an argument pack, so
+    // the parameter types of a literal passed in decide A, B and so on,
+    // and the function `f` receives takes its arguments spread out.
+
+    /// `f` with its results remembered: each argument is computed once, and
+    /// later calls with it are answered from a cache. `f` takes the memoised
+    /// function as its first argument and makes its recursive calls through
+    /// it, so every level is cached:
+    /// `memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fib(n - 2) fi)`.
+    /// The cache is not safe to use from more than one thread at a time.
+    memo_rec[A, U](f: ((A) -> U, A) -> U) -> (A) -> U is
+        let cache = MAP[A, U]()
+
+        return a rec => (
+            if cache.contains_key(a) then cache[a]
+            else
+                let result = f(rec, a)
+                cache[a] = result
+                result
+            fi
+        )
+    si
+
+    /// `f` with its results remembered, keyed on both arguments together.
+    /// See the one-argument `memo_rec`.
+    memo_rec[A, B, U](f: ((A, B) -> U, A, B) -> U) -> (A, B) -> U is
+        let cache = MAP[(A, B), U]()
+
+        return (a, b) rec => (
+            let key = (a, b)
+
+            if cache.contains_key(key) then cache[key]
+            else
+                let result = f(rec, a, b)
+                cache[key] = result
+                result
+            fi
+        )
+    si
+
+    /// `f` with its results remembered, keyed on all three arguments together.
+    /// See the one-argument `memo_rec`.
+    memo_rec[A, B, C, U](f: ((A, B, C) -> U, A, B, C) -> U) -> (A, B, C) -> U is
+        let cache = MAP[(A, B, C), U]()
+
+        return (a, b, c) rec => (
+            let key = (a, b, c)
+
+            if cache.contains_key(key) then cache[key]
+            else
+                let result = f(rec, a, b, c)
+                cache[key] = result
+                result
+            fi
+        )
+    si
+
+    /// `f` with its results remembered, keyed on all four arguments together.
+    /// See the one-argument `memo_rec`.
+    memo_rec[A, B, C, D, U](f: ((A, B, C, D) -> U, A, B, C, D) -> U) -> (A, B, C, D) -> U is
+        let cache = MAP[(A, B, C, D), U]()
+
+        return (a, b, c, d) rec => (
+            let key = (a, b, c, d)
+
+            if cache.contains_key(key) then cache[key]
+            else
+                let result = f(rec, a, b, c, d)
+                cache[key] = result
+                result
             fi
         )
     si
