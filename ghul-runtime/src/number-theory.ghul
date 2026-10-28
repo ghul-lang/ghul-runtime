@@ -1,0 +1,2148 @@
+namespace Ghul.Numerics is
+    use Collections
+    use Ghul.Pipes
+
+    // Number theory over int, long and bigint: primality, factorisation and
+    // the functions built on it, and the integer helpers solutions keep
+    // writing by hand. Everything here is plain ghūl, so the three targets
+    // share one implementation. The sieve behind the prime functions is
+    // process-wide and grows on demand: the first call that needs a range
+    // pays for it, and later calls reuse it. It is not safe to grow from
+    // more than one thread at a time.
+
+    // A sieve of Eratosthenes over the odd numbers below `limit`, and the
+    // primes it has found in order. Growing it sieves only the new segment,
+    // with the primes already found, so no range is ever sieved twice.
+    class _PRIME_SIEVE is
+        // Bit i of word w set marks the odd number 64w + 2i + 1 composite.
+        _composite: LIST[int] static
+        _primes: LIST[int] static
+        _limit: int static
+
+        // Products of consecutive odd primes, each below 2^63, with the
+        // range of _primes each covers: one bigint remainder per product
+        // tests a bigint against all of its primes.
+        _chunk_products: LIST[long] static
+        _chunk_ends: LIST[int] static
+
+        init() static is
+            _composite = LIST[int]()
+            _primes = LIST[int]()
+            _limit = 0
+            _chunk_products = LIST[long]()
+            _chunk_ends = LIST[int]()
+
+            grow_to(65536)
+
+            let product mut = 1L
+            let i mut = 1
+
+            while _primes[i] < 1000 do
+                let p = cast long(_primes[i])
+
+                if product > 9223372036854775807L / p then
+                    _chunk_products.add(product)
+                    _chunk_ends.add(i)
+                    product = 1L
+                fi
+
+                product = product * p
+                i = i + 1
+            od
+
+            _chunk_products.add(product)
+            _chunk_ends.add(i)
+        si
+
+        // The largest limit the sieve grows to. Past it, primes come from
+        // the probable-prime tests instead.
+        cap: int static => 268435456
+
+        // The limit below which is_prime grows the sieve to answer, rather
+        // than run a primality test.
+        lookup_cap: int static => 4194304
+
+        limit: int static => _limit
+
+        primes: LIST[int] static => _primes
+
+        chunk_products: LIST[long] static => _chunk_products
+
+        chunk_ends: LIST[int] static => _chunk_ends
+
+        // Whether `n`, which must be below `limit`, is prime.
+        is_prime(n: int) -> bool static is
+            if n < 3 then
+                return n == 2
+            fi
+
+            if (n & 1) == 0 then
+                return false
+            fi
+
+            return ((_composite[n >> 6] >> ((n >> 1) & 31)) & 1) == 0
+        si
+
+        // Grows the sieve to cover at least `n`, doubling, and at most `cap`.
+        grow_to(n: int) static is
+            if n <= _limit then
+                return
+            fi
+
+            let target mut = if _limit == 0 then 65536 else _limit fi
+
+            while target < n /\ target < cap do
+                target = target * 2
+            od
+
+            if target > cap then
+                target = cap
+            fi
+
+            if _limit == 0 then
+                _sieve_first(target)
+            else
+                _sieve_segment(target)
+            fi
+        si
+
+        // Grows the sieve until it holds more than `index` primes, or has
+        // reached `cap`; whether it now does.
+        has_prime(index: int) -> bool static is
+            while index >= _primes.count /\ _limit < cap do
+                grow_to(_limit * 2)
+            od
+
+            return index < _primes.count
+        si
+
+        // The position in `primes` of the first prime at or above `n`, which
+        // must be below `limit`.
+        index_at_or_above(n: int) -> int static is
+            let low mut = 0
+            let high mut = _primes.count
+
+            while low < high do
+                let middle = (low + high) >> 1
+
+                if _primes[middle] < n then
+                    low = middle + 1
+                else
+                    high = middle
+                fi
+            od
+
+            return low
+        si
+
+        _extend_words(target: int) static is
+            let words = target >> 6
+
+            while _composite.count < words do
+                _composite.add(0)
+            od
+        si
+
+        _mark(m: int) static is
+            let word = m >> 6
+            _composite[word] = _composite[word] | (1 << ((m >> 1) & 31))
+        si
+
+        _sieve_first(target: int) static is
+            _extend_words(target)
+
+            let i mut = 3
+
+            while i * i < target do
+                if is_prime(i) then
+                    let m mut = i * i
+
+                    while m < target do
+                        _mark(m)
+                        m = m + i + i
+                    od
+                fi
+
+                i = i + 2
+            od
+
+            _primes.add(2)
+            _limit = target
+            _collect(3, target)
+        si
+
+        _sieve_segment(target: int) static is
+            let low = _limit
+
+            _extend_words(target)
+
+            let i mut = 1
+
+            while i < _primes.count do
+                let p = _primes[i]
+                let square = cast long(p) * cast long(p)
+
+                if square >= cast long(target) then
+                    break
+                fi
+
+                let start = if square > cast long(low) then int(square) else low fi
+                let m mut = ((start + p - 1) / p) * p
+
+                if (m & 1) == 0 then
+                    m = m + p
+                fi
+
+                while m < target do
+                    _mark(m)
+                    m = m + p + p
+                od
+
+                i = i + 1
+            od
+
+            _limit = target
+            _collect(low | 1, target)
+        si
+
+        _collect(from: int, target: int) static is
+            let m mut = from
+
+            while m < target do
+                if ((_composite[m >> 6] >> ((m >> 1) & 31)) & 1) == 0 then
+                    _primes.add(m)
+                fi
+
+                m = m + 2
+            od
+        si
+    si
+
+    // Arithmetic modulo an odd n below 2^63 in Montgomery form, where x
+    // stands for x * 2^64 mod n: a product is reduced with multiplications
+    // and shifts and no division. `inverse` is -n^-1 mod 2^64.
+    class _MONTGOMERY is
+        // The high 64 bits of the 128-bit product of a and b: one
+        // instruction on .NET, four 32-bit products elsewhere.
+        @IF.dotnet()
+        high(a: ulong, b: ulong) -> ulong static => cast ulong(System.Math.big_mul(a, b) >> 64)
+
+        @IF.source_core()
+        high(a: ulong, b: ulong) -> ulong static is
+            let a_low = a & 0xFFFF_FFFFul
+            let a_high = a >> 32
+            let b_low = b & 0xFFFF_FFFFul
+            let b_high = b >> 32
+            let low_high = a_low * b_high
+            let high_low = a_high * b_low
+            let middle = ((a_low * b_low) >> 32) + (low_high & 0xFFFF_FFFFul) + (high_low & 0xFFFF_FFFFul)
+
+            return a_high * b_high + (low_high >> 32) + (high_low >> 32) + (middle >> 32)
+        si
+
+        inverse(n: ulong) -> ulong static is
+            // Each step doubles the bits of n^-1 that are right; an odd n is
+            // its own inverse to three bits.
+            let x mut = n
+            x = x * (2ul - n * x)
+            x = x * (2ul - n * x)
+            x = x * (2ul - n * x)
+            x = x * (2ul - n * x)
+            x = x * (2ul - n * x)
+
+            return 0ul - x
+        si
+
+        // 2^64 mod n: Montgomery one.
+        one(n: ulong) -> ulong static => (0ul - n) % n
+
+        // 2^128 mod n, which takes a value into Montgomery form by one
+        // multiplication.
+        r2(n: ulong) -> ulong static is
+            let r mut = one(n)
+            let i mut = 0
+
+            while i < 64 do
+                r = r + r
+
+                if r >= n then
+                    r = r - n
+                fi
+
+                i = i + 1
+            od
+
+            return r
+        si
+
+        multiply(a: ulong, b: ulong, n: ulong, inverse: ulong) -> ulong static is
+            let low = a * b
+            let t = high(a, b) + high(low * inverse, n) + (if low != 0ul then 1ul else 0ul fi)
+
+            return if t >= n then t - n else t fi
+        si
+
+        power(base: ulong, exponent: ulong, n: ulong, inverse: ulong, one: ulong) -> ulong static is
+            let result mut = one
+            let b mut = base
+            let e mut = exponent
+
+            while e != 0ul do
+                if (e & 1ul) != 0ul then
+                    result = multiply(result, b, n, inverse)
+                fi
+
+                b = multiply(b, b, n, inverse)
+                e = e >> 1
+            od
+
+            return result
+        si
+
+        // A strong probable-prime test of the odd n to base a, where
+        // n - 1 = d * 2^s.
+        is_strong_probable_prime(n: ulong, a: ulong, d: ulong, s: int, inverse: ulong, one: ulong, r2: ulong) -> bool static is
+            let base = a % n
+
+            if base == 0ul then
+                return true
+            fi
+
+            let minus_one = n - one
+            let x mut = power(multiply(base, r2, n, inverse), d, n, inverse, one)
+
+            if x == one \/ x == minus_one then
+                return true
+            fi
+
+            let i mut = 1
+
+            while i < s do
+                x = multiply(x, x, n, inverse)
+
+                if x == minus_one then
+                    return true
+                fi
+
+                i = i + 1
+            od
+
+            return false
+        si
+    si
+
+    class _NUMBER_THEORY is
+        // Whether the odd n, at least 2^31 and below 2^63, with no prime
+        // factor below 50, is prime. The seven bases are deterministic for
+        // every n below 2^64.
+        is_prime_long(n: long) -> bool static is
+            let un = cast ulong(n)
+            let inverse = _MONTGOMERY.inverse(un)
+            let one = _MONTGOMERY.one(un)
+            let r2 = _MONTGOMERY.r2(un)
+            let s = System.Numerics.BitOperations.trailing_zero_count(un - 1ul)
+            let d = (un - 1ul) >> s
+
+            return
+                _MONTGOMERY.is_strong_probable_prime(un, 2ul, d, s, inverse, one, r2) /\
+                _MONTGOMERY.is_strong_probable_prime(un, 325ul, d, s, inverse, one, r2) /\
+                _MONTGOMERY.is_strong_probable_prime(un, 9375ul, d, s, inverse, one, r2) /\
+                _MONTGOMERY.is_strong_probable_prime(un, 28178ul, d, s, inverse, one, r2) /\
+                _MONTGOMERY.is_strong_probable_prime(un, 450775ul, d, s, inverse, one, r2) /\
+                _MONTGOMERY.is_strong_probable_prime(un, 9780504ul, d, s, inverse, one, r2) /\
+                _MONTGOMERY.is_strong_probable_prime(un, 1795265022ul, d, s, inverse, one, r2)
+        si
+
+        // A strong probable-prime test of the odd n, below 2^31, to base a;
+        // every product fits in a long.
+        is_strong_probable_prime_int(n: long, a: long, d: long, s: int) -> bool static is
+            let base = a % n
+
+            if base == 0L then
+                return true
+            fi
+
+            let x mut = 1L
+            let b mut = base
+            let e mut = d
+
+            while e != 0L do
+                if (e & 1L) != 0L then
+                    x = (x * b) % n
+                fi
+
+                b = (b * b) % n
+                e = e >> 1
+            od
+
+            if x == 1L \/ x == n - 1L then
+                return true
+            fi
+
+            let i mut = 1
+
+            while i < s do
+                x = (x * x) % n
+
+                if x == n - 1L then
+                    return true
+                fi
+
+                i = i + 1
+            od
+
+            return false
+        si
+
+        // Whether n is a multiple of a prime from 3 to 47; n must be odd
+        // and larger than 47.
+        has_small_odd_factor(n: long) -> bool static =>
+            n % 3L == 0L \/ n % 5L == 0L \/ n % 7L == 0L \/ n % 11L == 0L \/ n % 13L == 0L \/
+            n % 17L == 0L \/ n % 19L == 0L \/ n % 23L == 0L \/ n % 29L == 0L \/ n % 31L == 0L \/
+            n % 37L == 0L \/ n % 41L == 0L \/ n % 43L == 0L \/ n % 47L == 0L
+
+        fits_long(n: bigint) -> bool static =>
+            n >= -9223372036854775808n /\ n <= 9223372036854775807n
+
+        // Whether the odd n, larger than `base`, is a strong probable prime
+        // to `base`.
+        is_strong_probable_prime(n: bigint, base: bigint) -> bool static is
+            let n_minus_one = n - 1n
+            let d mut = n_minus_one
+            let s mut = 0
+
+            while d.is_even do
+                d = d >> 1
+                s = s + 1
+            od
+
+            let x mut = bigint.mod_pow(base, d, n)
+
+            if x.is_one \/ x =~ n_minus_one then
+                return true
+            fi
+
+            let i mut = 1
+
+            while i < s do
+                x = (x * x) % n
+
+                if x =~ n_minus_one then
+                    return true
+                fi
+
+                if x.is_one then
+                    return false
+                fi
+
+                i = i + 1
+            od
+
+            return false
+        si
+
+        // The Jacobi symbol (a/n) for odd positive n.
+        jacobi(a: bigint, n: bigint) -> int static is
+            let x mut = a % n
+
+            if x.sign < 0 then
+                x = x + n
+            fi
+
+            let m mut = n
+            let result mut = 1
+
+            while !x.is_zero do
+                while x.is_even do
+                    x = x >> 1
+
+                    let r = cast int(m % 8n)
+
+                    if r == 3 \/ r == 5 then
+                        result = -result
+                    fi
+                od
+
+                let t = x
+                x = m
+                m = t
+
+                if cast int(x % 4n) == 3 /\ cast int(m % 4n) == 3 then
+                    result = -result
+                fi
+
+                x = x % m
+            od
+
+            return if m.is_one then result else 0 fi
+        si
+
+        // x / 2 modulo the odd n, for x in [0, n).
+        half_mod(x: bigint, n: bigint) -> bigint static =>
+            if x.is_even then x >> 1 else (x + n) >> 1 fi
+
+        // A strong Lucas probable-prime test of the odd n, which must not be
+        // a perfect square and must have no factor below 1000, with D, P and
+        // Q chosen by Selfridge's method A.
+        is_strong_lucas_probable_prime(n: bigint) -> bool static is
+            let d_value mut = 5
+            let found mut = false
+
+            while !found do
+                let j = jacobi(bigint(d_value), n)
+
+                if j == 0 then
+                    return false
+                fi
+
+                if j == -1 then
+                    found = true
+                else
+                    d_value = if d_value > 0 then -(d_value + 2) else -d_value + 2 fi
+                fi
+            od
+
+            let d_big = bigint(d_value)
+            let q = bigint((1 - d_value) / 4)
+            let q_mod = ((q % n) + n) % n
+            let d_mod = ((d_big % n) + n) % n
+
+            let k mut = n + 1n
+            let s mut = 0
+
+            while k.is_even do
+                k = k >> 1
+                s = s + 1
+            od
+
+            // U, V and Q^m for m running over the prefixes of k's bits, P = 1.
+            let u mut = 1n
+            let v mut = 1n
+            let q_power mut = q_mod
+
+            let bit mut = cast int(k.get_bit_length()) - 2
+
+            while bit >= 0 do
+                u = (u * v) % n
+                v = ((v * v - 2n * q_power) % n + n) % n
+                q_power = (q_power * q_power) % n
+
+                if !((k >> bit) & 1n).is_zero then
+                    let next_u = half_mod((u + v) % n, n)
+                    v = half_mod((d_mod * u + v) % n, n)
+                    u = next_u
+                    q_power = (q_power * q_mod) % n
+                fi
+
+                bit = bit - 1
+            od
+
+            if u.is_zero \/ v.is_zero then
+                return true
+            fi
+
+            let r mut = 1
+
+            while r < s do
+                v = ((v * v - 2n * q_power) % n + n) % n
+
+                if v.is_zero then
+                    return true
+                fi
+
+                q_power = (q_power * q_power) % n
+                r = r + 1
+            od
+
+            return false
+        si
+
+        // Whether the odd n has a prime factor from 3 to below 1000; n must
+        // be larger than 1000.
+        has_small_factor(n: bigint) -> bool static is
+            let products = _PRIME_SIEVE.chunk_products
+            let ends = _PRIME_SIEVE.chunk_ends
+            let primes = _PRIME_SIEVE.primes
+            let i mut = 1
+            let chunk mut = 0
+
+            while chunk < products.count do
+                let rest = cast long(n % bigint(products[chunk]))
+
+                while i < ends[chunk] do
+                    if rest % cast long(primes[i]) == 0L then
+                        return true
+                    fi
+
+                    i = i + 1
+                od
+
+                chunk = chunk + 1
+            od
+
+            return false
+        si
+
+        gcd(a: ulong, b: ulong) -> ulong static is
+            let x mut = a
+            let y mut = b
+
+            while y != 0ul do
+                let rest = x % y
+                x = y
+                y = rest
+            od
+
+            return x
+        si
+
+        gcd(a: long, b: long) -> long static is
+            let x mut = if a < 0L then -a else a fi
+            let y mut = if b < 0L then -b else b fi
+
+            while y != 0L do
+                let rest = x % y
+                x = y
+                y = rest
+            od
+
+            return x
+        si
+
+        // A non-trivial factor of the odd composite n, below 2^63, by
+        // Brent's variant of Pollard's rho in Montgomery form.
+        pollard_brent(n: long) -> long static is
+            let un = cast ulong(n)
+            let inverse = _MONTGOMERY.inverse(un)
+            let one = _MONTGOMERY.one(un)
+            let c mut = 1ul
+
+            do
+                let y mut = 2ul
+                let x mut = y
+                let saved mut = y
+                let q mut = one
+                let g mut = 1ul
+                let r mut = 1
+
+                while g == 1ul do
+                    x = y
+
+                    let i mut = 0
+
+                    while i < r do
+                        y = _step(y, c, un, inverse)
+                        i = i + 1
+                    od
+
+                    let k mut = 0
+
+                    while k < r /\ g == 1ul do
+                        saved = y
+
+                        let batch = if r - k < 128 then r - k else 128 fi
+                        let j mut = 0
+
+                        while j < batch do
+                            y = _step(y, c, un, inverse)
+                            q = _MONTGOMERY.multiply(q, if x > y then x - y else y - x fi, un, inverse)
+                            j = j + 1
+                        od
+
+                        g = gcd(q, un)
+                        k = k + 128
+                    od
+
+                    r = r * 2
+                od
+
+                if g == un then
+                    // The batch overshot: step again from its start, one
+                    // difference at a time.
+                    do
+                        saved = _step(saved, c, un, inverse)
+                        g = gcd(if x > saved then x - saved else saved - x fi, un)
+
+                        if g != 1ul then
+                            break
+                        fi
+                    od
+                fi
+
+                if g != un then
+                    return cast long(g)
+                fi
+
+                c = c + 1ul
+            od
+        si
+
+        _step(y: ulong, c: ulong, n: ulong, inverse: ulong) -> ulong static is
+            let t = _MONTGOMERY.multiply(y, y, n, inverse) + c
+
+            return if t >= n then t - n else t fi
+        si
+
+        // A non-trivial factor of the odd composite n by Brent's variant of
+        // Pollard's rho.
+        pollard_brent(n: bigint) -> bigint static is
+            let c mut = 1n
+
+            do
+                let y mut = 2n
+                let x mut = y
+                let saved mut = y
+                let q mut = 1n
+                let g mut = 1n
+                let r mut = 1
+
+                while g.is_one do
+                    x = y
+
+                    let i mut = 0
+
+                    while i < r do
+                        y = (y * y + c) % n
+                        i = i + 1
+                    od
+
+                    let k mut = 0
+
+                    while k < r /\ g.is_one do
+                        saved = y
+
+                        let batch = if r - k < 128 then r - k else 128 fi
+                        let j mut = 0
+
+                        while j < batch do
+                            y = (y * y + c) % n
+                            q = (q * bigint.abs(x - y)) % n
+                            j = j + 1
+                        od
+
+                        g = bigint.greatest_common_divisor(q, n)
+                        k = k + 128
+                    od
+
+                    r = r * 2
+                od
+
+                if g =~ n then
+                    do
+                        saved = (saved * saved + c) % n
+                        g = bigint.greatest_common_divisor(bigint.abs(x - saved), n)
+
+                        if !g.is_one then
+                            break
+                        fi
+                    od
+                fi
+
+                if !(g =~ n) then
+                    return g
+                fi
+
+                c = c + 1n
+            od
+        si
+
+        // Appends the prime factors of n, at least 1, to `into`, with
+        // multiplicity and in no particular order.
+        factor_into(n: long, into: LIST[long]) static is
+            let rest mut = n
+
+            if rest <= 1L then
+                return
+            fi
+
+            let twos = System.Numerics.BitOperations.trailing_zero_count(rest)
+            let t mut = 0
+
+            while t < twos do
+                into.add(2L)
+                t = t + 1
+            od
+
+            rest = rest >> twos
+
+            let primes = _PRIME_SIEVE.primes
+            let i mut = 1
+
+            while i < primes.count do
+                let p = cast long(primes[i])
+
+                if p * p > rest then
+                    if rest > 1L then
+                        into.add(rest)
+                    fi
+
+                    return
+                fi
+
+                if p > 2048L then
+                    break
+                fi
+
+                while rest % p == 0L do
+                    into.add(p)
+                    rest = rest / p
+                od
+
+                i = i + 1
+            od
+
+            split_into(rest, into)
+        si
+
+        // Appends the prime factors of the odd n, which has no factor below
+        // 2048, to `into`.
+        split_into(n: long, into: LIST[long]) static is
+            if n == 1L then
+                return
+            fi
+
+            if is_prime(n) then
+                into.add(n)
+                return
+            fi
+
+            let root = isqrt(n)
+
+            if root * root =~ n then
+                split_into(root, into)
+                split_into(root, into)
+                return
+            fi
+
+            let d = pollard_brent(n)
+
+            split_into(d, into)
+            split_into(n / d, into)
+        si
+
+        factor_into(n: bigint, into: LIST[bigint]) static is
+            let rest mut = n
+
+            if rest <= 1n then
+                return
+            fi
+
+            if fits_long(rest) then
+                _add_long_factors(cast long(rest), into)
+                return
+            fi
+
+            while rest.is_even do
+                into.add(2n)
+                rest = rest >> 1
+            od
+
+            let primes = _PRIME_SIEVE.primes
+            let i mut = 1
+
+            while i < primes.count /\ !fits_long(rest) do
+                let p = primes[i]
+                let bp = bigint(p)
+
+                if bp * bp > rest then
+                    break
+                fi
+
+                while (rest % bp).is_zero do
+                    into.add(bp)
+                    rest = rest / bp
+                od
+
+                i = i + 1
+            od
+
+            if fits_long(rest) then
+                _add_long_factors(cast long(rest), into)
+            else
+                split_into(rest, into)
+            fi
+        si
+
+        split_into(n: bigint, into: LIST[bigint]) static is
+            if n.is_one then
+                return
+            fi
+
+            if fits_long(n) then
+                _add_long_factors(cast long(n), into)
+                return
+            fi
+
+            if is_prime(n) then
+                into.add(n)
+                return
+            fi
+
+            let root = isqrt(n)
+
+            if root * root =~ n then
+                split_into(root, into)
+                split_into(root, into)
+                return
+            fi
+
+            let d = pollard_brent(n)
+
+            split_into(d, into)
+            split_into(n / d, into)
+        si
+
+        _add_long_factors(n: long, into: LIST[bigint]) static is
+            let factors = LIST[long]()
+
+            factor_into(n, factors)
+
+            for f in factors do
+                into.add(bigint(f))
+            od
+        si
+
+        // The distinct primes of `factors`, sorted, each with its count.
+        grouped(factors: LIST[long]) -> LIST[(prime: long, exponent: int)] static is
+            factors.sort()
+
+            let result = LIST[(prime: long, exponent: int)]()
+            let i mut = 0
+
+            while i < factors.count do
+                let p = factors[i]
+                let j mut = i
+
+                while j < factors.count /\ factors[j] =~ p do
+                    j = j + 1
+                od
+
+                result.add((p, j - i))
+                i = j
+            od
+
+            return result
+        si
+
+        grouped(factors: LIST[bigint]) -> LIST[(prime: bigint, exponent: int)] static is
+            factors.sort(bigint.compare)
+
+            let result = LIST[(prime: bigint, exponent: int)]()
+            let i mut = 0
+
+            while i < factors.count do
+                let p = factors[i]
+                let j mut = i
+
+                while j < factors.count /\ factors[j] =~ p do
+                    j = j + 1
+                od
+
+                result.add((p, j - i))
+                i = j
+            od
+
+            return result
+        si
+
+        // The product of the integers from `low` to `high`, both included,
+        // multiplied as a balanced tree so the large multiplications are
+        // between operands of similar size.
+        range_product(low: long, high: long) -> bigint static is
+            if low > high then
+                return 1n
+            fi
+
+            if high - low < 32L then
+                let result mut = 1n
+                let running mut = 1L
+                let k mut = low
+
+                while k <= high do
+                    if running > 9223372036854775807L / k then
+                        result = result * bigint(running)
+                        running = 1L
+                    fi
+
+                    running = running * k
+                    k = k + 1L
+                od
+
+                return result * bigint(running)
+            fi
+
+            let middle = low + (high - low) / 2L
+
+            return range_product(low, middle) * range_product(middle + 1L, high)
+        si
+
+        overflow(what: string) -> System.OverflowException static =>
+            System.OverflowException("{what} is too large for its type: pass a bigint for an exact result")
+
+        negative(name: string, what: string) -> System.ArgumentOutOfRangeException static =>
+            System.ArgumentOutOfRangeException(name, "{what} is not defined for a negative {name}")
+
+        not_positive(name: string, what: string) -> System.ArgumentOutOfRangeException static =>
+            System.ArgumentOutOfRangeException(name, "{what} needs a positive {name}")
+
+        bad_base(base: long) -> System.ArgumentOutOfRangeException static =>
+            System.ArgumentOutOfRangeException("base", "{base} is not a base: digit_sum needs a base of 2 or more")
+
+        // a * b mod m for a and b below m, with m below 2^63.
+        multiply_mod(a: long, b: long, m: long) -> long static is
+            if m <= 3037000499L then
+                return (a * b) % m
+            fi
+
+            if (m & 1L) == 1L then
+                let um = cast ulong(m)
+                let inverse = _MONTGOMERY.inverse(um)
+                let r2 = _MONTGOMERY.r2(um)
+                let am = _MONTGOMERY.multiply(cast ulong(a), r2, um, inverse)
+
+                return cast long(_MONTGOMERY.multiply(am, cast ulong(b), um, inverse))
+            fi
+
+            // Even and large: double and add, with every sum below 2^64.
+            let result mut = 0ul
+            let x mut = cast ulong(a)
+            let y mut = cast ulong(b)
+            let um = cast ulong(m)
+
+            while y != 0ul do
+                if (y & 1ul) != 0ul then
+                    result = result + x
+
+                    if result >= um then
+                        result = result - um
+                    fi
+                fi
+
+                x = x + x
+
+                if x >= um then
+                    x = x - um
+                fi
+
+                y = y >> 1
+            od
+
+            return cast long(result)
+        si
+    si
+
+    /// Whether `n` is prime. Exact for every `int`: small values are read
+    /// from a shared sieve, which grows on demand, and larger ones are
+    /// decided by a deterministic Miller-Rabin test.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to test; anything below 2 is not prime
+    is_prime(n: int) -> bool pure is
+        if n < _PRIME_SIEVE.limit then
+            return _PRIME_SIEVE.is_prime(n)
+        fi
+
+        if n < _PRIME_SIEVE.lookup_cap then
+            _PRIME_SIEVE.grow_to(n + 1)
+
+            return _PRIME_SIEVE.is_prime(n)
+        fi
+
+        let ln = cast long(n)
+
+        if (n & 1) == 0 \/ _NUMBER_THEORY.has_small_odd_factor(ln) then
+            return false
+        fi
+
+        let s = System.Numerics.BitOperations.trailing_zero_count(n - 1)
+        let d = cast long((n - 1) >> s)
+
+        return
+            _NUMBER_THEORY.is_strong_probable_prime_int(ln, 2L, d, s) /\
+            _NUMBER_THEORY.is_strong_probable_prime_int(ln, 7L, d, s) /\
+            _NUMBER_THEORY.is_strong_probable_prime_int(ln, 61L, d, s)
+    si
+
+    /// Whether `n` is prime. Exact for every `long`: values in `int` range
+    /// are decided as `is_prime` over `int` decides them, and larger ones
+    /// by a Miller-Rabin test with a witness set that is deterministic
+    /// below 2^64.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to test; anything below 2 is not prime
+    is_prime(n: long) -> bool pure is
+        if n <= 2147483647L then
+            return n >= 2L /\ is_prime(int(n))
+        fi
+
+        if (n & 1L) == 0L \/ _NUMBER_THEORY.has_small_odd_factor(n) then
+            return false
+        fi
+
+        return _NUMBER_THEORY.is_prime_long(n)
+    si
+
+    /// Whether `n` is prime. Exact where `n` fits in a `long`. Beyond that it
+    /// is the Baillie-PSW test: a strong probable-prime test to base 2 and a
+    /// strong Lucas probable-prime test. It answers for a probable prime, but
+    /// no composite is known to pass it.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to test; anything below 2 is not prime
+    is_prime(n: bigint) -> bool pure is
+        if _NUMBER_THEORY.fits_long(n) then
+            return is_prime(cast long(n))
+        fi
+
+        if n.sign < 0 \/ n.is_even \/ _NUMBER_THEORY.has_small_factor(n) then
+            return false
+        fi
+
+        return
+            _NUMBER_THEORY.is_strong_probable_prime(n, 2n) /\
+            !is_square(n) /\
+            _NUMBER_THEORY.is_strong_lucas_probable_prime(n)
+    si
+
+    /// The primes in increasing order, 2, 3, 5, 7, ..., to the largest `int`
+    /// prime. `primes(start)` over `long` or `bigint` reads further.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// Read from the shared sieve, which grows as reads go past its end, so
+    /// `primes() |> take_while(p => p < limit)` and `primes() |> skip(9_999) |> first()`
+    /// both read the sieve and neither rescans it.
+    primes() -> Iterable[int] pure => _PRIMES_PIPE(2)
+
+    /// The primes at or above `start`, in increasing order, to the end of
+    /// `int`'s range.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - start: where to begin; the first prime read is the least prime at or above it
+    primes(start: int) -> Iterable[int] pure => _PRIMES_PIPE(start)
+
+    /// The primes at or above `start`, in increasing order, to the largest
+    /// `long` prime.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - start: where to begin; the first prime read is the least prime at or above it
+    primes(start: long) -> Iterable[long] pure => _LONG_PRIMES_PIPE(start)
+
+    /// The primes at or above `start`, in increasing order, without end, each
+    /// decided as `is_prime` over `bigint` decides it.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - start: where to begin; the first prime read is the least prime at or above it
+    primes(start: bigint) -> Iterable[bigint] pure => _BIG_PRIMES_PIPE(start)
+
+    /// The prime factors of `n` in increasing order, each as often as it
+    /// divides `n`: `prime_factors(360)` is 2, 2, 2, 3, 3, 5.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to factorise; must be positive, and 1 has no prime factors
+    prime_factors(n: int) -> List[int] pure is
+        let factors = LIST[long]()
+
+        if n < 1 then
+            throw _NUMBER_THEORY.not_positive("n", "prime_factors")
+        fi
+
+        _NUMBER_THEORY.factor_into(cast long(n), factors)
+        factors.sort()
+
+        let result = LIST[int](factors.count)
+
+        for f in factors do
+            result.add(int(f))
+        od
+
+        return result
+    si
+
+    /// The prime factors of `n` in increasing order, each as often as it divides `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to factorise; must be positive, and 1 has no prime factors
+    prime_factors(n: long) -> List[long] pure is
+        if n < 1L then
+            throw _NUMBER_THEORY.not_positive("n", "prime_factors")
+        fi
+
+        let factors = LIST[long]()
+
+        _NUMBER_THEORY.factor_into(n, factors)
+        factors.sort()
+
+        return factors
+    si
+
+    /// The prime factors of `n` in increasing order, each as often as it divides `n`.
+    /// A factor beyond `long`'s range is found by Pollard's rho, which slows
+    /// sharply as the second-largest prime factor grows.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to factorise; must be positive, and 1 has no prime factors
+    prime_factors(n: bigint) -> List[bigint] pure is
+        if n.sign < 1 then
+            throw _NUMBER_THEORY.not_positive("n", "prime_factors")
+        fi
+
+        let factors = LIST[bigint]()
+
+        _NUMBER_THEORY.factor_into(n, factors)
+        factors.sort(bigint.compare)
+
+        return factors
+    si
+
+    /// The distinct prime factors of `n` in increasing order, each with how
+    /// many times it divides `n`: `factorize(360)` is (2, 3), (3, 2), (5, 1).
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to factorise; must be positive, and 1 has no prime factors
+    factorize(n: int) -> List[(prime: int, exponent: int)] pure is
+        if n < 1 then
+            throw _NUMBER_THEORY.not_positive("n", "factorize")
+        fi
+
+        let factors = LIST[long]()
+
+        _NUMBER_THEORY.factor_into(cast long(n), factors)
+
+        let grouped = _NUMBER_THEORY.grouped(factors)
+        let result = LIST[(prime: int, exponent: int)](grouped.count)
+
+        for (p, e) in grouped do
+            result.add((int(p), e))
+        od
+
+        return result
+    si
+
+    /// The distinct prime factors of `n` in increasing order, each with how
+    /// many times it divides `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to factorise; must be positive, and 1 has no prime factors
+    factorize(n: long) -> List[(prime: long, exponent: int)] pure is
+        if n < 1L then
+            throw _NUMBER_THEORY.not_positive("n", "factorize")
+        fi
+
+        let factors = LIST[long]()
+
+        _NUMBER_THEORY.factor_into(n, factors)
+
+        return _NUMBER_THEORY.grouped(factors)
+    si
+
+    /// The distinct prime factors of `n` in increasing order, each with how
+    /// many times it divides `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value to factorise; must be positive, and 1 has no prime factors
+    factorize(n: bigint) -> List[(prime: bigint, exponent: int)] pure is
+        if n.sign < 1 then
+            throw _NUMBER_THEORY.not_positive("n", "factorize")
+        fi
+
+        let factors = LIST[bigint]()
+
+        _NUMBER_THEORY.factor_into(n, factors)
+
+        return _NUMBER_THEORY.grouped(factors)
+    si
+
+    /// The positive divisors of `n` in increasing order, 1 and `n` included:
+    /// `divisors(12)` is 1, 2, 3, 4, 6, 12.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to list; must be positive
+    divisors(n: int) -> List[int] pure is
+        let result = LIST[int]()
+
+        for d in divisors(cast long(n)) do
+            result.add(int(d))
+        od
+
+        return result
+    si
+
+    /// The positive divisors of `n` in increasing order, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to list; must be positive
+    divisors(n: long) -> List[long] pure is
+        let result = LIST[long]()
+
+        result.add(1L)
+
+        for (p, e) in factorize(n) do
+            let count = result.count
+            let power mut = 1L
+            let k mut = 0
+
+            while k < e do
+                power = power * p
+
+                let i mut = 0
+
+                while i < count do
+                    result.add(result[i] * power)
+                    i = i + 1
+                od
+
+                k = k + 1
+            od
+        od
+
+        result.sort()
+
+        return result
+    si
+
+    /// The positive divisors of `n` in increasing order, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to list; must be positive
+    divisors(n: bigint) -> List[bigint] pure is
+        let result = LIST[bigint]()
+
+        result.add(1n)
+
+        for (p, e) in factorize(n) do
+            let count = result.count
+            let power mut = 1n
+            let k mut = 0
+
+            while k < e do
+                power = power * p
+
+                let i mut = 0
+
+                while i < count do
+                    result.add(result[i] * power)
+                    i = i + 1
+                od
+
+                k = k + 1
+            od
+        od
+
+        result.sort(bigint.compare)
+
+        return result
+    si
+
+    /// How many positive divisors `n` has, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to count; must be positive
+    divisor_count(n: int) -> int pure => int(divisor_count(cast long(n)))
+
+    /// How many positive divisors `n` has, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to count; must be positive
+    divisor_count(n: long) -> long pure is
+        let result mut = 1L
+
+        for (_, e) in factorize(n) do
+            result = result * cast long(e + 1)
+        od
+
+        return result
+    si
+
+    /// How many positive divisors `n` has, 1 and `n` included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to count; must be positive
+    divisor_count(n: bigint) -> bigint pure is
+        let result mut = 1n
+
+        for (_, e) in factorize(n) do
+            result = result * bigint(e + 1)
+        od
+
+        return result
+    si
+
+    /// The sum of the positive divisors of `n`, `n` itself included; the sum
+    /// of its proper divisors is `divisor_sum(n) - n`. Throws
+    /// `OverflowException` where the sum does not fit in an `int`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to sum; must be positive
+    divisor_sum(n: int) -> int pure is
+        let result = divisor_sum(cast long(n))
+
+        if result > 2147483647L then
+            throw _NUMBER_THEORY.overflow("divisor_sum({n})")
+        fi
+
+        return int(result)
+    si
+
+    /// The sum of the positive divisors of `n`, `n` itself included. Throws
+    /// `OverflowException` where the sum does not fit in a `long`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to sum; must be positive
+    divisor_sum(n: long) -> long pure is
+        // Below 2^60 the sum is under 2^63, so long arithmetic is exact.
+        if n >= 1152921504606846976L then
+            let exact = divisor_sum(bigint(n))
+
+            if !_NUMBER_THEORY.fits_long(exact) then
+                throw _NUMBER_THEORY.overflow("divisor_sum({n})")
+            fi
+
+            return cast long(exact)
+        fi
+
+        let result mut = 1L
+
+        for (p, e) in factorize(n) do
+            let term mut = 1L
+            let power mut = 1L
+            let k mut = 0
+
+            while k < e do
+                power = power * p
+                term = term + power
+                k = k + 1
+            od
+
+            result = result * term
+        od
+
+        return result
+    si
+
+    /// The sum of the positive divisors of `n`, `n` itself included.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value whose divisors to sum; must be positive
+    divisor_sum(n: bigint) -> bigint pure is
+        let result mut = 1n
+
+        for (p, e) in factorize(n) do
+            let term mut = 1n
+            let power mut = 1n
+            let k mut = 0
+
+            while k < e do
+                power = power * p
+                term = term + power
+                k = k + 1
+            od
+
+            result = result * term
+        od
+
+        return result
+    si
+
+    /// Euler's totient of `n`: how many of 1 to `n` share no factor with `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value; must be positive
+    totient(n: int) -> int pure => int(totient(cast long(n)))
+
+    /// Euler's totient of `n`: how many of 1 to `n` share no factor with `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value; must be positive
+    totient(n: long) -> long pure is
+        let result mut = n
+
+        for (p, _) in factorize(n) do
+            result = result / p * (p - 1L)
+        od
+
+        return result
+    si
+
+    /// Euler's totient of `n`: how many of 1 to `n` share no factor with `n`.
+    /// Not safe to call from more than one thread at a time: it can grow the shared prime sieve.
+    ///
+    /// - n: the value; must be positive
+    totient(n: bigint) -> bigint pure is
+        let result mut = n
+
+        for (p, _) in factorize(n) do
+            result = result / p * (p - 1n)
+        od
+
+        return result
+    si
+
+    /// The greatest common divisor of `a` and `b`, never negative; `gcd(0, 0)` is 0.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    gcd(a: int, b: int) -> int pure => int(_NUMBER_THEORY.gcd(cast long(a), cast long(b)))
+
+    /// The greatest common divisor of `a` and `b`, never negative; `gcd(0L, 0L)` is 0.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    gcd(a: long, b: long) -> long pure => _NUMBER_THEORY.gcd(a, b)
+
+    /// The greatest common divisor of `a` and `b`, never negative; `gcd(0n, 0n)` is 0.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    gcd(a: bigint, b: bigint) -> bigint pure => bigint.greatest_common_divisor(a, b)
+
+    /// The least common multiple of `a` and `b`, never negative; 0 if either is 0.
+    /// Throws `OverflowException` where it does not fit in an `int`.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    lcm(a: int, b: int) -> int pure is
+        let result = lcm(cast long(a), cast long(b))
+
+        if result > 2147483647L then
+            throw _NUMBER_THEORY.overflow("lcm({a}, {b})")
+        fi
+
+        return int(result)
+    si
+
+    /// The least common multiple of `a` and `b`, never negative; 0 if either is 0.
+    /// Throws `OverflowException` where it does not fit in a `long`.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    lcm(a: long, b: long) -> long pure is
+        if a == 0L \/ b == 0L then
+            return 0L
+        fi
+
+        let x = if a < 0L then -a else a fi
+        let y = if b < 0L then -b else b fi
+        let q = x / _NUMBER_THEORY.gcd(x, y)
+
+        if q > 9223372036854775807L / y then
+            throw _NUMBER_THEORY.overflow("lcm({a}, {b})")
+        fi
+
+        return q * y
+    si
+
+    /// The least common multiple of `a` and `b`, never negative; 0 if either is 0.
+    ///
+    /// - a: the first value
+    /// - b: the second value
+    lcm(a: bigint, b: bigint) -> bigint pure is
+        if a.is_zero \/ b.is_zero then
+            return 0n
+        fi
+
+        return bigint.abs(a / bigint.greatest_common_divisor(a, b) * b)
+    si
+
+    /// `n!`, the product of 1 to `n`. Throws `OverflowException` above 12!,
+    /// the largest that fits in an `int`: `factorial(20L)` and `factorial(100n)`
+    /// reach further.
+    ///
+    /// - n: the value; must not be negative
+    factorial(n: int) -> int pure is
+        if n < 0 then
+            throw _NUMBER_THEORY.negative("n", "factorial")
+        fi
+
+        if n > 12 then
+            throw _NUMBER_THEORY.overflow("factorial({n})")
+        fi
+
+        let result mut = 1
+        let k mut = 2
+
+        while k <= n do
+            result = result * k
+            k = k + 1
+        od
+
+        return result
+    si
+
+    /// `n!`, the product of 1 to `n`. Throws `OverflowException` above 20!,
+    /// the largest that fits in a `long`.
+    ///
+    /// - n: the value; must not be negative
+    factorial(n: long) -> long pure is
+        if n < 0L then
+            throw _NUMBER_THEORY.negative("n", "factorial")
+        fi
+
+        if n > 20L then
+            throw _NUMBER_THEORY.overflow("factorial({n})")
+        fi
+
+        let result mut = 1L
+        let k mut = 2L
+
+        while k <= n do
+            result = result * k
+            k = k + 1L
+        od
+
+        return result
+    si
+
+    /// `n!`, the product of 1 to `n`, exactly.
+    ///
+    /// - n: the value; must not be negative
+    factorial(n: bigint) -> bigint pure is
+        if n.sign < 0 then
+            throw _NUMBER_THEORY.negative("n", "factorial")
+        fi
+
+        return _NUMBER_THEORY.range_product(2L, cast long(n))
+    si
+
+    /// The binomial coefficient: how many ways there are to choose `k` of `n`
+    /// items. 0 where `k` is negative or more than `n`. Throws
+    /// `OverflowException` where the result does not fit in an `int`.
+    ///
+    /// - n: how many items there are; must not be negative
+    /// - k: how many to choose
+    binomial(n: int, k: int) -> int pure is
+        let result = binomial(cast long(n), cast long(k))
+
+        if result > 2147483647L then
+            throw _NUMBER_THEORY.overflow("binomial({n}, {k})")
+        fi
+
+        return int(result)
+    si
+
+    /// The binomial coefficient: how many ways there are to choose `k` of `n`
+    /// items. 0 where `k` is negative or more than `n`. Throws
+    /// `OverflowException` where the result does not fit in a `long`.
+    ///
+    /// - n: how many items there are; must not be negative
+    /// - k: how many to choose
+    binomial(n: long, k: long) -> long pure is
+        if n < 0L then
+            throw _NUMBER_THEORY.negative("n", "binomial")
+        fi
+
+        if k < 0L \/ k > n then
+            return 0L
+        fi
+
+        let j = if k > n - k then n - k else k fi
+        let result mut = 1L
+        let i mut = 1L
+
+        // After step i the result is binomial(n - j + i, i), an integer, so
+        // dividing i out of the step's two factors first keeps every
+        // intermediate no larger than the final result.
+        while i <= j do
+            let g = _NUMBER_THEORY.gcd(result, i)
+            let factor = (n - j + i) / (i / g)
+            let reduced = result / g
+
+            if reduced > 9223372036854775807L / factor then
+                throw _NUMBER_THEORY.overflow("binomial({n}, {k})")
+            fi
+
+            result = reduced * factor
+            i = i + 1L
+        od
+
+        return result
+    si
+
+    /// The binomial coefficient: how many ways there are to choose `k` of `n`
+    /// items, exactly. 0 where `k` is negative or more than `n`.
+    ///
+    /// - n: how many items there are; must not be negative
+    /// - k: how many to choose
+    binomial(n: bigint, k: bigint) -> bigint pure is
+        if n.sign < 0 then
+            throw _NUMBER_THEORY.negative("n", "binomial")
+        fi
+
+        if k.sign < 0 \/ k > n then
+            return 0n
+        fi
+
+        let j = if k > n - k then n - k else k fi
+
+        if _NUMBER_THEORY.fits_long(n) then
+            let ln = cast long(n)
+            let lj = cast long(j)
+
+            return _NUMBER_THEORY.range_product(ln - lj + 1L, ln) / _NUMBER_THEORY.range_product(2L, lj)
+        fi
+
+        let result mut = 1n
+        let i mut = 1n
+
+        while i <= j do
+            result = result * (n - j + i) / i
+            i = i + 1n
+        od
+
+        return result
+    si
+
+    /// `base` raised to `exponent`, modulo `modulus`, in the range 0 to
+    /// `modulus - 1` whatever `base`'s sign.
+    ///
+    /// - base: the value to raise
+    /// - exponent: the power; must not be negative
+    /// - modulus: the divisor; must be positive
+    mod_pow(base: int, exponent: int, modulus: int) -> int pure =>
+        int(mod_pow(cast long(base), cast long(exponent), cast long(modulus)))
+
+    /// `base` raised to `exponent`, modulo `modulus`, in the range 0 to
+    /// `modulus - 1` whatever `base`'s sign.
+    ///
+    /// - base: the value to raise
+    /// - exponent: the power; must not be negative
+    /// - modulus: the divisor; must be positive
+    mod_pow(base: long, exponent: long, modulus: long) -> long pure is
+        if exponent < 0L then
+            throw _NUMBER_THEORY.negative("exponent", "mod_pow")
+        fi
+
+        if modulus <= 0L then
+            throw _NUMBER_THEORY.not_positive("modulus", "mod_pow")
+        fi
+
+        if modulus == 1L then
+            return 0L
+        fi
+
+        let b mut = base % modulus
+
+        if b < 0L then
+            b = b + modulus
+        fi
+
+        if (modulus & 1L) == 1L /\ modulus > 3037000499L then
+            let um = cast ulong(modulus)
+            let inverse = _MONTGOMERY.inverse(um)
+            let one = _MONTGOMERY.one(um)
+            let r2 = _MONTGOMERY.r2(um)
+            let x = _MONTGOMERY.power(_MONTGOMERY.multiply(cast ulong(b), r2, um, inverse), cast ulong(exponent), um, inverse, one)
+
+            return cast long(_MONTGOMERY.multiply(x, 1ul, um, inverse))
+        fi
+
+        let result mut = 1L
+        let e mut = exponent
+
+        while e != 0L do
+            if (e & 1L) != 0L then
+                result = _NUMBER_THEORY.multiply_mod(result, b, modulus)
+            fi
+
+            b = _NUMBER_THEORY.multiply_mod(b, b, modulus)
+            e = e >> 1
+        od
+
+        return result
+    si
+
+    /// `base` raised to `exponent`, modulo `modulus`, in the range 0 to
+    /// `modulus - 1` whatever `base`'s sign. `bigint.mod_pow` is the same
+    /// with the result taking `base`'s sign.
+    ///
+    /// - base: the value to raise
+    /// - exponent: the power; must not be negative
+    /// - modulus: the divisor; must be positive
+    mod_pow(base: bigint, exponent: bigint, modulus: bigint) -> bigint pure is
+        if modulus.sign < 1 then
+            throw _NUMBER_THEORY.not_positive("modulus", "mod_pow")
+        fi
+
+        let result = bigint.mod_pow(base, exponent, modulus)
+
+        return if result.sign < 0 then result + modulus else result fi
+    si
+
+    /// The integer square root of `n`: the largest value whose square is at most `n`.
+    ///
+    /// - n: the value; must not be negative
+    isqrt(n: int) -> int pure is
+        if n < 0 then
+            throw _NUMBER_THEORY.negative("n", "isqrt")
+        fi
+
+        // Every int is exact as a double, and a correctly rounded square
+        // root never rounds up past an integer root.
+        return int(Math.sqrt(double(n)))
+    si
+
+    /// The integer square root of `n`: the largest value whose square is at most `n`.
+    ///
+    /// - n: the value; must not be negative
+    isqrt(n: long) -> long pure is
+        if n < 0L then
+            throw _NUMBER_THEORY.negative("n", "isqrt")
+        fi
+
+        // The double estimate can be off by one either way for large n;
+        // 3037000499 is the largest value whose square fits in a long.
+        let r mut = cast long(Math.sqrt(double(n)))
+
+        while r > 3037000499L \/ r * r > n do
+            r = r - 1L
+        od
+
+        while r < 3037000499L /\ (r + 1L) * (r + 1L) <= n do
+            r = r + 1L
+        od
+
+        return r
+    si
+
+    /// The integer square root of `n`: the largest value whose square is at most `n`.
+    ///
+    /// - n: the value; must not be negative
+    isqrt(n: bigint) -> bigint pure is
+        if n.sign < 0 then
+            throw _NUMBER_THEORY.negative("n", "isqrt")
+        fi
+
+        if _NUMBER_THEORY.fits_long(n) then
+            return bigint(isqrt(cast long(n)))
+        fi
+
+        // Newton's iteration from a power of two at or above the root
+        // decreases to the root and stops there.
+        let x mut = 1n << int((n.get_bit_length() + 1L) / 2L)
+
+        do
+            let y = (x + n / x) >> 1
+
+            if y >= x then
+                return x
+            fi
+
+            x = y
+        od
+    si
+
+    /// Whether `n` is a perfect square: the square of some integer.
+    ///
+    /// - n: the value to test; a negative value is not a square
+    is_square(n: int) -> bool pure => n >= 0 /\ is_square(cast long(n))
+
+    /// Whether `n` is a perfect square: the square of some integer.
+    ///
+    /// - n: the value to test; a negative value is not a square
+    is_square(n: long) -> bool pure is
+        if n < 0L then
+            return false
+        fi
+
+        // A square ends in 0, 1, 4 or 9 base 16.
+        let low = n & 15L
+
+        if low != 0L /\ low != 1L /\ low != 4L /\ low != 9L then
+            return false
+        fi
+
+        let r = isqrt(n)
+
+        return r * r =~ n
+    si
+
+    /// Whether `n` is a perfect square: the square of some integer.
+    ///
+    /// - n: the value to test; a negative value is not a square
+    is_square(n: bigint) -> bool pure is
+        if n.sign < 0 then
+            return false
+        fi
+
+        let r = isqrt(n)
+
+        return r * r =~ n
+    si
+
+    /// The sum of the decimal digits of `n`'s magnitude: `digit_sum(1234)` is 10.
+    ///
+    /// - n: the value whose digits to sum
+    digit_sum(n: int) -> int pure => int(digit_sum(cast long(n), 10L))
+
+    /// The sum of the digits of `n`'s magnitude written in `base`.
+    ///
+    /// - n: the value whose digits to sum
+    /// - base: the base to write it in; must be 2 or more
+    digit_sum(n: int, base: int) -> int pure => int(digit_sum(cast long(n), cast long(base)))
+
+    /// The sum of the decimal digits of `n`'s magnitude.
+    ///
+    /// - n: the value whose digits to sum
+    digit_sum(n: long) -> long pure => digit_sum(n, 10L)
+
+    /// The sum of the digits of `n`'s magnitude written in `base`.
+    ///
+    /// - n: the value whose digits to sum
+    /// - base: the base to write it in; must be 2 or more
+    digit_sum(n: long, base: long) -> long pure is
+        if base < 2L then
+            throw _NUMBER_THEORY.bad_base(base)
+        fi
+
+        // Negative remainders keep the arithmetic in range for long's
+        // most negative value, which has no positive counterpart.
+        let rest mut = if n > 0L then -n else n fi
+        let result mut = 0L
+
+        while rest != 0L do
+            result = result - rest % base
+            rest = rest / base
+        od
+
+        return result
+    si
+
+    /// The sum of the decimal digits of `n`'s magnitude.
+    ///
+    /// - n: the value whose digits to sum
+    digit_sum(n: bigint) -> bigint pure => digit_sum(n, 10n)
+
+    /// The sum of the digits of `n`'s magnitude written in `base`.
+    ///
+    /// - n: the value whose digits to sum
+    /// - base: the base to write it in; must be 2 or more
+    digit_sum(n: bigint, base: bigint) -> bigint pure is
+        if base < 2n then
+            throw _NUMBER_THEORY.bad_base(if _NUMBER_THEORY.fits_long(base) then cast long(base) else 0L fi)
+        fi
+
+        if _NUMBER_THEORY.fits_long(n) /\ _NUMBER_THEORY.fits_long(base) then
+            return bigint(digit_sum(cast long(n), cast long(base)))
+        fi
+
+        // Take the digits a long's worth at a time: one bigint division per
+        // chunk, and long arithmetic for the digits inside it.
+        let rest mut = bigint.abs(n)
+        let result mut = 0n
+
+        if !_NUMBER_THEORY.fits_long(base) \/ cast long(base) > 3037000499L then
+            while !rest.is_zero do
+                result = result + rest % base
+                rest = rest / base
+            od
+
+            return result
+        fi
+
+        let small_base = cast long(base)
+        let chunk mut = small_base
+        let digits mut = 1
+
+        while chunk <= 9223372036854775807L / small_base / small_base do
+            chunk = chunk * small_base
+            digits = digits + 1
+        od
+
+        let big_chunk = bigint(chunk)
+        let total mut = 0L
+
+        while !rest.is_zero do
+            let part mut = cast long(rest % big_chunk)
+            rest = rest / big_chunk
+
+            while part != 0L do
+                total = total + part % small_base
+                part = part / small_base
+            od
+        od
+
+        return bigint(total)
+    si
+
+    // The primes from the sieve, then, past its cap, from deterministic
+    // tests of the odd candidates, to the end of int's range.
+    class _PRIMES_PIPE: PipeStage[int] is
+        /// The most recently produced prime.
+        current: int
+
+        _start: int
+        _index: int
+        _candidate: long
+
+        init(start: int) is
+            super.init()
+
+            _start = start
+
+            if start < _PRIME_SIEVE.cap then
+                _PRIME_SIEVE.grow_to(start + 1)
+                _index = _PRIME_SIEVE.index_at_or_above(start)
+                _candidate = -1L
+            else
+                _index = -1
+                _candidate = cast long(start | 1)
+            fi
+        si
+
+        /// A new read of the same primes, from the start.
+        fresh() -> PipeStage[int] => _PRIMES_PIPE(_start)
+
+        /// Produces the next prime; ends past the largest `int` prime.
+        move_next() -> bool is
+            if _index >= 0 then
+                if _PRIME_SIEVE.has_prime(_index) then
+                    current = _PRIME_SIEVE.primes[_index]
+                    _index = _index + 1
+
+                    return true
+                fi
+
+                _index = -1
+                _candidate = cast long(_PRIME_SIEVE.limit | 1)
+            fi
+
+            while _candidate <= 2147483647L do
+                let c = int(_candidate)
+                _candidate = _candidate + 2L
+
+                if is_prime(c) then
+                    current = c
+
+                    return true
+                fi
+            od
+
+            return false
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => "primes"
+
+        /// Has no effect.
+        dispose() is
+        si
+    si
+
+    // The primes from the sieve, then, past its cap, from deterministic
+    // tests of the odd candidates.
+    class _LONG_PRIMES_PIPE: PipeStage[long] is
+        /// The most recently produced prime.
+        current: long
+
+        _start: long
+        _index: int
+        _candidate: long
+
+        init(start: long) is
+            super.init()
+
+            _start = start
+
+            if start < cast long(_PRIME_SIEVE.cap) then
+                let s = if start < 0L then 0 else int(start) fi
+
+                _PRIME_SIEVE.grow_to(s + 1)
+                _index = _PRIME_SIEVE.index_at_or_above(s)
+                _candidate = -1L
+            else
+                _index = -1
+                _candidate = start | 1L
+            fi
+        si
+
+        /// A new read of the same primes, from the start.
+        fresh() -> PipeStage[long] => _LONG_PRIMES_PIPE(_start)
+
+        /// Produces the next prime.
+        move_next() -> bool is
+            if _index >= 0 then
+                if _PRIME_SIEVE.has_prime(_index) then
+                    current = cast long(_PRIME_SIEVE.primes[_index])
+                    _index = _index + 1
+
+                    return true
+                fi
+
+                _index = -1
+                _candidate = cast long(_PRIME_SIEVE.limit | 1)
+            fi
+
+            while _candidate > 0L do
+                let c = _candidate
+                _candidate = _candidate + 2L
+
+                if is_prime(c) then
+                    current = c
+
+                    return true
+                fi
+            od
+
+            return false
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => "primes"
+
+        /// Has no effect.
+        dispose() is
+        si
+    si
+
+    // The primes at or above a bigint start, each found by testing the odd
+    // candidates in turn.
+    class _BIG_PRIMES_PIPE: PipeStage[bigint] is
+        /// The most recently produced prime.
+        current: bigint
+
+        _start: bigint
+        _candidate: bigint
+
+        init(start: bigint) is
+            super.init()
+
+            _start = start
+            _candidate = if start <= 2n then 2n else start fi
+        si
+
+        /// A new read of the same primes, from the start.
+        fresh() -> PipeStage[bigint] => _BIG_PRIMES_PIPE(_start)
+
+        /// Produces the next prime.
+        move_next() -> bool is
+            if _candidate =~ 2n then
+                current = 2n
+                _candidate = 3n
+
+                return true
+            fi
+
+            if _candidate.is_even then
+                _candidate = _candidate + 1n
+            fi
+
+            while !is_prime(_candidate) do
+                _candidate = _candidate + 2n
+            od
+
+            current = _candidate
+            _candidate = _candidate + 2n
+
+            return true
+        si
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.dotnet()
+        to_string() -> string => "primes"
+
+        /// Has no effect.
+        dispose() is
+        si
+    si
+si
