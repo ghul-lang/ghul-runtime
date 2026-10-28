@@ -404,25 +404,6 @@ namespace Ghul.Numerics is
         fits_long(n: bigint) -> bool static =>
             n >= -9223372036854775808n /\ n <= 9223372036854775807n
 
-        // A Miller-Rabin test of the odd n, larger than every witness, with
-        // the first `rounds` primes as witnesses.
-        miller_rabin(n: bigint, rounds: int) -> bool static is
-            _PRIME_SIEVE.has_prime(rounds)
-
-            let primes = _PRIME_SIEVE.primes
-            let round mut = 0
-
-            while round < rounds do
-                if !is_strong_probable_prime(n, bigint(primes[round])) then
-                    return false
-                fi
-
-                round = round + 1
-            od
-
-            return true
-        si
-
         // Whether the odd n, larger than `base`, is a strong probable prime
         // to `base`.
         is_strong_probable_prime(n: bigint, base: bigint) -> bool static is
@@ -1118,24 +1099,6 @@ namespace Ghul.Numerics is
             _NUMBER_THEORY.is_strong_probable_prime(n, 2n) /\
             !is_square(n) /\
             _NUMBER_THEORY.is_strong_lucas_probable_prime(n)
-    si
-
-    /// Whether `n` is prime, with `rounds` Miller-Rabin witnesses where `n`
-    /// does not fit in a `long`.
-    ///
-    /// - n: the value to test; anything below 2 is not prime
-    /// - rounds: how many of the first primes to use as witnesses; more rounds
-    ///   make a composite less likely to pass
-    is_prime(n: bigint, rounds: int) -> bool pure is
-        if _NUMBER_THEORY.fits_long(n) then
-            return is_prime(cast long(n))
-        fi
-
-        if n.sign < 0 \/ n.is_even \/ _NUMBER_THEORY.has_small_factor(n) then
-            return false
-        fi
-
-        return _NUMBER_THEORY.miller_rabin(n, if rounds < 1 then 1 else rounds fi)
     si
 
     /// The primes in increasing order, without end: 2, 3, 5, 7, ...

@@ -8,7 +8,7 @@ write_line("{1::30 |> filter(is_prime) |> join(", ")}")
 write_line("{is_prime(-7)} {is_prime(0)} {is_prime(1)} {is_prime(2147483647)} {is_prime(2147483646)} {is_prime(1000003)}")
 write_line("{is_prime(4759123141L)} {is_prime(3215031751L)} {is_prime(9223372036854775783L)} {is_prime(998244353L * 1000000007L)}")
 write_line("{is_prime(618970019642690137449562111n)} {is_prime(170141183460469231731687303715884105727n)} {is_prime(340282366920938463463374607431768211457n)}")
-write_line("{is_prime(1000000007n * 998244353n)} {is_prime(2n)} {is_prime(-13n)} {is_prime(170141183460469231731687303715884105727n, 3)}")
+write_line("{is_prime(1000000007n * 998244353n)} {is_prime(2n)} {is_prime(-13n)} {is_prime(170141183460469231731687303715884105727n)}")
 write_line("{[3L, 4L, 5L] |> filter(is_prime) |> join(", ")}")
 
 write_line("{primes() |> take(10) |> join(", ")}")
