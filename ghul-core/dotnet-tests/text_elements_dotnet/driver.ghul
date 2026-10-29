@@ -1,0 +1,112 @@
+// Splits text into text elements with the core library's segmentation and
+// with .NET's StringInfo, and prints how many strings they split differently:
+// every code point before and after a character of each break class, and
+// random strings built from characters of every class, lone surrogates
+// among them.
+namespace Harness is
+    use IO.Std.write_line
+    use System.Globalization.StringInfo
+    use Ghul._TEXT_ELEMENTS
+
+    class CHECK is
+        checked: int
+        differ: int
+
+        init() is si
+
+        // Compares where the two put every element boundary in `text`.
+        compare(text: string) is
+            checked = checked + 1
+
+            let at mut = 0
+
+            while at <= text.length do
+                let mine = _TEXT_ELEMENTS.next_length(text, at)
+                let theirs = StringInfo.get_next_text_element_length(text, at)
+
+                if mine != theirs then
+                    if differ < 20 then
+                        write_line("differ at {at}: {mine} not {theirs} in {_escaped(text)}")
+                    fi
+
+                    differ = differ + 1
+
+                    return
+                fi
+
+                if mine == 0 then
+                    return
+                fi
+
+                at = at + mine
+            od
+        si
+
+        _escaped(text: string) -> string is
+            let result = Text.STRING_BUILDER()
+
+            for c in text do
+                result.append("\\u{cast int(c):X4}")
+            od
+
+            return result.to_string()
+        si
+    si
+
+    entry() is
+        let check = CHECK()
+        let ranges = _TEXT_ELEMENTS.ranges
+
+        // A few characters of each class: the ends and middle of each range,
+        // and some of class Other.
+        let samples = Collections.LIST[string](["a", " ", "\u4E00", "\uFFFD", "\uD800", "\uDC00", "\uD83D\uDE00"])
+        let i mut = 0
+
+        while i < ranges.count do
+            for code in [ranges[i], ranges[i + 1], (ranges[i] + ranges[i + 1]) / 2] do
+                if code < 0xD800 \/ code > 0xDFFF then
+                    samples.add(char.convert_from_utf32(code))
+                fi
+            od
+
+            i = i + 3
+        od
+
+        // One of each class, to put before and after every code point.
+        let neighbours = Collections.LIST[string](["a", "\r", "\n", "\u0001", "\u0301", "\u200D", "\uD83C\uDDEC", "\u0600",
+            "\u0903", "\u1100", "\u1161", "\u11A8", "\uAC00", "\uAC01", "\uD83D\uDE00", "\uD800", "\uDC00"])
+
+        let code mut = 0
+
+        while code <= 0x10FFFF do
+            if code < 0xD800 \/ code > 0xDFFF then
+                let c = char.convert_from_utf32(code)
+
+                check.compare(c)
+
+                for n in neighbours do
+                    check.compare("{c}{n}")
+                    check.compare("{n}{c}")
+                od
+
+                check.compare("\uD83D\uDE00{c}\u200D\uD83D\uDE00")
+            fi
+
+            code = code + 1
+        od
+
+        let random = System.Random(1357)
+
+        for _ in 0..200000 do
+            let text = Text.STRING_BUILDER()
+
+            for _ in 0..random.next(1, 9) do
+                text.append(samples[random.next(samples.count)])
+            od
+
+            check.compare(text.to_string())
+        od
+
+        write_line("checked {check.checked}, {check.differ} differ")
+    si
+si

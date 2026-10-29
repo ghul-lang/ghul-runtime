@@ -1,0 +1,54 @@
+6B 6E 69 67 68 74 73 => 7: [6B][6E][69][67][68][74][73]
+    starts 0,1,2,3,4,5,6
+1D528 1D52B 1D526 => 3: [1D528][1D52B][1D526]
+    starts 0,2,4
+65 301 74 65 301 => 3: [65 301][74][65 301]
+    starts 0,2,3
+61 D A 62 A D 63 => 6: [61][D A][62][A][D][63]
+    starts 0,1,3,4,5,6
+1F468 200D 1F469 200D 1F467 21 => 2: [1F468 200D 1F469 200D 1F467][21]
+    starts 0,8
+1F1EC 1F1E7 1F1EB 1F1F7 1F1EE => 3: [1F1EC 1F1E7][1F1EB 1F1F7][1F1EE]
+    starts 0,4,8
+1F44D 1F3FD 1F44D => 2: [1F44D 1F3FD][1F44D]
+    starts 0,4
+1100 1161 11A8 AC00 11A8 AC01 1161 => 4: [1100 1161 11A8][AC00 11A8][AC01][1161]
+    starts 0,3,5,6
+915 94D 937 93F => 2: [915 94D][937 93F]
+    starts 0,2
+600 661 662 => 2: [600 661][662]
+    starts 0,2
+61 D800 62 DC00 301 => 4: [61][D800][62][DC00 301]
+    starts 0,1,2,3
+1 301 AD 300 => 4: [1][301][AD][300]
+    starts 0,1,2,3
+16D63 16D67 78 => 2: [16D63 16D67][78]
+    starts 0,4
+ => 0: 
+    starts 
+no first: 1D52B 1D526
+no last: 1D528 1D52B
+no ends: 1D52B
+none taken: 
+start below: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+start past: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+start in empty: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+too long: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+negative length: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+length at end: 0
+length below: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than or equal to the size of the collection.
+length past: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than or equal to the size of the collection.
+first element: 65 301
+first length: 8
+1F600 2 4 false false 1
+1F600 1F600 FFFD
+a 97 1 true 2 3 1
+true true false true
+-3 true 0
+true false false false
+surrogate value: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+value too big: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+surrogate char: ArgumentOutOfRangeException: Specified argument was out of the range of valid values.
+not a pair: ArgumentOutOfRangeException: A valid high surrogate character is between 0xd800 and 0xdbff, inclusive.
+lone surrogate: ArgumentException: Cannot extract a Unicode scalar value from the specified index in the input.
+index past: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.

@@ -1,0 +1,135 @@
+// .NET's name for this type is kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Globalization is
+    use Ghul._TEXT_ELEMENTS
+
+    /// A string read as text elements, as .NET's
+    /// `System.Globalization.StringInfo` reads it: each element is what a
+    /// reader sees as one character, a grapheme cluster, which may be several
+    /// code points, such as a letter and the accents written over it.
+    class StringInfo is
+        _value: string
+        _starts: int[]?
+
+        /// A `StringInfo` over the empty string.
+        init() is
+            _value = ""
+        si
+
+        /// A `StringInfo` over `value`.
+        ///
+        /// - value: the text to read
+        init(value: string) is
+            _value = value
+        si
+
+        /// How many text elements the string holds.
+        length_in_text_elements: int => _element_starts.count
+
+        /// The text elements from `starting_text_element` to the end. Throws
+        /// `ArgumentOutOfRangeException` where there is no such element.
+        ///
+        /// - starting_text_element: the index of the first element to take
+        substring_by_text_elements(starting_text_element: int) -> string is
+            let starts = _element_starts
+
+            if starting_text_element < 0 \/ starting_text_element >= starts.count then
+                throw _out_of_range("startingTextElement")
+            fi
+
+            return _value.substring(starts[starting_text_element])
+        si
+
+        /// `length_in_text_elements` text elements from `starting_text_element`.
+        /// Throws `ArgumentOutOfRangeException` where there is no such
+        /// element, or fewer than that many follow it.
+        ///
+        /// - starting_text_element: the index of the first element to take
+        /// - length_in_text_elements: how many elements to take
+        substring_by_text_elements(starting_text_element: int, length_in_text_elements: int) -> string is
+            let starts = _element_starts
+
+            if starting_text_element < 0 \/ starting_text_element >= starts.count then
+                throw _out_of_range("startingTextElement")
+            fi
+
+            if length_in_text_elements < 0 \/ length_in_text_elements > starts.count - starting_text_element then
+                throw _out_of_range("lengthInTextElements")
+            fi
+
+            let start = starts[starting_text_element]
+            let end = starting_text_element + length_in_text_elements
+
+            let finish =
+                if end < starts.count then starts[end]
+                else _value.length
+                fi
+
+            return _value.substring(start, finish - start)
+        si
+
+        /// The first text element of `str`, or the empty string where it is
+        /// empty.
+        ///
+        /// - str: the text to read
+        get_next_text_element(str: string) -> string static => get_next_text_element(str, 0)
+
+        /// The text element that starts at `index` in `str`, or the empty
+        /// string where `index` is its length. Throws
+        /// `ArgumentOutOfRangeException` where `index` is outside the string.
+        ///
+        /// - str: the text to read
+        /// - index: where the element starts, in UTF-16 code units
+        get_next_text_element(str: string, index: int) -> string static =>
+            str.substring(index, get_next_text_element_length(str, index))
+
+        /// The length, in UTF-16 code units, of the first text element of
+        /// `str`; 0 where it is empty.
+        ///
+        /// - str: the text to read
+        get_next_text_element_length(str: string) -> int static => get_next_text_element_length(str, 0)
+
+        /// The length, in UTF-16 code units, of the text element that starts
+        /// at `index` in `str`; 0 where `index` is its length. Throws
+        /// `ArgumentOutOfRangeException` where `index` is outside the string.
+        ///
+        /// - str: the text to read
+        /// - index: where the element starts, in UTF-16 code units
+        get_next_text_element_length(str: string, index: int) -> int static is
+            if index < 0 \/ index > str.length then
+                throw Ghul.ArgumentOutOfRangeException("index", "Index was out of range. Must be non-negative and less than or equal to the size of the collection.")
+            fi
+
+            return _TEXT_ELEMENTS.next_length(str, index)
+        si
+
+        /// Where each text element of `str` starts, in UTF-16 code units.
+        ///
+        /// - str: the text to read
+        parse_combining_characters(str: string) -> int[] static => _starts_of(str)
+
+        _element_starts: int[] is
+            let starts = _starts ?? _starts_of(_value)
+            _starts = starts
+
+            return starts
+        si
+
+        _starts_of(text: string) -> int[] static is
+            let starts = Collections.LIST[int]()
+            let at mut = 0
+
+            while at < text.length do
+                starts.add(at)
+                at = at + _TEXT_ELEMENTS.next_length(text, at)
+            od
+
+            return starts.to_array()
+        si
+
+        _out_of_range(parameter: string) -> Ghul.ArgumentOutOfRangeException static =>
+            Ghul.ArgumentOutOfRangeException(parameter, "Specified argument was out of the range of valid values.")
+    si
+si

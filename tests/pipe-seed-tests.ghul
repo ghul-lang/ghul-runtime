@@ -196,5 +196,71 @@ namespace Tests is
             are_equal(3, ws |> count())
             are_equal(3, ws |> count())
         si
+
+        @Test()
+        Runes_ReadASurrogatePairAsOneRune() is
+            let rs = runes("a\uD83D\uDE00b") |> collect()
+
+            are_equal(3, rs.count)
+            are_equal(0x61, rs[0].value)
+            are_equal(0x1F600, rs[1].value)
+            are_equal(0x62, rs[2].value)
+        si
+
+        @Test()
+        Runes_ReadALoneSurrogateAsTheReplacementCharacter() is
+            assert_are_equal([0x61, 0xFFFD, 0x62, 0xFFFD], runes("a\uDC00b\uD800") |> map(r => r.value))
+        si
+
+        @Test()
+        Runes_JoinedBack_GiveTheText() is
+            let text = "x\uD835\uDD28\u00E9"
+
+            are_equal(text, runes(text) |> string())
+        si
+
+        @Test()
+        Runes_OfEmptyText_AreNone() is
+            are_equal(0, runes("") |> count())
+        si
+
+        @Test()
+        Graphemes_KeepCombiningMarksWithTheirLetter() is
+            assert_are_equal(["e\u0301", "t", "e\u0301"], graphemes("e\u0301te\u0301"))
+        si
+
+        @Test()
+        Graphemes_KeepEmojiSequencesWhole() is
+            let family = "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67"
+            let flag = "\uD83C\uDDEC\uD83C\uDDE7"
+            let thumb = "\uD83D\uDC4D\uD83C\uDFFD"
+
+            assert_are_equal([family, flag, thumb, "!"], graphemes("{family}{flag}{thumb}!"))
+        si
+
+        @Test()
+        Graphemes_KeepCarriageReturnLineFeedTogether() is
+            assert_are_equal(["a", "\r\n", "b"], graphemes("a\r\nb"))
+        si
+
+        @Test()
+        Graphemes_Collected_SliceByCharacter() is
+            let cs = graphemes("\uD835\uDD28\uD835\uDD2B\uD835\uDD26\uD835\uDD24\uD835\uDD25") |> collect()
+
+            are_equal("\uD835\uDD2B\uD835\uDD26\uD835\uDD24", cs[1..<1] |> string())
+        si
+
+        @Test()
+        Graphemes_OfEmptyText_AreNone() is
+            are_equal(0, graphemes("") |> count())
+        si
+
+        @Test()
+        Graphemes_ReadTwice_YieldTheSameElements() is
+            let gs = graphemes("e\u0301ab")
+
+            are_equal(3, gs |> count())
+            are_equal(3, gs |> count())
+        si
     si
 si

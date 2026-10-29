@@ -1,0 +1,121 @@
+// .NET's name for this type is kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Text is
+    /// A Unicode scalar value: any code point except a surrogate, as .NET's
+    /// `System.Text.Rune` is. One rune is one or two UTF-16 code units.
+    struct Rune is
+        _value: int
+
+        /// The rune whose scalar value is `value`. Throws
+        /// `ArgumentOutOfRangeException` where `value` is a surrogate or is not
+        /// a code point.
+        ///
+        /// - value: the scalar value
+        init(value: int) is
+            if !is_valid(value) then
+                throw Ghul.ArgumentOutOfRangeException("value", "Specified argument was out of the range of valid values.")
+            fi
+
+            _value = value
+        si
+
+        /// The rune for the character `ch`. Throws `ArgumentOutOfRangeException`
+        /// where `ch` is a surrogate.
+        ///
+        /// - ch: the character
+        init(ch: char) is
+            if char.is_surrogate(ch) then
+                throw Ghul.ArgumentOutOfRangeException("ch", "Specified argument was out of the range of valid values.")
+            fi
+
+            _value = cast int(ch)
+        si
+
+        /// The rune the surrogate pair `high_surrogate` and `low_surrogate`
+        /// stand for. Throws `ArgumentOutOfRangeException` where they are not
+        /// a pair.
+        ///
+        /// - high_surrogate: the high surrogate
+        /// - low_surrogate: the low surrogate
+        init(high_surrogate: char, low_surrogate: char) is
+            _value = char.convert_to_utf32(high_surrogate, low_surrogate)
+        si
+
+        /// U+FFFD, the replacement character, which stands for text that could
+        /// not be decoded.
+        replacement_char: Rune static => Rune(0xFFFD)
+
+        /// Whether `value` is a scalar value: from 0 to U+10FFFF, and not a
+        /// surrogate.
+        ///
+        /// - value: the value to test
+        is_valid(value: int) -> bool static pure =>
+            value >= 0 /\ value <= 0x10FFFF /\ (value < 0xD800 \/ value > 0xDFFF)
+
+        /// The rune at `index` in `input`: the surrogate pair starting there
+        /// where one does. Throws `ArgumentException` where `index` is at a
+        /// surrogate that is not part of a pair.
+        ///
+        /// - input: the text
+        /// - index: where the rune starts
+        get_rune_at(input: string, index: int) -> Rune static is
+            if index < 0 \/ index >= input.length then
+                throw Ghul.ArgumentOutOfRangeException("index", "Index was out of range. Must be non-negative and less than the size of the collection.")
+            fi
+
+            let c = input[index]
+
+            if !char.is_surrogate(c) then
+                return Rune(c)
+            fi
+
+            if char.is_high_surrogate(c) /\ index + 1 < input.length /\ char.is_low_surrogate(input[index + 1]) then
+                return Rune(c, input[index + 1])
+            fi
+
+            throw Ghul.ArgumentException("Cannot extract a Unicode scalar value from the specified index in the input.")
+        si
+
+        /// The scalar value.
+        value: int pure => _value
+
+        /// How many UTF-16 code units the rune takes: 1, or 2 above U+FFFF.
+        utf16_sequence_length: int pure => if _value > 0xFFFF then 2 else 1 fi
+
+        /// How many UTF-8 bytes the rune takes: from 1 to 4.
+        utf8_sequence_length: int pure =>
+            if _value < 0x80 then 1
+            elif _value < 0x800 then 2
+            elif _value < 0x10000 then 3
+            else 4
+            fi
+
+        /// Whether the rune is in the ASCII range, U+0000 to U+007F.
+        is_ascii: bool pure => _value < 0x80
+
+        /// Whether the rune is in the Basic Multilingual Plane, below U+10000.
+        is_bmp: bool pure => _value < 0x10000
+
+        /// The Unicode plane the rune is in, from 0 to 16.
+        plane: int pure => _value >> 16
+
+        /// The rune's text: one character, or a surrogate pair above U+FFFF.
+        to_string() -> string => char.convert_from_utf32(_value)
+
+        /// Whether `other` is the same scalar value.
+        ///
+        /// - other: the rune to compare with
+        =~(other: Rune) -> bool pure => _value == other._value
+
+        /// The scalar value, which is equal for equal runes.
+        get_hash_code() -> int pure => _value
+
+        /// Negative, zero or positive as this rune's scalar value is below,
+        /// equal to or above `other`'s.
+        ///
+        /// - other: the rune to compare with
+        compare_to(other: Rune) -> int pure => _value - other._value
+    si
+si

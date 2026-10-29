@@ -1,0 +1,182 @@
+namespace Ghul is
+    // Where text elements end, as .NET's StringInfo finds them: the Unicode
+    // extended grapheme cluster rules, less the Indic conjunct rule .NET does
+    // not apply. A surrogate that is not part of a pair reads as U+FFFD, one
+    // code unit long. Each code point's class comes from the generated
+    // text of _text_element_ranges.
+    class _TEXT_ELEMENTS is
+        _ranges: int[] static
+
+        init() static is
+            _ranges = _decode(_text_element_ranges())
+        si
+
+        // The decoded ranges, three numbers each: first, last and class.
+        ranges: int[] static => _ranges
+
+        OTHER: int static => 0
+        CR: int static => 1
+        LF: int static => 2
+        CONTROL: int static => 3
+        EXTEND: int static => 4
+        ZWJ: int static => 5
+        REGIONAL_INDICATOR: int static => 6
+        PREPEND: int static => 7
+        SPACING_MARK: int static => 8
+        L: int static => 9
+        V: int static => 10
+        T: int static => 11
+        LV: int static => 12
+        LVT: int static => 13
+        PICTOGRAPHIC: int static => 14
+
+        // The length in code units of the text element that starts at `index`,
+        // or 0 where `index` is the end of `text`.
+        next_length(text: string, index: int) -> int static is
+            let length = text.length
+
+            if index >= length then
+                return 0
+            fi
+
+            let first = _code_at(text, index)
+            let previous mut = _class_of(first)
+            let at mut = index + _units(first)
+
+            if previous == CR then
+                if at < length /\ text[at] == '\n' then
+                    at = at + 1
+                fi
+
+                return at - index
+            fi
+
+            if previous == LF \/ previous == CONTROL then
+                return at - index
+            fi
+
+            // Whether what has been read ends with a pictograph followed only
+            // by Extend characters, and then a zero-width joiner.
+            let pictograph mut = previous == PICTOGRAPHIC
+            let pictograph_joiner mut = false
+
+            // How many regional indicators end what has been read.
+            let regional mut = if previous == REGIONAL_INDICATOR then 1 else 0 fi
+
+            while at < length do
+                let code = _code_at(text, at)
+                let next = _class_of(code)
+
+                if !_joins(previous, next, pictograph_joiner, regional) then
+                    break
+                fi
+
+                if next == PICTOGRAPHIC then
+                    pictograph = true
+                    pictograph_joiner = false
+                elif next == ZWJ then
+                    pictograph_joiner = pictograph
+                    pictograph = false
+                elif next != EXTEND then
+                    pictograph = false
+                    pictograph_joiner = false
+                fi
+
+                regional = if next == REGIONAL_INDICATOR then regional + 1 else 0 fi
+                previous = next
+                at = at + _units(code)
+            od
+
+            return at - index
+        si
+
+        _joins(previous: int, next: int, pictograph_joiner: bool, regional: int) -> bool static =>
+            if next == CONTROL \/ next == CR \/ next == LF then false
+            elif next == EXTEND \/ next == ZWJ \/ next == SPACING_MARK then true
+            elif previous == PREPEND then true
+            elif previous == L /\ (next == L \/ next == V \/ next == LV \/ next == LVT) then true
+            elif (previous == LV \/ previous == V) /\ (next == V \/ next == T) then true
+            elif (previous == LVT \/ previous == T) /\ next == T then true
+            elif previous == ZWJ /\ next == PICTOGRAPHIC then pictograph_joiner
+            elif previous == REGIONAL_INDICATOR /\ next == REGIONAL_INDICATOR then regional % 2 == 1
+            else false
+            fi
+
+        // The code point at `index`: the pair starting there where one does,
+        // and U+FFFD for a surrogate that is not part of one.
+        _code_at(text: string, index: int) -> int static is
+            let c = text[index]
+
+            if char.is_high_surrogate(c) /\ index + 1 < text.length /\ char.is_low_surrogate(text[index + 1]) then
+                return char.convert_to_utf32(c, text[index + 1])
+            fi
+
+            if char.is_surrogate(c) then
+                return 0xFFFD
+            fi
+
+            return cast int(c)
+        si
+
+        // Each range is 16 characters of text: FIRST-LAST:C and a space.
+        _decode(text: string) -> int[] static is
+            let count = text.length / 16
+            let ranges = Collections.LIST[int](count * 3)
+            let i mut = 0
+
+            while i < count do
+                let at = i * 16
+
+                ranges.add(_hex(text, at, 6))
+                ranges.add(_hex(text, at + 7, 6))
+                ranges.add(_hex(text, at + 14, 1))
+
+                i = i + 1
+            od
+
+            return ranges.to_array()
+        si
+
+        _hex(text: string, at: int, digits: int) -> int static is
+            let value mut = 0
+            let i mut = 0
+
+            while i < digits do
+                let c = text[at + i]
+                let digit = if c <= '9' then cast int(c) - cast int('0') else cast int(c) - cast int('A') + 10 fi
+
+                value = value * 16 + digit
+                i = i + 1
+            od
+
+            return value
+        si
+
+        _units(code: int) -> int static => if code > 0xFFFF then 2 else 1 fi
+
+        _class_of(code: int) -> int static is
+            if code >= 0x20 /\ code < 0x7F then
+                return OTHER
+            fi
+
+            let ranges = _ranges
+            let low mut = 0
+            let high mut = ranges.count / 3 - 1
+
+            while low <= high do
+                let middle = (low + high) / 2
+                let at = middle * 3
+
+                if code < ranges[at] then
+                    high = middle - 1
+                elif code > ranges[at + 1] then
+                    low = middle + 1
+                else
+                    return ranges[at + 2]
+                fi
+            od
+
+            return OTHER
+        si
+    si
+si

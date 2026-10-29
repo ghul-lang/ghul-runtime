@@ -122,6 +122,16 @@ the member's own body and holds overrides to nothing, the member is marked
   and the task combinators
 - `tests/disposable` — `use` over a class of the program's own, an iterator and
   a reader, disposing in reverse order and when an exception leaves the block
+- `tests/text-elements` — `System.Text.Rune` and `System.Globalization.StringInfo`: text split
+  into text elements, combining marks, emoji sequences, flags, Hangul and lone surrogates among
+  it, and what each member throws, against .NET's output
+- `dotnet-tests/text_elements_dotnet` — the text element segmentation compiled for .NET and
+  checked against .NET's `StringInfo` for every code point beside a character of each break class,
+  and for random strings
+- `tools/text-element-tables` — writes `src/text_element_tables.ghul`, the grapheme cluster break
+  class of every code point, by asking .NET's `StringInfo` where probe strings break; run it again
+  when .NET moves to a new Unicode version:
+  `dotnet run --project tools/text-element-tables > src/text_element_tables.ghul`
 
 Each test directory is a ghul-cli project whose `ghul-project.json` takes
 ghul-core from this checkout (`"path": "../.."`), so the program compiles
@@ -166,7 +176,8 @@ The tests in `dotnet-tests` are .NET SDK projects, because ghul-cli does not
 build for .NET: each compiles part of the library's own source on .NET and
 compares what it does with .NET's. `float_text_dotnet` checks the
 floating-point formatter's text for boundary values and random bit patterns,
-`number_format_dotnet` the numeric format strings, and `sort_dotnet` the sort.
+`number_format_dotnet` the numeric format strings, `sort_dotnet` the sort, and
+`text_elements_dotnet` where text elements end.
 
 The configurations are in `ghul-test.json`. Each project builds with the newest
 installed `ghul.compiler`, which ghul-cli installs if there is none, and an
