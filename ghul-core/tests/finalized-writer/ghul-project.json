@@ -1,0 +1,9 @@
+{
+    "name": "finalized-writer",
+    "targets": ["llvm"],
+    "sources": ["*.ghul"],
+    "options": { "suppress": ["assembly-attribute-unmatched"] },
+    "dependencies": {
+        "ghul-runtime": { "path": "../../.." }
+    }
+}

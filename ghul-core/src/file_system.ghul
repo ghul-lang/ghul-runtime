@@ -1155,12 +1155,28 @@ namespace IO is
             _path = path
         si
 
+        _is_disposed: bool
+
         flush() =>
             _FILE_STORE.write(_path, to_array())
 
         dispose() is
+            _is_disposed = true
             flush()
             super.dispose()
+        si
+
+        // A stream the program let go of without disposing it still
+        // becomes the file's content, as a .NET FileStream's finalizer
+        // flushes it.
+        @finalizer()
+        _finalize() is
+            try
+                if !_is_disposed then
+                    flush()
+                fi
+            catch e: Ghul.Exception
+            yrt
         si
     si
 
@@ -1207,6 +1223,16 @@ namespace IO is
                 _open = false
                 _HOST_FILES.close(_descriptor, _full_path)
             fi
+        si
+
+        // A stream the program let go of without disposing it still
+        // closes its descriptor.
+        @finalizer()
+        _finalize() is
+            try
+                dispose()
+            catch e: Ghul.Exception
+            yrt
         si
     si
 
@@ -1610,5 +1636,15 @@ namespace IO is
         /// Flushes the writer and releases it.
         dispose() =>
             flush()
+
+        // A writer the program let go of without disposing it still
+        // writes what it holds to the file.
+        @finalizer()
+        _finalize() is
+            try
+                flush()
+            catch e: Ghul.Exception
+            yrt
+        si
     si
 si

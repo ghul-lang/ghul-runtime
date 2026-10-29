@@ -1,0 +1,45 @@
+// A writer the program lets go of without disposing it still writes what
+// it holds to its file once the collector finalizes it. The collector
+// scans the stack conservatively, so a stale copy of one writer's address
+// can keep that writer alive; of a hundred, some are finalized.
+use IO.Std.write_line
+use IO.File
+
+write_without_disposing(i: int) is
+    let writer = File.create_text(_path(i))
+    writer.write("written {i}")
+si
+
+_path(i: int) -> string => "finalized-writer-{i}.txt"
+
+_flushed() -> int is
+    let count mut = 0
+
+    for i in 0..100 do
+        if File.read_all_text(_path(i)) =~ "written {i}" then
+            count = count + 1
+        fi
+    od
+
+    return count
+si
+
+for i in 0..100 do
+    write_without_disposing(i)
+od
+
+let rounds mut = 0
+
+while _flushed() == 0 /\ rounds < 200 do
+    for j in 0..10000 do
+        let garbage = [j, j, j, j]
+    od
+
+    rounds = rounds + 1
+od
+
+write_line(if _flushed() > 0 then "flushed" else "never flushed" fi)
+
+for i in 0..100 do
+    File.delete(_path(i))
+od
