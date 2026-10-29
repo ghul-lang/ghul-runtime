@@ -40,14 +40,11 @@ Other values are rejected. To choose directly, regardless of `OutputType`, set
 
 This repository holds two source trees. `ghul-runtime/` is the runtime library
 itself, built on .NET as the `ghul.runtime` package by `ghul-runtime.ghulproj`.
-`ghul-core/` is the source core library, which supplies on the wasm and llvm
-targets the types .NET supplies on the other; it is not compiled on .NET, and
-was brought here from [ghul-core](https://github.com/ghul-lang/ghul-core), which
-this repository supersedes. Each tree carries its own `ghul-project.json`, so a
-ghul-cli project can depend on either by path, and the manifest at the
-repository's root covers both trees' sources: the single `ghul-runtime`
-library a version or tag dependency resolves carries the whole compilation
-unit. The .NET package is unaffected - `ghul-runtime.ghulproj` globs only the
+`ghul-core/` is the core tree, which supplies on the wasm and llvm targets
+the types .NET supplies on the other; it is not compiled on .NET. The two
+trees are one library: the manifest at the repository's root, the only one,
+names both trees' sources as `ghul-runtime`, which a version, tag or path
+dependency resolves to. The .NET package is unaffected - `ghul-runtime.ghulproj` globs only the
 runtime tree's sources.
 
 ## The WebAssembly target

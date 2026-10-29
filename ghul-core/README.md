@@ -1,7 +1,9 @@
 # ghūl core library
 
-The base class library for ghūl programs on the WebAssembly target, as
-ghūl source. On .NET a program's strings, collections, exceptions and
+The core tree of the ghul-runtime library: the base class library for ghūl
+programs on the WebAssembly and native targets, as ghūl source. It is not a
+library of its own; the manifest at the repository's root makes it and the
+runtime tree one library, `ghul-runtime`. On .NET a program's strings, collections, exceptions and
 console come from the .NET base class library; on WasmGC none of that
 exists, so it is supplied here and compiled into the program.
 
@@ -32,9 +34,6 @@ the member's own body and holds overrides to nothing, the member is marked
 
 ## Layout
 
-- `ghul-project.json` — the library manifest (#3212 shape): name, targets,
-  sources. Nothing reads it yet; the `ghul` tool that will (#3211)
-  consumes the library from Git as source (#3179)
 - `src/` — one file per type, plus `intrinsics.ghul`, the operators on the
   built-in types, kept in step with ghul-runtime's
   and `comparison.ghul`, the scalar types' `Equatable` and `Comparable`
