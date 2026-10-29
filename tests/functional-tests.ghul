@@ -1,5 +1,6 @@
 namespace Tests is
     use Ghul
+    use Ghul.Functional
     use Microsoft.VisualStudio.TestTools.UnitTesting
 
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute

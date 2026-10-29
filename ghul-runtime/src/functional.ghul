@@ -1,11 +1,11 @@
-namespace Ghul is
+namespace Ghul.Functional is
     use Collections
 
     // Function combinators: composition in both reading orders, arity
     // reshaping for the two-argument case, a call cache, and an
-    // attempt-limited decorator. They live here rather than in
-    // Ghul.Pipes because none of them is about sequences, and in Ghul
-    // itself so no `use` is needed to reach them.
+    // attempt-limited decorator. They live apart from Ghul.Pipes because
+    // none of them is about sequences. `use default` imports this
+    // namespace.
 
     // Left-to-right composition: `f >> g` applies f, then g - the
     // reading that matches the thread-first operator's direction. The

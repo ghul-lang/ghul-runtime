@@ -17,7 +17,7 @@ write_line("{square(4)} {square(4)} {square(5)} calls {calls}")
 let named = memo(slow_square)
 write_line("{named(7)}")
 
-let added = Ghul.memo(add_pair)
+let added = Ghul.Functional.memo(add_pair)
 write_line("{added(3, 4)} {added(3, 4)}")
 
 let fib = memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fib(n - 2) fi)
