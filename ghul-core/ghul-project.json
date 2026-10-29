@@ -1,7 +1,0 @@
-{
-    "name": "ghul-core",
-    "version": "1.6.1",
-    "kind": "library",
-    "targets": ["wasm", "llvm", "dotnet"],
-    "sources": ["src/**/*.ghul"],
-}
