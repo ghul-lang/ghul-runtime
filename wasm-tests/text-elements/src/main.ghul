@@ -1,0 +1,22 @@
+// runes and graphemes, compiled for the wasm target, print what the same
+// program prints on .NET: text read by code point and by what a reader sees
+// as one character, above the Basic Multilingual Plane, combining marks and
+// emoji sequences included.
+use IO.Std.write_line
+use Ghul.Pipes
+
+for subject in ["knights", "\uD835\uDD28\uD835\uDD2B\uD835\uDD26\uD835\uDD24\uD835\uDD25\uD835\uDD31\uD835\uDD30"] do
+    let cs = graphemes(subject) |> collect()
+
+    write_line("first character removed: {cs[1..<0] |> string()}")
+    write_line("last character removed:  {cs[0..<1] |> string()}")
+    write_line("both removed:            {cs[1..<1] |> string()}")
+od
+
+let mixed = "a\uD83D\uDE00e\u0301\uD83C\uDDEC\uD83C\uDDE7\uDC00"
+
+write_line("{mixed.length} code units, {runes(mixed) |> count()} runes, {graphemes(mixed) |> count()} graphemes")
+write_line(runes(mixed) |> map(r => "{r.value:X}") |> join(" "))
+write_line(graphemes(mixed) |> map(g => "{g.length}") |> join(" "))
+write_line("{runes(mixed) |> string() =~ "a\uD83D\uDE00e\u0301\uD83C\uDDEC\uD83C\uDDE7\uFFFD"} {graphemes(mixed) |> string() =~ mixed}")
+write_line("{runes("") |> count()} {graphemes("") |> count()}")

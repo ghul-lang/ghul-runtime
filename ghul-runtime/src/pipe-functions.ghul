@@ -958,6 +958,28 @@ namespace Ghul.Pipes is
     words(text: string) -> Iterable[string] pure =>
         WORDS_PIPE(text)
 
+    /// The code points of `text`, in order, as `System.Text.Rune`s.
+    ///
+    /// A character above U+FFFF, which a string holds as two UTF-16 code
+    /// units, is one rune, so `runes("a😀") |> count()` is 2 where
+    /// `"a😀".length` is 3. A surrogate that is not part of a pair reads as
+    /// the replacement character, U+FFFD. `runes(text) |> string()` gives
+    /// `text` back.
+    runes(text: string) -> Iterable[System.Text.Rune] pure =>
+        RUNES_PIPE(text)
+
+    /// The text elements of `text`, in order: each is what a reader sees as
+    /// one character, as `System.Globalization.StringInfo` finds them.
+    ///
+    /// An element can be several code points, such as a letter followed by
+    /// combining accents, an emoji with a skin tone, a family joined by
+    /// zero-width joiners, or a pair of regional indicators that make a flag.
+    /// `graphemes("e\u0301t") |> count()` is 2. Collected, the elements slice
+    /// by character: with `let cs = graphemes(text) |> collect()`,
+    /// `cs[1..<1] |> string()` is `text` without its first and last character.
+    graphemes(text: string) -> Iterable[string] pure =>
+        GRAPHEMES_PIPE(text)
+
     /// The elements of each sequence in `source`, concatenated in order.
     ///
     /// `[[1, 2], [], [3]] |> flatten()` reads 1, 2, 3. One level only: a sequence

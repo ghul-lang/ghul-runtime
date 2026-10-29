@@ -1,0 +1,8 @@
+{
+    "name": "text-elements",
+    "targets": ["wasm", "llvm"],
+    "sources": ["*.ghul"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../../.." }
+    }
+}
