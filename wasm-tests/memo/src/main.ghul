@@ -1,5 +1,5 @@
 use default
-use Ghul
+use Ghul.Functional
 
 slow_square(n: int) -> int => n * n
 

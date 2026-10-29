@@ -4,8 +4,8 @@ namespace Ghul.Functional is
     // Function combinators: composition in both reading orders, arity
     // reshaping for the two-argument case, a call cache, and an
     // attempt-limited decorator. They live apart from Ghul.Pipes because
-    // none of them is about sequences. `use default` imports this
-    // namespace.
+    // none of them is about sequences. From compiler 67.4.0, `use
+    // default` imports this namespace.
 
     // Left-to-right composition: `f >> g` applies f, then g - the
     // reading that matches the thread-first operator's direction. The
