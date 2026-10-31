@@ -203,6 +203,7 @@ namespace Tests is
         si
 
         @Test()
+        @suppress("pipe-fusion")
         EachRead_TakesOneIteratorFromTheSource() is
             let source = ITERATOR_COUNTING_SOURCE([1, 2, 3, 4])
             let pipe = source |> filter(x => x % 2 == 0) |> map(x => x * 10) |> take(1)
@@ -230,6 +231,7 @@ namespace Tests is
         si
 
         @Test()
+        @suppress("pipe-fusion")
         Dispose_ReleasesEveryHeldSourceIterator() is
             let left = DISPOSAL_SOURCE([1, 2, 3])
             let right = DISPOSAL_SOURCE([4, 5])
