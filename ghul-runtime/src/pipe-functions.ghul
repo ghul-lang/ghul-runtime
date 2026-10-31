@@ -773,9 +773,16 @@ namespace Ghul.Pipes is
         return into
     si
 
-    /// Writes the text of each element of `source` into `into`, separated by `", "`, and returns `into`.
+    /// Writes the text of each element of `source` into `into`, separated by `JOIN_SEPARATOR`, and returns `into`.
     append_to[T](source: Iterable[T], into: StringBuilder) -> StringBuilder =>
-        append_to(source, into, ", ")
+        append_to(source, into, JOIN_SEPARATOR)
+
+    /// The text between the elements `join` and `append_to` write when the
+    /// call names no separator of its own. A public constant rather than a
+    /// literal at each use, so a compiler lowering that joins a chain
+    /// itself reads the same separator the library writes with, whatever
+    /// runtime it is linked against.
+    JOIN_SEPARATOR: string static => ", "
 
     /// The elements of `source` joined into a string, separated by `separator`.
     join[T](source: Iterable[T], separator: string) -> string pure =>
@@ -796,9 +803,9 @@ namespace Ghul.Pipes is
         return state.to_string()
     si
 
-    /// The elements of `source` joined into a string, separated by `", "`.
+    /// The elements of `source` joined into a string, separated by `JOIN_SEPARATOR`.
     join[T](source: Iterable[T]) -> string pure =>
-        join(source, ", ")
+        join(source, JOIN_SEPARATOR)
 
     // Part of an indexable source, taken with a range: `xs |> slice(1..4)`.
     // Nothing is copied, so the result is a view onto the source rather than
