@@ -6,9 +6,9 @@ use System.Security.Cryptography.MD5
 use System.Security.Cryptography.SHA1
 use System.Security.Cryptography.SHA256
 
-hex(bytes: ubyte[]) -> string => bytes |> map(b => "{int(b):x2}") |> join("")
+hex(bytes: ARRAY[ubyte]) -> string => bytes |> map(b => "{int(b):x2}") |> join("")
 
-text(length: int) -> ubyte[] => System.Text.Encoding.utf8.get_bytes(string('a', length))
+text(length: int) -> ARRAY[ubyte] => System.Text.Encoding.utf8.get_bytes(string('a', length))
 
 entry() is
     let messages = [

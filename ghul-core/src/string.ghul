@@ -54,10 +54,10 @@ namespace Ghul is
     // A new string of the `count` code units of `chars` from `start` on, in
     // one copy. The range is not checked.
     @intrinsic("string.from_chars")
-    _string_from_chars(chars: char[], start: int, count: int) -> string pure
+    _string_from_chars(chars: ARRAY[char], start: int, count: int) -> string pure
 
     // Copies the `count` code units of `text` from `start` on into `chars`
     // from `at` on, in one move. The ranges are not checked.
     @intrinsic("string.copy_to")
-    _string_copy_to(text: string, start: int, chars: char[], at: int, count: int)
+    _string_copy_to(text: string, start: int, chars: ARRAY[char], at: int, count: int)
 si

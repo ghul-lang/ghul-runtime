@@ -3,7 +3,7 @@ namespace Collections is
     /// the first one removed. This is .NET's `Stack<T>`, which ghūl names
     /// `STACK` on .NET as well.
     class STACK[T]: Bag[T] is
-        _items: T[];
+        _items: ARRAY[T];
         _count: int;
 
         /// An empty stack.
@@ -96,7 +96,7 @@ namespace Collections is
         si
 
         /// The elements from the top down, copied into a new array.
-        to_array() -> T[] is
+        to_array() -> ARRAY[T] is
             let result = Ghul._array_new[T](_count);
             let i mut = 0;
 

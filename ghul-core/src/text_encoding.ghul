@@ -28,20 +28,20 @@ namespace System.Text is
         /// The bytes that stand for `text`.
         ///
         /// - text: the text to encode
-        get_bytes(text: string) -> ubyte[]
+        get_bytes(text: string) -> ARRAY[ubyte]
 
         /// The text `bytes` stand for. A byte-order mark at the start is
         /// skipped, and bytes that are not valid stand for U+FFFD.
         ///
         /// - bytes: the bytes to decode
-        get_string(bytes: ubyte[]) -> string
+        get_string(bytes: ARRAY[ubyte]) -> string
 
         /// The text `count` bytes of `bytes` from `index` stand for.
         ///
         /// - bytes: the bytes to decode
         /// - index: the first byte to decode
         /// - count: the number of bytes to decode
-        get_string(bytes: ubyte[], index: int, count: int) -> string is
+        get_string(bytes: ARRAY[ubyte], index: int, count: int) -> string is
             if index < 0 \/ count < 0 \/ index > bytes.count - count then
                 throw Ghul.ArgumentOutOfRangeException("index", "the range is outside the bytes")
             fi
@@ -81,9 +81,9 @@ namespace System.Text is
             _emits_identifier = encoder_should_emit_utf8_identifier
         si
 
-        get_bytes(text: string) -> ubyte[] => _UTF8.encode(text)
+        get_bytes(text: string) -> ARRAY[ubyte] => _UTF8.encode(text)
 
-        get_string(bytes: ubyte[]) -> string => _UTF8.decode(bytes)
+        get_string(bytes: ARRAY[ubyte]) -> string => _UTF8.decode(bytes)
     si
 
     /// Seven-bit ASCII, as .NET's `System.Text.ASCIIEncoding` is. A
@@ -94,7 +94,7 @@ namespace System.Text is
             super.init()
         si
 
-        get_bytes(text: string) -> ubyte[] is
+        get_bytes(text: string) -> ARRAY[ubyte] is
             let out = IO.MemoryStream(text.length)
             let i mut = 0
 
@@ -113,7 +113,7 @@ namespace System.Text is
             return out.to_array()
         si
 
-        get_string(bytes: ubyte[]) -> string is
+        get_string(bytes: ARRAY[ubyte]) -> string is
             let chars = Ghul._array_new[char](bytes.count)
             let i mut = 0
 
@@ -136,7 +136,7 @@ namespace System.Text is
             super.init()
         si
 
-        get_bytes(text: string) -> ubyte[] is
+        get_bytes(text: string) -> ARRAY[ubyte] is
             let result = Ghul._array_new[ubyte](text.length * 2)
             let i mut = 0
 
@@ -151,7 +151,7 @@ namespace System.Text is
             return result
         si
 
-        get_string(bytes: ubyte[]) -> string is
+        get_string(bytes: ARRAY[ubyte]) -> string is
             let start = 0
             let units = (bytes.count - start) / 2
             let odd = (bytes.count - start) % 2
@@ -181,7 +181,7 @@ namespace System.Text is
             super.init()
         si
 
-        get_bytes(text: string) -> ubyte[] is
+        get_bytes(text: string) -> ARRAY[ubyte] is
             let out = IO.MemoryStream(text.length * 4)
             let i mut = 0
 
@@ -213,7 +213,7 @@ namespace System.Text is
             return out.to_array()
         si
 
-        get_string(bytes: ubyte[]) -> string is
+        get_string(bytes: ARRAY[ubyte]) -> string is
             let chars = Collections.LIST[char](bytes.count / 4)
             let i mut = 0
 

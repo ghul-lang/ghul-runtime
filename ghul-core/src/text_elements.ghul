@@ -5,14 +5,14 @@ namespace Ghul is
     // code unit long. Each code point's class comes from the generated
     // text of _text_element_ranges.
     class _TEXT_ELEMENTS is
-        _ranges: int[] static
+        _ranges: ARRAY[int] static
 
         init() static is
             _ranges = _decode(_text_element_ranges())
         si
 
         // The decoded ranges, three numbers each: first, last and class.
-        ranges: int[] static => _ranges
+        ranges: ARRAY[int] static => _ranges
 
         OTHER: int static => 0
         CR: int static => 1
@@ -119,7 +119,7 @@ namespace Ghul is
         si
 
         // Each range is 16 characters of text: FIRST-LAST:C and a space.
-        _decode(text: string) -> int[] static is
+        _decode(text: string) -> ARRAY[int] static is
             let count = text.length / 16
             let ranges = Collections.LIST[int](count * 3)
             let i mut = 0

@@ -92,7 +92,7 @@ namespace System.Reflection is
     /// A constructor a type declares.
     @suppress("non-upper-snake-case-name")
     class ConstructorInfo is
-        _parameters: ParameterInfo[]
+        _parameters: ARRAY[ParameterInfo]
         _invoke: (object?[]) -> object
 
         /// The type the constructor makes.
@@ -105,7 +105,7 @@ namespace System.Reflection is
         /// - is_public: whether it is public
         /// - parameters: its parameters, in order
         /// - invoke: makes an instance from arguments, in order
-        init(declaring_type: Type, is_public: bool, parameters: ParameterInfo[], invoke: (object?[]) -> object) is
+        init(declaring_type: Type, is_public: bool, parameters: ARRAY[ParameterInfo], invoke: (object?[]) -> object) is
             self.declaring_type = declaring_type
             self.is_public = is_public
 
@@ -117,7 +117,7 @@ namespace System.Reflection is
         name: string => ".ctor"
 
         /// The constructor's parameters, in order.
-        get_parameters() -> ParameterInfo[] => _parameters
+        get_parameters() -> ARRAY[ParameterInfo] => _parameters
 
         /// A new instance, made by the constructor from `arguments`.
         ///
@@ -206,7 +206,7 @@ namespace System.Reflection is
 
         /// The parameters of an indexer; none, as reflection does not
         /// describe indexers.
-        get_index_parameters() -> ParameterInfo[] => []
+        get_index_parameters() -> ARRAY[ParameterInfo] => []
 
         /// Whether the property has a read accessor.
         can_read: bool => _getter?
@@ -296,13 +296,13 @@ namespace System is
         /// The names of `enum_type`'s members, in ascending order of value.
         ///
         /// - enum_type: the enum
-        get_names(enum_type: Type) -> string[] static => TYPE_DESCRIPTIONS.of(enum_type).enum_names.to_array()
+        get_names(enum_type: Type) -> ARRAY[string] static => TYPE_DESCRIPTIONS.of(enum_type).enum_names.to_array()
 
         /// `enum_type`'s members, each as a value of the enum, in ascending
         /// order.
         ///
         /// - enum_type: the enum
-        get_values(enum_type: Type) -> object[] static => TYPE_DESCRIPTIONS.of(enum_type).enum_values.to_array()
+        get_values(enum_type: Type) -> ARRAY[object] static => TYPE_DESCRIPTIONS.of(enum_type).enum_values.to_array()
 
         /// The name of the member of `enum_type` that `value` is, or null
         /// where it is none of them.

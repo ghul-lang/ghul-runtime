@@ -12,13 +12,13 @@ namespace System.Security.Cryptography is
         /// The 16-byte MD5 digest of `source`.
         ///
         /// - source: the bytes to digest
-        hash_data(source: ubyte[]) -> ubyte[] static is
+        hash_data(source: ARRAY[ubyte]) -> ARRAY[ubyte] static is
             let shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
                 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
                 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
                 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
 
-            let constants: uint[] = [
+            let constants: ARRAY[uint] = [
                 0xd76aa478u, 0xe8c7b756u, 0x242070dbu, 0xc1bdceeeu, 0xf57c0fafu, 0x4787c62au, 0xa8304613u, 0xfd469501u,
                 0x698098d8u, 0x8b44f7afu, 0xffff5bb1u, 0x895cd7beu, 0x6b901122u, 0xfd987193u, 0xa679438eu, 0x49b40821u,
                 0xf61e2562u, 0xc040b340u, 0x265e5a51u, 0xe9b6c7aau, 0xd62f105du, 0x02441453u, 0xd8a1e681u, 0xe7d3fbc8u,
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography is
         /// The 20-byte SHA-1 digest of `source`.
         ///
         /// - source: the bytes to digest
-        hash_data(source: ubyte[]) -> ubyte[] static is
+        hash_data(source: ARRAY[ubyte]) -> ARRAY[ubyte] static is
             let message = Ghul.Internal.HASH_PADDING.pad(source, true)
             let h0 mut = 0x67452301u
             let h1 mut = 0xEFCDAB89u
@@ -157,8 +157,8 @@ namespace System.Security.Cryptography is
         /// The 32-byte SHA-256 digest of `source`.
         ///
         /// - source: the bytes to digest
-        hash_data(source: ubyte[]) -> ubyte[] static is
-            let k: uint[] = [
+        hash_data(source: ARRAY[ubyte]) -> ARRAY[ubyte] static is
+            let k: ARRAY[uint] = [
                 0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
                 0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
                 0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
@@ -245,7 +245,7 @@ namespace Ghul.Internal is
     // The message padding and word order the three digests share. MD5 reads
     // and writes its words low byte first, SHA-1 and SHA-256 high byte first.
     class HASH_PADDING is
-        pad(source: ubyte[], big_endian: bool) -> ubyte[] static is
+        pad(source: ARRAY[ubyte], big_endian: bool) -> ARRAY[ubyte] static is
             let length = source.count
             let padded = ((length + 8) / 64 + 1) * 64
             let result = Ghul._array_new[ubyte](padded)
@@ -271,7 +271,7 @@ namespace Ghul.Internal is
             return result
         si
 
-        words(message: ubyte[], offset: int, big_endian: bool) -> uint[] static is
+        words(message: ARRAY[ubyte], offset: int, big_endian: bool) -> ARRAY[uint] static is
             let result = Ghul._array_new[uint](16)
             let i mut = 0
 
@@ -292,7 +292,7 @@ namespace Ghul.Internal is
             return result
         si
 
-        digest(words: uint[], big_endian: bool) -> ubyte[] static is
+        digest(words: ARRAY[uint], big_endian: bool) -> ARRAY[ubyte] static is
             let result = Ghul._array_new[ubyte](words.count * 4)
             let i mut = 0
 

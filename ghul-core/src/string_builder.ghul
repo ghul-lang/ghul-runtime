@@ -4,7 +4,7 @@ namespace Text is
         // What has been built is the first `_length` code units of `_chars`,
         // which doubles when it fills, so appending costs the same however
         // much has been built and `to_string` copies the text once.
-        _chars: char[]
+        _chars: ARRAY[char]
         _length: int
 
         init() is

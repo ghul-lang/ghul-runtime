@@ -176,9 +176,9 @@ namespace Tasks is
         /// threw.
         ///
         /// - tasks: the tasks to wait for
-        when_all[T](tasks: Collections.Iterable[TASK[T]]) -> TASK[T[]] static is
+        when_all[T](tasks: Collections.Iterable[TASK[T]]) -> TASK[ARRAY[T]] static is
             let all = LIST[TASK[T]](tasks)
-            let result = TASK[T[]]()
+            let result = TASK[ARRAY[T]]()
             let remaining mut = all.count
 
             let finish = () is

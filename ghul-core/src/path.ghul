@@ -62,7 +62,7 @@ namespace IO is
         /// The paths joined into one path, in order.
         ///
         /// - paths: the paths to join
-        combine(paths: string[]) -> string static pure is
+        combine(paths: ARRAY[string]) -> string static pure is
             let result mut = ""
 
             for path in paths do

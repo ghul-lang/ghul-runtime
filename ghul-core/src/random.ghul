@@ -12,7 +12,7 @@ namespace Ghul is
         // The state of a generator given a seed: the subtractive generator
         // .NET's seeded System.Random uses.
         _is_compatible: bool
-        _seed_array: int[]?
+        _seed_array: ARRAY[int]?
         _inext: int
         _inextp: int
 
@@ -41,7 +41,7 @@ namespace Ghul is
         /// Replaces every element of `buffer` with a random byte.
         ///
         /// - buffer: the array to fill
-        next_bytes(buffer: ubyte[]) is
+        next_bytes(buffer: ARRAY[ubyte]) is
             for index in 0..buffer.count do
                 Ghul._array_set(buffer, index, cast ubyte(next() & 255))
             od

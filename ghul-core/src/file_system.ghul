@@ -124,7 +124,7 @@ namespace IO is
 
         // A copy of `count` bytes of `bytes` from `offset`, so that what the
         // store holds and what a caller holds never alias.
-        copy(bytes: ubyte[], offset: int, count: int) -> ubyte[] static is
+        copy(bytes: ARRAY[ubyte], offset: int, count: int) -> ARRAY[ubyte] static is
             let result = Ghul._array_new[ubyte](count)
             let i mut = 0
 
@@ -136,7 +136,7 @@ namespace IO is
             return result
         si
 
-        concat(first: ubyte[], second: ubyte[]) -> ubyte[] static is
+        concat(first: ARRAY[ubyte], second: ARRAY[ubyte]) -> ARRAY[ubyte] static is
             let result = Ghul._array_new[ubyte](first.count + second.count)
             let i mut = 0
 
@@ -162,12 +162,12 @@ namespace IO is
     // root always exists.
     @IF.wasm()
     class _MEMORY_FILES is
-        _files: Collections.MAP[string, ubyte[]] static
+        _files: Collections.MAP[string, ARRAY[ubyte]] static
         _directories: Collections.SET[string] static
         _current: string static
 
         init() static is
-            _files = Collections.MAP[string, ubyte[]]()
+            _files = Collections.MAP[string, ARRAY[ubyte]]()
             _directories = Collections.SET[string]()
             _current = "/"
 
@@ -193,7 +193,7 @@ namespace IO is
         @intrinsic("host.input_file_content")
         _input_file_content(index: int) -> string static
 
-        bytes_of(text: string) -> ubyte[] static is
+        bytes_of(text: string) -> ARRAY[ubyte] static is
             let bytes = Ghul._array_new[ubyte](text.length)
             let i mut = 0
 
@@ -232,9 +232,9 @@ namespace IO is
         si
 
         // The bytes of the file at `path`, or FileNotFoundException.
-        read(path: string) -> ubyte[] static is
+        read(path: string) -> ARRAY[ubyte] static is
             let full_path = _FILE_STORE.full(path)
-            let bytes: ubyte[] mut
+            let bytes: ARRAY[ubyte] mut
 
             if !_files.try_get_value(full_path, bytes ref) then
                 if is_directory(full_path) then
@@ -257,7 +257,7 @@ namespace IO is
         // Makes `bytes` the whole content of the file at `path`. The store
         // keeps `bytes` itself, so the caller passes an array no one else
         // holds.
-        write(path: string, bytes: ubyte[]) static is
+        write(path: string, bytes: ARRAY[ubyte]) static is
             let full_path = _FILE_STORE.full(path)
 
             if is_directory(full_path) then
@@ -275,9 +275,9 @@ namespace IO is
 
         // Adds `bytes` to the end of the file at `path`, making it where it
         // does not exist.
-        append(path: string, bytes: ubyte[]) static is
+        append(path: string, bytes: ARRAY[ubyte]) static is
             let full_path = _FILE_STORE.full(path)
-            let existing: ubyte[] mut
+            let existing: ARRAY[ubyte] mut
 
             if _files.try_get_value(full_path, existing ref) then
                 write(full_path, _FILE_STORE.concat(existing, bytes))
@@ -421,17 +421,17 @@ namespace IO is
         is_directory(full_path: string) -> bool static =>
             if _HOST_FILES.available then _HOST_FILES.is_directory(full_path) else _MEMORY_FILES.is_directory(full_path) fi
 
-        read(path: string) -> ubyte[] static =>
+        read(path: string) -> ARRAY[ubyte] static =>
             if _HOST_FILES.available then _HOST_FILES.read(path) else _MEMORY_FILES.read(path) fi
 
         open_read(path: string) -> IO.Stream static =>
             if _HOST_FILES.available then _HOST_FILES.open_read(path) else _MEMORY_FILES.open_read(path) fi
 
-        write(path: string, bytes: ubyte[]) static is
+        write(path: string, bytes: ARRAY[ubyte]) static is
             if _HOST_FILES.available then _HOST_FILES.write(path, bytes) else _MEMORY_FILES.write(path, bytes) fi
         si
 
-        append(path: string, bytes: ubyte[]) static is
+        append(path: string, bytes: ARRAY[ubyte]) static is
             if _HOST_FILES.available then _HOST_FILES.append(path, bytes) else _MEMORY_FILES.append(path, bytes) fi
         si
 
@@ -477,13 +477,13 @@ namespace IO is
 
         is_directory(full_path: string) -> bool static => _HOST_FILES.is_directory(full_path)
 
-        read(path: string) -> ubyte[] static => _HOST_FILES.read(path)
+        read(path: string) -> ARRAY[ubyte] static => _HOST_FILES.read(path)
 
         open_read(path: string) -> IO.Stream static => _HOST_FILES.open_read(path)
 
-        write(path: string, bytes: ubyte[]) static => _HOST_FILES.write(path, bytes)
+        write(path: string, bytes: ARRAY[ubyte]) static => _HOST_FILES.write(path, bytes)
 
-        append(path: string, bytes: ubyte[]) static => _HOST_FILES.append(path, bytes)
+        append(path: string, bytes: ARRAY[ubyte]) static => _HOST_FILES.append(path, bytes)
 
         remove(full_path: string) -> bool static => _HOST_FILES.remove(full_path)
 
@@ -518,7 +518,7 @@ namespace IO is
         is_directory(full_path: string) -> bool static => _kind(full_path) == 2
 
         // The bytes of the file at `path`.
-        read(path: string) -> ubyte[] static is
+        read(path: string) -> ARRAY[ubyte] static is
             let full_path = _FILE_STORE.full(path)
 
             if let bytes = _read(full_path) then
@@ -529,7 +529,7 @@ namespace IO is
         si
 
         // Makes `bytes` the whole content of the file at `path`.
-        write(path: string, bytes: ubyte[]) static is
+        write(path: string, bytes: ARRAY[ubyte]) static is
             let full_path = _FILE_STORE.full(path)
 
             _check(_write(full_path, bytes, false), full_path)
@@ -537,7 +537,7 @@ namespace IO is
 
         // Adds `bytes` to the end of the file at `path`, making it where it
         // does not exist, without reading what is there.
-        append(path: string, bytes: ubyte[]) static is
+        append(path: string, bytes: ARRAY[ubyte]) static is
             let full_path = _FILE_STORE.full(path)
 
             _check(_write(full_path, bytes, true), full_path)
@@ -718,7 +718,7 @@ namespace IO is
 
         // Reads at most `count` bytes of the file `descriptor` into `buffer`
         // from `offset`, answering how many, which is zero at its end.
-        read_into(descriptor: int, buffer: ubyte[], offset: int, count: int, full_path: string) -> int static is
+        read_into(descriptor: int, buffer: ARRAY[ubyte], offset: int, count: int, full_path: string) -> int static is
             let got = _read_into(descriptor, buffer, offset, count)
 
             if got < 0 then
@@ -736,17 +736,17 @@ namespace IO is
         _open_read(path: string) -> int static
 
         @intrinsic("host.file_read_into")
-        _read_into(descriptor: int, bytes: ubyte[], offset: int, count: int) -> int static
+        _read_into(descriptor: int, bytes: ARRAY[ubyte], offset: int, count: int) -> int static
 
         @intrinsic("host.file_close")
         _close(descriptor: int) -> int static
 
         // The whole file, or null with the reason in _last_error.
         @intrinsic("host.file_read")
-        _read(path: string) -> ubyte[]? static
+        _read(path: string) -> ARRAY[ubyte]? static
 
         @intrinsic("host.file_write")
-        _write(path: string, bytes: ubyte[], append: bool) -> int static
+        _write(path: string, bytes: ARRAY[ubyte], append: bool) -> int static
     si
 
     // On the wasm target a file's bytes cross to and from the host as a
@@ -761,7 +761,7 @@ namespace IO is
         open_read(path: string) -> IO.Stream static =>
             IO.MemoryStream(read(path), false)
 
-        _read(path: string) -> ubyte[]? static is
+        _read(path: string) -> ARRAY[ubyte]? static is
             if let text = _read_text(path) then
                 return _MEMORY_FILES.bytes_of(text)
             fi
@@ -769,10 +769,10 @@ namespace IO is
             return null
         si
 
-        _write(path: string, bytes: ubyte[], append: bool) -> int static =>
+        _write(path: string, bytes: ARRAY[ubyte], append: bool) -> int static =>
             _write_text(path, _text_of(bytes), append)
 
-        _text_of(bytes: ubyte[]) -> string static is
+        _text_of(bytes: ARRAY[ubyte]) -> string static is
             let units = Ghul._array_new[char](bytes.count)
             let i mut = 0
 
@@ -798,7 +798,7 @@ namespace IO is
 
     // Bytes as standard base64 with padding.
     class _BASE64 is
-        encode(bytes: ubyte[]) -> string static is
+        encode(bytes: ARRAY[ubyte]) -> string static is
             let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
             let chars = Ghul._array_new[char]((bytes.count + 2) / 3 * 4)
             let i mut = 0
@@ -826,7 +826,7 @@ namespace IO is
     // byte-order mark written, one skipped where it is read, and anything
     // that is not valid UTF-8 read as U+FFFD.
     class _UTF8 is
-        encode(text: string) -> ubyte[] static is
+        encode(text: string) -> ARRAY[ubyte] static is
             let out = MemoryStream(text.length)
             let i mut = 0
 
@@ -869,7 +869,7 @@ namespace IO is
             return out.to_array()
         si
 
-        decode(bytes: ubyte[]) -> string static is
+        decode(bytes: ARRAY[ubyte]) -> string static is
             let chars = Collections.LIST[char](bytes.count)
             let i mut = 0
 
@@ -943,7 +943,7 @@ namespace IO is
         /// Every line of the file at `path`.
         ///
         /// - path: the file to read
-        read_all_lines(path: string) -> string[] static is
+        read_all_lines(path: string) -> ARRAY[string] static is
             let reader = StringReader(read_all_text(path))
             let lines = Collections.LIST[string]()
 
@@ -969,7 +969,7 @@ namespace IO is
         /// The bytes of the file at `path`.
         ///
         /// - path: the file to read
-        read_all_bytes(path: string) -> ubyte[] static is
+        read_all_bytes(path: string) -> ARRAY[ubyte] static is
             let bytes = _FILE_STORE.read(path)
 
             return _FILE_STORE.copy(bytes, 0, bytes.count)
@@ -1037,7 +1037,7 @@ namespace IO is
         ///
         /// - path: the file to write
         /// - bytes: the bytes to write
-        write_all_bytes(path: string, bytes: ubyte[]) static =>
+        write_all_bytes(path: string, bytes: ARRAY[ubyte]) static =>
             _FILE_STORE.write(path, _FILE_STORE.copy(bytes, 0, bytes.count))
 
         /// Adds `contents` to the end of the file at `path`, creating it
@@ -1129,7 +1129,7 @@ namespace IO is
             _FILE_STORE.remove(full_path)
         si
 
-        _append(path: string, bytes: ubyte[]) static =>
+        _append(path: string, bytes: ARRAY[ubyte]) static =>
             _FILE_STORE.append(path, bytes)
 
         _lines(contents: Collections.Iterable[string]) -> string static is
@@ -1198,7 +1198,7 @@ namespace IO is
 
         can_read: bool => _open
 
-        read(buffer: ubyte[], offset: int, count: int) -> int is
+        read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
             if !_open then
                 throw Ghul.ObjectDisposedException("Cannot access a closed file.")
             fi
@@ -1311,14 +1311,14 @@ namespace IO is
         /// The paths of the files in the directory at `path`.
         ///
         /// - path: the directory to list
-        get_files(path: string) -> string[] static =>
+        get_files(path: string) -> ARRAY[string] static =>
             get_files(path, "*", SearchOption.TOP_DIRECTORY_ONLY)
 
         /// The paths of the files in the directory at `path` whose names match `pattern`.
         ///
         /// - path: the directory to list
         /// - pattern: the names to match, with `*` and `?` as wildcards
-        get_files(path: string, pattern: string) -> string[] static =>
+        get_files(path: string, pattern: string) -> ARRAY[string] static =>
             get_files(path, pattern, SearchOption.TOP_DIRECTORY_ONLY)
 
         /// The paths of the files under the directory at `path` whose names match `pattern`.
@@ -1326,26 +1326,26 @@ namespace IO is
         /// - path: the directory to list
         /// - pattern: the names to match, with `*` and `?` as wildcards
         /// - option: whether to include subdirectories
-        get_files(path: string, pattern: string, option: SearchOption) -> string[] static =>
+        get_files(path: string, pattern: string, option: SearchOption) -> ARRAY[string] static =>
             _list(path, pattern, option, true, false)
 
         /// The paths of the directories in the directory at `path`.
         ///
         /// - path: the directory to list
-        get_directories(path: string) -> string[] static =>
+        get_directories(path: string) -> ARRAY[string] static =>
             _list(path, "*", SearchOption.TOP_DIRECTORY_ONLY, false, true)
 
         /// The paths of the directories in the directory at `path` whose names match `pattern`.
         ///
         /// - path: the directory to list
         /// - pattern: the names to match, with `*` and `?` as wildcards
-        get_directories(path: string, pattern: string) -> string[] static =>
+        get_directories(path: string, pattern: string) -> ARRAY[string] static =>
             _list(path, pattern, SearchOption.TOP_DIRECTORY_ONLY, false, true)
 
         /// The paths of the files and directories in the directory at `path`.
         ///
         /// - path: the directory to list
-        get_file_system_entries(path: string) -> string[] static =>
+        get_file_system_entries(path: string) -> ARRAY[string] static =>
             _list(path, "*", SearchOption.TOP_DIRECTORY_ONLY, true, true)
 
         /// The paths of the files in the directory at `path`, found as they are asked for.
@@ -1380,7 +1380,7 @@ namespace IO is
 
         // The entries below `path` as .NET names them: `path` as written,
         // joined to each entry's path relative to it, in ordinal order.
-        _list(path: string, pattern: string, option: SearchOption, files: bool, directories: bool) -> string[] static is
+        _list(path: string, pattern: string, option: SearchOption, files: bool, directories: bool) -> ARRAY[string] static is
             let full_path = _FILE_STORE.full(path)
 
             if !_FILE_STORE.is_directory(full_path) then
@@ -1581,7 +1581,7 @@ namespace IO is
         // each later one adds only the text written since, so what the
         // writer holds is never more than one flush's worth.
         _path: string
-        _start: ubyte[]
+        _start: ARRAY[ubyte]
         _text: Text.STRING_BUILDER
         _is_written: bool
 

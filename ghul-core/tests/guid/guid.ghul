@@ -12,7 +12,7 @@ entry() is
     write_line("{text.length} {text[8]}{text[13]}{text[18]}{text[23]} {text[14]} {"89ab".index_of(text[19]) >= 0}")
     write_line("{first =~ second} {first =~ first} {first.to_string() =~ second.to_string()}")
 
-    let bytes: ubyte[] = [1ub, 2ub, 3ub, 4ub, 5ub, 6ub, 7ub, 8ub, 9ub, 10ub, 11ub, 12ub, 13ub, 14ub, 15ub, 255ub]
+    let bytes: ARRAY[ubyte] = [1ub, 2ub, 3ub, 4ub, 5ub, 6ub, 7ub, 8ub, 9ub, 10ub, 11ub, 12ub, 13ub, 14ub, 15ub, 255ub]
     let made = Guid(bytes)
 
     write_line(made.to_string())

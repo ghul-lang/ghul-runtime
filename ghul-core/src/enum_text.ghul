@@ -13,7 +13,7 @@ namespace Ghul.Internal is
         /// - names: the enum's member names, in ascending order of value
         /// - values: each member's value, in the same order as `names`
         /// - is_flags: whether the enum combines its members as flags
-        of(value: int, names: string[], values: int[], is_flags: bool) -> string static is
+        of(value: int, names: ARRAY[string], values: ARRAY[int], is_flags: bool) -> string static is
             for i in 0..values.count do
                 if values[i] == value then
                     return names[i]

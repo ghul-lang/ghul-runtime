@@ -102,17 +102,17 @@ namespace System is
         /// `bytes` as hexadecimal text, two upper-case digits a byte.
         ///
         /// - bytes: the bytes to write
-        to_hex_string(bytes: ubyte[]) -> string static => _hex(bytes, "0123456789ABCDEF")
+        to_hex_string(bytes: ARRAY[ubyte]) -> string static => _hex(bytes, "0123456789ABCDEF")
 
         /// `bytes` as hexadecimal text, two lower-case digits a byte.
         ///
         /// - bytes: the bytes to write
-        to_hex_string_lower(bytes: ubyte[]) -> string static => _hex(bytes, "0123456789abcdef")
+        to_hex_string_lower(bytes: ARRAY[ubyte]) -> string static => _hex(bytes, "0123456789abcdef")
 
         /// The bytes hexadecimal text holds, two digits a byte in either case.
         ///
         /// - text: the text to read, of even length
-        from_hex_string(text: string) -> ubyte[] static is
+        from_hex_string(text: string) -> ARRAY[ubyte] static is
             if text.length % 2 != 0 then
                 throw FormatException("the input is not a valid hex string as its length is not a multiple of 2")
             fi
@@ -139,7 +139,7 @@ namespace System is
         /// characters.
         ///
         /// - bytes: the bytes to write
-        to_base64_string(bytes: ubyte[]) -> string static is
+        to_base64_string(bytes: ARRAY[ubyte]) -> string static is
             let alphabet = _base64_alphabet
             let result = Ghul._array_new[char]((bytes.count + 2) / 3 * 4)
             let i mut = 0
@@ -167,7 +167,7 @@ namespace System is
         /// The bytes base64 text holds. White space in the text is skipped.
         ///
         /// - text: the text to read
-        from_base64_string(text: string) -> ubyte[] static is
+        from_base64_string(text: string) -> ARRAY[ubyte] static is
             let values = Collections.LIST[int]()
             let padding mut = 0
 
@@ -233,7 +233,7 @@ namespace System is
             return -1
         si
 
-        _hex(bytes: ubyte[], digits: string) -> string static is
+        _hex(bytes: ARRAY[ubyte], digits: string) -> string static is
             let result = Ghul._array_new[char](bytes.count * 2)
             let i mut = 0
 

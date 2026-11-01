@@ -6,7 +6,7 @@ namespace Ghul.Internal is
         ///
         /// - chars: the code units
         @intrinsic("constructor.from_chars")
-        from_chars(chars: char[]) -> string static pure => _string_from_chars(chars, 0, chars.count)
+        from_chars(chars: ARRAY[char]) -> string static pure => _string_from_chars(chars, 0, chars.count)
 
         /// A string holding `count` copies of `unit`.
         ///
@@ -43,7 +43,7 @@ namespace Ghul.Internal is
         /// The strings of `parts` joined end to end, in order, in one copy.
         ///
         /// - parts: the strings to join
-        join(parts: string[]) -> string static is
+        join(parts: ARRAY[string]) -> string static is
             let total mut = 0
             let i mut = 0
 

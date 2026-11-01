@@ -81,20 +81,20 @@ namespace Ghul is
 
         /// The type arguments of a generic type's instantiation, in order;
         /// none for any other type.
-        get_generic_arguments() -> Type[] => _described.arguments.to_array()
+        get_generic_arguments() -> ARRAY[Type] => _described.arguments.to_array()
 
         /// The element type of an array type, or null for any other type.
         get_element_type() -> Type? => _described.element_type
 
         /// Every trait the type implements.
-        get_interfaces() -> Type[] => _described.interfaces.to_array()
+        get_interfaces() -> ARRAY[Type] => _described.interfaces.to_array()
 
         /// The fields `flags` selects: instance or static ones, public or
         /// non-public ones, and, unless `DECLARED_ONLY` is given, the public
         /// ones its base types declare as well.
         ///
         /// - flags: which fields to report
-        get_fields(flags: BindingFlags) -> FieldInfo[] is
+        get_fields(flags: BindingFlags) -> ARRAY[FieldInfo] is
             let result = LIST[FieldInfo]()
             let level: Type? mut = self
             let inherited mut = false
@@ -118,7 +118,7 @@ namespace Ghul is
         si
 
         /// The public fields, the type's own and its base types'.
-        get_fields() -> FieldInfo[] => get_fields(BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.STATIC)
+        get_fields() -> ARRAY[FieldInfo] => get_fields(BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.STATIC)
 
         /// The field `flags` selects named `name`, or null where there is
         /// none.
@@ -145,7 +145,7 @@ namespace Ghul is
         /// derived type declares it.
         ///
         /// - flags: which properties to report
-        get_properties(flags: BindingFlags) -> PropertyInfo[] is
+        get_properties(flags: BindingFlags) -> ARRAY[PropertyInfo] is
             let result = LIST[PropertyInfo]()
             let level: Type? mut = self
             let inherited mut = false
@@ -169,7 +169,7 @@ namespace Ghul is
         si
 
         /// The public properties, the type's own and its base types'.
-        get_properties() -> PropertyInfo[] => get_properties(BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.STATIC)
+        get_properties() -> ARRAY[PropertyInfo] => get_properties(BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.STATIC)
 
         /// The property `flags` selects named `name`, or null where there
         /// is none.
@@ -196,7 +196,7 @@ namespace Ghul is
         /// instances. A type's constructors are its own, never its base's.
         ///
         /// - flags: which constructors to report
-        get_constructors(flags: BindingFlags) -> ConstructorInfo[] is
+        get_constructors(flags: BindingFlags) -> ARRAY[ConstructorInfo] is
             let result = LIST[ConstructorInfo]()
 
             for constructor in _described.constructors do
@@ -209,13 +209,13 @@ namespace Ghul is
         si
 
         /// The public constructors.
-        get_constructors() -> ConstructorInfo[] => get_constructors(BindingFlags.PUBLIC | BindingFlags.INSTANCE)
+        get_constructors() -> ARRAY[ConstructorInfo] => get_constructors(BindingFlags.PUBLIC | BindingFlags.INSTANCE)
 
         /// The attributes of `attribute_type` the type carries.
         ///
         /// - attribute_type: the attribute type to look for
         /// - inherit: whether to look on the base types too
-        get_custom_attributes(attribute_type: Type, inherit: bool) -> object[] is
+        get_custom_attributes(attribute_type: Type, inherit: bool) -> ARRAY[object] is
             let result = LIST[object]()
             let level: Type? mut = self
 
@@ -235,7 +235,7 @@ namespace Ghul is
         /// Every attribute the type carries.
         ///
         /// - inherit: whether to look on the base types too
-        get_custom_attributes(inherit: bool) -> object[] is
+        get_custom_attributes(inherit: bool) -> ARRAY[object] is
             let result = LIST[object]()
             let level: Type? mut = self
 

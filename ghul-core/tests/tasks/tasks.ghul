@@ -59,7 +59,7 @@ entry() is
 
     awaits_through_the_base().wait()
 
-    let tasks: Tasks.TASK[] = [Tasks.TASK.from_result(1), Tasks.TASK.completed_task]
+    let tasks: ARRAY[Tasks.TASK] = [Tasks.TASK.from_result(1), Tasks.TASK.completed_task]
 
     write_line("a task with a result is a task: {tasks[0].is_completed} {tasks[1].is_completed}")
 

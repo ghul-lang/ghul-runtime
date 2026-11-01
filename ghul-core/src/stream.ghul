@@ -37,7 +37,7 @@ namespace IO is
         /// - buffer: where the bytes go
         /// - offset: the position in `buffer` the first byte goes to
         /// - count: the most bytes to read
-        read(buffer: ubyte[], offset: int, count: int) -> int =>
+        read(buffer: ARRAY[ubyte], offset: int, count: int) -> int =>
             throw Ghul.NotSupportedException("Stream does not support reading.")
 
         /// Reads the next byte, or -1 at the end.
@@ -56,7 +56,7 @@ namespace IO is
         /// - buffer: the bytes to write
         /// - offset: the position in `buffer` of the first byte to write
         /// - count: the number of bytes to write
-        write(buffer: ubyte[], offset: int, count: int) is
+        write(buffer: ARRAY[ubyte], offset: int, count: int) is
             throw Ghul.NotSupportedException("Stream does not support writing.")
         si
 
@@ -109,7 +109,7 @@ namespace IO is
     /// place and cannot grow past it.
     @suppress("non-upper-snake-case-name")
     class MemoryStream: Stream is
-        _buffer: ubyte[]
+        _buffer: ARRAY[ubyte]
         _origin: int
         _length: int
         _position: int
@@ -147,7 +147,7 @@ namespace IO is
         /// in place.
         ///
         /// - buffer: the bytes to read and write
-        init(buffer: ubyte[]) is
+        init(buffer: ARRAY[ubyte]) is
             self.init(buffer, 0, buffer.count, true)
         si
 
@@ -156,7 +156,7 @@ namespace IO is
         ///
         /// - buffer: the bytes to read and write
         /// - writable: whether the stream can be written
-        init(buffer: ubyte[], writable: bool) is
+        init(buffer: ARRAY[ubyte], writable: bool) is
             self.init(buffer, 0, buffer.count, writable)
         si
 
@@ -166,7 +166,7 @@ namespace IO is
         /// - buffer: the bytes to read and write
         /// - index: the position in `buffer` the stream starts at
         /// - count: the number of bytes the stream holds
-        init(buffer: ubyte[], index: int, count: int) is
+        init(buffer: ARRAY[ubyte], index: int, count: int) is
             self.init(buffer, index, count, true)
         si
 
@@ -177,7 +177,7 @@ namespace IO is
         /// - index: the position in `buffer` the stream starts at
         /// - count: the number of bytes the stream holds
         /// - writable: whether the stream can be written
-        init(buffer: ubyte[], index: int, count: int, writable: bool) is
+        init(buffer: ARRAY[ubyte], index: int, count: int, writable: bool) is
             super.init()
 
             if index < 0 then
@@ -231,7 +231,7 @@ namespace IO is
                 _position = _origin + int(value)
             si
 
-        read(buffer: ubyte[], offset: int, count: int) -> int is
+        read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
             _check_open()
             _check_buffer(buffer, offset, count)
 
@@ -269,7 +269,7 @@ namespace IO is
             return int(value)
         si
 
-        write(buffer: ubyte[], offset: int, count: int) is
+        write(buffer: ARRAY[ubyte], offset: int, count: int) is
             _check_writable()
             _check_buffer(buffer, offset, count)
             _make_room(_position + count)
@@ -350,7 +350,7 @@ namespace IO is
 
         /// The bytes the stream holds, copied into a new array. It can be
         /// called after the stream is closed.
-        to_array() -> ubyte[] is
+        to_array() -> ARRAY[ubyte] is
             let count = _length - _origin
             let result = Ghul._array_new[ubyte](count)
             let data = _buffer
@@ -391,7 +391,7 @@ namespace IO is
             fi
         si
 
-        _check_buffer(buffer: ubyte[], offset: int, count: int) is
+        _check_buffer(buffer: ARRAY[ubyte], offset: int, count: int) is
             if offset < 0 then
                 throw Ghul.ArgumentOutOfRangeException("offset")
             fi

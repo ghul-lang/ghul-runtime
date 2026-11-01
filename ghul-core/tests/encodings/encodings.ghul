@@ -4,7 +4,7 @@ use IO.Std.write_line
 use Ghul.Pipes
 use System.Text.Encoding
 
-bytes(values: ubyte[]) -> string => values |> map(b => "{b}") |> join(" ")
+bytes(values: ARRAY[ubyte]) -> string => values |> map(b => "{b}") |> join(" ")
 
 codes(text: string) -> string => text |> map(c => "{int(c)}") |> join(" ")
 
@@ -28,7 +28,7 @@ entry() is
 
     write_line("{Encoding.utf8.get_byte_count(text)} {Encoding.unicode.get_byte_count(text)} {Encoding.utf32.get_byte_count(text)} {Encoding.ascii.get_byte_count(text)}")
 
-    let record: ubyte[] = [65ub, 66ub, 67ub, 68ub, 69ub, 70ub]
+    let record: ARRAY[ubyte] = [65ub, 66ub, 67ub, 68ub, 69ub, 70ub]
 
     write_line(Encoding.ascii.get_string(record, 2, 3))
     write_line(Encoding.utf8.get_string(record, 0, 2))

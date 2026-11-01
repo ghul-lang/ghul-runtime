@@ -2,7 +2,7 @@ namespace Collections is
     /// A list that grows as elements are added, read and written by
     /// position.
     class LIST[T]: List[T], MutableList[T], Ghul.Internal.UntypedList is
-        _items: T[];
+        _items: ARRAY[T];
         _count: int;
 
         /// An empty list.
@@ -355,7 +355,7 @@ namespace Collections is
         si
 
         /// The elements, in order, copied into a new array.
-        to_array() -> T[] is
+        to_array() -> ARRAY[T] is
             let result = Ghul._array_new[T](_count);
             let i mut = 0;
 
@@ -388,14 +388,14 @@ namespace Collections is
         /// Copies every element into `array`, starting at its first position.
         ///
         /// - array: where the elements go, with room for all of them
-        copy_to(array: T[]) =>
+        copy_to(array: ARRAY[T]) =>
             copy_to(0, array, 0, _count);
 
         /// Copies every element into `array`, starting at `array_index`.
         ///
         /// - array: where the elements go
         /// - array_index: the position in `array` the first element goes to
-        copy_to(array: T[], array_index: int) =>
+        copy_to(array: ARRAY[T], array_index: int) =>
             copy_to(0, array, array_index, _count);
 
         /// Copies `count` elements starting at `index` into `array`,
@@ -405,7 +405,7 @@ namespace Collections is
         /// - array: where the elements go
         /// - array_index: the position in `array` the first element goes to
         /// - count: the number of elements to copy
-        copy_to(index: int, array: T[], array_index: int, count: int) is
+        copy_to(index: int, array: ARRAY[T], array_index: int, count: int) is
             _check_range(index, count);
 
             if array_index < 0 then
@@ -447,7 +447,7 @@ namespace Collections is
     /// Iterates the elements a list held when the iterator was made, in
     /// order.
     class LIST_ITERATOR[T]: Iterator[T] is
-        _items: T[];
+        _items: ARRAY[T];
         _count: int;
         _index: int;
 
@@ -456,7 +456,7 @@ namespace Collections is
         ///
         /// - items: the list's backing array
         /// - count: the number of elements in use
-        init(items: T[], count: int) is
+        init(items: ARRAY[T], count: int) is
             _items = items;
             _count = count;
             _index = -1;

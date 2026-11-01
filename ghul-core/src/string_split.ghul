@@ -18,7 +18,7 @@ namespace Ghul is
         /// order. With no separators, the pieces are split at white space.
         ///
         /// - separators: the code units to split at
-        split(separators: char[]) -> string[] pure => split(separators, StringSplitOptions.NONE)
+        split(separators: ARRAY[char]) -> ARRAY[string] pure => split(separators, StringSplitOptions.NONE)
 
         /// The pieces between each occurrence of any of `separators`, in
         /// order, kept or trimmed as `options` says. With no separators, the
@@ -26,7 +26,7 @@ namespace Ghul is
         ///
         /// - separators: the code units to split at
         /// - options: whether to trim the pieces and leave out empty ones
-        split(separators: char[], options: StringSplitOptions) -> string[] pure is
+        split(separators: ARRAY[char], options: StringSplitOptions) -> ARRAY[string] pure is
             if options == StringSplitOptions.NONE then
                 return _split_exact(separators)
             fi
@@ -54,7 +54,7 @@ namespace Ghul is
         ///
         /// - separator: the code unit to split at
         /// - options: whether to trim the pieces and leave out empty ones
-        split(separator: char, options: StringSplitOptions) -> string[] pure =>
+        split(separator: char, options: StringSplitOptions) -> ARRAY[string] pure =>
             split(_string_from_char(separator), options)
 
         /// The pieces between each `separator`, kept or trimmed as `options`
@@ -62,7 +62,7 @@ namespace Ghul is
         ///
         /// - separator: the text to split at
         /// - options: whether to trim the pieces and leave out empty ones
-        split(separator: string, options: StringSplitOptions) -> string[] pure is
+        split(separator: string, options: StringSplitOptions) -> ARRAY[string] pure is
             let pieces = LIST[string]()
 
             for piece in split(separator) do
@@ -78,7 +78,7 @@ namespace Ghul is
         ///
         /// - separators: the texts to split at
         /// - options: whether to trim the pieces and leave out empty ones
-        split(separators: string[], options: StringSplitOptions) -> string[] pure is
+        split(separators: ARRAY[string], options: StringSplitOptions) -> ARRAY[string] pure is
             let pieces = LIST[string]()
             let start mut = 0
             let i mut = 0
@@ -102,7 +102,7 @@ namespace Ghul is
 
         // Every piece between separators, into an array sized by counting
         // the separators first, so no piece is copied twice.
-        _split_exact(separators: char[]) -> string[] pure is
+        _split_exact(separators: ARRAY[char]) -> ARRAY[string] pure is
             let single = separators.count == 1
             let only = if single then separators[0] else ' ' fi
             let count mut = 1
@@ -142,7 +142,7 @@ namespace Ghul is
         si
 
         /// The string's code units, as a new array.
-        to_char_array() -> char[] pure is
+        to_char_array() -> ARRAY[char] pure is
             let result = _array_new[char](length)
             let i mut = 0
 
@@ -182,7 +182,7 @@ namespace Ghul is
         /// `trim_chars`; with none given, without white space.
         ///
         /// - trim_chars: the code units to remove
-        trim(trim_chars: char[]) -> string pure is
+        trim(trim_chars: ARRAY[char]) -> string pure is
             let start = _first_not_in(trim_chars)
             let end = _last_not_in(trim_chars)
 
@@ -202,7 +202,7 @@ namespace Ghul is
         /// with none given, without white space.
         ///
         /// - trim_chars: the code units to remove
-        trim_start(trim_chars: char[]) -> string pure => substring(_first_not_in(trim_chars))
+        trim_start(trim_chars: ARRAY[char]) -> string pure => substring(_first_not_in(trim_chars))
 
         /// The string without trailing occurrences of `trim_char`.
         ///
@@ -213,7 +213,7 @@ namespace Ghul is
         /// with none given, without white space.
         ///
         /// - trim_chars: the code units to remove
-        trim_end(trim_chars: char[]) -> string pure => substring(0, _last_not_in(trim_chars) + 1)
+        trim_end(trim_chars: ARRAY[char]) -> string pure => substring(0, _last_not_in(trim_chars) + 1)
 
         /// The string with each letter made upper case under the invariant
         /// culture.
@@ -231,7 +231,7 @@ namespace Ghul is
         /// - b: the second string
         compare_ordinal(a: string?, b: string?) -> int static => compare(a, b)
 
-        _first_not_in(units: char[]) -> int is
+        _first_not_in(units: ARRAY[char]) -> int is
             let i mut = 0
 
             while i < length /\ _is_separator(self[i], units) do
@@ -241,7 +241,7 @@ namespace Ghul is
             return i
         si
 
-        _last_not_in(units: char[]) -> int is
+        _last_not_in(units: ARRAY[char]) -> int is
             let i mut = length - 1
 
             while i >= 0 /\ _is_separator(self[i], units) do
@@ -251,7 +251,7 @@ namespace Ghul is
             return i
         si
 
-        _separator_at(position: int, separators: string[]) -> int is
+        _separator_at(position: int, separators: ARRAY[string]) -> int is
             for separator in separators do
                 if separator.length > 0 /\ _matches_at(position, separator) then
                     return separator.length
@@ -263,7 +263,7 @@ namespace Ghul is
     si
 
     // Whether `unit` is one of `units`, or white space where `units` is empty.
-    _is_separator(unit: char, units: char[]) -> bool is
+    _is_separator(unit: char, units: ARRAY[char]) -> bool is
         if units.count == 0 then
             return _is_white_space(unit)
         fi
@@ -287,7 +287,7 @@ namespace Ghul is
         pieces.add(trimmed)
     si
 
-    _to_array(pieces: LIST[string]) -> string[] is
+    _to_array(pieces: LIST[string]) -> ARRAY[string] is
         let result = _array_new[string](pieces.count)
         let i mut = 0
 
