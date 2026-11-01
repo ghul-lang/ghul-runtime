@@ -53,7 +53,7 @@ namespace Tests is
 
         @Test()
         Min_EmptySource_ReturnsMaybeNot() is
-            let result: int[] = []
+            let result: ARRAY[int] = []
 
             are_equal(MAYBE[int](), Ghul.Pipes.min(result))
         si
@@ -73,7 +73,7 @@ namespace Tests is
         // product differ from min and max.
         @Test()
         Sum_EmptySource_ReturnsZero() is
-            let empty: int[] = []
+            let empty: ARRAY[int] = []
 
             are_equal(0, Ghul.Pipes.sum(empty))
         si
@@ -110,7 +110,7 @@ namespace Tests is
 
         @Test()
         Product_EmptySource_ReturnsOne() is
-            let empty: int[] = []
+            let empty: ARRAY[int] = []
 
             are_equal(1, Ghul.Pipes.product(empty))
         si
@@ -127,7 +127,7 @@ namespace Tests is
 
         @Test()
         Collect_ThreadFirstChain_ReturnsArray() is
-            let result: int[] = [1, 2, 3] |> map(n => n * 2) |> collect()
+            let result: ARRAY[int] = [1, 2, 3] |> map(n => n * 2) |> collect()
 
             is_true(result =~ [2, 4, 6])
         si

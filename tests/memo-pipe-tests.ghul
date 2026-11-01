@@ -21,10 +21,10 @@ namespace Tests is
     // A source that counts how many elements it has handed out, so a test
     // can tell a replay of the cache from a second pass over the source.
     class COUNTING_SOURCE[T]: Pipe[T] is
-        values: T[]
+        values: ARRAY[T]
         handed_out: int public
 
-        init(values: T[]) is
+        init(values: ARRAY[T]) is
             self.values = values
             handed_out = 0
         si
@@ -87,7 +87,7 @@ namespace Tests is
 
         @Test()
         Read_EmptySource_YieldsNothingOnEveryRead() is
-            let empty: int[] = []
+            let empty: ARRAY[int] = []
             let p = list(COUNTING_SOURCE[int](empty))
 
             is_false(p.iterator.move_next())

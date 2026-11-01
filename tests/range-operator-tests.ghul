@@ -23,7 +23,7 @@ namespace Tests is
 
         // The compiler resolves an index by a range through
         // `Ghul.Pipes.slice`, so a slice is what these produce.
-        slice_of(source: int[], r: System.Range) -> List[int] => source |> slice(r)
+        slice_of(source: ARRAY[int], r: System.Range) -> List[int] => source |> slice(r)
 
         @Test()
         Exclusive_CountsTheEndBackFromTheEnd() is

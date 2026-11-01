@@ -1,4 +1,5 @@
 namespace Ghul is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
     // Implemented by a type that can be shown in a medium other than text:
     // an image, a document, a chart. A host that shows values - a notebook,
     // a REPL, the playground - can show one of these in place of the text.
@@ -23,6 +24,6 @@ namespace Ghul is
     /// Implemented by a type that can be shown in a medium other than text, such as an image or a chart.
     trait Renderable open is
         /// Every representation of this value, best first, each as a MIME type and its content.
-        representations() -> Collections.Iterable[(mime: string, content: ubyte[])] pure
+        representations() -> Collections.Iterable[(mime: string, content: ARRAY[ubyte])] pure
     si
 si
