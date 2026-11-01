@@ -93,7 +93,7 @@ namespace System.Reflection is
     @suppress("non-upper-snake-case-name")
     class ConstructorInfo is
         _parameters: ARRAY[ParameterInfo]
-        _invoke: (object?[]) -> object
+        _invoke: (ARRAY[object?]) -> object
 
         /// The type the constructor makes.
         declaring_type: Type
@@ -105,7 +105,7 @@ namespace System.Reflection is
         /// - is_public: whether it is public
         /// - parameters: its parameters, in order
         /// - invoke: makes an instance from arguments, in order
-        init(declaring_type: Type, is_public: bool, parameters: ARRAY[ParameterInfo], invoke: (object?[]) -> object) is
+        init(declaring_type: Type, is_public: bool, parameters: ARRAY[ParameterInfo], invoke: (ARRAY[object?]) -> object) is
             self.declaring_type = declaring_type
             self.is_public = is_public
 
@@ -122,13 +122,13 @@ namespace System.Reflection is
         /// A new instance, made by the constructor from `arguments`.
         ///
         /// - arguments: one argument for each parameter, in order
-        invoke(arguments: object?[]) -> object => _invoke(arguments)
+        invoke(arguments: ARRAY[object?]) -> object => _invoke(arguments)
     si
 
     /// A method, as far as reflection reaches one: a property's accessor.
     @suppress("non-upper-snake-case-name")
     class MethodInfo is
-        _invoke: (object, object?[]) -> object?
+        _invoke: (object, ARRAY[object?]) -> object?
 
         /// The method's name.
         name: string
@@ -147,7 +147,7 @@ namespace System.Reflection is
         /// - is_public: whether it is public
         /// - is_static: whether it belongs to the type rather than to an instance
         /// - invoke: calls it on an instance with arguments
-        init(name: string, return_type: Type, is_public: bool, is_static: bool, invoke: (object, object?[]) -> object?) is
+        init(name: string, return_type: Type, is_public: bool, is_static: bool, invoke: (object, ARRAY[object?]) -> object?) is
             self.name = name
             self.return_type = return_type
             self.is_public = is_public
@@ -161,7 +161,7 @@ namespace System.Reflection is
         ///
         /// - instance: the receiver
         /// - arguments: the arguments, in order
-        invoke(instance: object?, arguments: object?[]) -> object? => _invoke(instance!, arguments)
+        invoke(instance: object?, arguments: ARRAY[object?]) -> object? => _invoke(instance!, arguments)
     si
 
     /// A property a type declares.
@@ -280,7 +280,7 @@ namespace System is
         ///
         /// - type: the type to make
         /// - arguments: the constructor's arguments, in order
-        create_instance(type: Type, arguments: object?[]) -> object? static is
+        create_instance(type: Type, arguments: ARRAY[object?]) -> object? static is
             for constructor in TYPE_DESCRIPTIONS.of(type).constructors do
                 if constructor.get_parameters().count == arguments.count then
                     return constructor.invoke(arguments)
@@ -532,8 +532,8 @@ namespace Ghul.Internal is
             _attribute_types.add(typeof T)
         si
 
-        _attribute(make: (object?[]) -> object) is
-            let arguments: object?[] =
+        _attribute(make: (ARRAY[object?]) -> object) is
+            let arguments: ARRAY[object?] =
                 if _attribute_types.count == 0 then [] else [cast object(_attribute_types.to_array())] fi
 
             attributes.add(make(arguments))
@@ -550,7 +550,7 @@ namespace Ghul.Internal is
             _parameters.add(ParameterInfo(name, typeof T, _parameters.count))
         si
 
-        _constructor(make: (object?[]) -> object, is_public: bool) is
+        _constructor(make: (ARRAY[object?]) -> object, is_public: bool) is
             constructors.add(ConstructorInfo(_type!, is_public, _parameters.to_array(), make))
             _parameters.clear()
         si
@@ -574,14 +574,14 @@ namespace Ghul.Internal is
 
             let getter: MethodInfo? =
                 if let read = get then
-                    MethodInfo("get_{name}", property_type, get_is_public, false, (instance: object, arguments: object?[]) -> object? => read(instance))
+                    MethodInfo("get_{name}", property_type, get_is_public, false, (instance: object, arguments: ARRAY[object?]) -> object? => read(instance))
                 else
                     null
                 fi
 
             let setter: MethodInfo? =
                 if let assign = set then
-                    MethodInfo("set_{name}", _VOID, set_is_public, false, (instance: object, arguments: object?[]) -> object? is
+                    MethodInfo("set_{name}", _VOID, set_is_public, false, (instance: object, arguments: ARRAY[object?]) -> object? is
                         assign(instance, cast T(arguments[0]))
                         return null
                     si)

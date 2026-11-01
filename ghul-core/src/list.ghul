@@ -42,7 +42,7 @@ namespace Collections is
 
         /// The elements, each as an object, for a reader that knows the
         /// element type only at run time.
-        untyped_items: object?[] is
+        untyped_items: ARRAY[object?] is
             let result = Ghul._array_new[object?](_count)
 
             for i in 0.._count do
@@ -57,7 +57,7 @@ namespace Collections is
         ///
         /// - items: the new elements, in order
         @IF.not.llvm()
-        fill_untyped(items: object?[]) is
+        fill_untyped(items: ARRAY[object?]) is
             _items = Ghul._array_new[T](items.count)
 
             for i in 0..items.count do
@@ -70,7 +70,7 @@ namespace Collections is
         // Reflection is not described on llvm, so nothing reads into a list
         // there by its run-time type.
         @IF.llvm()
-        fill_untyped(items: object?[]) is
+        fill_untyped(items: ARRAY[object?]) is
             throw Ghul.NotSupportedException("filling a list by its run-time element type is not supported on this target")
         si
 
@@ -513,11 +513,11 @@ namespace Ghul.Internal is
     /// their type only at run time, such as a reflective serializer.
     trait UntypedList is
         /// The elements, each as an object.
-        untyped_items: object?[]
+        untyped_items: ARRAY[object?]
 
         /// Replaces the elements with `items`, each of the element type.
         ///
         /// - items: the new elements, in order
-        fill_untyped(items: object?[])
+        fill_untyped(items: ARRAY[object?])
     si
 si
