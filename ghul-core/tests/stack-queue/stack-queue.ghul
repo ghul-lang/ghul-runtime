@@ -1,4 +1,4 @@
-// STACK, Queue and SET's set operations, and a KEY_VALUE_PAIR destructured
+// STACK, QUEUE and SET's set operations, and a KEY_VALUE_PAIR destructured
 // by position, as on .NET: a stack and a queue iterate from the end they
 // remove from, and an empty one throws when read.
 
