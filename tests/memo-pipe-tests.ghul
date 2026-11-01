@@ -54,7 +54,7 @@ namespace Tests is
         si
     si
 
-    // Coverage for `memo`: the first read caches, later reads replay the
+    // Coverage for `list`: the first read caches, later reads replay the
     // cache without asking the source again, a read that runs past the
     // cached prefix extends it, and infinite sources stay lazy.
     @TestClass()
@@ -65,7 +65,7 @@ namespace Tests is
         @Test()
         Read_ReplaysCachedElementsWithoutRereadingSource() is
             let source = COUNTING_SOURCE[int]([1, 2, 3])
-            let p = memo(source)
+            let p = list(source)
 
             assert_elements([1, 2, 3], drain(p))
             are_equal(3, source.handed_out)
@@ -76,9 +76,19 @@ namespace Tests is
         si
 
         @Test()
+        Memo_GivesTheSameListAsList() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = memo(source)
+
+            assert_elements([1, 2, 3], drain(p))
+            are_equal(2, p[1])
+            are_equal(3, source.handed_out)
+        si
+
+        @Test()
         Read_EmptySource_YieldsNothingOnEveryRead() is
             let empty: int[] = []
-            let p = memo(COUNTING_SOURCE[int](empty))
+            let p = list(COUNTING_SOURCE[int](empty))
 
             is_false(p.iterator.move_next())
             is_false(p.iterator.move_next())
@@ -87,7 +97,7 @@ namespace Tests is
         @Test()
         Read_PartialRead_ExtendsCacheWhenALaterReadRunsFurther() is
             let source = COUNTING_SOURCE[string](["a", "b", "c", "d"])
-            let p = memo(source)
+            let p = list(source)
 
             let part_read = p.iterator
 
@@ -111,7 +121,7 @@ namespace Tests is
         @Test()
         Join_Twice_ProducesTheSameElementsAndReadsSourceOnce() is
             let source = COUNTING_SOURCE[int]([1, 2, 3])
-            let p = memo(source)
+            let p = list(source)
 
             are_equal("1, 2, 3", p |> join(", "))
             are_equal("1, 2, 3", p |> join(", "))
@@ -121,7 +131,7 @@ namespace Tests is
         @Test()
         PartialRead_LeavesTheSharedSourceOpenForLaterReads() is
             let source = DISPOSAL_SOURCE([1, 2, 3])
-            let p = memo(source)
+            let p = list(source)
 
             are_equal("1", p |> take(1) |> join(", "))
             are_equal(0, source.disposed)
@@ -136,7 +146,7 @@ namespace Tests is
         @Test()
         Memo_OverInfiniteStream_PullsOnlyWhatIsConsumed() is
             let naturals = stream(0, n => n || n + 1)
-            let p = memo(naturals)
+            let p = list(naturals)
 
             are_equal("0, 1, 2", p |> take(3) |> join(", "))
 
@@ -148,7 +158,7 @@ namespace Tests is
         @Test()
         Index_PullsTheSourceOnlyAsFarAsTheIndexRead() is
             let source = COUNTING_SOURCE[int]([10, 20, 30, 40, 50])
-            let p = memo(source)
+            let p = list(source)
 
             are_equal(30, p[2])
             are_equal(3, source.handed_out)
@@ -164,7 +174,7 @@ namespace Tests is
         @Test()
         Index_SharesTheCacheWithReadsThroughTheIterator() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4])
-            let p = memo(source)
+            let p = list(source)
 
             are_equal(2, p[1])
             assert_elements([1, 2, 3, 4], drain(p))
@@ -182,7 +192,7 @@ namespace Tests is
 
         @Test()
         Index_PastTheEndOrNegative_Throws() is
-            let p = memo(COUNTING_SOURCE[int]([1, 2, 3]))
+            let p = list(COUNTING_SOURCE[int]([1, 2, 3]))
 
             try
                 p[3]
@@ -200,7 +210,7 @@ namespace Tests is
         @Test()
         Count_IsTheWholeSequenceWhateverHasBeenRead() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5])
-            let p = memo(source)
+            let p = list(source)
 
             are_equal(1, p[0])
             are_equal(5, p.count)
@@ -211,7 +221,7 @@ namespace Tests is
         @Test()
         Nth_ReadsFromTheCacheWithoutWalkingIt() is
             let source = COUNTING_SOURCE[int]([1, 2, 3])
-            let p = memo(source)
+            let p = list(source)
 
             are_equal(2, (p |> nth(1))!)
             are_equal(2, source.handed_out)
@@ -224,7 +234,7 @@ namespace Tests is
         @Test()
         Slice_TakingIt_PullsNothingFromTheSource() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
-            let p = memo(source)
+            let p = list(source)
 
             p[1..4]
             are_equal(0, source.handed_out)
@@ -233,7 +243,7 @@ namespace Tests is
         @Test()
         Slice_Index_PullsTheSourceOnlyAsFarAsTheIndexRead() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
-            let s = memo(source)[1..5]
+            let s = list(source)[1..5]
 
             are_equal(3, s[1])
             are_equal(3, source.handed_out)
@@ -242,7 +252,7 @@ namespace Tests is
         @Test()
         Slice_Count_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
-            let s = memo(source)[1..4]
+            let s = list(source)[1..4]
 
             are_equal(3, s.count)
             are_equal(4, source.handed_out)
@@ -251,7 +261,7 @@ namespace Tests is
         @Test()
         Slice_Read_PullsTheSourceOnlyAsFarAsTheSliceEnds() is
             let source = COUNTING_SOURCE[int]([1, 2, 3, 4, 5, 6])
-            let p = memo(source)
+            let p = list(source)
 
             assert_elements([2, 3, 4], p[1..4])
             are_equal(4, source.handed_out)
@@ -269,7 +279,7 @@ namespace Tests is
 
         @Test()
         Slice_PastTheEnd_ThrowsWhenReadPastTheSource() is
-            let s = memo(COUNTING_SOURCE[int]([1, 2, 3]))[1..6]
+            let s = list(COUNTING_SOURCE[int]([1, 2, 3]))[1..6]
 
             are_equal(3, s[1])
 
