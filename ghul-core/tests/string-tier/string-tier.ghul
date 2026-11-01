@@ -3,7 +3,7 @@
 use IO.Std.write_line
 use Ghul.StringSplitOptions
 
-joined(pieces: string[]) -> string => "[{string.join("|", pieces)}]"
+joined(pieces: ARRAY[string]) -> string => "[{string.join("|", pieces)}]"
 
 show(value: bool) -> string => if value then "true" else "false" fi
 

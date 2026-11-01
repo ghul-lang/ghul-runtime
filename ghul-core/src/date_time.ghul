@@ -575,10 +575,10 @@ namespace Ghul.Internal is
             return if text.length >= width then text else text.pad_left(width, '0') fi
         si
 
-        _month_names: string[] static =>
+        _month_names: ARRAY[string] static =>
             ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-        _day_names: string[] static =>
+        _day_names: ARRAY[string] static =>
             ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     si
 

@@ -5,7 +5,7 @@ namespace Ghul is
         /// The strings of `values` joined end to end, in order.
         ///
         /// - values: the strings to join
-        concat(values: string[]) -> string static is
+        concat(values: ARRAY[string]) -> string static is
             let parts = Ghul._array_new[string](values.count)
             let i mut = 0
 
@@ -222,13 +222,13 @@ namespace Ghul is
         /// give empty pieces.
         ///
         /// - separator: the code unit to split at
-        split(separator: char) -> string[] pure => split(_string_from_char(separator))
+        split(separator: char) -> ARRAY[string] pure => split(_string_from_char(separator))
 
         /// The pieces between each `separator`, in order. Adjacent separators
         /// give empty pieces.
         ///
         /// - separator: the text to split at
-        split(separator: string) -> string[] pure is
+        split(separator: string) -> ARRAY[string] pure is
             let pieces = Collections.LIST[string]()
             let start mut = 0
 

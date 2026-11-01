@@ -11,7 +11,7 @@ namespace System.Globalization is
     /// code points, such as a letter and the accents written over it.
     class StringInfo is
         _value: string
-        _starts: int[]?
+        _starts: ARRAY[int]?
 
         /// A `StringInfo` over the empty string.
         init() is
@@ -108,16 +108,16 @@ namespace System.Globalization is
         /// Where each text element of `str` starts, in UTF-16 code units.
         ///
         /// - str: the text to read
-        parse_combining_characters(str: string) -> int[] static => _starts_of(str)
+        parse_combining_characters(str: string) -> ARRAY[int] static => _starts_of(str)
 
-        _element_starts: int[] is
+        _element_starts: ARRAY[int] is
             let starts = _starts ?? _starts_of(_value)
             _starts = starts
 
             return starts
         si
 
-        _starts_of(text: string) -> int[] static is
+        _starts_of(text: string) -> ARRAY[int] static is
             let starts = Collections.LIST[int]()
             let at mut = 0
 

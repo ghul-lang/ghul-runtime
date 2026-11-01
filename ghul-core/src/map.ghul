@@ -15,11 +15,11 @@ namespace Collections is
         // its chain, or zero when empty; `_next` links a chain the same way.
         // A removed entry's hash is -1, and it heads the free list. A map
         // that has never held an entry has no table at all.
-        _buckets: int[]?;
-        _hashes: int[]?;
-        _next: int[]?;
-        _keys: K[]?;
-        _values: V[]?;
+        _buckets: ARRAY[int]?;
+        _hashes: ARRAY[int]?;
+        _next: ARRAY[int]?;
+        _keys: ARRAY[K]?;
+        _values: ARRAY[V]?;
         _used: int;
         _count: int;
         _free: int;
@@ -374,9 +374,9 @@ namespace Collections is
 
     /// Iterates the entries a map held when the iterator was made.
     class MAP_ITERATOR[K, V]: Iterator[KEY_VALUE_PAIR[K, V]] is
-        _hashes: int[]?;
-        _keys: K[]?;
-        _values: V[]?;
+        _hashes: ARRAY[int]?;
+        _keys: ARRAY[K]?;
+        _values: ARRAY[V]?;
         _used: int;
         _index: int;
 
@@ -388,7 +388,7 @@ namespace Collections is
         /// - keys: each entry's key
         /// - values: each entry's value
         /// - used: the number of entries in use or removed
-        init(hashes: int[]?, keys: K[]?, values: V[]?, used: int) is
+        init(hashes: ARRAY[int]?, keys: ARRAY[K]?, values: ARRAY[V]?, used: int) is
             _hashes = hashes;
             _keys = keys;
             _values = values;
@@ -433,8 +433,8 @@ namespace Collections is
     /// Iterates one column of a map's table, the keys or the values, skipping
     /// the entries that were removed.
     class MAP_TABLE_ITERATOR[T]: Iterator[T] is
-        _hashes: int[]?;
-        _items: T[]?;
+        _hashes: ARRAY[int]?;
+        _items: ARRAY[T]?;
         _used: int;
         _index: int;
 
@@ -444,7 +444,7 @@ namespace Collections is
         ///   where the map has no table, with `used` zero
         /// - items: the column to read, the keys or the values
         /// - used: the number of entries in use or removed
-        init(hashes: int[]?, items: T[]?, used: int) is
+        init(hashes: ARRAY[int]?, items: ARRAY[T]?, used: int) is
             _hashes = hashes;
             _items = items;
             _used = used;

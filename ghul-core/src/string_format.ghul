@@ -32,10 +32,10 @@ namespace Ghul is
         ///
         /// - format: the text, with placeholders written `{index[,alignment][:format]}`
         /// - arguments: the values, numbered from zero
-        format(format: string, arguments: object?[]) -> string static =>
+        format(format: string, arguments: ARRAY[object?]) -> string static =>
             _format(format, arguments)
 
-        _format(format: string, arguments: object?[]) -> string static is
+        _format(format: string, arguments: ARRAY[object?]) -> string static is
             let result = STRING_BUILDER()
             let i mut = 0
 
@@ -76,7 +76,7 @@ namespace Ghul is
         // One placeholder's text, between its braces: an index, then an
         // optional alignment after a comma and an optional format after a
         // colon.
-        _placeholder(text: string, arguments: object?[]) -> string static is
+        _placeholder(text: string, arguments: ARRAY[object?]) -> string static is
             let colon = text.index_of(':')
             let head = if colon >= 0 then text.substring(0, colon) else text fi
             let item_format: string? = if colon >= 0 then text.substring(colon + 1) else null fi

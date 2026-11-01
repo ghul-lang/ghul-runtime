@@ -7,7 +7,7 @@ namespace Ghul is
     // are split around a median-of-three pivot, falling back to a heap sort
     // once the recursion is twice as deep as the length's binary logarithm.
 
-    _introsort[T](items: T[], count: int, comparer: Collections.Comparer[T]) is
+    _introsort[T](items: ARRAY[T], count: int, comparer: Collections.Comparer[T]) is
         if count < 2 then
             return
         fi
@@ -15,7 +15,7 @@ namespace Ghul is
         _introsort_range(items, 0, count, 2 * (_floor_log2(count) + 1), comparer)
     si
 
-    _introsort_range[T](items: T[], start: int, length: int, depth: int, comparer: Collections.Comparer[T]) is
+    _introsort_range[T](items: ARRAY[T], start: int, length: int, depth: int, comparer: Collections.Comparer[T]) is
         let size mut = length
         let limit mut = depth
 
@@ -58,7 +58,7 @@ namespace Ghul is
 
     // Partitions the `length` elements from `start` around the median of the
     // first, middle and last, and returns the pivot's final offset.
-    _partition[T](items: T[], start: int, length: int, comparer: Collections.Comparer[T]) -> int is
+    _partition[T](items: ARRAY[T], start: int, length: int, comparer: Collections.Comparer[T]) -> int is
         let high = length - 1
         let middle = high >> 1
 
@@ -100,7 +100,7 @@ namespace Ghul is
         return left
     si
 
-    _insertion_sort[T](items: T[], start: int, length: int, comparer: Collections.Comparer[T]) is
+    _insertion_sort[T](items: ARRAY[T], start: int, length: int, comparer: Collections.Comparer[T]) is
         let i mut = 0
 
         while i < length - 1 do
@@ -117,7 +117,7 @@ namespace Ghul is
         od
     si
 
-    _heap_sort[T](items: T[], start: int, length: int, comparer: Collections.Comparer[T]) is
+    _heap_sort[T](items: ARRAY[T], start: int, length: int, comparer: Collections.Comparer[T]) is
         let i mut = length >> 1
 
         while i >= 1 do
@@ -134,7 +134,7 @@ namespace Ghul is
         od
     si
 
-    _down_heap[T](items: T[], start: int, from: int, length: int, comparer: Collections.Comparer[T]) is
+    _down_heap[T](items: ARRAY[T], start: int, from: int, length: int, comparer: Collections.Comparer[T]) is
         let d = items[start + from - 1]
         let i mut = from
 
@@ -156,13 +156,13 @@ namespace Ghul is
         _array_set(items, start + i - 1, d)
     si
 
-    _swap_if_greater[T](items: T[], i: int, j: int, comparer: Collections.Comparer[T]) is
+    _swap_if_greater[T](items: ARRAY[T], i: int, j: int, comparer: Collections.Comparer[T]) is
         if comparer.compare(items[i], items[j]) > 0 then
             _swap(items, i, j)
         fi
     si
 
-    _swap[T](items: T[], i: int, j: int) is
+    _swap[T](items: ARRAY[T], i: int, j: int) is
         let t = items[i]
 
         _array_set(items, i, items[j])

@@ -9,7 +9,7 @@ namespace System is
         ///
         /// - array: the array to search
         /// - value: the element to look for
-        index_of[T](array: T[], value: T) -> int static => index_of(array, value, 0)
+        index_of[T](array: ARRAY[T], value: T) -> int static => index_of(array, value, 0)
 
         /// The position of the first element of `array` at or after
         /// `start_index` that is `=~` to `value`, or -1 where none is.
@@ -17,7 +17,7 @@ namespace System is
         /// - array: the array to search
         /// - value: the element to look for
         /// - start_index: the position to start from
-        index_of[T](array: T[], value: T, start_index: int) -> int static is
+        index_of[T](array: ARRAY[T], value: T, start_index: int) -> int static is
             if start_index < 0 \/ start_index > array.count then
                 throw ArgumentOutOfRangeException("start_index", "the start is outside the array")
             fi
@@ -40,7 +40,7 @@ namespace System is
         ///
         /// - array: the array to search
         /// - value: the element to look for
-        last_index_of[T](array: T[], value: T) -> int static is
+        last_index_of[T](array: ARRAY[T], value: T) -> int static is
             let i mut = array.count - 1
 
             while i >= 0 do
@@ -58,7 +58,7 @@ namespace System is
         /// `Ghul.Comparable[T]`.
         ///
         /// - array: the array to sort
-        sort[T](array: T[]) static is
+        sort[T](array: ARRAY[T]) static is
             Ghul._introsort(array, array.count, Ghul._DEFAULT_COMPARER[T]())
         si
 
@@ -66,14 +66,14 @@ namespace System is
         ///
         /// - array: the array to sort
         /// - comparer: orders two elements
-        sort[T](array: T[], comparer: Collections.Comparer[T]) static is
+        sort[T](array: ARRAY[T], comparer: Collections.Comparer[T]) static is
             Ghul._introsort(array, array.count, comparer)
         si
 
         /// Reverses the order of the elements of `array` in place.
         ///
         /// - array: the array to reverse
-        reverse[T](array: T[]) static => reverse(array, 0, array.count)
+        reverse[T](array: ARRAY[T]) static => reverse(array, 0, array.count)
 
         /// Reverses the order of `length` elements of `array` from `index`,
         /// in place.
@@ -81,7 +81,7 @@ namespace System is
         /// - array: the array to change
         /// - index: the first element to move
         /// - length: the number of elements to reverse
-        reverse[T](array: T[], index: int, length: int) static is
+        reverse[T](array: ARRAY[T], index: int, length: int) static is
             if index < 0 \/ length < 0 \/ index > array.count - length then
                 throw ArgumentOutOfRangeException("index", "the range is outside the array")
             fi
@@ -104,7 +104,7 @@ namespace System is
         ///
         /// - array: the array to fill
         /// - value: the value to store
-        fill[T](array: T[], value: T) static is
+        fill[T](array: ARRAY[T], value: T) static is
             let i mut = 0
 
             while i < array.count do

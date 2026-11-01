@@ -3,7 +3,7 @@
 use IO.Std.write_line
 use Ghul.Pipes
 
-show[T](values: T[]) -> string => values |> map(v => "{v}") |> join(" ")
+show[T](values: ARRAY[T]) -> string => values |> map(v => "{v}") |> join(" ")
 
 entry() is
     let months = ["nivose", "pluviose", "ventose", "nivose"]
@@ -31,7 +31,7 @@ entry() is
     System.Array.fill(digits, 0)
     write_line(show(digits))
 
-    let empty: int[] = []
+    let empty: ARRAY[int] = []
 
     System.Array.reverse(empty)
     System.Array.sort(empty)

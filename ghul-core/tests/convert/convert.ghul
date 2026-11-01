@@ -16,7 +16,7 @@ failure(action: () -> object) -> string is
     yrt
 si
 
-bytes(values: ubyte[]) -> string => values |> map(b => "{b}") |> join(" ")
+bytes(values: ARRAY[ubyte]) -> string => values |> map(b => "{b}") |> join(" ")
 
 entry() is
     write_line("{Convert.to_string(10, 2)} {Convert.to_string(10, 8)} {Convert.to_string(255, 16)} {Convert.to_string(-42, 10)} {Convert.to_string(0, 2)}")
@@ -37,7 +37,7 @@ entry() is
     write_line(failure(() => Convert.to_byte("100", 16)))
     write_line(failure(() => Convert.to_int32("abc")))
 
-    let data: ubyte[] = [0ub, 1ub, 15ub, 16ub, 127ub, 128ub, 255ub]
+    let data: ARRAY[ubyte] = [0ub, 1ub, 15ub, 16ub, 127ub, 128ub, 255ub]
 
     write_line(Convert.to_hex_string(data))
     write_line(Convert.to_hex_string_lower(data))

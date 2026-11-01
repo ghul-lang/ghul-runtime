@@ -4,7 +4,7 @@ namespace Collections is
     /// in ghūl.
     @suppress("non-upper-snake-case-name")
     class Queue[T]: Bag[T] is
-        _items: T[];
+        _items: ARRAY[T];
         _head: int;
         _count: int;
 
@@ -95,7 +95,7 @@ namespace Collections is
         si
 
         /// The elements from front to back, copied into a new array.
-        to_array() -> T[] is
+        to_array() -> ARRAY[T] is
             let result = Ghul._array_new[T](_count);
             let i mut = 0;
 

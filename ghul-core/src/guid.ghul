@@ -9,13 +9,13 @@ namespace System is
     /// random one, written in .NET's usual form of 32 hexadecimal digits in
     /// groups of 8, 4, 4, 4 and 12.
     struct Guid is
-        _bytes: ubyte[]?
+        _bytes: ARRAY[ubyte]?
 
         /// The guid made of `bytes`, the first three groups of its text taken
         /// low byte first, as .NET reads them.
         ///
         /// - bytes: the 16 bytes
-        init(bytes: ubyte[]) is
+        init(bytes: ARRAY[ubyte]) is
             if bytes.count != 16 then
                 throw Ghul.ArgumentException("a guid is 16 bytes")
             fi
@@ -45,7 +45,7 @@ namespace System is
 
         /// The guid's 16 bytes, in the order .NET's `Guid(bytes)` takes them:
         /// the first three groups low byte first.
-        to_byte_array() -> ubyte[] => _copy(_held)
+        to_byte_array() -> ARRAY[ubyte] => _copy(_held)
 
         /// The guid as 32 lower-case hexadecimal digits in groups of 8, 4, 4,
         /// 4 and 12, joined by hyphens.
@@ -104,9 +104,9 @@ namespace System is
         si
 
         // A default-constructed guid holds no array, and stands for `empty`.
-        _held: ubyte[] pure => _bytes ?? Ghul._array_new[ubyte](16)
+        _held: ARRAY[ubyte] pure => _bytes ?? Ghul._array_new[ubyte](16)
 
-        _copy(bytes: ubyte[]) -> ubyte[] static is
+        _copy(bytes: ARRAY[ubyte]) -> ARRAY[ubyte] static is
             let result = Ghul._array_new[ubyte](bytes.count)
             let i mut = 0
 

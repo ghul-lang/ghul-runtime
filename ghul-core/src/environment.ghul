@@ -49,8 +49,8 @@ namespace Ghul is
 
         // The variables' names and values, at the same positions, the first
         // _count of each array in use.
-        _names: string[]
-        _values: string[]
+        _names: ARRAY[string]
+        _values: ARRAY[string]
         _count: int
 
         init() is
@@ -75,7 +75,7 @@ namespace Ghul is
         instance: ENVIRONMENT static => _instance
 
         /// The program's command-line arguments, in order.
-        arguments: string[] static is
+        arguments: ARRAY[string] static is
             let count = _argument_count()
             let result = Ghul._array_new[string](count)
             let i mut = 0
@@ -196,7 +196,7 @@ namespace Ghul is
             return -1
         si
 
-        _grow(items: string[], capacity: int) -> string[] is
+        _grow(items: ARRAY[string], capacity: int) -> ARRAY[string] is
             let result = Ghul._array_new[string](capacity)
             let i mut = 0
 
@@ -208,7 +208,7 @@ namespace Ghul is
             return result
         si
 
-        _copy(items: string[]) -> string[] is
+        _copy(items: ARRAY[string]) -> ARRAY[string] is
             let result = Ghul._array_new[string](_count)
             let i mut = 0
 
