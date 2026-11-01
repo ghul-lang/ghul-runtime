@@ -1,6 +1,6 @@
 namespace Tasks is
     use Collections.LIST
-    use Collections.Queue
+    use Collections.QUEUE
 
     use System.Runtime.CompilerServices.AsyncMethodBuilder
     use System.Runtime.CompilerServices.IAsyncStateMachine
@@ -637,11 +637,11 @@ namespace Tasks is
 
     // The one queue of work, and the delays waiting on the clock.
     class SCHEDULER is
-        _ready: Queue[() -> void] static
+        _ready: QUEUE[() -> void] static
         _timers: LIST[(due: long, state: TASK_STATE)] static
 
         init() static is
-            _ready = Queue[() -> void]()
+            _ready = QUEUE[() -> void]()
             _timers = LIST[(due: long, state: TASK_STATE)]()
         si
 

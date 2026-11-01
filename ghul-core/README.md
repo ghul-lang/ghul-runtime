@@ -52,7 +52,7 @@ the member's own body and holds overrides to nothing, the member is marked
 - `tests/list` — `LIST` and the list traits
 - `tests/map` — `MAP`, `SET` and the map and set traits, and finding
   elements of a `LIST` by `=~`
-- `tests/stack-queue` — `STACK`, `Queue`, the set operations on `SET`,
+- `tests/stack-queue` — `STACK`, `QUEUE`, the set operations on `SET`,
   and a `KEY_VALUE_PAIR` destructured by position
 - `tests/float_text` — `to_string` on `double` and `single`
 - `dotnet-tests/float_text_dotnet` — the floating-point formatter compiled for .NET
