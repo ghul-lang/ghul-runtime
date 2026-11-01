@@ -12,17 +12,20 @@ namespace Ghul.Functional is
     // composed function keeps f's own arity: one argument is threaded
     // as it is, several are gathered into the tuple the pack binds to.
     /// Composes `f` and `g`: applies `f` first, then passes its result to `g`.
+    @trusted_store_free()
     >>[T.., B, C](f: T.. -> B, g: (B) -> C) -> T.. -> C => v => g(f(v))
 
     // Right-to-left composition, the mathematical reading: `f << g`
     // applies g, then f, keeping the second stage's arity.
     /// Composes `f` and `g`: applies `g` first, then passes its result to `f`.
+    @trusted_store_free()
     <<[T.., B, C](f: (B) -> C, g: T.. -> B) -> T.. -> C => v => f(g(v))
 
     // Reshape a two-argument function into unary functions returning
     // functions, so one argument can be supplied and the rest passed
     // later: `curry(add)(3)` is the function that adds 3.
     /// `f` reshaped to take its two arguments one at a time: `curry(f)(a)(b)` is `f(a, b)`.
+    @trusted_store_free()
     curry[A, B, C](f: (A, B) -> C) -> (A) -> (B) -> C =>
         a => b => f(a, b)
 
@@ -30,6 +33,7 @@ namespace Ghul.Functional is
     // step-by-step construction of the same shape, as a plain
     // two-argument function.
     /// The inverse of `curry`: `f` reshaped to take both arguments at once.
+    @trusted_store_free()
     uncurry[A, B, C](f: (A) -> (B) -> C) -> (A, B) -> C =>
         (a, b) => f(a)(b)
 
@@ -39,7 +43,7 @@ namespace Ghul.Functional is
     // tuple reach the same formal.
     /// Calls `f` with `v`, spreading `v`'s elements as separate arguments
     /// when `f` takes more than one.
-    apply[T.., U](f: T.. -> U, v: T..) -> U => f(v)
+        apply[T.., U](f: T.. -> U, v: T..) -> U => f(v)
 
     // A function that answers from a map of the results it has already
     // computed, so repeated calls with the same arguments compute once.
