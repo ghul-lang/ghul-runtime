@@ -1,4 +1,5 @@
 namespace Ghul.Pipes is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
     use Ghul.InvalidOperationException
 
     use System.Text.StringBuilder
@@ -249,14 +250,14 @@ namespace Ghul.Pipes is
         SCAN_PIPE[T,TRunning](source, seed, accumulator)
 
     /// The elements of `source`, collected into an array.
-    collect[T](source: Iterable[T]) -> T[] pure =>
+    collect[T](source: Iterable[T]) -> ARRAY[T] pure =>
         collect_mutable(source).to_array()
 
     // the same as collect, which is the name to use
     /// The same as `collect`. Use `collect` instead.
     @IF.dotnet()
     @System.Obsolete("use collect instead")
-    collect_array[T](source: Iterable[T]) -> T[] pure =>
+    collect_array[T](source: Iterable[T]) -> ARRAY[T] pure =>
         collect(source)
 
     // the same as collect_mutable, which is the name to use
@@ -829,12 +830,12 @@ namespace Ghul.Pipes is
     /// The part of `source` from `r`'s start up to but not including its end. Nothing is copied,
     /// so a later change to `source` shows through.
     @IF.dotnet()
-    slice[T](source: T[], r: INT_RANGE) -> List[T] pure =>
+    slice[T](source: ARRAY[T], r: INT_RANGE) -> List[T] pure =>
         System.ArraySegment[T](source, r.from, r.to - r.from)
 
     /// The same as the `INT_RANGE` overload, with `r`'s end included.
     @IF.dotnet()
-    slice[T](source: T[], r: INT_RANGE_INCLUSIVE) -> List[T] pure =>
+    slice[T](source: ARRAY[T], r: INT_RANGE_INCLUSIVE) -> List[T] pure =>
         System.ArraySegment[T](source, r.from, r.to - r.from + 1)
 
     /// The part of `source` from `r`'s start up to but not including its end. Nothing is copied,
@@ -864,7 +865,7 @@ namespace Ghul.Pipes is
     /// The part of `source` that `r` selects, resolving `r`'s from-the-end
     /// endpoints against `source`'s length.
     @IF.dotnet()
-    slice[T](source: T[], r: System.Range) -> List[T] pure is
+    slice[T](source: ARRAY[T], r: System.Range) -> List[T] pure is
         let (offset, count) = r.get_offset_and_length(source.count)
 
         return System.ArraySegment[T](source, offset, count)

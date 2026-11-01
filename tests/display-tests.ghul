@@ -184,7 +184,7 @@ namespace Tests is
         // fallback.
         @Test()
         Render_a_heterogeneous_object_array() is
-            let mixed: object[] = ["a", [1, 2], 42]
+            let mixed: ARRAY[object] = ["a", [1, 2], 42]
 
             are_equal("[a, [1, 2], 42]", $(mixed))
         si

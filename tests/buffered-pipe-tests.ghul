@@ -25,11 +25,11 @@ namespace Tests is
     // test reads, so a test can tell a read that continues a positioned
     // iterator from one that re-derives from the source.
     class COUNTING_ITERATOR[T]: Iterator[T] is
-        values: T[]
+        values: ARRAY[T]
         _at: int
         _total: TOTAL
 
-        init(values: T[], total: TOTAL) is
+        init(values: ARRAY[T], total: TOTAL) is
             self.values = values
             _total = total
         si
@@ -57,12 +57,12 @@ namespace Tests is
     // A source each read of which takes a fresh counting iterator, all
     // bumping one total.
     class COUNTING_READER_SOURCE[T]: Iterable[T] is
-        values: T[]
+        values: ARRAY[T]
         total: TOTAL field
 
         handed_out: int => total.count
 
-        init(values: T[]) is
+        init(values: ARRAY[T]) is
             self.values = values
             total = TOTAL()
         si

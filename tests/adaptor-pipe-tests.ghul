@@ -12,7 +12,7 @@ namespace Tests is
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
-    empty[T]() -> T[] => System.Array.empty`[T]()
+    empty[T]() -> ARRAY[T] => System.Array.empty`[T]()
 
     iv[T](index: int, value: T) -> INDEXED_VALUE[T] => INDEXED_VALUE[T](index, value)
 

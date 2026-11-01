@@ -15,10 +15,10 @@ namespace Tests is
 
     // An iterable that counts how many iterators it has handed out.
     class ITERATOR_COUNTING_SOURCE: Iterable[int] is
-        _values: int[]
+        _values: ARRAY[int]
         handed_out: int public
 
-        init(values: int[]) is
+        init(values: ARRAY[int]) is
             _values = values
         si
 
@@ -32,10 +32,10 @@ namespace Tests is
     // An iterable that counts how many of the iterators it has handed
     // out have been disposed.
     class DISPOSAL_SOURCE: Iterable[int] is
-        values: int[]
+        values: ARRAY[int]
         disposed: int public
 
-        init(values: int[]) is
+        init(values: ARRAY[int]) is
             self.values = values
         si
 

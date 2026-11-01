@@ -259,7 +259,7 @@ namespace Tests is
     @suppress("field-definite-assignment")
     class BATCH_FIXTURE is
         names: Collections.LIST[string] public
-        points: POINT_DTO_FIXTURE[] public
+        points: ARRAY[POINT_DTO_FIXTURE] public
         tags: Collections.Iterable[string] public
 
         init() is si
