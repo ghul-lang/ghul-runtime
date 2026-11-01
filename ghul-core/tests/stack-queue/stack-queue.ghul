@@ -13,7 +13,7 @@ write_line(s.to_array() |> join(","))
 let s2 = STACK([7, 8, 9])
 write_line("{s2.pop()}")
 
-let q = Queue[string]()
+let q = QUEUE[string]()
 q.enqueue("a"); q.enqueue("b"); q.enqueue("c")
 write_line("{q.dequeue()} {q.peek()} {q.count}")
 for i in 1::6 do q.enqueue("{i}") od

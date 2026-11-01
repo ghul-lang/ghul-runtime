@@ -1,9 +1,7 @@
 namespace Collections is
     /// A first-in, first-out collection: elements are removed in the order
-    /// they were added. This is .NET's `Queue<T>`, which keeps its .NET name
-    /// in ghūl.
-    @suppress("non-upper-snake-case-name")
-    class Queue[T]: Bag[T] is
+    /// they were added. This is .NET's `Queue<T>`.
+    class QUEUE[T]: Bag[T] is
         _items: ARRAY[T];
         _head: int;
         _count: int;
