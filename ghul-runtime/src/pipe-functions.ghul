@@ -67,13 +67,19 @@ namespace Ghul.Pipes is
     peek[T..](source: Iterable[T], action: T.. -> void) -> Iterable[T] pure =>
         PEEK_PIPE[T](source, action)
 
-    /// `source` as a read-only list, filled from `source` as it is read: the first
-    /// read of a position pulls `source` that far and keeps what it pulled, so a later
-    /// read replays it without reading `source` again, and `count` pulls all of it.
+    /// `source` as a `T[]`, a read-only list, without reading it all first. Use it
+    /// where a sequence is wanted more than once, or by position, and the work of
+    /// producing it should happen once and only as far as it is read: each element
+    /// is computed by the first read that reaches it and kept for every later one,
+    /// so an unbounded `source` works as long as nothing asks for all of it. `count`
+    /// does, and so does a `for` over the whole list.
+    ///
+    /// For a collection built in full at this line, construct it from the sequence
+    /// instead: `ARRAY(source)`, `LIST(source)`, `SET(source)` or `MAP(source)`.
     list[T](source: Iterable[T]) -> List[T] pure =>
         MEMO_PIPE[T](MEMO_CACHE[T](source))
 
-    /// `source` as a read-only list, the same list `list` gives.
+    /// The same list `list` gives. Use `list` instead.
     memo[T](source: Iterable[T]) -> List[T] pure =>
         MEMO_PIPE[T](MEMO_CACHE[T](source))
 

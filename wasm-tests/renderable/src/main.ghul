@@ -4,7 +4,7 @@ use Ghul.Renderable
 class SWATCH: Renderable is
     init() is si
 
-    representations() -> Collections.Iterable[(mime: string, content: ubyte[])] =>
+    representations() -> Collections.Iterable[(mime: string, content: ARRAY[ubyte])] =>
         [("text/plain", [104ub, 105ub])]
 si
 
