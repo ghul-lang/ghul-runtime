@@ -43,8 +43,7 @@ namespace Ghul.Functional is
     // tuple reach the same formal.
     /// Calls `f` with `v`, spreading `v`'s elements as separate arguments
     /// when `f` takes more than one.
-    @trusted_store_free()
-    apply[T.., U](f: T.. -> U, v: T..) -> U => f(v)
+        apply[T.., U](f: T.. -> U, v: T..) -> U => f(v)
 
     // A function that answers from a map of the results it has already
     // computed, so repeated calls with the same arguments compute once.
