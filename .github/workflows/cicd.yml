@@ -286,9 +286,12 @@ jobs:
     runs-on: ubuntu-latest
     # The organization hands workflows a read-only token by default, so the
     # push to its package feed has to ask for packages: write itself.
+    # id-token lets the job ask GitHub for the short-lived token nuget.org
+    # trades for a publishing key; nothing here holds a NuGet secret.
     permissions:
       contents: read
       packages: write
+      id-token: write
     if: ${{ github.event_name == 'push' }}
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0-noble
@@ -310,11 +313,17 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # The key nuget.org hands back is single use and lasts an hour, so the
+    # exchange sits immediately before the one push that spends it.
+    - name: Ask nuget.org for a publishing key
+      id: login
+      uses: NuGet/login@v1
+      with:
+        # The nuget.org profile name, which is not an email address.
+        user: ${{ secrets.NUGET_USER }}
+
     - name: Publish package to NuGet
-      if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
-      run: dotnet nuget push ./nupkg/*.nupkg -k ${NUGET_TOKEN} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
-      env:
-        NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+      run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
 
   create-release:
     needs: [version, build, integration-tests, native-aot-tests, publish-release-package]
