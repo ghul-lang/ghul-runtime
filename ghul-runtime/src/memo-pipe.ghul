@@ -1,8 +1,9 @@
 namespace Ghul.Pipes is
     use Collections
 
-    // What every cursor over one `memo` shares: the source's iterator,
-    // until the source is exhausted, and the elements pulled from it so far.
+    /// What every cursor over one `memo` sequence shares: the source's
+    /// iterator, until the source is exhausted, and the elements pulled from
+    /// it so far. Created by `memo`; not meant to be used directly.
     class MEMO_CACHE[T] is
         iterator: Iterator[T]?
         elements: LIST[T]
