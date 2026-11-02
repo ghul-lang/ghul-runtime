@@ -1,0 +1,22 @@
+// `**` on each base type, compiled from the runtime's own sources, prints
+// what the same program prints on .NET.
+use IO.Std.write_line
+use Ghul.Math.`**
+
+overflows(f: () -> long) -> string is
+    try
+        f()
+        return "no throw"
+    catch e: System.OverflowException
+        return e.message
+    yrt
+si
+
+entry() is
+    write_line("{2 ** 10} {-3 ** 3} {2L ** 62} {3u ** 20} {3ul ** 40}")
+    write_line("{cast word(2) ** 20} {cast uword(2) ** 20}")
+    write_line("{2n ** 100}")
+    write_line("{2.0 ** 10.0} {9.0 ** 0.5} {2.0s ** 3.0s}")
+    write_line(overflows(() => long(2 ** 31)))
+    write_line(overflows(() => 3L ** 40))
+si

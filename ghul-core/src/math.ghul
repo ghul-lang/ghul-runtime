@@ -264,6 +264,221 @@ namespace Ghul.Math is
     @intrinsic("host.math_pow")
     pow(x: double, y: double) -> double pure
 
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in an `int`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: int, exponent: int) -> int pure is
+        let result = _power(long(base), exponent, "int")
+        let narrowed = int(result)
+
+        if long(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "int")
+        fi
+
+        return narrowed
+    si
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `long`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: long, exponent: int) -> long pure => _power(base, exponent, "long")
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `word`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: word, exponent: int) -> word pure is
+        let result = _power(long(base), exponent, "word")
+        let narrowed = word(result)
+
+        if long(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "word")
+        fi
+
+        return narrowed
+    si
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `uint`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: uint, exponent: int) -> uint pure is
+        let result = _power(ulong(base), exponent, "uint")
+        let narrowed = uint(result)
+
+        if ulong(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "uint")
+        fi
+
+        return narrowed
+    si
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `ulong`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ulong, exponent: int) -> ulong pure => _power(base, exponent, "ulong")
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `uword`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: uword, exponent: int) -> uword pure is
+        let result = _power(ulong(base), exponent, "uword")
+        let narrowed = uword(result)
+
+        if ulong(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "uword")
+        fi
+
+        return narrowed
+    si
+
+    /// `base` raised to the power `exponent`. Throws
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: bigint, exponent: int) -> bigint => bigint.pow(base, exponent)
+
+    /// `base` raised to the power `exponent`: the reciprocal of the positive
+    /// power where `exponent` is negative. Throws `OverflowException` where
+    /// the result does not fit in a `decimal`.
+    ///
+    /// - base: the value raised
+    /// - exponent: the power
+    **(base: decimal, exponent: int) -> decimal pure is
+        let magnitude = abs(long(exponent))
+        let result mut = 1m
+        let square mut = base
+        let rest mut = magnitude
+
+        while rest > 0L do
+            if rest & 1L == 1L then
+                result = result * square
+            fi
+
+            rest = rest >> 1
+
+            if rest > 0L then
+                square = square * square
+            fi
+        od
+
+        return if exponent < 0 then 1m / result else result fi
+    si
+
+    /// `base` raised to the power `exponent`, as `pow` computes it.
+    ///
+    /// - base: the value raised
+    /// - exponent: the power
+    **(base: double, exponent: double) -> double pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` computes it.
+    ///
+    /// - base: the value raised
+    /// - exponent: the power
+    **(base: single, exponent: single) -> single pure => single(pow(double(base), double(exponent)))
+
+    // Square and multiply, each step checked: a square is taken only while
+    // a bit of the exponent remains, so a square that overflows means the
+    // result would too.
+    _power(base: long, exponent: int, type_name: string) -> long pure is
+        if exponent < 0 then
+            throw ArgumentOutOfRangeException("exponent", "the exponent is negative")
+        fi
+
+        let result mut = 1L
+        let square mut = base
+        let rest mut = exponent
+
+        while rest > 0 do
+            if rest & 1 == 1 then
+                result = _checked_multiply(result, square, base, exponent, type_name)
+            fi
+
+            rest = rest >> 1
+
+            if rest > 0 then
+                square = _checked_multiply(square, square, base, exponent, type_name)
+            fi
+        od
+
+        return result
+    si
+
+    _power(base: ulong, exponent: int, type_name: string) -> ulong pure is
+        if exponent < 0 then
+            throw ArgumentOutOfRangeException("exponent", "the exponent is negative")
+        fi
+
+        let result mut = 1ul
+        let square mut = base
+        let rest mut = exponent
+
+        while rest > 0 do
+            if rest & 1 == 1 then
+                result = _checked_multiply(result, square, base, exponent, type_name)
+            fi
+
+            rest = rest >> 1
+
+            if rest > 0 then
+                square = _checked_multiply(square, square, base, exponent, type_name)
+            fi
+        od
+
+        return result
+    si
+
+    // The product of `left` and `right`, or an `OverflowException` naming
+    // the power being computed. Only the least `long` is its own negation,
+    // so a product by -1 overflows exactly when it equals a non-zero
+    // operand; otherwise dividing back recovers the operand unless the
+    // product wrapped.
+    _checked_multiply(left: long, right: long, base: long, exponent: int, type_name: string) -> long pure is
+        let product = left * right
+
+        let overflowed =
+            if left == -1L then right != 0L /\ product == right
+            elif left == 0L then false
+            else product / left != right
+            fi
+
+        if overflowed then
+            throw _power_overflow("{base}", exponent, type_name)
+        fi
+
+        return product
+    si
+
+    _checked_multiply(left: ulong, right: ulong, base: ulong, exponent: int, type_name: string) -> ulong pure is
+        let product = left * right
+
+        if left != 0ul /\ product / left != right then
+            throw _power_overflow("{base}", exponent, type_name)
+        fi
+
+        return product
+    si
+
+    _power_overflow(base: string, exponent: int, type_name: string) -> OverflowException pure =>
+        OverflowException("{base} ** {exponent} is too large for {type_name}: raise a bigint for an exact result")
+
     /// Whether `value` is not a number.
     is_nan(value: double) -> bool pure => value != value
 
