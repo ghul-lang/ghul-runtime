@@ -20,7 +20,7 @@ ds.sort()
 write_line(ds |> join(","))
 write_line("{int.max(3, 7)} {int.min(3, 7)} {int.abs(-4)} {long.abs(-5L)} {int.clamp(12, 0, 10)} {int.sign(-3)}")
 write_line("{double.sqrt(16.0)} {double.abs(-2.5)} {double.pow(2.0, 10.0)} {double.round(2.5)} {double.log(1.0)} {double.max(1.5, 2.5)}")
-write_line("{Ghul.Math.ieeeremainder(10.0, 3.0)}")
+write_line("{Ghul.Math.ieee_remainder(10.0, 3.0)}")
 try
     xs.remove_range(3, 5)
 catch e: Ghul.ArgumentException
