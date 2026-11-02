@@ -1,6 +1,5 @@
 namespace Tests is
     use Ghul
-    use Ghul.Math.`**
 
     use Microsoft.VisualStudio.TestTools.UnitTesting
 
@@ -21,6 +20,11 @@ namespace Tests is
             are_equal(cast word(1024), cast word(2) ** 10)
             are_equal(cast uword(1024), cast uword(2) ** 10)
             are_equal(1267650600228229401496703205376n, 2n ** 100)
+            are_equal(64b, 2b ** 6)
+            are_equal(-127b - 1b, -2b ** 7)
+            are_equal(-32767s - 1s, -2s ** 15)
+            are_equal(243ub, 3ub ** 5)
+            are_equal(59049us, 3us ** 10)
         si
 
         @Test()
@@ -54,6 +58,10 @@ namespace Tests is
             throws_overflow(() => 2u ** 32)
             throws_overflow(() => 2ul ** 64)
             throws_overflow(() => 3ul ** 41)
+            throws_overflow(() => 2b ** 7)
+            throws_overflow(() => 2s ** 15)
+            throws_overflow(() => 2ub ** 8)
+            throws_overflow(() => 2us ** 16)
         si
 
         @Test()

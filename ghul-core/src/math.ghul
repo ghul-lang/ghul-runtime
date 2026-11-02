@@ -264,13 +264,55 @@ namespace Ghul.Math is
     @intrinsic("host.math_pow")
     pow(x: double, y: double) -> double pure
 
-    /// `base` raised to the power `exponent`. Throws `OverflowException`
-    /// where the result does not fit in an `int`, and
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: int, exponent: int) -> int pure is
+    // The bodies of the `**` operators declared in `power.ghul`. They live
+    // here rather than beside those declarations because inside
+    // `Ghul.Intrinsics.Staging` an operator on a built-in type names both the
+    // declaration written there and the intrinsic it registers.
+    _raise(base: byte, exponent: int) -> byte pure is
+        let result = _power(long(base), exponent, "byte")
+        let narrowed = byte(result)
+
+        if long(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "byte")
+        fi
+
+        return narrowed
+    si
+
+    _raise(base: short, exponent: int) -> short pure is
+        let result = _power(long(base), exponent, "short")
+        let narrowed = short(result)
+
+        if long(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "short")
+        fi
+
+        return narrowed
+    si
+
+    _raise(base: ubyte, exponent: int) -> ubyte pure is
+        let result = _power(ulong(base), exponent, "ubyte")
+        let narrowed = ubyte(result)
+
+        if ulong(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "ubyte")
+        fi
+
+        return narrowed
+    si
+
+    _raise(base: ushort, exponent: int) -> ushort pure is
+        let result = _power(ulong(base), exponent, "ushort")
+        let narrowed = ushort(result)
+
+        if ulong(narrowed) != result then
+            throw _power_overflow("{base}", exponent, "ushort")
+        fi
+
+        return narrowed
+    si
+
+    _raise(base: int, exponent: int) -> int pure is
         let result = _power(long(base), exponent, "int")
         let narrowed = int(result)
 
@@ -281,21 +323,9 @@ namespace Ghul.Math is
         return narrowed
     si
 
-    /// `base` raised to the power `exponent`. Throws `OverflowException`
-    /// where the result does not fit in a `long`, and
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: long, exponent: int) -> long pure => _power(base, exponent, "long")
+    _raise(base: long, exponent: int) -> long pure => _power(base, exponent, "long")
 
-    /// `base` raised to the power `exponent`. Throws `OverflowException`
-    /// where the result does not fit in a `word`, and
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: word, exponent: int) -> word pure is
+    _raise(base: word, exponent: int) -> word pure is
         let result = _power(long(base), exponent, "word")
         let narrowed = word(result)
 
@@ -306,13 +336,7 @@ namespace Ghul.Math is
         return narrowed
     si
 
-    /// `base` raised to the power `exponent`. Throws `OverflowException`
-    /// where the result does not fit in a `uint`, and
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: uint, exponent: int) -> uint pure is
+    _raise(base: uint, exponent: int) -> uint pure is
         let result = _power(ulong(base), exponent, "uint")
         let narrowed = uint(result)
 
@@ -323,21 +347,9 @@ namespace Ghul.Math is
         return narrowed
     si
 
-    /// `base` raised to the power `exponent`. Throws `OverflowException`
-    /// where the result does not fit in a `ulong`, and
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: ulong, exponent: int) -> ulong pure => _power(base, exponent, "ulong")
+    _raise(base: ulong, exponent: int) -> ulong pure => _power(base, exponent, "ulong")
 
-    /// `base` raised to the power `exponent`. Throws `OverflowException`
-    /// where the result does not fit in a `uword`, and
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: uword, exponent: int) -> uword pure is
+    _raise(base: uword, exponent: int) -> uword pure is
         let result = _power(ulong(base), exponent, "uword")
         let narrowed = uword(result)
 
@@ -348,20 +360,9 @@ namespace Ghul.Math is
         return narrowed
     si
 
-    /// `base` raised to the power `exponent`. Throws
-    /// `ArgumentOutOfRangeException` where `exponent` is negative.
-    ///
-    /// - base: the value raised
-    /// - exponent: the non-negative power
-    **(base: bigint, exponent: int) -> bigint => bigint.pow(base, exponent)
+    _raise(base: bigint, exponent: int) -> bigint => bigint.pow(base, exponent)
 
-    /// `base` raised to the power `exponent`: the reciprocal of the positive
-    /// power where `exponent` is negative. Throws `OverflowException` where
-    /// the result does not fit in a `decimal`.
-    ///
-    /// - base: the value raised
-    /// - exponent: the power
-    **(base: decimal, exponent: int) -> decimal pure is
+    _raise(base: decimal, exponent: int) -> decimal pure is
         let magnitude = abs(long(exponent))
         let result mut = 1m
         let square mut = base
@@ -382,17 +383,9 @@ namespace Ghul.Math is
         return if exponent < 0 then 1m / result else result fi
     si
 
-    /// `base` raised to the power `exponent`, as `pow` computes it.
-    ///
-    /// - base: the value raised
-    /// - exponent: the power
-    **(base: double, exponent: double) -> double pure => pow(base, exponent)
+    _raise(base: double, exponent: double) -> double pure => pow(base, exponent)
 
-    /// `base` raised to the power `exponent`, as `pow` computes it.
-    ///
-    /// - base: the value raised
-    /// - exponent: the power
-    **(base: single, exponent: single) -> single pure => single(pow(double(base), double(exponent)))
+    _raise(base: single, exponent: single) -> single pure => single(pow(double(base), double(exponent)))
 
     // Square and multiply, each step checked: a square is taken only while
     // a bit of the exponent remains, so a square that overflows means the

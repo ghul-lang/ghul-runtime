@@ -1,7 +1,6 @@
 // `**` on each base type, compiled from the runtime's own sources, prints
 // what the same program prints on .NET.
 use IO.Std.write_line
-use Ghul.Math.`**
 
 overflows(f: () -> long) -> string is
     try

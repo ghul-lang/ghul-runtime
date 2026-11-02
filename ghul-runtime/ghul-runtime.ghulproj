@@ -42,9 +42,11 @@
 
     <GhulSources Include="src/**/*.ghul" />
 
-    <!-- The one core-tree file the .NET library declares too: on .NET its
-         host intrinsics call System.Math. -->
+    <!-- The core-tree files the .NET library declares too: on .NET the
+         maths host intrinsics call System.Math, and the power operator
+         is ordinary ghūl on every target. -->
     <GhulSources Include="../ghul-core/src/math.ghul" />
+    <GhulSources Include="../ghul-core/src/power.ghul" />
 
     <!-- Terminator-free sources; an error so a stray `;` cannot creep
          back in. -->

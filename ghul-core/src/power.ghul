@@ -1,0 +1,111 @@
+namespace Ghul.Intrinsics.Staging is
+    // The power operator. These are ordinary functions, not intrinsics:
+    // the compiler declares them in `Ghul.Intrinsics` too, so a program
+    // reaches them with no `use`, as it does the arithmetic intrinsics.
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `byte`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: byte, exponent: int) -> byte pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `short`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: short, exponent: int) -> short pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `int`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: int, exponent: int) -> int pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `long`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: long, exponent: int) -> long pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `word`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: word, exponent: int) -> word pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `ubyte`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ubyte, exponent: int) -> ubyte pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `ushort`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ushort, exponent: int) -> ushort pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `uint`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: uint, exponent: int) -> uint pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `ulong`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ulong, exponent: int) -> ulong pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws `OverflowException`
+    /// where the result does not fit in a `uword`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: uword, exponent: int) -> uword pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`. Throws
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: bigint, exponent: int) -> bigint => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`: the reciprocal of the positive
+    /// power where `exponent` is negative. Throws `OverflowException` where
+    /// the result does not fit in a `decimal`.
+    ///
+    /// - base: the value raised
+    /// - exponent: the power
+    **(base: decimal, exponent: int) -> decimal pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `Ghul.Math.pow` computes it.
+    ///
+    /// - base: the value raised
+    /// - exponent: the power
+    **(base: double, exponent: double) -> double pure => Ghul.Math._raise(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `Ghul.Math.pow` computes it.
+    ///
+    /// - base: the value raised
+    /// - exponent: the power
+    **(base: single, exponent: single) -> single pure => Ghul.Math._raise(base, exponent)
+si
