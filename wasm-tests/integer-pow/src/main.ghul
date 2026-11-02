@@ -1,0 +1,21 @@
+// The integer `pow` overloads, compiled from the runtime's own sources,
+// print what the same program prints on .NET.
+use IO.Std.write_line
+use Ghul.Math.pow
+
+overflows(f: () -> long) -> string is
+    try
+        f()
+        return "no throw"
+    catch e: System.OverflowException
+        return e.message
+    yrt
+si
+
+entry() is
+    write_line("{pow(2, 10)} {pow(-3, 3)} {pow(2L, 62)} {pow(3u, 20)} {pow(3ul, 40)}")
+    write_line("{pow(cast word(2), 20)} {pow(cast uword(2), 20)} {pow(3ub, 5)} {pow(-2s, 15)}")
+    write_line("{pow(2n, 100)} {pow(9.0, 0.5)}")
+    write_line(overflows(() => long(pow(2, 31))))
+    write_line(overflows(() => pow(3L, 40)))
+si

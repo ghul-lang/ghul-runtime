@@ -1,5 +1,5 @@
 {
-    "name": "power-operator",
+    "name": "integer-pow",
     "targets": ["wasm", "llvm"],
     "dependencies": {
         "ghul-runtime": { "path": "../.." }
