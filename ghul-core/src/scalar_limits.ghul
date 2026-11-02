@@ -89,27 +89,27 @@ namespace Ghul is
         /// Whether `value` is not a number.
         ///
         /// - value: the value to test
-        is_na_n(value: single) -> bool static pure => value != value
+        is_na_n(value: single) -> bool static pure => Math.is_nan(value)
 
         /// Whether `value` is positive or negative infinity.
         ///
         /// - value: the value to test
-        is_infinity(value: single) -> bool static pure => value == value /\ value - value != value - value
+        is_infinity(value: single) -> bool static pure => Math.is_infinity(value)
 
         /// Whether `value` is positive infinity.
         ///
         /// - value: the value to test
-        is_positive_infinity(value: single) -> bool static pure => value > 0.0s /\ is_infinity(value)
+        is_positive_infinity(value: single) -> bool static pure => Math.is_positive_infinity(value)
 
         /// Whether `value` is negative infinity.
         ///
         /// - value: the value to test
-        is_negative_infinity(value: single) -> bool static pure => value < 0.0s /\ is_infinity(value)
+        is_negative_infinity(value: single) -> bool static pure => Math.is_negative_infinity(value)
 
         /// Whether `value` is neither infinite nor not a number.
         ///
         /// - value: the value to test
-        is_finite(value: single) -> bool static pure => value - value == value - value
+        is_finite(value: single) -> bool static pure => Math.is_finite(value)
     si
 
     partial double is
@@ -134,27 +134,27 @@ namespace Ghul is
         /// Whether `value` is not a number.
         ///
         /// - value: the value to test
-        is_na_n(value: double) -> bool static pure => value != value
+        is_na_n(value: double) -> bool static pure => Math.is_nan(value)
 
         /// Whether `value` is positive or negative infinity.
         ///
         /// - value: the value to test
-        is_infinity(value: double) -> bool static pure => value == value /\ value - value != value - value
+        is_infinity(value: double) -> bool static pure => Math.is_infinity(value)
 
         /// Whether `value` is positive infinity.
         ///
         /// - value: the value to test
-        is_positive_infinity(value: double) -> bool static pure => value > 0.0 /\ is_infinity(value)
+        is_positive_infinity(value: double) -> bool static pure => Math.is_positive_infinity(value)
 
         /// Whether `value` is negative infinity.
         ///
         /// - value: the value to test
-        is_negative_infinity(value: double) -> bool static pure => value < 0.0 /\ is_infinity(value)
+        is_negative_infinity(value: double) -> bool static pure => Math.is_negative_infinity(value)
 
         /// Whether `value` is neither infinite nor not a number.
         ///
         /// - value: the value to test
-        is_finite(value: double) -> bool static pure => value - value == value - value
+        is_finite(value: double) -> bool static pure => Math.is_finite(value)
 
         /// `degrees` converted to radians.
         ///

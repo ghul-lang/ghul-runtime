@@ -1,0 +1,160 @@
+namespace Tests is
+    use Ghul
+    use Collections
+    use Ghul.Pipes
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Ghul.Math is ghūl code on .NET too, so each function is checked
+    // against the System.Math member it stands in for.
+    @TestClass()
+    class MathShould is
+        init() is si
+
+        // Doubles at the edges of every range the stepping functions treat
+        // differently, then random bit patterns.
+        doubles() -> LIST[double] static is
+            let result = LIST[double]([
+                0.0, -0.0, 1.0, -1.0, 2.0, -2.0, 0.5, 3.0, 1.5, 1.0e300, -1.0e-300,
+                double.epsilon, -double.epsilon, double.max_value, double.min_value,
+                2.2250738585072014e-308, -2.2250738585072014e-308, 2.225073858507201e-308,
+                1.0 / 0.0, -1.0 / 0.0, 0.0 / 0.0, 4294967296.0, 2.3283064365386963e-10
+            ])
+
+            let random = RANDOM(1234)
+            let bytes = ARRAY[ubyte](repeat(0ub, 8))
+
+            for i in 0..2000 do
+                random.next_bytes(bytes)
+                result.add(System.BitConverter.to_double(bytes, 0))
+            od
+
+            return result
+        si
+
+        singles() -> LIST[single] static is
+            let result = LIST[single]([
+                0.0s, -0.0s, 1.0s, -1.0s, 2.0s, 0.5s, 3.0s, 1.0e30s, -1.0e-30s,
+                single.epsilon, -single.epsilon, single.max_value, single.min_value,
+                1.17549435e-38s, -1.17549435e-38s, 65536.0s,
+                1.0s / 0.0s, -1.0s / 0.0s, 0.0s / 0.0s
+            ])
+
+            let random = RANDOM(5678)
+            let bytes = ARRAY[ubyte](repeat(0ub, 4))
+
+            for i in 0..2000 do
+                random.next_bytes(bytes)
+                result.add(System.BitConverter.to_single(bytes, 0))
+            od
+
+            return result
+        si
+
+        bits(value: double) -> long static => System.BitConverter.double_to_int64_bits(value)
+
+        bits(value: single) -> int static => System.BitConverter.single_to_int32_bits(value)
+
+        @Test()
+        BitIncrement_AgreesWithSystemMath() is
+            for x in doubles() do
+                let expected = System.Math.bit_increment(x)
+                let actual = Ghul.Math.bit_increment(x)
+
+                if expected == expected then
+                    are_equal(bits(expected), bits(actual), "bit_increment({x:R})")
+                else
+                    are_equal(true, actual != actual, "bit_increment({x:R})")
+                fi
+            od
+        si
+
+        @Test()
+        BitDecrement_AgreesWithSystemMath() is
+            for x in doubles() do
+                let expected = System.Math.bit_decrement(x)
+                let actual = Ghul.Math.bit_decrement(x)
+
+                if expected == expected then
+                    are_equal(bits(expected), bits(actual), "bit_decrement({x:R})")
+                else
+                    are_equal(true, actual != actual, "bit_decrement({x:R})")
+                fi
+            od
+        si
+
+        @Test()
+        BitIncrement_AgreesWithSystemMathF() is
+            for x in singles() do
+                let expected = System.MathF.bit_increment(x)
+                let actual = Ghul.Math.bit_increment(x)
+
+                if expected == expected then
+                    are_equal(bits(expected), bits(actual), "bit_increment({x:R})")
+                else
+                    are_equal(true, actual != actual, "bit_increment({x:R})")
+                fi
+            od
+        si
+
+        @Test()
+        BitDecrement_AgreesWithSystemMathF() is
+            for x in singles() do
+                let expected = System.MathF.bit_decrement(x)
+                let actual = Ghul.Math.bit_decrement(x)
+
+                if expected == expected then
+                    are_equal(bits(expected), bits(actual), "bit_decrement({x:R})")
+                else
+                    are_equal(true, actual != actual, "bit_decrement({x:R})")
+                fi
+            od
+        si
+
+        @Test()
+        Predicates_AgreeWithDouble() is
+            for x in doubles() do
+                are_equal(double.is_na_n(x), Ghul.Math.is_nan(x), "is_nan({x:R})")
+                are_equal(double.is_infinity(x), Ghul.Math.is_infinity(x), "is_infinity({x:R})")
+                are_equal(double.is_positive_infinity(x), Ghul.Math.is_positive_infinity(x), "is_positive_infinity({x:R})")
+                are_equal(double.is_negative_infinity(x), Ghul.Math.is_negative_infinity(x), "is_negative_infinity({x:R})")
+                are_equal(double.is_finite(x), Ghul.Math.is_finite(x), "is_finite({x:R})")
+            od
+        si
+
+        @Test()
+        Predicates_AgreeWithSingle() is
+            for x in singles() do
+                are_equal(single.is_na_n(x), Ghul.Math.is_nan(x), "is_nan({x:R})")
+                are_equal(single.is_infinity(x), Ghul.Math.is_infinity(x), "is_infinity({x:R})")
+                are_equal(single.is_positive_infinity(x), Ghul.Math.is_positive_infinity(x), "is_positive_infinity({x:R})")
+                are_equal(single.is_negative_infinity(x), Ghul.Math.is_negative_infinity(x), "is_negative_infinity({x:R})")
+                are_equal(single.is_finite(x), Ghul.Math.is_finite(x), "is_finite({x:R})")
+            od
+        si
+
+        @Test()
+        Functions_AgreeWithSystemMath() is
+            for x in [0.0, -0.0, 0.5, 2.5, -2.5, 3.5, 1.234, -7.9, 100.0, 1.0e10] do
+                are_equal(System.Math.sqrt(System.Math.abs(x)), Ghul.Math.sqrt(Ghul.Math.abs(x)), "sqrt({x})")
+                are_equal(System.Math.round(x), Ghul.Math.round(x), "round({x})")
+                are_equal(System.Math.round(x, 2), Ghul.Math.round(x, 2), "round({x}, 2)")
+                are_equal(System.Math.floor(x), Ghul.Math.floor(x), "floor({x})")
+                are_equal(System.Math.ceiling(x), Ghul.Math.ceiling(x), "ceiling({x})")
+                are_equal(System.Math.truncate(x), Ghul.Math.truncate(x), "truncate({x})")
+                are_equal(System.Math.sin(x), Ghul.Math.sin(x), "sin({x})")
+                are_equal(System.Math.atan2(x, 1.5), Ghul.Math.atan2(x, 1.5), "atan2({x}, 1.5)")
+                are_equal(System.Math.pow(1.5, x), Ghul.Math.pow(1.5, x), "pow(1.5, {x})")
+                are_equal(System.Math.ieeeremainder(x, 0.75), Ghul.Math.ieee_remainder(x, 0.75), "ieee_remainder({x}, 0.75)")
+                are_equal(System.Math.max(x, 1.0), Ghul.Math.max(x, 1.0), "max({x}, 1.0)")
+            od
+
+            are_equal(System.Math.pi, Ghul.Math.pi, "pi")
+            are_equal(System.Math.e, Ghul.Math.e, "e")
+            are_equal(System.Math.tau, Ghul.Math.tau, "tau")
+        si
+    si
+si

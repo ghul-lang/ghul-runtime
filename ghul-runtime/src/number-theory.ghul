@@ -1,4 +1,4 @@
-namespace Ghul.Numerics is
+namespace Ghul.NumberTheory is
     use Collections
     use Ghul.Pipes
 
