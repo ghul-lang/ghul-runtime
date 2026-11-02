@@ -8,17 +8,126 @@
 [![License](https://img.shields.io/github/license/ghul-lang/ghul-runtime)](https://github.com/ghul-lang/ghul-runtime/blob/main/LICENSE)
 [![ghūl](https://img.shields.io/badge/gh%C5%ABl-100%25!-information)](https://ghul.dev)
 
-This package provides: 
-- internal types required by all [ghūl](https://ghul.dev) applications
-- support for the ghūl pipe operator and fluent methods on pipes, such as `filter`, `map` and `reduce`
-- `slice`, which takes part of an array, list or string: `xs |> slice(1..4)`. An array or a list is sliced without copying, so a later change to the source shows through
-- function combinators, in `Ghul.Functional` (imported by `use default` from compiler 67.4.0, and by `use Ghul.Functional` before that): `f >> g` composes left to right and `f << g` right to left, keeping the multi-argument stage's own arity - `add >> tag` composes a two-argument `add` with a unary `tag` and calls it as `tagged(4, 5)`; `curry` and `uncurry` reshape a two-argument function in either direction; `memo(f)` answers from a cache of the results `f` has already computed, keyed on the whole argument tuple; `memo_rec(f)` does the same for a recursive function, handing `f` the memoised function to make its recursive calls through, so every level is cached - `memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fib(n - 2) fi)`; and `apply(f, x, y)` calls a function of any arity with the arguments of the call itself
-- maths, in `Ghul.Math` (imported by `use default` from compiler 68.2.0), the same on every target: the constants `pi`, `tau` and `e`; `abs`, `min`, `max`, `clamp`, `sign` and `div_rem`; `floor`, `ceiling`, `truncate` and `round`; `sqrt`, `cbrt`, `exp`, `log`, `log2`, `log10`, `pow`, the trigonometric and hyperbolic functions and `atan2`; `ieee_remainder`, `bit_increment` and `bit_decrement`; and the predicates `is_nan`, `is_infinity`, `is_positive_infinity`, `is_negative_infinity` and `is_finite` over `double` and `single`. On .NET the transcendental functions call `System.Math`
-- number theory, in `Ghul.NumberTheory` (imported by `use default` from compiler 68.2.0) over `int`, `long` and `bigint` alike: `is_prime`, a `primes()` stream (and `primes(from)`, which over `bigint` has no end), `prime_factors` and `factorize`, `divisors`, `divisor_count`, `divisor_sum`, `totient`, `gcd`, `lcm`, `factorial`, `binomial`, `mod_pow`, `isqrt`, `is_square` and `digit_sum`. Primality is exact for `int` and `long`, and the Baillie-PSW test, which has no known counterexample, above that; results that don't fit the type throw `System.OverflowException`. The prime functions share one sieve, so they are not safe to call from more than one thread at a time
-- `runes(text)` and `graphemes(text)`, which read a string by code point and by what a reader sees as one character. `runes` gives `System.Text.Rune`s, reading a surrogate pair as one rune and a lone surrogate as U+FFFD; `graphemes` gives the text elements `System.Globalization.StringInfo` finds, so a letter and its accents, an emoji sequence or a flag is one element. Collected, they slice by character: with `let cs = graphemes(text) |> collect()`, `cs[1..<1] |> string()` is `text` without its first and last character
-- `retry(f, attempts)` calls f, retrying the whole call up to the given number of times when it throws and throwing the last failure when every attempt does; the wrapped function keeps f's own arity
-- `Ghul.Coroutines`, cooperative coroutines: asynchronous functions returning `COROUTINE[T]` or `COROUTINE`, which one coroutine awaits as it would call a function. `pause()` gives up the turn, `sleep(milliseconds)` gives it up until a deadline, `run()` resumes parked coroutines one at a time, `CHANNEL[T]` hands values between them, and `MUTEX` and `SEMAPHORE` guard what they share. All of it runs on one thread, on a default `SCHEDULER` unless one is named. A coroutine can also await a task or any other awaitable: `run()` waits for it and resumes the coroutine on its own thread. Where that thread cannot block, such an await is reported as an error
-- MSBuild targets needed to build ghūl projects
+## What the library provides
+
+This package is the ghūl runtime library: the types every ghūl program needs, and a set of namespaces of general-purpose functions. `use default` imports `Ghul.Pipes`, `Collections`, `Ghul.Math`, `Ghul.NumberTheory` and `Ghul.Functional`, along with `IO.Std.write_line`; the rest are imported by name. This section is a map of what each area is for. Every public member has a doc comment, which the editor shows on hover, and that is where the detail of each function lives.
+
+### Pipes - `Ghul.Pipes`
+
+Functions over any sequence, joined with `|>`. A stage (`filter`, `map`, `take`, `skip`, `zip`, `sort`, ...) returns a new lazy sequence; a terminal (`sum`, `count`, `first`, `find`, `reduce`, `join`, ...) reads it and produces a value. Sources such as `from`, `repeat` and `stream` make sequences out of values.
+
+```ghul
+let total = [1, 2, 3, 4, 5] |> filter(x => x % 2 == 0) |> map(x => x * x) |> sum()
+let squares = from(1) |> map(n => n * n) |> take(5) |> list()
+```
+
+### Collections - `Collections`
+
+`LIST`, `MAP`, `SET` and `ARRAY`, each built from any sequence, and `list()`, which gives a sequence as a read-only list filled as it is read.
+
+```ghul
+let lengths = ["one", "three"] |> map(w => (w, w.length)) |> MAP()
+let seen = [3, 1, 3] |> SET()
+```
+
+### Text by character - `runes`, `graphemes`, `slice`
+
+`runes` reads a string by Unicode code point and `graphemes` by what a reader sees as one character, so a letter with its accents, an emoji sequence or a flag is one element. `slice` takes part of an array, a list or a string; an array or a list is sliced without copying.
+
+```ghul
+let middle = graphemes("héllo") |> list() |> slice(1..4) |> string()
+```
+
+### Maths - `Ghul.Math`
+
+The maths functions and constants, the same on .NET, wasm and llvm: rounding, powers and roots, logarithms, trigonometry, the floating-point predicates, and `abs`, `min`, `max` and `clamp` over the numeric types.
+
+```ghul
+let distance = sqrt(3.0 * 3.0 + 4.0 * 4.0)
+let quarter = pi / 2.0
+```
+
+### Number theory - `Ghul.NumberTheory`
+
+Primes, factorization and the integer functions built on them, over `int`, `long` and `bigint` alike. The prime functions share one sieve that grows on demand, so they are not safe to call from more than one thread at a time.
+
+```ghul
+let first_primes = primes() |> take(10) |> list()
+let factors = factorize(360)
+```
+
+### Function combinators - `Ghul.Functional`
+
+Functions that build functions: composition with `>>` and `<<`, `curry` and `uncurry`, memoization with `memo` and `memo_rec`, and `retry`.
+
+```ghul
+let fib = memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fib(n - 2) fi)
+let shout = ((s: string) => s.to_upper()) >> (s => "{s}!")
+```
+
+### Coroutines - `Ghul.Coroutines`
+
+Cooperative coroutines on one thread. A function that returns `COROUTINE[T]` or `COROUTINE` is a coroutine; one coroutine `await`s another as it would call a function, `pause()` and `sleep(ms)` give up the turn, and `run()` resumes parked coroutines until none remain. `CHANNEL[T]` hands values between coroutines, and `MUTEX` and `SEMAPHORE` guard what they share.
+
+```ghul
+use Ghul.Coroutines
+
+square_later(n: int) -> COROUTINE[int] is
+    await pause()
+    return n * n
+si
+
+report() -> COROUTINE is
+    write_line("{await square_later(4)}")
+si
+
+report()
+run()
+```
+
+### Results and optional values - `Result`, `MAYBE`
+
+Both are in `Ghul`, imported with `use Ghul`. `Result[T, E]` is the outcome of an operation that produces a `T` or fails with an `E`: `OK` is its default variant, so `result?` asks whether it succeeded and `if let value: Result.OK = result` reads the value. `MAYBE[T]` is a value that may be absent, which `min`, `max` and other terminals return for an empty sequence.
+
+```ghul
+use Ghul
+
+let parsed: Result[int, string] = Result.OK(42)
+let succeeded = parsed?
+let smallest = [3, 1, 2] |> min()
+```
+
+### Displaying values - `$`, `inspect`
+
+How a value becomes text. `$(value)` writes it as string interpolation does: a sequence in brackets, a tuple in parentheses, a record as its type and members. `inspect`, in `Ghul`, does the same, with strings and characters inside the value quoted. A type that implements `Displayable` controls its own rendering.
+
+```ghul
+use Ghul
+
+write_line("{$((1, "one"))} {inspect([1, 2])}")
+```
+
+### JSON - `Json`
+
+A JSON value tree (`Json.Value`), `Json.parse` and `Json.write` to read and write text, and `Json.to_json` and `Json.from_json` to convert between a value tree and the public members of an ordinary object.
+
+```ghul
+let doc = Json.parse("[1, 2, 3]")
+let text = Json.write(doc)
+```
+
+### Processes and the environment - `IO.PROCESS`, `Ghul.Environment`
+
+`IO.PROCESS.run` runs a program and returns its exit code and everything it wrote. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
+
+```ghul
+let result = IO.PROCESS.run("git", ["--version"])
+write_line("{result.exit_code} {result.output}")
+```
+
+### MSBuild targets
+
+The targets a `.ghulproj` needs to build a ghūl library or executable, described under [building a library or an executable](#building-a-library-or-an-executable) below.
 
 ## Building a library or an executable
 
