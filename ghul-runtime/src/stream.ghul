@@ -13,6 +13,7 @@ namespace Ghul.Pipes is
     // `stream`-produced `Pipe[T]`.
     /// One step of a state-stepping sequence: either the sequence is over,
     /// or the next element together with the state to feed into the next step.
+    @suppress("non-pascal-case-name")
     union STREAM[T, S] is
         /// The sequence is over.
         DONE
