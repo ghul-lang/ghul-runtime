@@ -31,12 +31,12 @@ class NAMED is
     to_string() -> string => "i am named"
 si
 
-union SHAPE is
+union Shape is
     CIRCLE(radius: int)
     SQUARE(side: int)
 si
 
-enum COLOUR is
+enum Color is
     RED, GREEN
 si
 
@@ -73,8 +73,8 @@ entry() is
     show("class", POINT(1, 2))
     show("struct", PAIR("p", 3))
     show("named", NAMED())
-    show("variant", SHAPE.CIRCLE(5))
-    show("enum", COLOUR.GREEN)
+    show("variant", Shape.CIRCLE(5))
+    show("enum", Color.GREEN)
     show("displayable", SHOWN())
     show("pipe", LIST([1, 2]) |> map(i => i * 10))
     show("generator", twice(LIST([4])))
