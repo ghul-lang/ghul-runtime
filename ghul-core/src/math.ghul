@@ -249,13 +249,6 @@ namespace Ghul.Math is
         return if result == 0.0 /\ _is_negative(x) then -0.0 else result fi
     si
 
-    /// The remainder of `x` divided by `y`, as IEEE 754 defines it: the
-    /// name .NET's `IEEERemainder` has in ghūl.
-    ///
-    /// - x: the dividend
-    /// - y: the divisor
-    ieeeremainder(x: double, y: double) -> double pure => ieee_remainder(x, y)
-
     /// The logarithm of `value` to `base`.
     log(value: double, base: double) -> double pure => log(value) / log(base)
 
