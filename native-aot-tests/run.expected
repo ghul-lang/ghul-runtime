@@ -11,7 +11,7 @@ tuple: (1, two)
 class: POINT(x = 1, y = 2)
 struct: PAIR(a = p, b = 3)
 named: i am named
-variant: SHAPE.CIRCLE(radius = 5)
+variant: Shape.CIRCLE(radius = 5)
 enum: GREEN
 displayable: <shown>
 pipe: [10, 20]
