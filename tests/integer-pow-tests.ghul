@@ -1,0 +1,106 @@
+namespace Tests is
+    use Ghul
+    use Ghul.Math.pow
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class IntegerPowShould is
+        init() is si
+
+        @Test()
+        Raise_each_integer_type() is
+            are_equal(1024, pow(2, 10))
+            are_equal(-27, pow(-3, 3))
+            are_equal(1099511627776L, pow(2L, 40))
+            are_equal(3486784401u, pow(3u, 20))
+            are_equal(12157665459056928801ul, pow(3ul, 40))
+            are_equal(cast word(1024), pow(cast word(2), 10))
+            are_equal(cast uword(1024), pow(cast uword(2), 10))
+            are_equal(1267650600228229401496703205376n, pow(2n, 100))
+            are_equal(64b, pow(2b, 6))
+            are_equal(-127b - 1b, pow(-2b, 7))
+            are_equal(-32767s - 1s, pow(-2s, 15))
+            are_equal(243ub, pow(3ub, 5))
+            are_equal(59049us, pow(3us, 10))
+        si
+
+        @Test()
+        Give_one_for_a_zero_exponent() is
+            are_equal(1, pow(0, 0))
+            are_equal(1L, pow(7L, 0))
+            are_equal(1ul, pow(0ul, 0))
+            are_equal(1n, pow(0n, 0))
+        si
+
+        @Test()
+        Reach_the_edges_of_each_range() is
+            are_equal(1073741824, pow(2, 30))
+            are_equal(-2147483647 - 1, pow(-2, 31))
+            are_equal(4611686018427387904L, pow(2L, 62))
+            are_equal(-9223372036854775807L - 1L, pow(-2L, 63))
+            are_equal(2147483648u, pow(2u, 31))
+            are_equal(9223372036854775808ul, pow(2ul, 63))
+            are_equal(-1, pow(-1, 2147483647))
+        si
+
+        @Test()
+        Throw_on_overflow() is
+            throws_overflow(() => pow(2, 31))
+            throws_overflow(() => pow(-2, 32))
+            throws_overflow(() => pow(10, 10))
+            throws_overflow(() => pow(2L, 63))
+            throws_overflow(() => pow(3L, 40))
+            throws_overflow(() => pow(2u, 32))
+            throws_overflow(() => pow(2ul, 64))
+            throws_overflow(() => pow(3ul, 41))
+            throws_overflow(() => pow(2b, 7))
+            throws_overflow(() => pow(2s, 15))
+            throws_overflow(() => pow(2ub, 8))
+            throws_overflow(() => pow(2us, 16))
+        si
+
+        @Test()
+        Name_the_call_and_type_on_overflow() is
+            try
+                pow(2, 31)
+                fail("expected pow(2, 31) to throw")
+            catch e: System.OverflowException
+                are_equal("pow(2, 31) is too large for int: pass a bigint for an exact result", e.message)
+            yrt
+        si
+
+        @Test()
+        Throw_on_a_negative_exponent() is
+            throws_out_of_range(() => pow(2, -1))
+            throws_out_of_range(() => pow(2L, -1))
+            throws_out_of_range(() => pow(2u, -1))
+            throws_out_of_range(() => pow(2ul, -1))
+            throws_out_of_range(() => pow(2n, -1))
+        si
+
+        @Test()
+        Leave_the_double_overload_as_it_was() is
+            are_equal(System.Math.pow(2.0, 0.5), pow(2.0, 0.5))
+        si
+
+        throws_overflow[T](f: () -> T) is
+            try
+                f()
+                fail("expected OverflowException")
+            catch e: System.OverflowException
+            yrt
+        si
+
+        throws_out_of_range[T](f: () -> T) is
+            try
+                f()
+                fail("expected ArgumentOutOfRangeException")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+    si
+si
