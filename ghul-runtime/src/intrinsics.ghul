@@ -23,7 +23,9 @@ namespace Ghul.Intrinsics.Staging is
         // value: E innate reference.read, = value innate reference.assign;
     si
 
+    // Upper case on purpose: to a program this is the concrete array type.
     /// The type of an array, `E[]`.
+    @suppress("non-pascal-case-name")
     @intrinsic("type.array")
     trait ARRAY[E]: Collections.List[E] is
     si
