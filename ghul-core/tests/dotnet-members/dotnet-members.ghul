@@ -56,7 +56,7 @@ entry() is
     let parsed: uint mut = 1u
     write_line("{uint.try_parse("-1", parsed ref)} {parsed} {uint.try_parse("4294967296", parsed ref)} {uint.try_parse("12", parsed ref)} {parsed}")
 
-    let (quotient, remainder) = System.Math.div_rem(-17, 5)
-    let (long_quotient, long_remainder) = System.Math.div_rem(17L, -5L)
+    let (quotient, remainder) = Ghul.Math.div_rem(-17, 5)
+    let (long_quotient, long_remainder) = Ghul.Math.div_rem(17L, -5L)
     write_line("{quotient} {remainder} {long_quotient} {long_remainder}")
 si
