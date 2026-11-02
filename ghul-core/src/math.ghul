@@ -1,280 +1,441 @@
-namespace Ghul is
-    /// Constants and functions over numbers, as .NET's `System.Math`
-    /// provides them.
-    class Math is
-        /// The ratio of a circle's circumference to its diameter.
-        pi: double static => 3.141592653589793
-
-        /// The quotient of `left` by `right`, truncated towards zero, and the
-        /// remainder, with the sign of `left`.
-        ///
-        /// - left: the value divided
-        /// - right: the value divided by
-        div_rem(left: int, right: int) -> (quotient: int, remainder: int) static pure =>
-            (left / right, left % right)
-
-        /// The quotient of `left` by `right`, truncated towards zero, and the
-        /// remainder, with the sign of `left`.
-        ///
-        /// - left: the value divided
-        /// - right: the value divided by
-        div_rem(left: long, right: long) -> (quotient: long, remainder: long) static pure =>
-            (left / right, left % right)
-
-        /// The ratio of a circle's circumference to its radius, two pi.
-        tau: double static => 6.283185307179586
-
-        /// The base of the natural logarithm.
-        e: double static => 2.718281828459045
-
-        /// The magnitude of `value`. Throws `OverflowException` where `value` is
-        /// the least `int`, whose magnitude does not fit.
-        abs(value: int) -> int static pure is
-            if value >= 0 then
-                return value
-            fi
-
-            let magnitude = -value
-
-            if magnitude < 0 then
-                throw OverflowException("negating the minimum value of a twos complement number is invalid")
-            fi
-
-            return magnitude
-        si
-
-        /// The magnitude of `value`. Throws `OverflowException` where `value` is
-        /// the least `long`, whose magnitude does not fit.
-        abs(value: long) -> long static pure is
-            if value >= 0L then
-                return value
-            fi
-
-            let magnitude = -value
-
-            if magnitude < 0L then
-                throw OverflowException("negating the minimum value of a twos complement number is invalid")
-            fi
-
-            return magnitude
-        si
-
-        /// The magnitude of `value`.
-        abs(value: double) -> double static pure =>
-            if value < 0.0 then -value elif value == 0.0 then 0.0 else value fi
-
-        /// The magnitude of `value`.
-        abs(value: single) -> single static pure =>
-            if value < 0.0s then -value elif value == 0.0s then 0.0s else value fi
-
-        /// The lesser of `a` and `b`.
-        min(a: int, b: int) -> int static pure => if a <= b then a else b fi
-
-        /// The lesser of `a` and `b`.
-        min(a: long, b: long) -> long static pure => if a <= b then a else b fi
-
-        /// The lesser of `a` and `b`.
-        min(a: uint, b: uint) -> uint static pure => if a <= b then a else b fi
-
-        /// The lesser of `a` and `b`.
-        min(a: ulong, b: ulong) -> ulong static pure => if a <= b then a else b fi
-
-        /// The lesser of `a` and `b`, or NaN where either is NaN.
-        min(a: double, b: double) -> double static pure =>
-            if a != a then a elif b != b then b elif a < b then a elif b < a then b elif _is_negative(a) then a else b fi
-
-        /// The lesser of `a` and `b`, or NaN where either is NaN.
-        min(a: single, b: single) -> single static pure =>
-            if a != a then a elif b != b then b elif a < b then a elif b < a then b elif _is_negative(a) then a else b fi
-
-        /// The greater of `a` and `b`.
-        max(a: int, b: int) -> int static pure => if a >= b then a else b fi
-
-        /// The greater of `a` and `b`.
-        max(a: long, b: long) -> long static pure => if a >= b then a else b fi
-
-        /// The greater of `a` and `b`.
-        max(a: uint, b: uint) -> uint static pure => if a >= b then a else b fi
-
-        /// The greater of `a` and `b`.
-        max(a: ulong, b: ulong) -> ulong static pure => if a >= b then a else b fi
-
-        /// The greater of `a` and `b`, or NaN where either is NaN.
-        max(a: double, b: double) -> double static pure =>
-            if a != a then a elif b != b then b elif a > b then a elif b > a then b elif _is_negative(a) then b else a fi
-
-        /// The greater of `a` and `b`, or NaN where either is NaN.
-        max(a: single, b: single) -> single static pure =>
-            if a != a then a elif b != b then b elif a > b then a elif b > a then b elif _is_negative(a) then b else a fi
-
-        /// `value` held between `min` and `max`, inclusive.
-        clamp(value: int, min: int, max: int) -> int static pure =>
-            if value < min then min elif value > max then max else value fi
-
-        /// `value` held between `min` and `max`, inclusive.
-        clamp(value: long, min: long, max: long) -> long static pure =>
-            if value < min then min elif value > max then max else value fi
-
-        /// `value` held between `min` and `max`, inclusive.
-        clamp(value: double, min: double, max: double) -> double static pure =>
-            if value < min then min elif value > max then max else value fi
-
-        /// -1, 0 or 1, as `value` is negative, zero or positive.
-        sign(value: int) -> int static pure => if value < 0 then -1 elif value > 0 then 1 else 0 fi
-
-        /// -1, 0 or 1, as `value` is negative, zero or positive.
-        sign(value: long) -> int static pure => if value < 0L then -1 elif value > 0L then 1 else 0 fi
-
-        /// -1, 0 or 1, as `value` is negative, zero or positive. Throws
-        /// `ArithmeticException` where `value` is NaN.
-        sign(value: double) -> int static pure is
-            if value != value then
-                throw ArithmeticException("the value is not a number")
-            fi
-
-            return if value < 0.0 then -1 elif value > 0.0 then 1 else 0 fi
-        si
-
-        /// `value` rounded to the nearest integer, a value halfway between two
-        /// going to the even one.
-        round(value: double) -> double static pure is
-            let below = floor(value)
-            let fraction = value - below
-
-            if fraction > 0.5 then
-                return below + 1.0
-            elif fraction < 0.5 then
-                return below
-            fi
-
-            return if floor(below / 2.0) * 2.0 == below then below else below + 1.0 fi
-        si
-
-        /// `value` rounded to `digits` decimal places, a value halfway between
-        /// two going to the even one.
-        ///
-        /// - value: the value to round
-        /// - digits: how many places after the point to keep
-        round(value: double, digits: int) -> double static pure is
-            let scale = pow(10.0, cast double(digits))
-
-            return round(value * scale) / scale
-        si
-
-        /// The square root of `value`.
-        @intrinsic("host.math_sqrt")
-        sqrt(value: double) -> double static pure
-
-        /// The cube root of `value`.
-        @intrinsic("host.math_cbrt")
-        cbrt(value: double) -> double static pure
-
-        /// The largest integer no greater than `value`.
-        @intrinsic("host.math_floor")
-        floor(value: double) -> double static pure
-
-        /// The smallest integer no less than `value`.
-        @intrinsic("host.math_ceiling")
-        ceiling(value: double) -> double static pure
-
-        /// `value` with its fractional part removed.
-        @intrinsic("host.math_truncate")
-        truncate(value: double) -> double static pure
-
-        /// The sine of `angle`, in radians.
-        @intrinsic("host.math_sin")
-        sin(angle: double) -> double static pure
-
-        /// The cosine of `angle`, in radians.
-        @intrinsic("host.math_cos")
-        cos(angle: double) -> double static pure
-
-        /// The tangent of `angle`, in radians.
-        @intrinsic("host.math_tan")
-        tan(angle: double) -> double static pure
-
-        /// The angle, in radians, whose sine is `value`.
-        @intrinsic("host.math_asin")
-        asin(value: double) -> double static pure
-
-        /// The angle, in radians, whose cosine is `value`.
-        @intrinsic("host.math_acos")
-        acos(value: double) -> double static pure
-
-        /// The angle, in radians, whose tangent is `value`.
-        @intrinsic("host.math_atan")
-        atan(value: double) -> double static pure
-
-        /// The angle, in radians, of the point (`x`, `y`) from the x axis.
-        @intrinsic("host.math_atan2")
-        atan2(y: double, x: double) -> double static pure
-
-        /// The hyperbolic sine of `value`.
-        @intrinsic("host.math_sinh")
-        sinh(value: double) -> double static pure
-
-        /// The hyperbolic cosine of `value`.
-        @intrinsic("host.math_cosh")
-        cosh(value: double) -> double static pure
-
-        /// The hyperbolic tangent of `value`.
-        @intrinsic("host.math_tanh")
-        tanh(value: double) -> double static pure
-
-        /// e raised to the power `value`.
-        @intrinsic("host.math_exp")
-        exp(value: double) -> double static pure
-
-        /// The natural logarithm of `value`.
-        @intrinsic("host.math_log")
-        log(value: double) -> double static pure
-
-        /// The remainder of `x` divided by `y`, as IEEE 754 defines it: `x`
-        /// less the multiple of `y` nearest to `x`, a tie going to the even
-        /// multiple.
-        ieee_remainder(x: double, y: double) -> double static pure is
-            // x - x is NaN exactly where x is infinite or NaN.
-            if x - x != x - x \/ y != y \/ y == 0.0 then
-                return 0.0 / 0.0
-            fi
-
-            // An infinite divisor leaves any finite dividend as its remainder.
-            if y - y != y - y then
-                return x
-            fi
-
-            let result = x - y * round(x / y)
-
-            return if result == 0.0 /\ _is_negative(x) then -0.0 else result fi
-        si
-
-        /// The remainder of `x` divided by `y`, as IEEE 754 defines it: the
-        /// name .NET's `IEEERemainder` has in ghūl.
-        ///
-        /// - x: the dividend
-        /// - y: the divisor
-        ieeeremainder(x: double, y: double) -> double static pure => ieee_remainder(x, y)
-
-        /// The logarithm of `value` to `base`.
-        log(value: double, base: double) -> double static pure => log(value) / log(base)
-
-        /// The base 10 logarithm of `value`.
-        @intrinsic("host.math_log10")
-        log10(value: double) -> double static pure
-
-        /// The base 2 logarithm of `value`.
-        @intrinsic("host.math_log2")
-        log2(value: double) -> double static pure
-
-        /// `x` raised to the power `y`.
-        @intrinsic("host.math_pow")
-        pow(x: double, y: double) -> double static pure
-
-        // Whether `value` is negative, counting negative zero.
-        _is_negative(value: double) -> bool static pure =>
-            value < 0.0 \/ (value == 0.0 /\ 1.0 / value < 0.0)
-
-        _is_negative(value: single) -> bool static pure =>
-            value < 0.0s \/ (value == 0.0s /\ 1.0s / value < 0.0s)
+namespace Ghul.Math is
+    // The curated maths functions and constants, the same on every target.
+    // On .NET the host intrinsics call the System.Math member of the same
+    // name; everything else is ghūl.
+
+    /// The ratio of a circle's circumference to its diameter.
+    pi: double => 3.141592653589793
+
+    /// The quotient of `left` by `right`, truncated towards zero, and the
+    /// remainder, with the sign of `left`.
+    ///
+    /// - left: the value divided
+    /// - right: the value divided by
+    div_rem(left: int, right: int) -> (quotient: int, remainder: int) pure =>
+        (left / right, left % right)
+
+    /// The quotient of `left` by `right`, truncated towards zero, and the
+    /// remainder, with the sign of `left`.
+    ///
+    /// - left: the value divided
+    /// - right: the value divided by
+    div_rem(left: long, right: long) -> (quotient: long, remainder: long) pure =>
+        (left / right, left % right)
+
+    /// The ratio of a circle's circumference to its radius, two pi.
+    tau: double => 6.283185307179586
+
+    /// The base of the natural logarithm.
+    e: double => 2.718281828459045
+
+    /// The magnitude of `value`. Throws `OverflowException` where `value` is
+    /// the least `int`, whose magnitude does not fit.
+    abs(value: int) -> int pure is
+        if value >= 0 then
+            return value
+        fi
+
+        let magnitude = -value
+
+        if magnitude < 0 then
+            throw OverflowException("negating the minimum value of a twos complement number is invalid")
+        fi
+
+        return magnitude
     si
+
+    /// The magnitude of `value`. Throws `OverflowException` where `value` is
+    /// the least `long`, whose magnitude does not fit.
+    abs(value: long) -> long pure is
+        if value >= 0L then
+            return value
+        fi
+
+        let magnitude = -value
+
+        if magnitude < 0L then
+            throw OverflowException("negating the minimum value of a twos complement number is invalid")
+        fi
+
+        return magnitude
+    si
+
+    /// The magnitude of `value`.
+    abs(value: double) -> double pure =>
+        if value < 0.0 then -value elif value == 0.0 then 0.0 else value fi
+
+    /// The magnitude of `value`.
+    abs(value: single) -> single pure =>
+        if value < 0.0s then -value elif value == 0.0s then 0.0s else value fi
+
+    /// The lesser of `a` and `b`.
+    min(a: int, b: int) -> int pure => if a <= b then a else b fi
+
+    /// The lesser of `a` and `b`.
+    min(a: long, b: long) -> long pure => if a <= b then a else b fi
+
+    /// The lesser of `a` and `b`.
+    min(a: uint, b: uint) -> uint pure => if a <= b then a else b fi
+
+    /// The lesser of `a` and `b`.
+    min(a: ulong, b: ulong) -> ulong pure => if a <= b then a else b fi
+
+    /// The lesser of `a` and `b`, or NaN where either is NaN.
+    min(a: double, b: double) -> double pure =>
+        if a != a then a elif b != b then b elif a < b then a elif b < a then b elif _is_negative(a) then a else b fi
+
+    /// The lesser of `a` and `b`, or NaN where either is NaN.
+    min(a: single, b: single) -> single pure =>
+        if a != a then a elif b != b then b elif a < b then a elif b < a then b elif _is_negative(a) then a else b fi
+
+    /// The greater of `a` and `b`.
+    max(a: int, b: int) -> int pure => if a >= b then a else b fi
+
+    /// The greater of `a` and `b`.
+    max(a: long, b: long) -> long pure => if a >= b then a else b fi
+
+    /// The greater of `a` and `b`.
+    max(a: uint, b: uint) -> uint pure => if a >= b then a else b fi
+
+    /// The greater of `a` and `b`.
+    max(a: ulong, b: ulong) -> ulong pure => if a >= b then a else b fi
+
+    /// The greater of `a` and `b`, or NaN where either is NaN.
+    max(a: double, b: double) -> double pure =>
+        if a != a then a elif b != b then b elif a > b then a elif b > a then b elif _is_negative(a) then b else a fi
+
+    /// The greater of `a` and `b`, or NaN where either is NaN.
+    max(a: single, b: single) -> single pure =>
+        if a != a then a elif b != b then b elif a > b then a elif b > a then b elif _is_negative(a) then b else a fi
+
+    /// `value` held between `min` and `max`, inclusive.
+    clamp(value: int, min: int, max: int) -> int pure =>
+        if value < min then min elif value > max then max else value fi
+
+    /// `value` held between `min` and `max`, inclusive.
+    clamp(value: long, min: long, max: long) -> long pure =>
+        if value < min then min elif value > max then max else value fi
+
+    /// `value` held between `min` and `max`, inclusive.
+    clamp(value: double, min: double, max: double) -> double pure =>
+        if value < min then min elif value > max then max else value fi
+
+    /// -1, 0 or 1, as `value` is negative, zero or positive.
+    sign(value: int) -> int pure => if value < 0 then -1 elif value > 0 then 1 else 0 fi
+
+    /// -1, 0 or 1, as `value` is negative, zero or positive.
+    sign(value: long) -> int pure => if value < 0L then -1 elif value > 0L then 1 else 0 fi
+
+    /// -1, 0 or 1, as `value` is negative, zero or positive. Throws
+    /// `ArithmeticException` where `value` is NaN.
+    sign(value: double) -> int pure is
+        if value != value then
+            throw ArithmeticException("the value is not a number")
+        fi
+
+        return if value < 0.0 then -1 elif value > 0.0 then 1 else 0 fi
+    si
+
+    /// `value` rounded to the nearest integer, a value halfway between two
+    /// going to the even one.
+    round(value: double) -> double pure is
+        let below = floor(value)
+        let fraction = value - below
+
+        if fraction > 0.5 then
+            return below + 1.0
+        elif fraction < 0.5 then
+            return below
+        fi
+
+        return if floor(below / 2.0) * 2.0 == below then below else below + 1.0 fi
+    si
+
+    /// `value` rounded to `digits` decimal places, a value halfway between
+    /// two going to the even one.
+    ///
+    /// - value: the value to round
+    /// - digits: how many places after the point to keep
+    round(value: double, digits: int) -> double pure is
+        let scale = pow(10.0, cast double(digits))
+
+        return round(value * scale) / scale
+    si
+
+    /// The square root of `value`.
+    @intrinsic("host.math_sqrt")
+    sqrt(value: double) -> double pure
+
+    /// The cube root of `value`.
+    @intrinsic("host.math_cbrt")
+    cbrt(value: double) -> double pure
+
+    /// The largest integer no greater than `value`.
+    @intrinsic("host.math_floor")
+    floor(value: double) -> double pure
+
+    /// The smallest integer no less than `value`.
+    @intrinsic("host.math_ceiling")
+    ceiling(value: double) -> double pure
+
+    /// `value` with its fractional part removed.
+    @intrinsic("host.math_truncate")
+    truncate(value: double) -> double pure
+
+    /// The sine of `angle`, in radians.
+    @intrinsic("host.math_sin")
+    sin(angle: double) -> double pure
+
+    /// The cosine of `angle`, in radians.
+    @intrinsic("host.math_cos")
+    cos(angle: double) -> double pure
+
+    /// The tangent of `angle`, in radians.
+    @intrinsic("host.math_tan")
+    tan(angle: double) -> double pure
+
+    /// The angle, in radians, whose sine is `value`.
+    @intrinsic("host.math_asin")
+    asin(value: double) -> double pure
+
+    /// The angle, in radians, whose cosine is `value`.
+    @intrinsic("host.math_acos")
+    acos(value: double) -> double pure
+
+    /// The angle, in radians, whose tangent is `value`.
+    @intrinsic("host.math_atan")
+    atan(value: double) -> double pure
+
+    /// The angle, in radians, of the point (`x`, `y`) from the x axis.
+    @intrinsic("host.math_atan2")
+    atan2(y: double, x: double) -> double pure
+
+    /// The hyperbolic sine of `value`.
+    @intrinsic("host.math_sinh")
+    sinh(value: double) -> double pure
+
+    /// The hyperbolic cosine of `value`.
+    @intrinsic("host.math_cosh")
+    cosh(value: double) -> double pure
+
+    /// The hyperbolic tangent of `value`.
+    @intrinsic("host.math_tanh")
+    tanh(value: double) -> double pure
+
+    /// e raised to the power `value`.
+    @intrinsic("host.math_exp")
+    exp(value: double) -> double pure
+
+    /// The natural logarithm of `value`.
+    @intrinsic("host.math_log")
+    log(value: double) -> double pure
+
+    /// The remainder of `x` divided by `y`, as IEEE 754 defines it: `x`
+    /// less the multiple of `y` nearest to `x`, a tie going to the even
+    /// multiple.
+    ieee_remainder(x: double, y: double) -> double pure is
+        // x - x is NaN exactly where x is infinite or NaN.
+        if x - x != x - x \/ y != y \/ y == 0.0 then
+            return 0.0 / 0.0
+        fi
+
+        // An infinite divisor leaves any finite dividend as its remainder.
+        if y - y != y - y then
+            return x
+        fi
+
+        let result = x - y * round(x / y)
+
+        return if result == 0.0 /\ _is_negative(x) then -0.0 else result fi
+    si
+
+    /// The remainder of `x` divided by `y`, as IEEE 754 defines it: the
+    /// name .NET's `IEEERemainder` has in ghūl.
+    ///
+    /// - x: the dividend
+    /// - y: the divisor
+    ieeeremainder(x: double, y: double) -> double pure => ieee_remainder(x, y)
+
+    /// The logarithm of `value` to `base`.
+    log(value: double, base: double) -> double pure => log(value) / log(base)
+
+    /// The base 10 logarithm of `value`.
+    @intrinsic("host.math_log10")
+    log10(value: double) -> double pure
+
+    /// The base 2 logarithm of `value`.
+    @intrinsic("host.math_log2")
+    log2(value: double) -> double pure
+
+    /// `x` raised to the power `y`.
+    @intrinsic("host.math_pow")
+    pow(x: double, y: double) -> double pure
+
+    /// Whether `value` is not a number.
+    is_nan(value: double) -> bool pure => value != value
+
+    /// Whether `value` is not a number.
+    is_nan(value: single) -> bool pure => value != value
+
+    /// Whether `value` is positive or negative infinity.
+    is_infinity(value: double) -> bool pure => value == value /\ value - value != value - value
+
+    /// Whether `value` is positive or negative infinity.
+    is_infinity(value: single) -> bool pure => value == value /\ value - value != value - value
+
+    /// Whether `value` is positive infinity.
+    is_positive_infinity(value: double) -> bool pure => value > 0.0 /\ is_infinity(value)
+
+    /// Whether `value` is positive infinity.
+    is_positive_infinity(value: single) -> bool pure => value > 0.0s /\ is_infinity(value)
+
+    /// Whether `value` is negative infinity.
+    is_negative_infinity(value: double) -> bool pure => value < 0.0 /\ is_infinity(value)
+
+    /// Whether `value` is negative infinity.
+    is_negative_infinity(value: single) -> bool pure => value < 0.0s /\ is_infinity(value)
+
+    /// Whether `value` is neither infinite nor not a number.
+    is_finite(value: double) -> bool pure => value - value == value - value
+
+    /// Whether `value` is neither infinite nor not a number.
+    is_finite(value: single) -> bool pure => value - value == value - value
+
+    /// The least `double` greater than `value`. Negative infinity steps to
+    /// the least finite `double`; positive infinity and NaN are returned
+    /// unchanged; either zero steps to the smallest positive `double`.
+    bit_increment(value: double) -> double pure is
+        if value != value \/ value == double.positive_infinity then
+            return value
+        elif value == double.negative_infinity then
+            return double.min_value
+        elif value == 0.0 then
+            return double.epsilon
+        elif value > 0.0 then
+            return value + _ulp_above(value)
+        fi
+
+        return -(-value - _ulp_below(-value))
+    si
+
+    /// The greatest `double` less than `value`. Positive infinity steps to
+    /// the greatest finite `double`; negative infinity and NaN are returned
+    /// unchanged; either zero steps to the negative of the smallest positive
+    /// `double`.
+    bit_decrement(value: double) -> double pure =>
+        -bit_increment(-value)
+
+    /// The least `single` greater than `value`. Negative infinity steps to
+    /// the least finite `single`; positive infinity and NaN are returned
+    /// unchanged; either zero steps to the smallest positive `single`.
+    bit_increment(value: single) -> single pure is
+        if value != value \/ value == single.positive_infinity then
+            return value
+        elif value == single.negative_infinity then
+            return single.min_value
+        elif value == 0.0s then
+            return single.epsilon
+        elif value > 0.0s then
+            return value + _ulp_above(value)
+        fi
+
+        return -(-value - _ulp_below(-value))
+    si
+
+    /// The greatest `single` less than `value`. Positive infinity steps to
+    /// the greatest finite `single`; negative infinity and NaN are returned
+    /// unchanged; either zero steps to the negative of the smallest positive
+    /// `single`.
+    bit_decrement(value: single) -> single pure =>
+        -bit_increment(-value)
+
+    // The greatest power of two no greater than the finite positive `value`.
+    // Every step multiplies or divides a power of two by a power of two
+    // whose result is representable, so each is exact.
+    _power_of_two_at_or_below(value: double) -> double pure is
+        let big = 4294967296.0
+        let power mut = 1.0
+
+        while power * big <= value do
+            power = power * big
+        od
+
+        while power * 2.0 <= value do
+            power = power * 2.0
+        od
+
+        while power > value do
+            power = if power / big > value then power / big else power / 2.0 fi
+        od
+
+        return power
+    si
+
+    _power_of_two_at_or_below(value: single) -> single pure is
+        let big = 65536.0s
+        let power mut = 1.0s
+
+        while power * big <= value do
+            power = power * big
+        od
+
+        while power * 2.0s <= value do
+            power = power * 2.0s
+        od
+
+        while power > value do
+            power = if power / big > value then power / big else power / 2.0s fi
+        od
+
+        return power
+    si
+
+    // The gap between the finite positive `value` and the next `double` up.
+    _ulp_above(value: double) -> double pure is
+        let power = _power_of_two_at_or_below(value)
+
+        // Below the least normal double the gap is fixed at the smallest
+        // subnormal.
+        return if power < 2.2250738585072014e-308 then double.epsilon else power * 2.220446049250313e-16 fi
+    si
+
+    // The gap between the finite positive `value` and the next `double`
+    // down: half the gap above where `value` is a power of two, since the
+    // binade below is spaced half as finely.
+    _ulp_below(value: double) -> double pure is
+        let power = _power_of_two_at_or_below(value)
+
+        if power < 2.2250738585072014e-308 then
+            return double.epsilon
+        elif power == value /\ power > 2.2250738585072014e-308 then
+            return power * 1.1102230246251565e-16
+        fi
+
+        return power * 2.220446049250313e-16
+    si
+
+    _ulp_above(value: single) -> single pure is
+        let power = _power_of_two_at_or_below(value)
+
+        return if power < 1.17549435e-38s then single.epsilon else power * 1.1920929e-7s fi
+    si
+
+    _ulp_below(value: single) -> single pure is
+        let power = _power_of_two_at_or_below(value)
+
+        if power < 1.17549435e-38s then
+            return single.epsilon
+        elif power == value /\ power > 1.17549435e-38s then
+            return power * 5.9604645e-8s
+        fi
+
+        return power * 1.1920929e-7s
+    si
+
+    // Whether `value` is negative, counting negative zero.
+    _is_negative(value: double) -> bool pure =>
+        value < 0.0 \/ (value == 0.0 /\ 1.0 / value < 0.0)
+
+    _is_negative(value: single) -> bool pure =>
+        value < 0.0s \/ (value == 0.0s /\ 1.0s / value < 0.0s)
 si
