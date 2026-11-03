@@ -1,0 +1,15 @@
+// The global `parse`, compiled from the runtime's own sources, reads what
+// the same program reads on .NET.
+use default
+
+doubled(n: int) -> int => n * 2
+
+let n: int? = parse("42")
+
+write_line("{n} {parse[long]("-7")} {parse[uint]("4000000000")} {parse[double]("2.5")}")
+write_line("{parse[int]("x")} {parse[int]("")} {parse[int]("9999999999")} {parse[long]("9999999999")}")
+write_line("{parse[int](" 21 ")} {"21" |> parse[int]() ~> doubled()}")
+
+if let m = parse[int]("21") then
+    write_line("if let {m}")
+fi

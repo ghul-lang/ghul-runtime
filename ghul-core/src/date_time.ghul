@@ -211,7 +211,7 @@ namespace System is
         ///
         /// - format: the format to write in
         /// - format_provider: ignored; text follows the invariant culture
-        to_string(format: string?, format_provider: IFormatProvider?) -> string => to_string(format)
+        to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string => to_string(format)
 
         /// The moment `text` writes, in the invariant culture: a date as
         /// `yyyy-MM-dd` or `MM/dd/yyyy`, optionally followed by a time as
@@ -418,7 +418,7 @@ namespace System is
         ///
         /// - format: the format to write in
         /// - format_provider: ignored; text follows the invariant culture
-        to_string(format: string?, format_provider: IFormatProvider?) -> string => to_string(format)
+        to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string => to_string(format)
 
         /// The interval `text` writes, as `[-][d.]hh:mm[:ss[.fffffff]]` or as
         /// a whole number of days, with white space around it.
@@ -431,7 +431,7 @@ namespace System is
         /// - text: the text to read
         /// - format: the custom format it is written in
         /// - format_provider: ignored; text follows the invariant culture
-        parse_exact(text: string, format: string, format_provider: IFormatProvider?) -> TimeSpan static =>
+        parse_exact(text: string, format: string, format_provider: Ghul.FormatProvider?) -> TimeSpan static =>
             Ghul.Internal.TIME_SPAN_TEXT.parse_exact(text, format)
 
         /// The whole days in the interval.

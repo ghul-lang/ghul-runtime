@@ -1,0 +1,7 @@
+{
+    "name": "global-parse",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

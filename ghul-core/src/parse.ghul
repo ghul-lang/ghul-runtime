@@ -547,4 +547,53 @@ namespace Ghul is
 
         return end
     si
+    impl Parsable[int] for int is
+        /// Whether `text` holds a `int`, writing it to `result` where it does.
+        ///
+        /// - text: the text to read, or null
+        /// - provider: ignored; the text is read under the invariant culture
+        /// - result: set to the value read, or to 0 where `text` holds none
+        try_parse(text: string?, provider: FormatProvider?, result: int ref) -> bool static =>
+            try_parse(text, result)
+    si
+
+    impl Parsable[uint] for uint is
+        /// Whether `text` holds a `uint`, writing it to `result` where it does.
+        ///
+        /// - text: the text to read, or null
+        /// - provider: ignored; the text is read under the invariant culture
+        /// - result: set to the value read, or to 0 where `text` holds none
+        try_parse(text: string?, provider: FormatProvider?, result: uint ref) -> bool static =>
+            try_parse(text, result)
+    si
+
+    impl Parsable[long] for long is
+        /// Whether `text` holds a `long`, writing it to `result` where it does.
+        ///
+        /// - text: the text to read, or null
+        /// - provider: ignored; the text is read under the invariant culture
+        /// - result: set to the value read, or to 0 where `text` holds none
+        try_parse(text: string?, provider: FormatProvider?, result: long ref) -> bool static =>
+            try_parse(text, result)
+    si
+
+    impl Parsable[ulong] for ulong is
+        /// Whether `text` holds a `ulong`, writing it to `result` where it does.
+        ///
+        /// - text: the text to read, or null
+        /// - provider: ignored; the text is read under the invariant culture
+        /// - result: set to the value read, or to 0 where `text` holds none
+        try_parse(text: string?, provider: FormatProvider?, result: ulong ref) -> bool static =>
+            try_parse(text, result)
+    si
+
+    impl Parsable[double] for double is
+        /// Whether `text` holds a `double`, writing it to `result` where it does.
+        ///
+        /// - text: the text to read, or null
+        /// - provider: ignored; the text is read under the invariant culture
+        /// - result: set to the value read, or to 0 where `text` holds none
+        try_parse(text: string?, provider: FormatProvider?, result: double ref) -> bool static =>
+            try_parse(text, result)
+    si
 si

@@ -1,0 +1,32 @@
+namespace Ghul is
+    /// A type whose values can be read from text. On .NET this is
+    /// `System.IParsable<T>`, so the .NET types that implement it satisfy a
+    /// `Parsable[T]` bound as they are; the source-core targets declare the
+    /// member `parse` needs, with the same signature.
+    @IF.source_core()
+    trait Parsable[T] is
+        /// Whether `text` holds a `T`, writing it to `result` where it does.
+        ///
+        /// - text: the text to read, or null, which holds no value
+        /// - provider: ignored on the source-core targets, which read under
+        ///   the invariant culture
+        /// - result: set to the value read, or to the default where `text`
+        ///   holds none
+        try_parse(text: string?, provider: FormatProvider?, result: T ref) -> bool static
+    si
+
+    /// The `T` that `text` holds, or null where it holds none: `parse[int]("42")`
+    /// is 42 and `parse[int]("x")` is null. `T` can also come from the type
+    /// expected, as in `let n: int? = parse(line)`.
+    ///
+    /// - text: the text to read
+    parse[T: Parsable[T] struct](text: string) -> T? is
+        let value: T mut = _
+
+        if T.try_parse(text, null, value ref) then
+            return value
+        fi
+
+        return null
+    si
+si

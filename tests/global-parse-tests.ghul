@@ -1,0 +1,61 @@
+namespace Tests is
+    use Ghul
+    use Ghul.parse
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class GlobalParseShould is
+        init() is si
+
+        doubled(n: int) -> int => n * 2
+
+        @Test()
+        Read_a_value_the_text_holds() is
+            are_equal(42, parse[int]("42")!)
+            are_equal(-7L, parse[long]("-7")!)
+            are_equal(4000000000u, parse[uint]("4000000000")!)
+            are_equal(18000000000000000000ul, parse[ulong]("18000000000000000000")!)
+            are_equal(2.5, parse[double]("2.5")!)
+        si
+
+        @Test()
+        Give_null_where_the_text_holds_no_value() is
+            is_false(parse[int]("x")?)
+            is_false(parse[int]("")?)
+            is_false(parse[double]("two")?)
+        si
+
+        @Test()
+        Give_null_where_the_value_is_out_of_range() is
+            is_false(parse[int]("9999999999")?)
+            are_equal(9999999999L, parse[long]("9999999999")!)
+            is_false(parse[uint]("-1")?)
+        si
+
+        @Test()
+        Accept_surrounding_white_space() is
+            are_equal(21, parse[int](" 21 ")!)
+        si
+
+        @Test()
+        Take_the_type_from_a_declared_local() is
+            let n: int? = parse("42")
+            are_equal(42, n!)
+        si
+
+        @Test()
+        Read_with_an_explicit_type_in_if_let_and_a_pipe() is
+            if let n = parse[int]("21") then
+                are_equal(21, n)
+            else
+                fail("expected 21")
+            fi
+
+            are_equal(42, ("21" |> parse[int]() ~> doubled())!)
+        si
+    si
+si
