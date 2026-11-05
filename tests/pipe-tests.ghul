@@ -61,7 +61,7 @@ namespace Tests is
             let caught_expected mut = false
 
             try
-                pipe |> first_or_throw()
+                pipe |> first()!
             catch ex: System.InvalidOperationException
                 caught_expected = true
             yrt
@@ -72,7 +72,7 @@ namespace Tests is
         @Test()
         Pipe_FirstOrThrowMultipleElements_ReturnsFirstElemet() is
             let pipe = ["A", "B", "C"]
-            let first = pipe |> first_or_throw()
+            let first = pipe |> first()!
 
             let expected = "A"
 
@@ -148,7 +148,7 @@ namespace Tests is
             let caught_expected mut = false
 
             try
-                pipe |> find_or_throw(i => i > 10)
+                pipe |> find(i => i > 10)!
             catch ex: System.InvalidOperationException
                 caught_expected = true
             yrt
@@ -163,7 +163,7 @@ namespace Tests is
             let caught_expected mut = false
 
             try
-                pipe |> find_or_throw(i => i == 10)
+                pipe |> find(i => i == 10)!
             catch ex: System.InvalidOperationException
                 caught_expected = true
             yrt
@@ -175,7 +175,7 @@ namespace Tests is
         Pipe_FindOrThrowSingleMatchingElement_ReturnsThatElement() is
             let pipe = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-            let found = pipe |> find_or_throw(i => i == 4)
+            let found = pipe |> find(i => i == 4)!
             let expected = 4
 
             are_equal(expected, found)
@@ -187,7 +187,7 @@ namespace Tests is
 
             let pipe = array
 
-            let found = pipe |> find_or_throw(t => t.key == 3)
+            let found = pipe |> find(t => t.key == 3)!
             let expected = array[2]
 
             are_equal(expected, found)

@@ -512,38 +512,6 @@ namespace Ghul.Pipes is
         return MAYBE[U]()
     si
 
-    /// The first element of `source` that `predicate` accepts. Throws if none does.
-    find_or_throw[T](source: Iterable[T], predicate: T -> bool pure) -> T pure is
-        let it = source.iterator
-
-        while it.move_next() do
-            let element = it.current
-
-            if predicate(element) then
-                return element
-            fi
-        od
-
-        throw InvalidOperationException("no matching element found")
-    si
-
-    /// The first present result of applying `mapper` to the elements of `source`.
-    /// Throws if none is present.
-    find_map_or_throw[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> U pure is
-        let it = source.iterator
-
-        while it.move_next() do
-            let element = it.current
-            let maybe_result = mapper(element)
-
-            if maybe_result? then
-                return maybe_result!
-            fi
-        od
-
-        throw InvalidOperationException("no matching element found")
-    si
-
     // Walks the whole source: a pipe is a cursor, so there is no
     // counting it and jumping to the end.
     /// The final element of `source`, or absent if it has none.
@@ -591,49 +559,21 @@ namespace Ghul.Pipes is
         return MAYBE[U]()
     si
 
-    /// The first element of `source`. Throws if it has none.
-    first_or_throw[T](source: Iterable[T]) -> T pure is
-        let it = source.iterator
-
-        if it.move_next() then
-            return it.current
-        fi
-
-        throw InvalidOperationException("no element found")
-    si
-
-    /// The result of `mapper` applied to the first element of `source`, if present.
-    /// Throws if `source` has no elements or that result is absent.
-    first_map_or_throw[T..,U](source: Iterable[T], mapper: T.. -> MAYBE[U] pure) -> U pure is
-        let it = source.iterator
-
-        if it.move_next() then
-            let element = it.current
-            let maybe_result = mapper(element)
-
-            if maybe_result? then
-                return maybe_result!
-            fi
-        fi
-
-        throw InvalidOperationException("no matching element found")
-    si
-
-    /// The one element of `source`. Throws if it holds none or more than one.
-    only[T](source: Iterable[T]) -> T pure is
+    /// The one element of `source`, or absent if it holds none or more than one.
+    only[T](source: Iterable[T]) -> MAYBE[T] pure is
         let it = source.iterator
 
         if it.move_next() then
             let result = it.current
 
             if it.move_next() then
-                throw InvalidOperationException("multiple elements found")
+                return MAYBE[T]()
             fi
 
-            return result
-        else
-            throw InvalidOperationException("no element found")
+            return MAYBE(result)
         fi
+
+        return MAYBE[T]()
     si
 
     /// Whether `predicate` accepts any element of `source`.
