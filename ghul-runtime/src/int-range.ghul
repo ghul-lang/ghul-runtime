@@ -127,4 +127,43 @@ namespace Ghul is
         dispose() is
         si
     si
+
+    /// The elements of a range from last to first: `to - 1` down to `from`.
+    /// Built by `Ghul.Internal.REVERSE_ITERATORS.reverse_iterator` over an `INT_RANGE` or an
+    /// `INT_RANGE_INCLUSIVE` (which passes `to + 1` as its `to`), so a
+    /// reversed range needs no storage.
+    struct INT_RANGE_REVERSED: Iterable[int], Iterator[int] is
+        /// This walk, as its own iterator.
+        iterator: Iterator[int] => self
+
+        /// The first element the forward range produces.
+        from: int
+        /// One past the last element the forward range produces.
+        to: int
+
+        /// The element the walk is currently at, starting at `to`.
+        current: int
+
+        /// Creates a backwards walk over `from` up to but excluding `to`.
+        init(from: int, to: int) is
+            self.from = from
+            self.to = to
+
+            current = to
+        si
+
+        /// Steps back one element, and returns whether one was reached.
+        move_next() -> bool is
+            if current <= from then
+                return false
+            fi
+
+            current = current - 1
+            return true
+        si
+
+        /// Has no effect; the walk holds no resource to release.
+        dispose() is
+        si
+    si
 si
