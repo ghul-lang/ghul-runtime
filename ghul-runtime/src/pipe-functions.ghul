@@ -616,9 +616,34 @@ namespace Ghul.Pipes is
     si
 
     /// The elements of `source` in reverse order.
-    reverse[T](source: Iterable[T]) -> Iterable[T] pure =>
+    reverse[T](source: Iterable[T]) -> Iterable[T] pure is
+        // A list-shaped source — `T[]`, `LIST[T]`, `ARRAY[T]`, or a slice —
+        // is already indexable, so it reverses in place with no allocation.
+        // Only a source with neither shape is collected first.
+        if isa List[T](source) then
+            return LIST_REVERSE_PIPE(source)
+        fi
+
         let list = collect_mutable(source) in
         LIST_REVERSE_PIPE(list)
+    si
+
+    /// An iterator over `source`'s elements from last to first, without
+    /// allocating storage for them. The compiler's fused loops call this
+    /// where the source's static type proves it indexable, instead of
+    /// reading it forwards.
+    reverse_iterator[T](source: List[T]) -> Iterator[T] pure =>
+        LIST_REVERSE_ITERATOR[T](source)
+
+    /// An iterator over `source`'s elements from last to first, without
+    /// allocating storage for them. The `..` case of `reverse_iterator`.
+    reverse_iterator(source: INT_RANGE) -> Iterator[int] pure =>
+        INT_RANGE_REVERSED(source.from, source.to)
+
+    /// An iterator over `source`'s elements from last to first, without
+    /// allocating storage for them. The `::` case of `reverse_iterator`.
+    reverse_iterator(source: INT_RANGE_INCLUSIVE) -> Iterator[int] pure =>
+        INT_RANGE_REVERSED(source.from, source.to + 1)
 
     /// The elements of `source` sorted in ascending order.
     sort[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure =>
