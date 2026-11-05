@@ -522,27 +522,6 @@ namespace Tests is
         si
 
         @Test()
-        ReverseIterator_List_GivesElementsInReverseOrder() is
-            let result = collect(reverse_iterator(Collections.LIST([1, 2, 3])))
-
-            assert_are_equal([3, 2, 1], result)
-        si
-
-        @Test()
-        ReverseIterator_ExclusiveRange_GivesElementsInReverseOrder() is
-            let result = collect(reverse_iterator(0..4))
-
-            assert_are_equal([3, 2, 1, 0], result)
-        si
-
-        @Test()
-        ReverseIterator_InclusiveRange_GivesElementsInReverseOrder() is
-            let result = collect(reverse_iterator(1::4))
-
-            assert_are_equal([4, 3, 2, 1], result)
-        si
-
-        @Test()
         Each_EmptySequence_DoesNotCallAction() is
             let pipe = empty[int]()
 

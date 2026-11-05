@@ -74,7 +74,7 @@ namespace Ghul is
     si
 
     /// The elements of a range from last to first: `to - 1` down to `from`.
-    /// Built by `Ghul.Pipes.reverse_iterator` over an `INT_RANGE` or an
+    /// Built by `Ghul.Internal.REVERSE_ITERATORS.reverse_iterator` over an `INT_RANGE` or an
     /// `INT_RANGE_INCLUSIVE` (which passes `to + 1` as its `to`), so a
     /// reversed range needs no storage.
     struct INT_RANGE_REVERSED: Iterable[int], Iterator[int] is
