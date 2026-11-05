@@ -21,8 +21,7 @@ entry() is
         write_line("error: {failure.error}")
     fi
 
-    // `_` stands for the one unit value wherever the type comes from context
-    let by_default: Result[unit, string] = Result.OK(_)
+    let by_default: Result[unit, string] = Result.OK(unit())
 
     write_line("defaulted? {by_default?}")
 
