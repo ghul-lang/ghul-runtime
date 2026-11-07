@@ -83,6 +83,20 @@ namespace Ghul.Pipes is
     memo[T](source: Iterable[T]) -> List[T] pure =>
         MEMO_PIPE[T](MEMO_CACHE[T](source))
 
+    /// `source` as a `MutableList[T]`, without reading it all first. Use it
+    /// where the elements of `list` are wanted by position and will also
+    /// be replaced, inserted or removed, and the work of producing them
+    /// should happen once and only as far as it is read: each element
+    /// is computed by the first operation that reaches it and kept for
+    /// every later one, so an unbounded `source` works as long as
+    /// nothing asks for all of it. Assigning, inserting and removing by
+    /// position pull the source only as far as the position touched;
+    /// `count` and `add` pull the rest of it, and so does a `for` over
+    /// the whole list. The variable holding the result needs no `mut`:
+    /// assigning an element changes the list, not the variable.
+    mut_list[T](source: Iterable[T]) -> MutableList[T] pure =>
+        MEMO_PIPE[T](MEMO_CACHE[T](source))
+
 
 
     /// The elements of `source` grouped into consecutive read-only lists of `size`
@@ -907,6 +921,15 @@ namespace Ghul.Pipes is
     digits(value: long, base: long) -> Iterable[long] pure =>
         assert base >= 2L else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
         DIGITS_PIPE(value, base)
+
+    /// The same as `digits`, over a `bigint`.
+    digits(value: bigint) -> Iterable[bigint] pure =>
+        digits(value, 10n)
+
+    /// The same as `digits`, over a `bigint`.
+    digits(value: bigint, base: bigint) -> Iterable[bigint] pure =>
+        assert base >= 2n else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        BIG_DIGITS_PIPE(value, base)
 
     /// The words of `text`: its runs of characters that are not white space, in order.
     ///

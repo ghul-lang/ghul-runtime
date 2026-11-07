@@ -23,7 +23,7 @@ let squares = from(1) |> map(n => n * n) |> take(5) |> list()
 
 ### Collections - `Collections`
 
-`LIST`, `MAP`, `SET` and `ARRAY`, each built from any sequence, and `list()`, which gives a sequence as a read-only list filled as it is read.
+`LIST`, `MAP`, `SET` and `ARRAY`, each built from any sequence, and `list()`, which gives a sequence as a read-only list filled as it is read. `mut_list()` gives the same lazy list with elements that can be assigned, inserted and removed by position.
 
 ```ghul
 let lengths = ["one", "three"] |> map(w => (w, w.length)) |> MAP()

@@ -1,4 +1,5 @@
 namespace Ghul.Pipes is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
     use Collections
 
     /// What every cursor over one `memo` sequence shares: the source's
@@ -35,6 +36,14 @@ namespace Ghul.Pipes is
 
             return false
         si
+
+        // Discards the source and every cached element, so the sequence
+        // is empty and no element will ever be pulled again.
+        clear() is
+            iterator?.dispose()
+            iterator = null
+            elements.clear()
+        si
     si
 
     // A pipe that pulls its upstream once and replays what it pulled on
@@ -46,7 +55,14 @@ namespace Ghul.Pipes is
     /// A pipe that pulls its upstream once and replays the cached elements
     /// on every later read. It is also a list: reading by position pulls
     /// the source only as far as the position read.
-    class MEMO_PIPE[T]: PipeStage[T], List[T] is
+    ///
+    /// It is also a mutable list: assigning, inserting and removing by
+    /// position pull the source only as far as the position touched,
+    /// and unpulled elements follow whatever has been cached. Adding
+    /// appends at the end, so it pulls the rest of the source first,
+    /// and `count` does the same; neither returns over an unbounded
+    /// source. Clearing discards the source and the cache.
+    class MEMO_PIPE[T]: PipeStage[T], List[T], MutableList[T] is
         _cache: MEMO_CACHE[T]
         _at: int
 
@@ -61,13 +77,21 @@ namespace Ghul.Pipes is
 
         /// The element at `index`, counting from zero, pulling the source
         /// until it is cached; throws when the source ends before `index`.
-        [index: int]: T pure is
+        /// Assigning replaces the cached element at `index`, pulling the
+        /// source only as far as `index`; it throws on the same terms.
+        [index: int]: T pure =>
             if index < 0 \/ !_cache.has_element(index) then
                 throw Ghul.ArgumentOutOfRangeException("index", "{index} is not within the memoised sequence")
-            fi
+            else
+                _cache.elements[index]
+            fi,
+            = value is
+                if index < 0 \/ !_cache.has_element(index) then
+                    throw Ghul.ArgumentOutOfRangeException("index", "{index} is not within the memoised sequence")
+                fi
 
-            return _cache.elements[index]
-        si
+                _cache.elements[index] = value
+            si
 
         /// The number of elements in the whole sequence, pulling the rest
         /// of the source to count them. Never returns over an unbounded
@@ -77,6 +101,105 @@ namespace Ghul.Pipes is
             od
 
             return _cache.elements.count
+        si
+
+        /// Adds `value` at the end. The end is not known until the
+        /// source is exhausted, so this pulls the rest of the source
+        /// first; it never returns over an unbounded source.
+        add(value: T) is
+            while _cache.has_element(_cache.elements.count) do
+            od
+
+            _cache.elements.add(value)
+        si
+
+        /// Removes every element, discarding the source as well.
+        clear() is
+            _cache.clear()
+        si
+
+        /// Inserts `value` at `index`, moving the elements from there
+        /// on up by one, pulling the source only as far as `index`;
+        /// elements not yet pulled follow the cached ones. Throws when
+        /// the source ends before `index`.
+        insert(index: int, value: T) is
+            if index < 0 then
+                throw Ghul.ArgumentOutOfRangeException("index", "{index} is not within the memoised sequence")
+            fi
+
+            while _cache.elements.count < index /\ _cache.has_element(_cache.elements.count) do
+            od
+
+            if _cache.elements.count < index then
+                throw Ghul.ArgumentOutOfRangeException("index", "{index} is not within the memoised sequence")
+            fi
+
+            _cache.elements.insert(index, value)
+        si
+
+        /// Removes the element at `index`, moving the elements after
+        /// it down by one, pulling the source only as far as `index`;
+        /// elements not yet pulled follow the cached ones. Throws when
+        /// the source ends before `index`.
+        remove_at(index: int) is
+            if index < 0 \/ !_cache.has_element(index) then
+                throw Ghul.ArgumentOutOfRangeException("index", "{index} is not within the memoised sequence")
+            fi
+
+            _cache.elements.remove_at(index)
+        si
+
+        /// The position of the first element `=~` to `item`, or -1 where
+        /// none is, pulling the source only as far as needed to find
+        /// one; a miss exhausts it.
+        index_of(item: T) -> int pure is
+            let index mut = 0
+
+            while _cache.has_element(index) do
+                if _cache.elements[index] =~ item then
+                    return index
+                fi
+
+                index = index + 1
+            od
+
+            return -1
+        si
+
+        /// Whether any element is `=~` to `value`, pulling the source
+        /// only as far as needed to find one; a miss exhausts it.
+        contains(value: T) -> bool => index_of(value) >= 0
+
+        /// Removes the first element `=~` to `value`, answering whether
+        /// there was one, pulling the source only as far as needed to
+        /// find it; a miss exhausts the source.
+        remove(value: T) -> bool is
+            let index mut = 0
+
+            while _cache.has_element(index) do
+                if _cache.elements[index] =~ value then
+                    _cache.elements.remove_at(index)
+
+                    return true
+                fi
+
+                index = index + 1
+            od
+
+            return false
+        si
+
+        /// Whether the list is read-only. It never is.
+        is_read_only: bool pure => false
+
+        /// Copies every element into `array`, starting at `array_index`,
+        /// pulling the rest of the source first. Never returns over an
+        /// unbounded source.
+        copy_to(array: ARRAY[T], array_index: int) is
+            while _cache.has_element(_cache.elements.count) do
+            od
+
+            _cache.elements.copy_to(array, array_index)
         si
 
         /// The element at `index`, or absent when the source ends before

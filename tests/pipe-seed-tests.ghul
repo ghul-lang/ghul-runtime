@@ -162,6 +162,14 @@ namespace Tests is
         si
 
         @Test()
+        Digits_OfABigint_StayBigint() is
+            assert_are_equal([1n, 2n, 3n, 4n], digits(1234n))
+            assert_are_equal([0n], digits(0n))
+            assert_are_equal([1n, 2n], digits(-12n))
+            assert_are_equal([1n, 0n, 1n, 0n], digits(10n, 2n))
+        si
+
+        @Test()
         Digits_ReadTwice_YieldTheSameElements() is
             let ds = digits(907)
 
