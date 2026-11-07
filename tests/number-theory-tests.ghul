@@ -204,6 +204,21 @@ namespace Tests is
         si
 
         @Test()
+        IsEven_AgreesWithTheRemainder() is
+            for n in -100..100 do
+                are_equal(n % 2 == 0, is_even(n), "{n}")
+            od
+
+            for n in -100L..100L do
+                are_equal(n % 2L == 0L, is_even(n), "{n}")
+            od
+
+            for n in -100n..100n do
+                are_equal(n % 2n =~ 0n, is_even(n), "{n}")
+            od
+        si
+
+        @Test()
         Isqrt_IsTheFloorOfTheRoot() is
             are_equal(3_037_000_499L, isqrt(9_223_372_036_854_775_807L))
             are_equal(bigint.pow(10n, 20) - 1n, isqrt(bigint.pow(10n, 40) - 1n))
