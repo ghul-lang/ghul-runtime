@@ -916,6 +916,15 @@ namespace Ghul.Pipes is
         assert base >= 2L else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
         DIGITS_PIPE(value, base)
 
+    /// The same as `digits`, over a `bigint`.
+    digits(value: bigint) -> Iterable[bigint] pure =>
+        digits(value, 10n)
+
+    /// The same as `digits`, over a `bigint`.
+    digits(value: bigint, base: bigint) -> Iterable[bigint] pure =>
+        assert base >= 2n else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        BIG_DIGITS_PIPE(value, base)
+
     /// The words of `text`: its runs of characters that are not white space, in order.
     ///
     /// White space of any kind and length separates words, and leading or trailing
