@@ -873,4 +873,15 @@ namespace Ghul.Intrinsics is
 
         return state.to_string()
     si
+
+    /// Writes `value` as `$` renders it, then a line break, to standard
+    /// output, and answers `unit`: `$$ x`, `$$(x)` and `x |> $$` each
+    /// write what `write_line("{x}")` writes.
+    ///
+    /// - value: the value to write
+    $$(value: object?) -> unit pure is
+        IO.Std.write_line($(value))
+
+        return unit()
+    si
 si

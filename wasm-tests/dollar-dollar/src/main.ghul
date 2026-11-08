@@ -1,0 +1,10 @@
+// `$$` the write operator, compiled from the runtime's own sources,
+// writes what `write_line` writes on every target.
+use default
+
+$$ "hello"
+$$ 42
+"piped" |> $$
+let u = $$ [1, 2, 3]
+write_line(u)
+[4, 5] |> each(x => $$ x)

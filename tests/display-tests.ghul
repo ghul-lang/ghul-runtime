@@ -485,5 +485,12 @@ namespace Tests is
 
             are_equal("[1, 2, 3, ...]", state.to_string())
         si
+
+        @Test()
+        Dollar_dollar_writes_and_answers_unit() is
+            is_true($$ 42 =~ unit())
+            is_true($$(42) =~ unit())
+            is_true((42 |> $$) =~ unit())
+        si
     si
 si

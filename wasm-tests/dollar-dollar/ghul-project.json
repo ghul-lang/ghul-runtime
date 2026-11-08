@@ -1,0 +1,7 @@
+{
+    "name": "dollar-dollar",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
