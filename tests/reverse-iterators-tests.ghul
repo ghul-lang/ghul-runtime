@@ -1,0 +1,65 @@
+namespace Tests is
+    use Ghul
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Collections.Iterator
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Ghul.Internal is not reachable by name from source, so these tests
+    // call REVERSE_ITERATORS through reflection.
+    @TestClass()
+    class REVERSE_ITERATORS_Should is
+        init() is si
+
+        reverse(source: object, source_type: System.Type) -> Iterator[int] is
+            let iterators = (typeof INT_RANGE).assembly.get_type("Ghul.Internal.REVERSE_ITERATORS")!
+            let method = iterators.get_method("reverse_iterator", [source_type])!
+
+            return cast Iterator[int](method.invoke(null, [source]))
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__given_empty_exclusive_range__returns_no_elements() is
+            let iterator = reverse(INT_RANGE(4, 4), typeof INT_RANGE)
+
+            is_false(iterator.move_next())
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__given_single_element_exclusive_range__returns_that_element() is
+            assert_equal(collect(reverse(INT_RANGE(4, 5), typeof INT_RANGE)), [4])
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__given_exclusive_range__excludes_to_and_returns_elements_in_reverse_order() is
+            assert_equal(collect(reverse(INT_RANGE(-2, 3), typeof INT_RANGE)), [2, 1, 0, -1, -2])
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__given_empty_inclusive_range__returns_no_elements() is
+            let iterator = reverse(INT_RANGE_INCLUSIVE(5, 4), typeof INT_RANGE_INCLUSIVE)
+
+            is_false(iterator.move_next())
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__given_single_element_inclusive_range__returns_that_element() is
+            assert_equal(collect(reverse(INT_RANGE_INCLUSIVE(7, 7), typeof INT_RANGE_INCLUSIVE)), [7])
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__given_inclusive_range__includes_to_and_returns_elements_in_reverse_order() is
+            assert_equal(collect(reverse(INT_RANGE_INCLUSIVE(1, 5), typeof INT_RANGE_INCLUSIVE)), [5, 4, 3, 2, 1])
+        si
+
+        @Test()
+        REVERSE_ITERATORS__reverse_iterator__after_the_last_element__keeps_returning_false() is
+            let iterator = reverse(INT_RANGE(0, 1), typeof INT_RANGE)
+
+            is_true(iterator.move_next())
+            is_false(iterator.move_next())
+            is_false(iterator.move_next())
+        si
+    si
+si
