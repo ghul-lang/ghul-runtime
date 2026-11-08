@@ -3,9 +3,9 @@ namespace Ghul.Internal is
 
     /// Reverse iterators the compiler's fused loops call where a chain's
     /// innermost stage is `reverse` and the source's static type proves
-    /// it indexable, instead of reading the source forwards. Not
-    /// reachable from source; `Ghul.Pipes.reverse` is the spelling users
-    /// write.
+    /// it indexable, instead of reading the source forwards. Not part of
+    /// the library's interface; `Ghul.Pipes.reverse` is the spelling
+    /// users write.
     class REVERSE_ITERATORS is
         /// A reverse iterator over `source`'s elements, with no storage
         /// allocated for them.
@@ -21,5 +21,44 @@ namespace Ghul.Internal is
         /// storage allocated for them.
         reverse_iterator(source: INT_RANGE_INCLUSIVE) -> Iterator[int] static pure =>
             INT_RANGE_REVERSED(source.from, source.to + 1)
+    si
+
+    /// The elements of a range from last to first: `to - 1` down to
+    /// `from`. `REVERSE_ITERATORS.reverse_iterator` builds one over an
+    /// `INT_RANGE`, or over an `INT_RANGE_INCLUSIVE` by passing `to + 1`
+    /// as its `to`, so a reversed range needs no storage.
+    struct INT_RANGE_REVERSED: Iterable[int], Iterator[int] is
+        /// This walk, as its own iterator.
+        iterator: Iterator[int] => self
+
+        /// The first element the forward range produces.
+        from: int
+        /// One past the last element the forward range produces.
+        to: int
+
+        /// The element the walk is currently at, starting at `to`.
+        current: int
+
+        /// Creates a backwards walk over `from` up to but excluding `to`.
+        init(from: int, to: int) is
+            self.from = from
+            self.to = to
+
+            current = to
+        si
+
+        /// Steps back one element, and returns whether one was reached.
+        move_next() -> bool is
+            if current <= from then
+                return false
+            fi
+
+            current = current - 1
+            return true
+        si
+
+        /// Has no effect; the walk holds no resource to release.
+        dispose() is
+        si
     si
 si

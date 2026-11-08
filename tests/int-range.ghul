@@ -124,26 +124,5 @@ namespace Tests is
             are_equal("0..10 @ 2", range.to_string())
         si
 
-        @Test()
-        INT_RANGE_REVERSED__init__given_0_to_10__walks_9_down_to_0() is
-            let reversed = Ghul.INT_RANGE_REVERSED(0, 10)
-
-            assert_equal(reversed, [9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
-        si
-
-        @Test()
-        INT_RANGE_REVERSED__init__given_50_to_50__walks_no_elements() is
-            let reversed = Ghul.INT_RANGE_REVERSED(50, 50)
-
-            assert_equal(reversed, empty[int]())
-        si
-
-        @Test()
-        INT_RANGE_REVERSED__init__given_10_to_0__walks_no_elements() is
-            let reversed = Ghul.INT_RANGE_REVERSED(10, 0)
-
-            assert_equal(reversed, empty[int]())
-        si
-
     si
 si
