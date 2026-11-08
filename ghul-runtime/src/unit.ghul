@@ -1,3 +1,4 @@
+@@IF.dotnet()
 namespace Ghul.Intrinsics is
     // Lowercase on purpose: `unit` is spelled the way the built-in types
     // are, and lives in the namespace every compilation imports without a
