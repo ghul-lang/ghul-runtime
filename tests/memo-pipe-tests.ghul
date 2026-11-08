@@ -297,4 +297,146 @@ namespace Tests is
             are_equal(3, squares[1_000..1_003].count)
         si
     si
+
+    // Coverage for `mut_list`: the same lazy cache as `list`, with an
+    // assign indexer and the structural members of MutableList.
+    @TestClass()
+    class MUT_LISTShould is
+        init() is
+        si
+
+        @Test()
+        Assign_ReplacesTheElementAndPullsOnlyAsFarAsTheIndex() is
+            let source = COUNTING_SOURCE[int]([10, 20, 30, 40])
+            let p = mut_list(source)
+
+            p[1] = 99
+
+            are_equal(2, source.handed_out)
+            are_equal(99, p[1])
+            are_equal(2, source.handed_out)
+
+            assert_elements([10, 99, 30, 40], drain(p))
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Assign_ThroughAMutableListVariable() is
+            let p: MutableList[int] = mut_list(COUNTING_SOURCE[int]([1, 2, 3]))
+
+            p[0] = 42
+
+            are_equal(42, p[0])
+        si
+
+        @Test()
+        Assign_PastTheEndOrNegative_Throws() is
+            let p = mut_list(COUNTING_SOURCE[int]([1, 2, 3]))
+
+            try
+                p[3] = 99
+                fail("expected p[3] = 99 to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+
+            try
+                p[-1] = 99
+                fail("expected p[-1] = 99 to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        Assign_OverInfiniteStream_ReachesAnyPosition() is
+            let squares = from(0) |> map(n => n * n) |> mut_list()
+
+            squares[100] = -1
+
+            are_equal(-1, squares[100])
+            are_equal(49, squares[7])
+        si
+
+        @Test()
+        Add_AppendsAtTheEndAfterDrainingTheSource() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = mut_list(source)
+
+            p.add(4)
+
+            are_equal(3, source.handed_out)
+            assert_elements([1, 2, 3, 4], drain(p))
+        si
+
+        @Test()
+        Insert_PullsOnlyAsFarAsTheIndex() is
+            let source = COUNTING_SOURCE[int]([10, 20, 30, 40])
+            let p = mut_list(source)
+
+            are_equal(10, p[0])
+            p.insert(1, 99)
+
+            are_equal(1, source.handed_out)
+            assert_elements([10, 99, 20, 30, 40], drain(p))
+        si
+
+        @Test()
+        Insert_PastTheEndOfAFiniteSource_Throws() is
+            let p = mut_list(COUNTING_SOURCE[int]([1, 2, 3]))
+
+            try
+                p.insert(4, 99)
+                fail("expected insert(4, 99) to throw")
+            catch e: System.ArgumentOutOfRangeException
+            yrt
+        si
+
+        @Test()
+        RemoveAt_PullsOnlyAsFarAsTheIndex() is
+            let source = COUNTING_SOURCE[int]([10, 20, 30, 40])
+            let p = mut_list(source)
+
+            p.remove_at(1)
+
+            are_equal(2, source.handed_out)
+            assert_elements([10, 30, 40], drain(p))
+        si
+
+        @Test()
+        Contains_FindsWithoutDrainingTheSource() is
+            let source = COUNTING_SOURCE[int]([10, 20, 30, 40])
+            let p = mut_list(source)
+
+            is_true(p.contains(20))
+            are_equal(2, source.handed_out)
+
+            is_false(p.contains(99))
+            are_equal(4, source.handed_out)
+        si
+
+        @Test()
+        Remove_RemovesTheFirstMatchingElement() is
+            let source = COUNTING_SOURCE[int]([10, 20, 30, 20])
+            let p = mut_list(source)
+
+            is_true(p.remove(20))
+            are_equal(2, source.handed_out)
+
+            assert_elements([10, 30, 20], drain(p))
+
+            is_false(p.remove(99))
+        si
+
+        @Test()
+        Clear_DiscardsTheSourceAndTheCache() is
+            let source = DISPOSAL_SOURCE([1, 2, 3])
+            let p = mut_list(source)
+
+            are_equal("1", p |> take(1) |> join(", "))
+            p.clear()
+
+            are_equal(1, source.disposed)
+            assert_elements([], drain(p))
+            are_equal(0, p.count)
+        si
+    si
 si

@@ -1495,6 +1495,21 @@ namespace Ghul.NumberTheory is
     /// - b: the second value
     gcd(a: bigint, b: bigint) -> bigint pure => bigint.greatest_common_divisor(a, b)
 
+    /// Whether `a` is even.
+    ///
+    /// - a: the value to test
+    is_even(a: int) -> bool pure => a % 2 == 0
+
+    /// Whether `a` is even.
+    ///
+    /// - a: the value to test
+    is_even(a: long) -> bool pure => a % 2L == 0L
+
+    /// Whether `a` is even.
+    ///
+    /// - a: the value to test
+    is_even(a: bigint) -> bool pure => a.is_even
+
     /// The least common multiple of `a` and `b`, never negative; 0 if either is 0.
     /// Throws `OverflowException` where it does not fit in an `int`.
     ///
