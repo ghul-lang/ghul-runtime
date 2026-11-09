@@ -113,6 +113,25 @@ namespace System is
                 IO.Directory.set_current_directory(path)
             si
 
+        /// The command line the program was started with: the path of the
+        /// executable first, then the arguments in order. Where there is no
+        /// executable, as on the wasm target, the first element is empty.
+        get_command_line_args() -> ARRAY[string] static is
+            let arguments = Ghul.ENVIRONMENT.arguments
+            let result = Ghul._array_new[string](arguments.count + 1)
+
+            Ghul._array_set(result, 0, Ghul.ENVIRONMENT.instance.process_path ?? "")
+
+            let i mut = 0
+
+            while i < arguments.count do
+                Ghul._array_set(result, i + 1, arguments[i])
+                i = i + 1
+            od
+
+            return result
+        si
+
         /// How many processors the program can run on: 1 on the source-core
         /// targets, which run one thread.
         processor_count: int static => 1

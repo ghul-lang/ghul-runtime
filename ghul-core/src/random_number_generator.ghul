@@ -1,0 +1,121 @@
+// .NET's name for this type is kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Security.Cryptography is
+    /// Random numbers and bytes fit for cryptography, as .NET's
+    /// `System.Security.Cryptography.RandomNumberGenerator` gives them: each
+    /// comes from the operating system's source of randomness, through the
+    /// host.
+    class RandomNumberGenerator: Ghul.Disposable is
+        init() is si
+
+        /// A generator whose `get_bytes` and `get_non_zero_bytes` fill arrays.
+        create() -> RandomNumberGenerator static => RandomNumberGenerator()
+
+        /// A random `int` from 0 up to but not including `to_exclusive`, every
+        /// value equally likely. Throws `Ghul.ArgumentOutOfRangeException`
+        /// when `to_exclusive` is not positive.
+        ///
+        /// - to_exclusive: the bound, which is never returned
+        get_int32(to_exclusive: int) -> int static is
+            if to_exclusive <= 0 then
+                throw Ghul.ArgumentOutOfRangeException("to_exclusive", "the bound must be positive")
+            fi
+
+            return get_int32(0, to_exclusive)
+        si
+
+        /// A random `int` from `from_inclusive` up to but not including
+        /// `to_exclusive`, every value equally likely. Throws
+        /// `Ghul.ArgumentException` when `from_inclusive` is not below
+        /// `to_exclusive`.
+        ///
+        /// - from_inclusive: the smallest value returned
+        /// - to_exclusive: the bound, which is never returned
+        get_int32(from_inclusive: int, to_exclusive: int) -> int static is
+            if from_inclusive >= to_exclusive then
+                throw Ghul.ArgumentException("from_inclusive must be less than to_exclusive")
+            fi
+
+            // Values are drawn under a mask of the range's bits and redrawn
+            // until one falls in the range, so none is likelier than another.
+            let range = cast uint(to_exclusive - from_inclusive) - 1u
+
+            if range == 0u then
+                return from_inclusive
+            fi
+
+            let mask mut = range
+
+            mask = mask | (mask >> 1)
+            mask = mask | (mask >> 2)
+            mask = mask | (mask >> 4)
+            mask = mask | (mask >> 8)
+            mask = mask | (mask >> 16)
+
+            let value mut = cast uint(_random_u32()) & mask
+
+            while value > range do
+                value = cast uint(_random_u32()) & mask
+            od
+
+            return cast int(cast uint(from_inclusive) + value)
+        si
+
+        /// `count` random bytes.
+        ///
+        /// - count: how many bytes
+        get_bytes(count: int) -> ARRAY[ubyte] static is
+            if count < 0 then
+                throw Ghul.ArgumentOutOfRangeException("count", "the count must not be negative")
+            fi
+
+            let result = Ghul._array_new[ubyte](count)
+
+            _fill(result, false)
+
+            return result
+        si
+
+        /// Fills `data` with random bytes.
+        ///
+        /// - data: the array to fill
+        get_bytes(data: ARRAY[ubyte]) => _fill(data, false)
+
+        /// Fills `data` with random bytes, none of them zero.
+        ///
+        /// - data: the array to fill
+        get_non_zero_bytes(data: ARRAY[ubyte]) => _fill(data, true)
+
+        /// Has no effect; the generator holds no resource to release.
+        dispose() is
+        si
+
+        _fill(data: ARRAY[ubyte], non_zero: bool) static is
+            let i mut = 0
+            let bits mut = 0
+            let left mut = 0
+
+            while i < data.count do
+                if left == 0 then
+                    bits = _random_u32()
+                    left = 4
+                fi
+
+                let b = cast ubyte(bits & 0xFF)
+
+                bits = bits >> 8
+                left = left - 1
+
+                if !non_zero \/ b != 0ub then
+                    Ghul._array_set(data, i, b)
+                    i = i + 1
+                fi
+            od
+        si
+
+        @intrinsic("host.random_u32")
+        _random_u32() -> int static
+    si
+si
