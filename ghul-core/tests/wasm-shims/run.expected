@@ -2,7 +2,7 @@ name: [] same: true
 int: 1,234
 long: 9876543210 FF
 double: 2.5 3.14
-parse: 42 -7 1.5
+parse: 1.5 6
 date: 2024-02-29
 title: Alphabeta And NASA, Ok
 case: AB cd

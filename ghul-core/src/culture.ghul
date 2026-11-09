@@ -92,9 +92,12 @@ namespace System.Globalization is
 si
 
 namespace Ghul is
-    // Each numeric type's `to_string` and `parse` with a format provider, as
-    // .NET declares them. The source-core targets format and parse under the
-    // invariant culture, so the provider is accepted and ignored.
+    // Each numeric type's `to_string`, and `double`'s `parse`, with a format
+    // provider, as .NET declares them. The source-core targets format and
+    // parse under the invariant culture, so the provider is accepted and
+    // ignored. `int` and `long` have no provider overload of `parse` yet: on
+    // these targets an overloaded `int.parse` passed as a value cannot yet be
+    // resolved against `sum_by`'s overloads.
 
     partial int is
         /// The value written under the numeric format string `format`.
@@ -102,12 +105,6 @@ namespace Ghul is
         /// - format: a standard or custom numeric format string
         /// - provider: ignored; formatting is invariant
         to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
-
-        /// `text` read as an `int`, as `parse(text)` reads it.
-        ///
-        /// - text: the text to read
-        /// - provider: ignored; parsing is invariant
-        parse(text: string, provider: FormatProvider?) -> int static => parse(text)
     si
 
     partial long is
@@ -116,12 +113,6 @@ namespace Ghul is
         /// - format: a standard or custom numeric format string
         /// - provider: ignored; formatting is invariant
         to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
-
-        /// `text` read as a `long`, as `parse(text)` reads it.
-        ///
-        /// - text: the text to read
-        /// - provider: ignored; parsing is invariant
-        parse(text: string, provider: FormatProvider?) -> long static => parse(text)
     si
 
     partial double is
