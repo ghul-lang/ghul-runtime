@@ -134,8 +134,8 @@ namespace Collections is
         /// Throws if they aren't.
         ///
         /// - rows: the rows, in order
-        init(rows: Iterable[Iterable[T]]) is
-            let (cells, height, width) = MATRIX_EXTENTS.flatten(rows)
+        init(rows: T[][]) is
+            let (cells, height, width) = MATRIX_EXTENTS.flatten_rows(rows)
             let array = cells.to_array()
 
             super.init(array, 0, height, width)
@@ -143,14 +143,16 @@ namespace Collections is
             _array = array
         si
 
-        /// An array of `rows` rows of `columns` elements, each given by `cell`
-        /// from its row and column.
+        /// An array of `rows` rows of `columns` elements, taken row by row from
+        /// the first `rows * columns` elements of `source`; any further
+        /// elements are left unread, so `source` can be unbounded. Throws if
+        /// `source` has fewer: `repeat('.') |> ARRAY_2(5, 4)`.
         ///
+        /// - source: the elements, row by row
         /// - rows: the number of rows
         /// - columns: the number of elements in each row
-        /// - cell: the value of the element at a row and column
-        init(rows: int, columns: int, cell: (int, int) -> T) is
-            let array = LIST[T](0..MATRIX_EXTENTS.size([rows, columns]) |> map(i => cell(i / columns, i % columns))).to_array()
+        init(source: T{}, rows: int, columns: int) is
+            let array = MATRIX_EXTENTS.take(source, [rows, columns]).to_array()
 
             super.init(array, 0, rows, columns)
 
@@ -174,8 +176,8 @@ namespace Collections is
         /// Throws if they aren't.
         ///
         /// - rows: the rows, in order
-        init(rows: Iterable[Iterable[T]]) is
-            let (cells, height, width) = MATRIX_EXTENTS.flatten(rows)
+        init(rows: T[][]) is
+            let (cells, height, width) = MATRIX_EXTENTS.flatten_rows(rows)
             let list = LIST[T](cells)
 
             super.init(list, 0, height, width)
@@ -183,26 +185,28 @@ namespace Collections is
             _list = list
         si
 
-        /// A matrix of `rows` rows of `columns` elements, each given by `cell`
-        /// from its row and column.
+        /// A matrix of `rows` rows of `columns` elements, taken row by row from
+        /// the first `rows * columns` elements of `source`; any further
+        /// elements are left unread, so `source` can be unbounded. Throws if
+        /// `source` has fewer: `repeat('.') |> MATRIX(5, 4)`.
         ///
+        /// - source: the elements, row by row
         /// - rows: the number of rows
         /// - columns: the number of elements in each row
-        /// - cell: the value of the element at a row and column
-        init(rows: int, columns: int, cell: (int, int) -> T) is
-            let list = LIST[T](0..MATRIX_EXTENTS.size([rows, columns]) |> map(i => cell(i / columns, i % columns)))
+        init(source: T{}, rows: int, columns: int) is
+            let list = MATRIX_EXTENTS.take(source, [rows, columns])
 
             super.init(list, 0, rows, columns)
 
             _list = list
         si
 
-        /// The element in `row` at `column`, which can be assigned. Throws if
-        /// either is out of range.
         /// Row `row`, as a view of the elements it holds, which shows later
         /// changes to them. Throws if `row` is out of range.
         [row: int]: T[] pure => MATRIX_EXTENTS.row_of(_list, row, lengths.rows, lengths.columns)
 
+        /// The element in `row` at `column`, which can be assigned. Throws if
+        /// either is out of range.
         [row: int, column: int]: T => _list[_position(row, column)], = value is _list[_position(row, column)] = value; si
 
         _position(row: int, column: int) -> int => MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)
@@ -314,8 +318,8 @@ namespace Collections is
         /// Throws if they don't.
         ///
         /// - planes: the planes, in order, each a sequence of rows
-        init(planes: Iterable[Iterable[Iterable[T]]]) is
-            let (cells, depth, height, width) = MATRIX_EXTENTS.flatten_3(planes)
+        init(planes: T[][][]) is
+            let (cells, depth, height, width) = MATRIX_EXTENTS.flatten_planes(planes)
             let array = cells.to_array()
 
             super.init(array, depth, height, width)
@@ -324,14 +328,17 @@ namespace Collections is
         si
 
         /// An array of `planes` planes of `rows` rows of `columns` elements,
-        /// each given by `cell` from its plane, row and column.
+        /// taken plane by plane and row by row from the first
+        /// `planes * rows * columns` elements of `source`; any further elements
+        /// are left unread, so `source` can be unbounded. Throws if `source`
+        /// has fewer: `from(1) |> ARRAY_3(2, 3, 4)`.
         ///
+        /// - source: the elements, plane by plane and row by row
         /// - planes: the number of planes
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
-        /// - cell: the value of the element at a plane, row and column
-        init(planes: int, rows: int, columns: int, cell: (int, int, int) -> T) is
-            let array = MATRIX_EXTENTS.cells(planes, rows, columns, cell).to_array()
+        init(source: T{}, planes: int, rows: int, columns: int) is
+            let array = MATRIX_EXTENTS.take(source, [planes, rows, columns]).to_array()
 
             super.init(array, planes, rows, columns)
 
@@ -356,8 +363,8 @@ namespace Collections is
         /// Throws if they don't.
         ///
         /// - planes: the planes, in order, each a sequence of rows
-        init(planes: Iterable[Iterable[Iterable[T]]]) is
-            let (cells, depth, height, width) = MATRIX_EXTENTS.flatten_3(planes)
+        init(planes: T[][][]) is
+            let (cells, depth, height, width) = MATRIX_EXTENTS.flatten_planes(planes)
             let list = LIST[T](cells)
 
             super.init(list, depth, height, width)
@@ -366,26 +373,29 @@ namespace Collections is
         si
 
         /// A matrix of `planes` planes of `rows` rows of `columns` elements,
-        /// each given by `cell` from its plane, row and column.
+        /// taken plane by plane and row by row from the first
+        /// `planes * rows * columns` elements of `source`; any further elements
+        /// are left unread, so `source` can be unbounded. Throws if `source`
+        /// has fewer: `from(1) |> MATRIX(2, 3, 4)`.
         ///
+        /// - source: the elements, plane by plane and row by row
         /// - planes: the number of planes
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
-        /// - cell: the value of the element at a plane, row and column
-        init(planes: int, rows: int, columns: int, cell: (int, int, int) -> T) is
-            let list = MATRIX_EXTENTS.cells(planes, rows, columns, cell)
+        init(source: T{}, planes: int, rows: int, columns: int) is
+            let list = MATRIX_EXTENTS.take(source, [planes, rows, columns])
 
             super.init(list, planes, rows, columns)
 
             _list = list
         si
 
-        /// The element in `plane` at `row` and `column`, which can be
-        /// assigned. Throws if any is out of range.
         /// Plane `plane`, as a view of the elements it holds, which shows
         /// later changes to them. Throws if `plane` is out of range.
         [plane: int]: Matrix2[T] pure => MATRIX_EXTENTS.plane_of(_list, plane, lengths.planes, lengths.rows, lengths.columns)
 
+        /// The element in `plane` at `row` and `column`, which can be
+        /// assigned. Throws if any is out of range.
         [plane: int, row: int, column: int]: T => _list[_position(plane, row, column)], = value is _list[_position(plane, row, column)] = value; si
 
         _position(plane: int, row: int, column: int) -> int =>
@@ -443,17 +453,23 @@ namespace Collections is
             return MATRIX_2_VIEW[T](cells, plane * rows * columns, rows, columns)
         si
 
-        // The elements `cell` gives, plane by plane and row by row.
-        cells[T](planes: int, rows: int, columns: int, cell: (int, int, int) -> T) -> LIST[T] static is
-            let result = LIST[T](size([planes, rows, columns]))
+        // The first elements of `source` that fill `extents`, reading no
+        // further; throws where `source` has fewer.
+        take[T](source: Iterable[T], extents: int[]) -> LIST[T] static is
+            let needed = size(extents)
+            let result = LIST[T](needed)
 
-            for plane in 0..planes do
-                for row in 0..rows do
-                    for column in 0..columns do
-                        result.add(cell(plane, row, column))
-                    od
+            if needed > 0 then
+                for element in source do
+                    result.add(element)
+
+                    if result.count == needed then
+                        return result
+                    fi
                 od
-            od
+
+                throw Ghul.ArgumentException("a matrix of {extents |> join(" by ")} needs {needed} elements, and the source has only {result.count}")
+            fi
 
             return result
         si
@@ -466,7 +482,7 @@ namespace Collections is
 
         // The elements of `rows` row by row, with the number of rows and
         // the length they all share; throws where a row's length differs.
-        flatten[T](rows: Iterable[Iterable[T]]) -> (cells: LIST[T], rows: int, columns: int) static is
+        flatten_rows[T](rows: T[][]) -> (cells: LIST[T], rows: int, columns: int) static is
             let cells = LIST[T]()
             let height mut = 0
             let width mut = -1
@@ -492,16 +508,16 @@ namespace Collections is
             return (cells = cells, rows = height, columns = if width < 0 then 0 else width fi)
         si
 
-        // As `flatten`, for planes of rows; throws where a plane's shape
+        // As `flatten_rows`, for planes of rows; throws where a plane's shape
         // differs.
-        flatten_3[T](planes: Iterable[Iterable[Iterable[T]]]) -> (cells: LIST[T], planes: int, rows: int, columns: int) static is
+        flatten_planes[T](planes: T[][][]) -> (cells: LIST[T], planes: int, rows: int, columns: int) static is
             let cells = LIST[T]()
             let depth mut = 0
             let height mut = -1
             let width mut = -1
 
             for plane in planes do
-                let (flat, plane_rows, plane_columns) = flatten(plane)
+                let (flat, plane_rows, plane_columns) = flatten_rows(plane)
 
                 if height < 0 then
                     height = plane_rows
@@ -527,60 +543,46 @@ si
 namespace Collections is
     use Ghul.Pipes
 
-    // Each family is built from its rows or planes, or by a function of each
-    // element's position; a mutable matrix can also start at the default
-    // value. There is no fill with one value: `MATRIX(r, c, (_, _) => v)`
-    // spells it, since a matrix of function values is a thing to build too.
+    // A matrix is built from its rows or planes, or from a source of its
+    // elements and its extents: `rows |> MATRIX()`, `repeat('.') |>
+    // MATRIX(5, 4)`. The extents follow the source, so a fill value and an
+    // extent are never two ints side by side.
 
     /// A mutable matrix copied from `rows`, which must all be the same length.
     ///
     /// - rows: the rows, in order
     @suppress("non-snake-case-name")
-    MATRIX[T](rows: Iterable[Iterable[T]]) -> MATRIX_2[T] => MATRIX_2[T](rows)
+    MATRIX[T](rows: T[][]) -> MATRIX_2[T] => MATRIX_2[T](rows)
 
-    /// A mutable matrix of `rows` rows of `columns` elements, each the
-    /// default value of `T`.
+    /// A mutable matrix of `rows` rows of `columns` elements, taken row by row
+    /// from the first `rows * columns` elements of `source`; any further are
+    /// left unread, so `source` can be unbounded. Throws if `source` has
+    /// fewer.
     ///
+    /// - source: the elements, row by row
     /// - rows: the number of rows
     /// - columns: the number of elements in each row
     @suppress("non-snake-case-name")
-    MATRIX[T](rows: int, columns: int) -> MATRIX_2[T] => MATRIX_2[T](rows, columns, (row: int, column: int) -> T => _[T])
-
-    /// A mutable matrix of `rows` rows of `columns` elements, each given by
-    /// `cell` from its row and column.
-    ///
-    /// - rows: the number of rows
-    /// - columns: the number of elements in each row
-    /// - cell: the value of the element at a row and column
-    @suppress("non-snake-case-name")
-    MATRIX[T](rows: int, columns: int, cell: (int, int) -> T) -> MATRIX_2[T] => MATRIX_2[T](rows, columns, cell)
+    MATRIX[T](source: T{}, rows: int, columns: int) -> MATRIX_2[T] => MATRIX_2[T](source, rows, columns)
 
     /// A mutable three-dimensional matrix copied from `planes`, which must all
-    /// have the same shape.
+    /// have the same shape. A list of planes is also a list of rows of lists,
+    /// so give the element type to have this one: `MATRIX[int](planes)`.
     ///
-    /// - planes: the planes, in order, each a sequence of rows
+    /// - planes: the planes, in order, each a list of rows
     @suppress("non-snake-case-name")
-    MATRIX[T](planes: Iterable[Iterable[Iterable[T]]]) -> MATRIX_3[T] => MATRIX_3[T](planes)
+    MATRIX[T](planes: T[][][]) -> MATRIX_3[T] => MATRIX_3[T](planes)
 
-    /// A mutable three-dimensional matrix of `planes` planes of `rows` rows
-    /// of `columns` elements, each the default value of `T`.
+    /// A mutable three-dimensional matrix of `planes` planes of `rows` rows of
+    /// `columns` elements, taken plane by plane and row by row from the first
+    /// `planes * rows * columns` elements of `source`; any further are left
+    /// unread, so `source` can be unbounded. Throws if `source` has fewer.
     ///
+    /// - source: the elements, plane by plane and row by row
     /// - planes: the number of planes
     /// - rows: the number of rows in each plane
     /// - columns: the number of elements in each row
     @suppress("non-snake-case-name")
-    MATRIX[T](planes: int, rows: int, columns: int) -> MATRIX_3[T] =>
-        MATRIX_3[T](planes, rows, columns, (plane: int, row: int, column: int) -> T => _[T])
-
-    /// A mutable three-dimensional matrix of `planes` planes of `rows` rows
-    /// of `columns` elements, each given by `cell` from its plane, row and
-    /// column.
-    ///
-    /// - planes: the number of planes
-    /// - rows: the number of rows in each plane
-    /// - columns: the number of elements in each row
-    /// - cell: the value of the element at a plane, row and column
-    @suppress("non-snake-case-name")
-    MATRIX[T](planes: int, rows: int, columns: int, cell: (int, int, int) -> T) -> MATRIX_3[T] =>
-        MATRIX_3[T](planes, rows, columns, cell)
+    MATRIX[T](source: T{}, planes: int, rows: int, columns: int) -> MATRIX_3[T] =>
+        MATRIX_3[T](source, planes, rows, columns)
 si

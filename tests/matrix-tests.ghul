@@ -1,5 +1,6 @@
 namespace Tests is
     use Collections
+    use Ghul.Pipes
     use Microsoft.VisualStudio.TestTools.UnitTesting
 
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
@@ -28,7 +29,7 @@ namespace Tests is
             are_equal(6, m[1, 2])
             are_equal("[4, 5, 6]", "{m[1]}")
             are_equal(3, m.lengths.columns)
-            are_equal("1 2 3 4 5 6", m.elements |> Ghul.Pipes.join(" "))
+            are_equal("1 2 3 4 5 6", m.elements |> join(" "))
             are_equal("[[1, 2, 3], [4, 5, 6]]", "{m}")
         si
 
@@ -38,16 +39,16 @@ namespace Tests is
         si
 
         @Test()
-        Array_2_FillFromFunction_PutsEachCellInPlace() is
-            let m = ARRAY_2(2, 3, (row: int, column: int) -> int => row * 10 + column)
+        Array_2_FromSource_FillsRowByRow() is
+            let m = ARRAY_2(1::6, 2, 3)
 
-            are_equal(12, m[1, 2])
-            are_equal(0, m[0, 0])
+            are_equal(6, m[1, 2])
+            are_equal(2, m[0, 1])
         si
 
         @Test()
         Indexing_OutOfRange_Throws() is
-            let m = ARRAY_2([[0, 0, 0], [0, 0, 0]])
+            let m = repeat(0) |> ARRAY_2(2, 3)
 
             is_true(thrown(() is m[2, 0]; si))
             is_true(thrown(() is m[0, 3]; si))
@@ -55,8 +56,21 @@ namespace Tests is
         si
 
         @Test()
+        Matrix_2_FromAnUnboundedSource_TakesOnlyWhatItNeeds() is
+            let m = repeat('.') |> MATRIX(5, 4)
+
+            are_equal('.', m[4, 3])
+            are_equal(5, m.count)
+        si
+
+        @Test()
+        Matrix_2_FromAShortSource_Throws() is
+            is_true(thrown(() is [1, 2, 3] |> MATRIX(2, 2); si))
+        si
+
+        @Test()
         Matrix_2_SetsElementsVisibleThroughRows() is
-            let m = MATRIX[int](2, 3)
+            let m = repeat(0) |> MATRIX(2, 3)
             let row = m[1]
 
             m[1, 2] = 7
@@ -67,16 +81,17 @@ namespace Tests is
         si
 
         @Test()
-        Matrix_2_FromFunction_FillsEveryCell() is
-            let m = MATRIX(3, 2, (row: int, column: int) -> int => row + column)
+        Matrix_2_FromCountingSource_FillsInOrder() is
+            let m = from(1) |> MATRIX(3, 3)
 
-            are_equal(3, m[2, 1])
+            are_equal(9, m[2, 2])
+            are_equal(4, m[1, 0])
         si
 
         @Test()
         Matrix_2_CopiesFromRows() is
             let source = ARRAY_2([[1, 2], [3, 4]])
-            let copy = MATRIX(source)
+            let copy = source |> MATRIX()
 
             copy[0, 0] = 9
 
@@ -107,9 +122,17 @@ namespace Tests is
             are_equal("b", "{objects[0, 1]}")
         si
 
+        // A matrix of function values is built from a source of them.
+        @Test()
+        Matrix_2_OfFunctions_IsBuiltFromASourceOfThem() is
+            let m = [(x: int) -> int => x + 1, (x: int) -> int => x * 2] |> MATRIX(1, 2)
+
+            are_equal(20, m[0, 1](10))
+        si
+
         @Test()
         Matrix_3_ReadsPlanesRowsAndElements() is
-            let m = MATRIX[int](2, 2, 3)
+            let m = repeat(0) |> MATRIX(2, 2, 3)
 
             m[1, 0, 2] = 5
 
@@ -120,20 +143,11 @@ namespace Tests is
         si
 
         @Test()
-        Array_3_FillFromFunction_PutsEachCellInPlace() is
-            let m = ARRAY_3(2, 2, 2, (plane: int, row: int, column: int) -> int => plane * 100 + row * 10 + column)
+        Array_3_FromSource_FillsPlaneByPlane() is
+            let m = from(0) |> ARRAY_3(2, 2, 2)
 
-            are_equal(111, m[1, 1, 1])
-            are_equal(10, m[0, 1, 0])
-        si
-
-        // A grid of function values is built from its rows, or by a
-        // function returning the function for each cell.
-        @Test()
-        Matrix_2_OfFunctions_IsBuiltByAFunctionReturningThem() is
-            let m = MATRIX(1, 2, (row: int, column: int) -> (int -> int) => (x: int) -> int => x + column)
-
-            are_equal(11, m[0, 1](10))
+            are_equal(7, m[1, 1, 1])
+            are_equal(2, m[0, 1, 0])
         si
 
         @Test()
@@ -141,9 +155,18 @@ namespace Tests is
             is_true(thrown(() is ARRAY_3([[[1, 2]], [[1], [2]]]); si))
         si
 
+        // Planes of rows are also rows of lists, so the rank comes from the
+        // type argument: `MATRIX(planes)` is a matrix of lists.
+        @Test()
+        Matrix_3_FromPlanes_Copies() is
+            let m = MATRIX[int]([[[1, 2]], [[3, 4]]])
+
+            are_equal(4, m[1, 0, 1])
+        si
+
         @Test()
         Matrix3_PlanesAreViews() is
-            let m = MATRIX(2, 1, 2, (plane: int, row: int, column: int) -> int => 0)
+            let m = repeat(0) |> MATRIX(2, 1, 2)
             let plane = m[1]
 
             m[1, 0, 1] = 3
