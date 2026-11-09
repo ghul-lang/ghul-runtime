@@ -481,7 +481,7 @@ namespace Ghul is
             return comparable <> right
         fi
 
-        throw System.InvalidOperationException("a value of {typeof T} can't be ordered")
+        throw System.InvalidOperationException("a tuple element that isn't comparable can't be ordered")
     si
 
     // The hash of `value`, which is zero where it is absent.
