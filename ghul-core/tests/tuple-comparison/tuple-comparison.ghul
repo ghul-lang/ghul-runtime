@@ -1,0 +1,12 @@
+use default
+
+// A tuple orders element by element, so it can be the key of max_by and
+// min_by, as it can on .NET: the first elements decide, and each later
+// pair decides where all those before it are equal.
+let words = [(1, "a"), (2, "b"), (2, "cc"), (1, "dd")]
+
+write_line("{words |> max_by((n, s) => (n, s.length))}")
+write_line("{words |> min_by((n, s) => (n, s.length))}")
+write_line("{words |> max_by((n, s) => (s.length, n))}")
+write_line("{[(3, 1, 'z'), (3, 1, 'a'), (2, 9, 'q')] |> min_by(t => t)}")
+write_line("{["b", "a"] |> max_by(s => (s, 0))}")
