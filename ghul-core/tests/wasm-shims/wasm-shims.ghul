@@ -23,6 +23,10 @@ System.Environment.set_environment_variable("WASM_SHIM_TEST", "")
 write_line("removed: {System.Environment.get_environment_variable("WASM_SHIM_TEST") == null}")
 write_line("processors: {System.Environment.processor_count}")
 write_line("directory: {System.Environment.current_directory.length > 0}")
+let here = System.Environment.current_directory
+System.Environment.current_directory = here
+write_line("directory again: {System.Environment.current_directory =~ here}")
+write_line("bigint: {12345678901234567890n.to_string("N0", invariant)}")
 
 let total = [1, 2, 3] |> Ghul.Pipes.sum_by(n => bigint(n) * 1_000_000_000_000n)
 write_line("bigint sum_by: {total}")

@@ -138,6 +138,14 @@ namespace Ghul is
         parse(text: string, provider: FormatProvider?) -> double static => parse(text)
     si
 
+    partial bigint is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        /// - provider: ignored; formatting is invariant
+        to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
+    si
+
     partial single is
         /// The value written under the numeric format string `format`.
         ///
