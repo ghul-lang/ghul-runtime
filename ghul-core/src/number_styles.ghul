@@ -1,0 +1,407 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Globalization is
+    /// What a number's text may hold besides its digits, as .NET's
+    /// `System.Globalization.NumberStyles` says. The members combine as
+    /// flags.
+    @Ghul.Flags()
+    enum NumberStyles is
+        NONE = 0,
+        ALLOW_LEADING_WHITE = 1,
+        ALLOW_TRAILING_WHITE = 2,
+        ALLOW_LEADING_SIGN = 4,
+        ALLOW_TRAILING_SIGN = 8,
+        ALLOW_PARENTHESES = 16,
+        ALLOW_DECIMAL_POINT = 32,
+        ALLOW_THOUSANDS = 64,
+        ALLOW_EXPONENT = 128,
+        ALLOW_CURRENCY_SYMBOL = 256,
+        ALLOW_HEX_SPECIFIER = 512,
+        ALLOW_BINARY_SPECIFIER = 1024,
+        INTEGER = 7,
+        HEX_NUMBER = 515,
+        BINARY_NUMBER = 1027,
+        NUMBER = 111,
+        FLOAT = 167,
+        CURRENCY = 383,
+        ANY = 511
+    si
+si
+
+namespace Ghul is
+    use System.Globalization.NumberStyles
+
+    partial int is
+        /// The `int` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `int`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> int static is
+            let (status, bits) = _parse_styled(text, styles, 32, true)
+
+            _throw_unless_parsed(status)
+
+            return cast int(bits)
+        si
+    si
+
+    partial long is
+        /// The `long` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `long`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> long static is
+            let (status, bits) = _parse_styled(text, styles, 64, true)
+
+            _throw_unless_parsed(status)
+
+            return cast long(bits)
+        si
+    si
+
+    partial uint is
+        /// The `uint` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `uint`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> uint static is
+            let (status, bits) = _parse_styled(text, styles, 32, false)
+
+            _throw_unless_parsed(status)
+
+            return cast uint(bits)
+        si
+    si
+
+    partial ulong is
+        /// The `ulong` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `ulong`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> ulong static is
+            let (status, bits) = _parse_styled(text, styles, 64, false)
+
+            _throw_unless_parsed(status)
+
+            return cast ulong(bits)
+        si
+    si
+
+    partial short is
+        /// The `short` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `short`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> short static is
+            let (status, bits) = _parse_styled(text, styles, 16, true)
+
+            _throw_unless_parsed(status)
+
+            return cast short(bits)
+        si
+    si
+
+    partial ushort is
+        /// The `ushort` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `ushort`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> ushort static is
+            let (status, bits) = _parse_styled(text, styles, 16, false)
+
+            _throw_unless_parsed(status)
+
+            return cast ushort(bits)
+        si
+    si
+
+    partial byte is
+        /// The `byte` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `byte`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> byte static is
+            let (status, bits) = _parse_styled(text, styles, 8, true)
+
+            _throw_unless_parsed(status)
+
+            return cast byte(bits)
+        si
+    si
+
+    partial ubyte is
+        /// The `ubyte` that `text` holds under `styles`, as .NET reads it under
+        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// none, and `Ghul.OverflowException` where it holds one outside
+        /// `ubyte`'s range.
+        ///
+        /// - text: the text to parse
+        /// - styles: what may surround and make up the number
+        parse(text: string, styles: System.Globalization.NumberStyles) -> ubyte static is
+            let (status, bits) = _parse_styled(text, styles, 8, false)
+
+            _throw_unless_parsed(status)
+
+            return cast ubyte(bits)
+        si
+    si
+
+    // An integer read under `styles` into the low `bits` bits of a long:
+    // the status is 0 for a value, 1 for text that is not one and 2 for a
+    // value out of the range of the `bits`-bit type, signed or not. Hex and
+    // binary digits are the type's bits, so FF is -1 for a signed byte.
+    _parse_styled(text: string, styles: NumberStyles, bits: int, signed: bool) -> (status: int, bits: long) is
+        let flags = cast int(styles)
+        let hex = flags & 512 != 0
+        let binary = flags & 1024 != 0
+
+        if (hex \/ binary) /\ flags & \(512 | 1024 | 3) != 0 then
+            throw ArgumentException("hex and binary styles allow nothing but white space")
+        fi
+
+        let i mut = 0
+        let end mut = text.length
+
+        if flags & 1 != 0 then
+            while i < end /\ _is_style_white(text[i]) do i = i + 1 od
+        fi
+
+        if flags & 2 != 0 then
+            while end > i /\ _is_style_white(text[end - 1]) do end = end - 1 od
+        fi
+
+        if hex \/ binary then
+            return _parse_radix(text, i, end, if hex then 4 else 1 fi, bits)
+        fi
+
+        let negative mut = false
+        let signed_already mut = false
+        let parenthesised mut = false
+        let currency mut = false
+
+        // A leading sign, parenthesis and currency symbol, in either order.
+        let leading mut = true
+
+        while leading /\ i < end do
+            let c = text[i]
+
+            if !signed_already /\ flags & 4 != 0 /\ (c == '-' \/ c == '+') then
+                negative = c == '-'
+                signed_already = true
+                i = i + 1
+            elif !parenthesised /\ !signed_already /\ flags & 16 != 0 /\ c == '(' then
+                parenthesised = true
+                negative = true
+                signed_already = true
+                i = i + 1
+            elif !currency /\ flags & 256 != 0 /\ c == '¤' then
+                currency = true
+                i = i + 1
+            else
+                leading = false
+            fi
+        od
+
+        let digits = Text.STRING_BUILDER()
+        let point mut = -1
+        let seen_digit mut = false
+
+        while i < end do
+            let c = text[i]
+
+            if c >= '0' /\ c <= '9' then
+                if point < 0 then
+                    if digits.length > 0 \/ c != '0' then
+                        digits.append(c)
+                    fi
+                else
+                    digits.append(c)
+                fi
+
+                seen_digit = true
+            elif c == ',' /\ flags & 64 != 0 /\ point < 0 /\ seen_digit then
+                // grouping commas are skipped wherever they fall in the whole part
+            elif c == '.' /\ flags & 32 != 0 /\ point < 0 then
+                point = digits.length
+            else
+                break
+            fi
+
+            i = i + 1
+        od
+
+        if !seen_digit then
+            return (1, 0L)
+        fi
+
+        let whole_digits = if point < 0 then digits.length else point fi
+        let scale mut = 0
+
+        if i < end /\ flags & 128 != 0 /\ (text[i] == 'e' \/ text[i] == 'E') then
+            let j mut = i + 1
+            let exponent_negative = j < end /\ text[j] == '-'
+
+            if j < end /\ (text[j] == '-' \/ text[j] == '+') then
+                j = j + 1
+            fi
+
+            if j < end /\ text[j] >= '0' /\ text[j] <= '9' then
+                let exponent mut = 0
+
+                while j < end /\ text[j] >= '0' /\ text[j] <= '9' do
+                    if exponent < 100000 then
+                        exponent = exponent * 10 + (cast int(text[j]) - 48)
+                    fi
+
+                    j = j + 1
+                od
+
+                scale = if exponent_negative then -exponent else exponent fi
+                i = j
+            fi
+        fi
+
+        // Trailing currency symbol, sign and closing parenthesis.
+        let trailing mut = true
+
+        while trailing /\ i < end do
+            let c = text[i]
+
+            if !signed_already /\ flags & 8 != 0 /\ (c == '-' \/ c == '+') then
+                negative = c == '-'
+                signed_already = true
+                i = i + 1
+            elif parenthesised /\ c == ')' then
+                parenthesised = false
+                i = i + 1
+            elif !currency /\ flags & 256 != 0 /\ c == '¤' then
+                currency = true
+                i = i + 1
+            elif flags & 2 != 0 /\ _is_style_white(c) then
+                i = i + 1
+            else
+                trailing = false
+            fi
+        od
+
+        if i < end \/ parenthesised then
+            return (1, 0L)
+        fi
+
+        // The digits as a whole number at the scale the exponent gives: any
+        // digit left after the point that is not zero is out of range.
+        let all = digits.to_string()
+        let point_at = whole_digits + scale
+        let magnitude mut = 0UL
+        let k mut = 0
+
+        while k < all.length do
+            let digit = cast ulong(cast int(all[k]) - 48)
+
+            if k < point_at then
+                if magnitude > (18446744073709551615UL - digit) / 10UL then
+                    return (2, 0L)
+                fi
+
+                magnitude = magnitude * 10UL + digit
+            elif digit != 0UL then
+                return (2, 0L)
+            fi
+
+            k = k + 1
+        od
+
+        while k < point_at /\ magnitude != 0UL do
+            if magnitude > 18446744073709551615UL / 10UL then
+                return (2, 0L)
+            fi
+
+            magnitude = magnitude * 10UL
+            k = k + 1
+        od
+
+        let limit =
+            if signed then
+                (1UL << (bits - 1)) - (if negative then 0UL else 1UL fi)
+            elif negative then
+                0UL
+            elif bits == 64 then
+                18446744073709551615UL
+            else
+                (1UL << bits) - 1UL
+            fi
+
+        if magnitude > limit then
+            return (2, 0L)
+        fi
+
+        let value = cast long(magnitude)
+
+        return (0, if negative then -value else value fi)
+    si
+
+    // Hex or binary digits from `i` to `end`, `per_digit` bits each, as the
+    // low `bits` bits of a long.
+    _parse_radix(text: string, i: int, end: int, per_digit: int, bits: int) -> (status: int, bits: long) is
+        if i >= end then
+            return (1, 0L)
+        fi
+
+        let value mut = 0UL
+        let used mut = 0
+        let k mut = i
+
+        while k < end do
+            let c = text[k]
+
+            let digit =
+                if c >= '0' /\ c <= '9' then cast int(c) - 48
+                elif per_digit == 4 /\ c >= 'a' /\ c <= 'f' then cast int(c) - 87
+                elif per_digit == 4 /\ c >= 'A' /\ c <= 'F' then cast int(c) - 55
+                else -1
+                fi
+
+            if digit < 0 \/ digit >= 1 << per_digit then
+                return (1, 0L)
+            fi
+
+            if used > 0 \/ digit != 0 then
+                used = used + per_digit
+
+                if used > bits then
+                    return (2, 0L)
+                fi
+            fi
+
+            value = (value << per_digit) | cast ulong(digit)
+            k = k + 1
+        od
+
+        return (0, cast long(value))
+    si
+
+    _is_style_white(c: char) -> bool => c == ' ' \/ (c >= '\t' /\ c <= '\r')
+si

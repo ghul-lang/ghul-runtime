@@ -1,0 +1,39 @@
+use default
+use System.Globalization.NumberStyles
+
+try_int(text: string, styles: NumberStyles) -> string is
+    try
+        return "{int.parse(text, styles)}"
+    catch e: System.FormatException
+        return "format"
+    catch e: System.OverflowException
+        return "overflow"
+    yrt
+si
+
+try_long(text: string, styles: NumberStyles) -> string is
+    try
+        return "{long.parse(text, styles)}"
+    catch e: System.FormatException
+        return "format"
+    catch e: System.OverflowException
+        return "overflow"
+    yrt
+si
+
+let cases = [
+    ("ff", NumberStyles.HEX_NUMBER), ("FFFFFFFF", NumberStyles.HEX_NUMBER), ("7fffffff", NumberStyles.HEX_NUMBER),
+    ("100000000", NumberStyles.HEX_NUMBER), ("0000000ff", NumberStyles.HEX_NUMBER), (" 1a ", NumberStyles.HEX_NUMBER),
+    ("0x1a", NumberStyles.HEX_NUMBER), ("-1a", NumberStyles.HEX_NUMBER), ("", NumberStyles.HEX_NUMBER), ("g", NumberStyles.HEX_NUMBER),
+    ("1,234", NumberStyles.NUMBER), ("1,234,567.00", NumberStyles.NUMBER), ("1234.5", NumberStyles.NUMBER), (",123", NumberStyles.NUMBER),
+    ("1,,2", NumberStyles.NUMBER), ("12-", NumberStyles.NUMBER), (" -12 ", NumberStyles.NUMBER), ("- 12", NumberStyles.NUMBER),
+    ("(12)", NumberStyles.ALLOW_PARENTHESES), ("(12", NumberStyles.ALLOW_PARENTHESES), ("1e3", NumberStyles.FLOAT), ("1.5e1", NumberStyles.FLOAT),
+    ("1.55e1", NumberStyles.FLOAT), ("1e-1", NumberStyles.FLOAT), ("10e-1", NumberStyles.FLOAT), ("2147483648", NumberStyles.INTEGER),
+    ("-2147483648", NumberStyles.INTEGER), ("+5", NumberStyles.INTEGER), ("5", NumberStyles.NONE), (" 5", NumberStyles.NONE),
+    ("¤5", NumberStyles.CURRENCY), ("5¤", NumberStyles.CURRENCY), ("1010", NumberStyles.BINARY_NUMBER), ("11111111111111111111111111111111", NumberStyles.BINARY_NUMBER),
+    ("0.000", NumberStyles.NUMBER), (".5", NumberStyles.NUMBER), ("5.", NumberStyles.NUMBER), ("-0", NumberStyles.INTEGER)
+]
+for (text, styles) in cases do
+    write_line("'{text}' {cast int(styles)}: int {try_int(text, styles)} long {try_long(text, styles)}")
+od
+write_line("uint {uint.parse("ffffffff", NumberStyles.HEX_NUMBER)} ulong {ulong.parse("ffffffffffffffff", NumberStyles.HEX_NUMBER)} short {short.parse("8000", NumberStyles.HEX_NUMBER)} ubyte {ubyte.parse("1,0", NumberStyles.NUMBER)} byte {byte.parse("-128", NumberStyles.INTEGER)} ushort {ushort.parse("-0", NumberStyles.INTEGER)}")

@@ -1,0 +1,71 @@
+obsolete still callable: 1 2
+div_rem: -12727504021891307103 -21
+div_rem tuple: -142 6
+command line has 1 element(s)
+ubyte: 250,251,252,253,254,255
+ubyte exclusive: 0,1,2
+byte: -2,-1,0,1,2
+short: -1,0,1
+ushort: 65534,65535
+uint: 4294967294,4294967295
+ulong: 0,1,2
+full ubyte range: 256
+unescape a%20b -> a b
+unescape caf%C3%A9 -> café
+unescape %F0%9F%98%80! -> 😀!
+unescape bad %zz %4 -> bad %zz %4
+unescape %C3 -> %C3
+unescape %E2%82 -> %E2%82
+unescape %C3%28 -> %C3(
+unescape 100% -> 100%
+unescape %41%42%43 -> ABC
+escape a b -> a%20b
+escape café -> caf%C3%A9
+escape x/y?z=1&w -> x%2Fy%3Fz%3D1%26w
+escape ~-._ -> ~-._
+escape 😀 -> %F0%9F%98%80
+version '1.2': true 1.2
+version '1.2.3': true 1.2.3
+version '1.2.3.4': true 1.2.3.4
+version '1': false null
+version '1.2.3.4.5': false null
+version '1.-2': false null
+version 'a.b': false null
+version ' 1.2': true 1.2
+version '1.2 ': true 1.2
+parts 2 10 1 -1 2.10
+compare -1 true true
+little endian: true
+int: FE-FF-FF-FF
+long: 08-07-06-05-04-03-02-01
+short: D4-FE
+char: AC-20
+bool: 01
+double: 00-00-00-00-00-00-F8-3F
+single: 00-00-80-BE
+to_int32 305419896 -1 4294967295
+to_int16 -1 22136 to_int64 -3989547400
+to_string part 34-12-FF-FF-FF-FF 56-34-12
+double 0 bits 0 back 0 same true
+double -0 bits -9223372036854775808 back -0 same true
+double 1 bits 4607182418800017408 back 1 same true
+double -2.5 bits -4610560118520545280 back -2.5 same true
+double 1E-310 bits 20240225330731 back 1E-310 same true
+double 5E-324 bits 1 back 5E-324 same true
+double 1.7976931348623157E+308 bits 9218868437227405311 back 1.7976931348623157E+308 same true
+double 3.141592653589793 bits 4614256656552045848 back 3.141592653589793 same true
+double Infinity bits 9218868437227405312 back Infinity same true
+double -Infinity bits -4503599627370496 back -Infinity same true
+single bits 0 back same true
+single bits 1069547520 back same true
+single bits -8388609 back same true
+single bits 1 back same true
+single bits 8388608 back same true
+nan true
+to_double 2.75 to_single 0.5
+short read throws
+random in range: true true all six seen: true
+single value range: 5
+bytes: 16
+non-zero: true
+bad bound throws

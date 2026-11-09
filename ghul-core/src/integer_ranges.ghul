@@ -1,0 +1,612 @@
+namespace Ghul is
+    use Collections
+
+    // Ranges over the integer types other than int and long, which .NET
+    // gives through its generic ranges over `IBinaryInteger`.
+
+    /// The `byte` values from `from` up to but not including `to`, as an iterable range.
+    struct BYTE_RANGE: Range[byte], Iterable[byte], Iterator[byte] is
+        /// This range, as its own iterator.
+        iterator: Iterator[byte] => self
+
+        /// The first element.
+        from: byte
+        /// The exclusive upper bound.
+        to: byte
+
+        /// The element the range is currently at.
+        current: byte
+
+        _next: byte
+        _finished: bool
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: byte, to: byte) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from >= to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to - 1b then
+                _finished = true
+            else
+                _next = _next + 1b
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `byte` values from `from` to `to`, including both, as an iterable range.
+    struct BYTE_RANGE_INCLUSIVE: Range[byte], Iterable[byte], Iterator[byte] is
+        /// This range, as its own iterator.
+        iterator: Iterator[byte] => self
+
+        /// The first element.
+        from: byte
+        /// The inclusive upper bound.
+        to: byte
+
+        /// The element the range is currently at.
+        current: byte
+
+        _next: byte
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: byte, to: byte) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1b
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `ubyte` values from `from` up to but not including `to`, as an iterable range.
+    struct UBYTE_RANGE: Range[ubyte], Iterable[ubyte], Iterator[ubyte] is
+        /// This range, as its own iterator.
+        iterator: Iterator[ubyte] => self
+
+        /// The first element.
+        from: ubyte
+        /// The exclusive upper bound.
+        to: ubyte
+
+        /// The element the range is currently at.
+        current: ubyte
+
+        _next: ubyte
+        _finished: bool
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: ubyte, to: ubyte) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from >= to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to - 1ub then
+                _finished = true
+            else
+                _next = _next + 1ub
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `ubyte` values from `from` to `to`, including both, as an iterable range.
+    struct UBYTE_RANGE_INCLUSIVE: Range[ubyte], Iterable[ubyte], Iterator[ubyte] is
+        /// This range, as its own iterator.
+        iterator: Iterator[ubyte] => self
+
+        /// The first element.
+        from: ubyte
+        /// The inclusive upper bound.
+        to: ubyte
+
+        /// The element the range is currently at.
+        current: ubyte
+
+        _next: ubyte
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: ubyte, to: ubyte) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1ub
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `short` values from `from` up to but not including `to`, as an iterable range.
+    struct SHORT_RANGE: Range[short], Iterable[short], Iterator[short] is
+        /// This range, as its own iterator.
+        iterator: Iterator[short] => self
+
+        /// The first element.
+        from: short
+        /// The exclusive upper bound.
+        to: short
+
+        /// The element the range is currently at.
+        current: short
+
+        _next: short
+        _finished: bool
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: short, to: short) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from >= to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to - 1s then
+                _finished = true
+            else
+                _next = _next + 1s
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `short` values from `from` to `to`, including both, as an iterable range.
+    struct SHORT_RANGE_INCLUSIVE: Range[short], Iterable[short], Iterator[short] is
+        /// This range, as its own iterator.
+        iterator: Iterator[short] => self
+
+        /// The first element.
+        from: short
+        /// The inclusive upper bound.
+        to: short
+
+        /// The element the range is currently at.
+        current: short
+
+        _next: short
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: short, to: short) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1s
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `ushort` values from `from` up to but not including `to`, as an iterable range.
+    struct USHORT_RANGE: Range[ushort], Iterable[ushort], Iterator[ushort] is
+        /// This range, as its own iterator.
+        iterator: Iterator[ushort] => self
+
+        /// The first element.
+        from: ushort
+        /// The exclusive upper bound.
+        to: ushort
+
+        /// The element the range is currently at.
+        current: ushort
+
+        _next: ushort
+        _finished: bool
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: ushort, to: ushort) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from >= to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to - 1us then
+                _finished = true
+            else
+                _next = _next + 1us
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `ushort` values from `from` to `to`, including both, as an iterable range.
+    struct USHORT_RANGE_INCLUSIVE: Range[ushort], Iterable[ushort], Iterator[ushort] is
+        /// This range, as its own iterator.
+        iterator: Iterator[ushort] => self
+
+        /// The first element.
+        from: ushort
+        /// The inclusive upper bound.
+        to: ushort
+
+        /// The element the range is currently at.
+        current: ushort
+
+        _next: ushort
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: ushort, to: ushort) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1us
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `uint` values from `from` up to but not including `to`, as an iterable range.
+    struct UINT_RANGE: Range[uint], Iterable[uint], Iterator[uint] is
+        /// This range, as its own iterator.
+        iterator: Iterator[uint] => self
+
+        /// The first element.
+        from: uint
+        /// The exclusive upper bound.
+        to: uint
+
+        /// The element the range is currently at.
+        current: uint
+
+        _next: uint
+        _finished: bool
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: uint, to: uint) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from >= to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to - 1u then
+                _finished = true
+            else
+                _next = _next + 1u
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `uint` values from `from` to `to`, including both, as an iterable range.
+    struct UINT_RANGE_INCLUSIVE: Range[uint], Iterable[uint], Iterator[uint] is
+        /// This range, as its own iterator.
+        iterator: Iterator[uint] => self
+
+        /// The first element.
+        from: uint
+        /// The inclusive upper bound.
+        to: uint
+
+        /// The element the range is currently at.
+        current: uint
+
+        _next: uint
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: uint, to: uint) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1u
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `ulong` values from `from` up to but not including `to`, as an iterable range.
+    struct ULONG_RANGE: Range[ulong], Iterable[ulong], Iterator[ulong] is
+        /// This range, as its own iterator.
+        iterator: Iterator[ulong] => self
+
+        /// The first element.
+        from: ulong
+        /// The exclusive upper bound.
+        to: ulong
+
+        /// The element the range is currently at.
+        current: ulong
+
+        _next: ulong
+        _finished: bool
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: ulong, to: ulong) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from >= to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to - 1ul then
+                _finished = true
+            else
+                _next = _next + 1ul
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+    /// The `ulong` values from `from` to `to`, including both, as an iterable range.
+    struct ULONG_RANGE_INCLUSIVE: Range[ulong], Iterable[ulong], Iterator[ulong] is
+        /// This range, as its own iterator.
+        iterator: Iterator[ulong] => self
+
+        /// The first element.
+        from: ulong
+        /// The inclusive upper bound.
+        to: ulong
+
+        /// The element the range is currently at.
+        current: ulong
+
+        _next: ulong
+        _finished: bool
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: ulong, to: ulong) is
+            self.from = from
+            self.to = to
+
+            _next = from
+            _finished = from > to
+        si
+
+        /// Advances to the next element, and returns whether one was reached.
+        move_next() -> bool is
+            if _finished then
+                return false
+            fi
+
+            current = _next
+
+            if _next == to then
+                _finished = true
+            else
+                _next = _next + 1ul
+            fi
+
+            return true
+        si
+
+        /// Has no effect; the range holds no resource to release.
+        dispose() is
+        si
+    si
+
+si
+
+namespace Ghul.Intrinsics is
+    use Ghul
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: byte, to: byte) -> BYTE_RANGE pure => BYTE_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: byte, to: byte) -> BYTE_RANGE_INCLUSIVE pure => BYTE_RANGE_INCLUSIVE(from, to)
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: ubyte, to: ubyte) -> UBYTE_RANGE pure => UBYTE_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: ubyte, to: ubyte) -> UBYTE_RANGE_INCLUSIVE pure => UBYTE_RANGE_INCLUSIVE(from, to)
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: short, to: short) -> SHORT_RANGE pure => SHORT_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: short, to: short) -> SHORT_RANGE_INCLUSIVE pure => SHORT_RANGE_INCLUSIVE(from, to)
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: ushort, to: ushort) -> USHORT_RANGE pure => USHORT_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: ushort, to: ushort) -> USHORT_RANGE_INCLUSIVE pure => USHORT_RANGE_INCLUSIVE(from, to)
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: uint, to: uint) -> UINT_RANGE pure => UINT_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: uint, to: uint) -> UINT_RANGE_INCLUSIVE pure => UINT_RANGE_INCLUSIVE(from, to)
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: ulong, to: ulong) -> ULONG_RANGE pure => ULONG_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: ulong, to: ulong) -> ULONG_RANGE_INCLUSIVE pure => ULONG_RANGE_INCLUSIVE(from, to)
+
+si

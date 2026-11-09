@@ -1,0 +1,292 @@
+// .NET's name for this type is kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System is
+
+    /// Converts between the scalar types and their bytes, as .NET's
+    /// `System.BitConverter` does: least significant byte first, which is
+    /// the order of every target ghūl runs on.
+    class BitConverter is
+        /// Whether the bytes of a value are least significant first: always
+        /// true.
+        is_little_endian: bool static => true
+
+        /// The byte of `value`: 1 for true, 0 for false.
+        ///
+        /// - value: the value
+        get_bytes(value: bool) -> ARRAY[ubyte] static =>
+            _bytes(if value then 1L else 0L fi, 1)
+
+        /// The two bytes of `value`'s code unit.
+        ///
+        /// - value: the value
+        get_bytes(value: char) -> ARRAY[ubyte] static => _bytes(cast long(cast int(value)), 2)
+
+        /// The two bytes of `value`.
+        ///
+        /// - value: the value
+        get_bytes(value: short) -> ARRAY[ubyte] static => _bytes(cast long(value), 2)
+
+        /// The two bytes of `value`.
+        ///
+        /// - value: the value
+        get_bytes(value: ushort) -> ARRAY[ubyte] static => _bytes(cast long(value), 2)
+
+        /// The four bytes of `value`.
+        ///
+        /// - value: the value
+        get_bytes(value: int) -> ARRAY[ubyte] static => _bytes(cast long(value), 4)
+
+        /// The four bytes of `value`.
+        ///
+        /// - value: the value
+        get_bytes(value: uint) -> ARRAY[ubyte] static => _bytes(cast long(value), 4)
+
+        /// The eight bytes of `value`.
+        ///
+        /// - value: the value
+        get_bytes(value: long) -> ARRAY[ubyte] static => _bytes(value, 8)
+
+        /// The eight bytes of `value`.
+        ///
+        /// - value: the value
+        get_bytes(value: ulong) -> ARRAY[ubyte] static => _bytes(cast long(value), 8)
+
+        /// The four bytes of `value`'s IEEE 754 representation.
+        ///
+        /// - value: the value
+        get_bytes(value: single) -> ARRAY[ubyte] static => _bytes(cast long(value.to_bits()), 4)
+
+        /// The eight bytes of `value`'s IEEE 754 representation.
+        ///
+        /// - value: the value
+        get_bytes(value: double) -> ARRAY[ubyte] static => _bytes(value.to_bits(), 8)
+
+        /// Whether the byte of `value` at `start_index` is not zero.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_boolean(value: ARRAY[ubyte], start_index: int) -> bool static =>
+            _read(value, start_index, 1) != 0L
+
+        /// The code unit in the two bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_char(value: ARRAY[ubyte], start_index: int) -> char static =>
+            cast char(cast int(_read(value, start_index, 2)))
+
+        /// The `short` in the two bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_int16(value: ARRAY[ubyte], start_index: int) -> short static =>
+            cast short(_read(value, start_index, 2))
+
+        /// The `ushort` in the two bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_u_int16(value: ARRAY[ubyte], start_index: int) -> ushort static =>
+            cast ushort(_read(value, start_index, 2))
+
+        /// The `int` in the four bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_int32(value: ARRAY[ubyte], start_index: int) -> int static =>
+            cast int(_read(value, start_index, 4))
+
+        /// The `uint` in the four bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_u_int32(value: ARRAY[ubyte], start_index: int) -> uint static =>
+            cast uint(_read(value, start_index, 4))
+
+        /// The `long` in the eight bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_int64(value: ARRAY[ubyte], start_index: int) -> long static =>
+            _read(value, start_index, 8)
+
+        /// The `ulong` in the eight bytes of `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_u_int64(value: ARRAY[ubyte], start_index: int) -> ulong static =>
+            cast ulong(_read(value, start_index, 8))
+
+        /// The `single` whose IEEE 754 representation is the four bytes of
+        /// `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_single(value: ARRAY[ubyte], start_index: int) -> single static =>
+            int32_bits_to_single(to_int32(value, start_index))
+
+        /// The `double` whose IEEE 754 representation is the eight bytes of
+        /// `value` from `start_index`.
+        ///
+        /// - value: the bytes
+        /// - start_index: where the value starts
+        to_double(value: ARRAY[ubyte], start_index: int) -> double static =>
+            int64_bits_to_double(to_int64(value, start_index))
+
+        /// The bits of `value`'s IEEE 754 representation.
+        ///
+        /// - value: the value
+        double_to_int64_bits(value: double) -> long static => value.to_bits()
+
+        /// The bits of `value`'s IEEE 754 representation.
+        ///
+        /// - value: the value
+        single_to_int32_bits(value: single) -> int static => value.to_bits()
+
+        /// The `double` whose IEEE 754 representation is `value`. A NaN comes
+        /// back as the NaN arithmetic produces, whatever its payload.
+        ///
+        /// - value: the bits
+        int64_bits_to_double(value: long) -> double static is
+            let exponent = cast int((value >> 52) & 0x7FFL)
+            let fraction = value & 0xF_FFFF_FFFF_FFFFL
+
+            let magnitude =
+                if exponent == 0x7FF then
+                    if fraction == 0L then 1.0 / 0.0 else 0.0 / 0.0 fi
+                elif exponent == 0 then
+                    cast double(fraction) * _power_of_two(-1074)
+                else
+                    cast double(fraction | 0x10_0000_0000_0000L) * _power_of_two(exponent - 1075)
+                fi
+
+            return if value < 0L then -magnitude else magnitude fi
+        si
+
+        /// The `single` whose IEEE 754 representation is `value`. A NaN comes
+        /// back as the NaN arithmetic produces, whatever its payload.
+        ///
+        /// - value: the bits
+        int32_bits_to_single(value: int) -> single static is
+            let exponent = (value >> 23) & 0xFF
+            let fraction = value & 0x7F_FFFF
+
+            let magnitude =
+                if exponent == 0xFF then
+                    if fraction == 0 then 1.0 / 0.0 else 0.0 / 0.0 fi
+                elif exponent == 0 then
+                    cast double(fraction) * _power_of_two(-149)
+                else
+                    cast double(fraction | 0x80_0000) * _power_of_two(exponent - 150)
+                fi
+
+            return cast single(if value < 0 then -magnitude else magnitude fi)
+        si
+
+        /// The bytes of `value` as pairs of hexadecimal digits separated by
+        /// hyphens, such as `01-AB-FF`.
+        ///
+        /// - value: the bytes
+        to_string(value: ARRAY[ubyte]) -> string static => to_string(value, 0, value.count)
+
+        /// The bytes of `value` from `start_index` to the end, as `to_string`
+        /// writes them.
+        ///
+        /// - value: the bytes
+        /// - start_index: the first byte to write
+        to_string(value: ARRAY[ubyte], start_index: int) -> string static =>
+            to_string(value, start_index, value.count - start_index)
+
+        /// `length` bytes of `value` from `start_index`, as `to_string` writes
+        /// them.
+        ///
+        /// - value: the bytes
+        /// - start_index: the first byte to write
+        /// - length: how many bytes to write
+        to_string(value: ARRAY[ubyte], start_index: int, length: int) -> string static is
+            if start_index < 0 \/ length < 0 \/ start_index > value.count - length then
+                throw Ghul.ArgumentOutOfRangeException("start_index", "the range is outside the bytes")
+            fi
+
+            let digits = "0123456789ABCDEF"
+            let builder = Ghul.Internal.SYSTEM_TEXT.builder()
+            let i mut = 0
+
+            while i < length do
+                if i > 0 then
+                    builder.append('-')
+                fi
+
+                let b = cast int(value[start_index + i])
+
+                builder.append(digits[b >> 4])
+                builder.append(digits[b & 0xF])
+                i = i + 1
+            od
+
+            return builder.to_string()
+        si
+
+        // The low `count` bytes of `value`, least significant first.
+        _bytes(value: long, count: int) -> ARRAY[ubyte] static is
+            let result = Ghul._array_new[ubyte](count)
+            let i mut = 0
+
+            while i < count do
+                Ghul._array_set(result, i, cast ubyte((value >> (8 * i)) & 0xFFL))
+                i = i + 1
+            od
+
+            return result
+        si
+
+        // The `count` bytes from `start_index`, least significant first,
+        // sign-extended from the top byte read.
+        _read(value: ARRAY[ubyte], start_index: int, count: int) -> long static is
+            if start_index < 0 \/ start_index >= value.count then
+                throw Ghul.ArgumentOutOfRangeException("start_index", "the index is outside the bytes")
+            fi
+
+            if start_index > value.count - count then
+                throw Ghul.ArgumentException("the bytes from start_index are too few for the value")
+            fi
+
+            let result mut = 0L
+            let i mut = count - 1
+
+            while i >= 0 do
+                result = (result << 8) | cast long(value[start_index + i])
+                i = i - 1
+            od
+
+            if count < 8 then
+                let shift = 64 - 8 * count
+
+                result = (result << shift) >> shift
+            fi
+
+            return result
+        si
+
+        // Two to the power `exponent`, exact from -1074 to 1023, by
+        // repeated squaring.
+        _power_of_two(exponent: int) -> double static is
+            let result mut = 1.0
+            let factor mut = if exponent < 0 then 0.5 else 2.0 fi
+            let n mut = if exponent < 0 then -exponent else exponent fi
+
+            while n > 0 do
+                if n & 1 == 1 then
+                    result = result * factor
+                fi
+
+                factor = factor * factor
+                n = n >> 1
+            od
+
+            return result
+        si
+    si
+si

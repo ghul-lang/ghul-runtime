@@ -1,0 +1,11 @@
+use default
+
+// A pipe passed straight to write_line is written by its to_string, which
+// renders its elements as interpolation does.
+let evens = [1, 2, 3, 4] |> filter(x => x % 2 == 0)
+write_line(evens |> list())
+write_line((1::5) |> list())
+let o: object = evens |> list()
+write_line(o.to_string())
+write_line("{evens |> list()}")
+write_line(Ghul.inspect(["x", "y"] |> map(s => s) |> list()))

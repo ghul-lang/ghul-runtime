@@ -280,6 +280,33 @@ namespace Ghul is
         /// - b: the second value
         compare(a: bigint, b: bigint) -> int static => _order(a, b)
 
+        /// The quotient of `dividend` by `divisor`, truncated toward zero, with
+        /// the remainder, which takes the sign of `dividend`, in `remainder`.
+        /// Throws `Ghul.DivideByZeroException` when `divisor` is zero.
+        ///
+        /// - dividend: the value divided
+        /// - divisor: the value it is divided by
+        /// - remainder: where the remainder goes
+        div_rem(dividend: bigint, divisor: bigint, remainder: bigint ref) -> bigint static is
+            let quotient = dividend / divisor
+
+            remainder! = dividend - quotient * divisor
+
+            return quotient
+        si
+
+        /// The quotient of `left` by `right`, truncated toward zero, and the
+        /// remainder, which takes the sign of `left`. Throws
+        /// `Ghul.DivideByZeroException` when `right` is zero.
+        ///
+        /// - left: the value divided
+        /// - right: the value it is divided by
+        div_rem(left: bigint, right: bigint) -> (quotient: bigint, remainder: bigint) static is
+            let quotient = left / right
+
+            return (quotient, left - quotient * right)
+        si
+
         /// The larger of `a` and `b`.
         max(a: bigint, b: bigint) -> bigint static => if a < b then b else a fi
 

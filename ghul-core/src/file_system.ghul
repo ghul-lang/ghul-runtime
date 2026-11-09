@@ -751,15 +751,56 @@ namespace IO is
 
     // On the wasm target a file's bytes cross to and from the host as a
     // string holding one code unit for each byte, which is how the host can
-    // hand them over, and a file being read is read whole first.
+    // hand them over, and a file being read is read as the reader asks.
     @IF.wasm()
     partial _HOST_FILES is
         // Whether the host offers a file system: Node does, a page does not.
         available: bool static => _available()
 
-        // A stream reading the file at `path`, over its bytes read whole.
-        open_read(path: string) -> IO.Stream static =>
-            IO.MemoryStream(read(path), false)
+        // A stream reading the file at `path` from the host as it is read,
+        // as .NET's FileStream does, so a file with no end can be read in
+        // part.
+        open_read(path: string) -> IO.Stream static is
+            let full_path = _FILE_STORE.full(path)
+            let descriptor = _open_read(full_path)
+
+            if descriptor < 0 then
+                throw _failure(_last_error(), full_path)
+            fi
+
+            return _HOST_READ_STREAM(descriptor, full_path)
+        si
+
+        // Reads at most `count` bytes of the file `descriptor` into `buffer`
+        // from `offset`, answering how many, which is zero at its end. The
+        // host hands them over as one code unit for each byte.
+        read_into(descriptor: int, buffer: ARRAY[ubyte], offset: int, count: int, full_path: string) -> int static is
+            if let chunk = _read_chunk(descriptor, count) then
+                let i mut = 0
+
+                while i < chunk.length do
+                    Ghul._array_set(buffer, offset + i, cast ubyte(cast int(chunk[i])))
+                    i = i + 1
+                od
+
+                return chunk.length
+            fi
+
+            throw _failure(_last_error(), full_path)
+        si
+
+        // Closes the file `descriptor`.
+        close(descriptor: int, full_path: string) static =>
+            _check(_close(descriptor), full_path)
+
+        @intrinsic("host.file_open_read")
+        _open_read(path: string) -> int static
+
+        @intrinsic("host.file_read_chunk")
+        _read_chunk(descriptor: int, count: int) -> string? static
+
+        @intrinsic("host.file_close")
+        _close(descriptor: int) -> int static
 
         _read(path: string) -> ARRAY[ubyte]? static is
             if let text = _read_text(path) then
@@ -1182,7 +1223,6 @@ namespace IO is
 
     // A stream reading a file on the host as it is read, over the file's
     // open descriptor, which disposing the stream closes.
-    @IF.llvm()
     class _HOST_READ_STREAM: Stream is
         _descriptor: int
         _full_path: string
@@ -1196,7 +1236,18 @@ namespace IO is
             _open = true
         si
 
+        _read_so_far: long
+
         can_read: bool => _open
+
+        // The size of the file, as `FileInfo.length` measures it.
+        length: long => long(_FILE_STORE.read(_full_path).count)
+
+        // How many bytes have been read; the position cannot be moved.
+        position: long public => _read_so_far,
+            = value is
+                throw Ghul.NotSupportedException("Stream does not support seeking.")
+            si
 
         read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
             if !_open then
@@ -1215,7 +1266,11 @@ namespace IO is
                 throw Ghul.ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.")
             fi
 
-            return _HOST_FILES.read_into(_descriptor, buffer, offset, count, _full_path)
+            let got = _HOST_FILES.read_into(_descriptor, buffer, offset, count, _full_path)
+
+            _read_so_far = _read_so_far + long(got)
+
+            return got
         si
 
         dispose() is
@@ -1536,41 +1591,6 @@ namespace IO is
 
             return rest
         si
-    si
-
-    /// Reads the text of a file, or of a stream, as UTF-8.
-    @suppress("non-upper-snake-case-name")
-    class StreamReader: TextReader is
-        _reader: StringReader
-
-        /// - path: the file to read
-        init(path: string) is
-            super.init()
-
-            _reader = StringReader(File.read_all_text(path))
-        si
-
-        /// - stream: the stream to read, from its position to its end
-        init(stream: Stream) is
-            super.init()
-
-            let bytes = MemoryStream()
-
-            stream.copy_to(bytes)
-
-            _reader = StringReader(_UTF8.decode(bytes.to_array()))
-        si
-
-        read_line() -> string? => _reader.read_line()
-        read() -> int => _reader.read()
-        peek() -> int => _reader.peek()
-        read_to_end() -> string => _reader.read_to_end()
-
-        /// Releases the reader.
-        close() is si
-
-        /// Releases the reader.
-        dispose() is si
     si
 
     /// Writes text to a file as UTF-8. The file holds what was written once

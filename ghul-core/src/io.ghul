@@ -49,6 +49,27 @@ namespace IO is
         wait_for_input(timeout_ms: int) -> bool static =>
             _wait_for_input(timeout_ms)
 
+        /// Standard input as a stream of bytes: the text it holds, as UTF-8.
+        /// Each read takes what is there without waiting for more once it
+        /// has a byte.
+        open_standard_input() -> Stream static => _STANDARD_INPUT_STREAM()
+
+        /// The encoding standard output is written in: UTF-8.
+        output_encoding: System.Text.Encoding static => System.Text.Encoding.utf8
+
+        /// The encoding standard input is read in: UTF-8.
+        input_encoding: System.Text.Encoding static => System.Text.Encoding.utf8
+
+        /// The width of the terminal in columns. The source-core hosts give
+        /// no terminal size, so this is 0, as .NET answers where it cannot
+        /// read one.
+        window_width: int static => 0
+
+        /// The height of the terminal in rows. The source-core hosts give no
+        /// terminal size, so this is 0, as .NET answers where it cannot read
+        /// one.
+        window_height: int static => 0
+
         /// Reads the next line of standard input, without its line break,
         /// or null at the end of the input.
         read_line() -> string? static => _in.read_line()

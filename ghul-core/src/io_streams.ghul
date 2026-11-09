@@ -1,0 +1,333 @@
+namespace IO is
+    use Collections.LIST
+
+    /// Reads text from a stream of bytes, or a file, as .NET's
+    /// `System.IO.StreamReader` does: UTF-8, with a byte-order mark at the
+    /// start skipped, and each byte sequence that is not UTF-8 read as
+    /// U+FFFD. Bytes are read from the stream as the text is asked for.
+    @suppress("non-upper-snake-case-name")
+    class StreamReader: TextReader is
+        _stream: Stream
+        _buffer: ARRAY[ubyte]
+        _count: int
+        _at: int
+        _back: LIST[int]
+        _low: int
+        _peeked: int
+        _started: bool
+
+        /// A reader of `stream`, which it closes when it is disposed.
+        ///
+        /// - stream: the stream to read
+        init(stream: Stream) is
+            super.init()
+
+            _stream = stream
+            _buffer = Ghul._array_new[ubyte](4096)
+            _count = 0
+            _at = 0
+            _back = LIST[int]()
+            _low = -1
+            _peeked = -2
+            _started = false
+        si
+
+        /// A reader of the file at `path`.
+        ///
+        /// - path: the file to read
+        init(path: string) is
+            init(File.open_read(path))
+        si
+
+        /// The stream being read.
+        base_stream: Stream => _stream
+
+        /// The encoding the text is read in: UTF-8.
+        current_encoding: System.Text.Encoding => System.Text.Encoding.utf8
+
+        /// Whether everything has been read.
+        end_of_stream: bool => peek() < 0
+
+        /// Reads the next line, without its line break, or null at the end
+        /// of the text. A line ends at a line feed, a carriage return, or a
+        /// carriage return followed by a line feed.
+        read_line() -> string? is
+            let first = read()
+
+            if first < 0 then
+                return null
+            fi
+
+            let line = Text.STRING_BUILDER()
+            let c mut = first
+
+            while c >= 0 do
+                if c == 10 then
+                    return line.to_string()
+                fi
+
+                if c == 13 then
+                    if peek() == 10 then
+                        read()
+                    fi
+
+                    return line.to_string()
+                fi
+
+                line.append(cast char(c))
+                c = read()
+            od
+
+            return line.to_string()
+        si
+
+        /// Reads the next character, or -1 at the end of the text.
+        read() -> int is
+            if _peeked != -2 then
+                let c = _peeked
+
+                _peeked = -2
+
+                return c
+            fi
+
+            return _decode()
+        si
+
+        /// The next character, left unread, or -1 at the end of the text.
+        peek() -> int is
+            if _peeked == -2 then
+                _peeked = _decode()
+            fi
+
+            return _peeked
+        si
+
+        /// Reads everything left, which is empty at the end of the text.
+        read_to_end() -> string is
+            let text = Text.STRING_BUILDER()
+            let c mut = read()
+
+            while c >= 0 do
+                text.append(cast char(c))
+                c = read()
+            od
+
+            return text.to_string()
+        si
+
+        /// Closes the reader and its stream.
+        close() =>
+            dispose()
+
+        /// Closes the reader and its stream.
+        dispose() is
+            _stream.dispose()
+        si
+
+        _byte() -> int is
+            if _back.count > 0 then
+                let b = _back[_back.count - 1]
+
+                _back.remove_at(_back.count - 1)
+
+                return b
+            fi
+
+            if _at >= _count then
+                _count = _stream.read(_buffer, 0, _buffer.count)
+                _at = 0
+
+                if _count <= 0 then
+                    _count = 0
+
+                    return -1
+                fi
+            fi
+
+            let b = cast int(_buffer[_at])
+
+            _at = _at + 1
+
+            return b
+        si
+
+        _unread(b: int) is
+            if b >= 0 then
+                _back.add(b)
+            fi
+        si
+
+        // The next UTF-16 code unit, or -1 at the end.
+        _decode() -> int is
+            if _low >= 0 then
+                let low = _low
+
+                _low = -1
+
+                return low
+            fi
+
+            if !_started then
+                _started = true
+
+                let b0 = _byte()
+
+                if b0 == 0xEF then
+                    let b1 = _byte()
+
+                    if b1 == 0xBB then
+                        let b2 = _byte()
+
+                        if b2 != 0xBF then
+                            _unread(b2)
+                            _unread(b1)
+                            _unread(b0)
+                        fi
+                    else
+                        _unread(b1)
+                        _unread(b0)
+                    fi
+                else
+                    _unread(b0)
+                fi
+            fi
+
+            let lead = _byte()
+
+            if lead < 0x80 then
+                return lead
+            fi
+
+            let length =
+                if lead >= 0xC2 /\ lead <= 0xDF then 2
+                elif lead >= 0xE0 /\ lead <= 0xEF then 3
+                elif lead >= 0xF0 /\ lead <= 0xF4 then 4
+                else 0
+                fi
+
+            if length == 0 then
+                return 0xFFFD
+            fi
+
+            let code_point mut = lead & (if length == 2 then 0x1F elif length == 3 then 0x0F else 0x07 fi)
+            let n mut = 1
+
+            while n < length do
+                let b = _byte()
+
+                // The second byte of some leads has a narrower range, which
+                // rules out overlong forms, surrogates and values past
+                // U+10FFFF.
+                let low_bound =
+                    if n == 1 /\ lead == 0xE0 then 0xA0
+                    elif n == 1 /\ lead == 0xF0 then 0x90
+                    else 0x80
+                    fi
+
+                let high_bound =
+                    if n == 1 /\ lead == 0xED then 0x9F
+                    elif n == 1 /\ lead == 0xF4 then 0x8F
+                    else 0xBF
+                    fi
+
+                if b < low_bound \/ b > high_bound then
+                    _unread(b)
+
+                    return 0xFFFD
+                fi
+
+                code_point = (code_point << 6) | (b & 0x3F)
+                n = n + 1
+            od
+
+            if code_point >= 0x10000 then
+                let offset = code_point - 0x10000
+
+                _low = 0xDC00 + (offset & 0x3FF)
+
+                return 0xD800 + (offset >> 10)
+            fi
+
+            return code_point
+        si
+    si
+
+    // Standard input as UTF-8 bytes, encoded from the text the host reads.
+    class _STANDARD_INPUT_STREAM: Stream is
+        _pending: LIST[int]
+
+        init() is
+            super.init()
+
+            _pending = LIST[int]()
+        si
+
+        can_read: bool => true
+
+        read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
+            if offset < 0 \/ count < 0 \/ offset > buffer.count - count then
+                throw Ghul.ArgumentOutOfRangeException("offset", "the range is outside the buffer")
+            fi
+
+            if count == 0 then
+                return 0
+            fi
+
+            if _pending.count == 0 then
+                _fill()
+            fi
+
+            let written mut = 0
+
+            while written < count /\ _pending.count > 0 do
+                Ghul._array_set(buffer, offset + written, cast ubyte(_pending[0]))
+                _pending.remove_at(0)
+                written = written + 1
+            od
+
+            return written
+        si
+
+        // The UTF-8 of the next character of standard input, or nothing at
+        // its end.
+        _fill() is
+            let c = IO.Std.read()
+
+            if c < 0 then
+                return
+            fi
+
+            let code_point mut = c
+
+            if c >= 0xD800 /\ c <= 0xDBFF then
+                let next = IO.Std.`in.peek()
+
+                if next >= 0xDC00 /\ next <= 0xDFFF then
+                    IO.Std.read()
+                    code_point = 0x10000 + ((c - 0xD800) << 10) + (next - 0xDC00)
+                else
+                    code_point = 0xFFFD
+                fi
+            elif c >= 0xDC00 /\ c <= 0xDFFF then
+                code_point = 0xFFFD
+            fi
+
+            if code_point < 0x80 then
+                _pending.add(code_point)
+            elif code_point < 0x800 then
+                _pending.add(0xC0 | (code_point >> 6))
+                _pending.add(0x80 | (code_point & 0x3F))
+            elif code_point < 0x10000 then
+                _pending.add(0xE0 | (code_point >> 12))
+                _pending.add(0x80 | ((code_point >> 6) & 0x3F))
+                _pending.add(0x80 | (code_point & 0x3F))
+            else
+                _pending.add(0xF0 | (code_point >> 18))
+                _pending.add(0x80 | ((code_point >> 12) & 0x3F))
+                _pending.add(0x80 | ((code_point >> 6) & 0x3F))
+                _pending.add(0x80 | (code_point & 0x3F))
+            fi
+        si
+    si
+si

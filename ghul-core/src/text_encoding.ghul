@@ -61,6 +61,9 @@ namespace System.Text is
         ///
         /// - text: the text to measure
         get_byte_count(text: string) -> int => get_bytes(text).count
+
+        /// The encoding's name as the IANA registers it, such as `utf-8`.
+        web_name: string;
     si
 
     /// UTF-8, as .NET's `System.Text.UTF8Encoding` is.
@@ -71,6 +74,9 @@ namespace System.Text is
         init() is
             self.init(false)
         si
+
+        /// `utf-8`.
+        web_name: string => "utf-8"
 
         /// - encoder_should_emit_utf8_identifier: whether a file written in
         ///   this encoding starts with a byte-order mark; `get_bytes` never
@@ -93,6 +99,9 @@ namespace System.Text is
         init() is
             super.init()
         si
+
+        /// `us-ascii`.
+        web_name: string => "us-ascii"
 
         get_bytes(text: string) -> ARRAY[ubyte] is
             let out = IO.MemoryStream(text.length)
@@ -135,6 +144,9 @@ namespace System.Text is
         init() is
             super.init()
         si
+
+        /// `utf-16`.
+        web_name: string => "utf-16"
 
         get_bytes(text: string) -> ARRAY[ubyte] is
             let result = Ghul._array_new[ubyte](text.length * 2)
@@ -180,6 +192,9 @@ namespace System.Text is
         init() is
             super.init()
         si
+
+        /// `utf-32`.
+        web_name: string => "utf-32"
 
         get_bytes(text: string) -> ARRAY[ubyte] is
             let out = IO.MemoryStream(text.length * 4)

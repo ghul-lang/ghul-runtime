@@ -48,14 +48,15 @@ namespace Ghul.Intrinsics.Staging is
     /// Whether `a` and `b` are the same value, bit for bit.
     @intrinsic("compare.value") ==[T](a: T, b: T) -> bool pure
 
-    // Handles null comparisons (`x == null`), where inference cannot
-    // pin the generic's T, and explicit cross-type reference
-    // comparisons. Both operands are `object?` so a nullable left or
-    // right is accepted uniformly; `compare.reference` lowers to `ceq`,
-    // which already handles null on either side (null == null is true,
-    // null == ref is false). Mixed value/ref operands box and still
-    // compare correctly.
-    /// Whether `a` and `b` are the same object, or both null.
+    // The null-comparison operator. The generic above takes a
+    // non-optional T, and a bare null fits only an optional, so
+    // `x == null` and `x != null` resolve here, whether `x` is an
+    // optional, a pointer or an unconstrained type parameter. Other
+    // comparisons, cross-type references included, resolve to the
+    // generic. A value boxed to compare here is never equal to anything
+    // but null.
+    /// Whether `a` and `b` are the same object, or both null; this is the
+    /// overload a comparison against `null` uses.
     @intrinsic("compare.reference") ==(a: object?, b: object?) -> bool pure
 
     /// Logical negation.
