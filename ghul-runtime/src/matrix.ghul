@@ -48,7 +48,7 @@ namespace Collections is
         /// - rows: the number of rows
         /// - columns: the number of elements in each row
         init(cells: List[T], offset: int, rows: int, columns: int) is
-            MATRIX_EXTENTS.check([rows, columns])
+            _MATRIX_EXTENTS.check([rows, columns])
 
             _cells = cells
             _offset = offset
@@ -68,15 +68,15 @@ namespace Collections is
         /// Row `row`, as a view of the elements it holds. Throws if `row` is
         /// out of range.
         [row: int]: T[] pure is
-            MATRIX_EXTENTS.check_index(row, _rows, "row")
+            _MATRIX_EXTENTS.check_index(row, _rows, "row")
 
             return LIST_SLICE[T](_cells, _offset + row * _columns, _columns)
         si
 
         /// The element in `row` at `column`. Throws if either is out of range.
         [row: int, column: int]: T is
-            MATRIX_EXTENTS.check_index(row, _rows, "row")
-            MATRIX_EXTENTS.check_index(column, _columns, "column")
+            _MATRIX_EXTENTS.check_index(row, _rows, "row")
+            _MATRIX_EXTENTS.check_index(column, _columns, "column")
 
             return _cells[_offset + row * _columns + column]
         si
@@ -135,7 +135,7 @@ namespace Collections is
         ///
         /// - rows: the rows, in order
         init(rows: T[][]) is
-            let (cells, height, width) = MATRIX_EXTENTS.flatten_rows(rows)
+            let (cells, height, width) = _MATRIX_EXTENTS.flatten_rows(rows)
             let array = cells.to_array()
 
             super.init(array, 0, height, width)
@@ -152,7 +152,7 @@ namespace Collections is
         /// - rows: the number of rows
         /// - columns: the number of elements in each row
         init(source: T{}, rows: int, columns: int) is
-            let array = MATRIX_EXTENTS.take(source, [rows, columns]).to_array()
+            let array = _MATRIX_EXTENTS.take(source, [rows, columns]).to_array()
 
             super.init(array, 0, rows, columns)
 
@@ -161,10 +161,10 @@ namespace Collections is
 
         /// Row `row`, as a view of the elements it holds. Throws if `row` is
         /// out of range.
-        [row: int]: T[] pure => MATRIX_EXTENTS.row_of(_array, row, lengths.rows, lengths.columns)
+        [row: int]: T[] pure => _MATRIX_EXTENTS.row_of(_array, row, lengths.rows, lengths.columns)
 
         /// The element in `row` at `column`. Throws if either is out of range.
-        [row: int, column: int]: T => _array[MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)]
+        [row: int, column: int]: T => _array[_MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)]
     si
 
     /// A mutable two-dimensional array: `m[i, j] = v` sets one element. Build
@@ -177,7 +177,7 @@ namespace Collections is
         ///
         /// - rows: the rows, in order
         init(rows: T[][]) is
-            let (cells, height, width) = MATRIX_EXTENTS.flatten_rows(rows)
+            let (cells, height, width) = _MATRIX_EXTENTS.flatten_rows(rows)
             let list = LIST[T](cells)
 
             super.init(list, 0, height, width)
@@ -194,7 +194,7 @@ namespace Collections is
         /// - rows: the number of rows
         /// - columns: the number of elements in each row
         init(source: T{}, rows: int, columns: int) is
-            let list = MATRIX_EXTENTS.take(source, [rows, columns])
+            let list = _MATRIX_EXTENTS.take(source, [rows, columns])
 
             super.init(list, 0, rows, columns)
 
@@ -203,13 +203,13 @@ namespace Collections is
 
         /// Row `row`, as a view of the elements it holds, which shows later
         /// changes to them. Throws if `row` is out of range.
-        [row: int]: T[] pure => MATRIX_EXTENTS.row_of(_list, row, lengths.rows, lengths.columns)
+        [row: int]: T[] pure => _MATRIX_EXTENTS.row_of(_list, row, lengths.rows, lengths.columns)
 
         /// The element in `row` at `column`, which can be assigned. Throws if
         /// either is out of range.
         [row: int, column: int]: T => _list[_position(row, column)], = value is _list[_position(row, column)] = value; si
 
-        _position(row: int, column: int) -> int => MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)
+        _position(row: int, column: int) -> int => _MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)
     si
 
     /// A read-only three-dimensional view of `planes` planes of `rows` rows of
@@ -228,7 +228,7 @@ namespace Collections is
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
         init(cells: List[T], planes: int, rows: int, columns: int) is
-            MATRIX_EXTENTS.check([planes, rows, columns])
+            _MATRIX_EXTENTS.check([planes, rows, columns])
 
             _cells = cells
             _planes = planes
@@ -248,7 +248,7 @@ namespace Collections is
         /// Plane `plane`, as a view of the elements it holds. Throws if
         /// `plane` is out of range.
         [plane: int]: Matrix2[T] pure is
-            MATRIX_EXTENTS.check_index(plane, _planes, "plane")
+            _MATRIX_EXTENTS.check_index(plane, _planes, "plane")
 
             return MATRIX_2_VIEW[T](_cells, plane * _rows * _columns, _rows, _columns)
         si
@@ -256,9 +256,9 @@ namespace Collections is
         /// The element in `plane` at `row` and `column`. Throws if any is out
         /// of range.
         [plane: int, row: int, column: int]: T is
-            MATRIX_EXTENTS.check_index(plane, _planes, "plane")
-            MATRIX_EXTENTS.check_index(row, _rows, "row")
-            MATRIX_EXTENTS.check_index(column, _columns, "column")
+            _MATRIX_EXTENTS.check_index(plane, _planes, "plane")
+            _MATRIX_EXTENTS.check_index(row, _rows, "row")
+            _MATRIX_EXTENTS.check_index(column, _columns, "column")
 
             return _cells[(plane * _rows + row) * _columns + column]
         si
@@ -319,7 +319,7 @@ namespace Collections is
         ///
         /// - planes: the planes, in order, each a sequence of rows
         init(planes: T[][][]) is
-            let (cells, depth, height, width) = MATRIX_EXTENTS.flatten_planes(planes)
+            let (cells, depth, height, width) = _MATRIX_EXTENTS.flatten_planes(planes)
             let array = cells.to_array()
 
             super.init(array, depth, height, width)
@@ -338,7 +338,7 @@ namespace Collections is
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
         init(source: T{}, planes: int, rows: int, columns: int) is
-            let array = MATRIX_EXTENTS.take(source, [planes, rows, columns]).to_array()
+            let array = _MATRIX_EXTENTS.take(source, [planes, rows, columns]).to_array()
 
             super.init(array, planes, rows, columns)
 
@@ -347,11 +347,11 @@ namespace Collections is
 
         /// Plane `plane`, as a view of the elements it holds. Throws if
         /// `plane` is out of range.
-        [plane: int]: Matrix2[T] pure => MATRIX_EXTENTS.plane_of(_array, plane, lengths.planes, lengths.rows, lengths.columns)
+        [plane: int]: Matrix2[T] pure => _MATRIX_EXTENTS.plane_of(_array, plane, lengths.planes, lengths.rows, lengths.columns)
 
         /// The element in `plane` at `row` and `column`. Throws if any is out
         /// of range.
-        [plane: int, row: int, column: int]: T => _array[MATRIX_EXTENTS.position(plane, row, column, lengths.planes, lengths.rows, lengths.columns)]
+        [plane: int, row: int, column: int]: T => _array[_MATRIX_EXTENTS.position(plane, row, column, lengths.planes, lengths.rows, lengths.columns)]
     si
 
     /// A mutable three-dimensional array: `m[i, j, k] = v` sets one element.
@@ -364,7 +364,7 @@ namespace Collections is
         ///
         /// - planes: the planes, in order, each a sequence of rows
         init(planes: T[][][]) is
-            let (cells, depth, height, width) = MATRIX_EXTENTS.flatten_planes(planes)
+            let (cells, depth, height, width) = _MATRIX_EXTENTS.flatten_planes(planes)
             let list = LIST[T](cells)
 
             super.init(list, depth, height, width)
@@ -383,7 +383,7 @@ namespace Collections is
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
         init(source: T{}, planes: int, rows: int, columns: int) is
-            let list = MATRIX_EXTENTS.take(source, [planes, rows, columns])
+            let list = _MATRIX_EXTENTS.take(source, [planes, rows, columns])
 
             super.init(list, planes, rows, columns)
 
@@ -392,18 +392,18 @@ namespace Collections is
 
         /// Plane `plane`, as a view of the elements it holds, which shows
         /// later changes to them. Throws if `plane` is out of range.
-        [plane: int]: Matrix2[T] pure => MATRIX_EXTENTS.plane_of(_list, plane, lengths.planes, lengths.rows, lengths.columns)
+        [plane: int]: Matrix2[T] pure => _MATRIX_EXTENTS.plane_of(_list, plane, lengths.planes, lengths.rows, lengths.columns)
 
         /// The element in `plane` at `row` and `column`, which can be
         /// assigned. Throws if any is out of range.
         [plane: int, row: int, column: int]: T => _list[_position(plane, row, column)], = value is _list[_position(plane, row, column)] = value; si
 
         _position(plane: int, row: int, column: int) -> int =>
-            MATRIX_EXTENTS.position(plane, row, column, lengths.planes, lengths.rows, lengths.columns)
+            _MATRIX_EXTENTS.position(plane, row, column, lengths.planes, lengths.rows, lengths.columns)
     si
 
     // Checks and flattening the matrix types share.
-    class MATRIX_EXTENTS is
+    class _MATRIX_EXTENTS is
         init() is si
 
         check(extents: int[]) static is
