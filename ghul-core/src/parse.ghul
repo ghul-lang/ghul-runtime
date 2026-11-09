@@ -10,7 +10,7 @@ namespace Ghul is
         /// outside `int`'s range.
         ///
         /// - text: the text to parse
-        parse(text: string) -> int static is
+        parse(text: string) -> int static pure is
             let (status, value) = _parse_integer(text, -2147483648L, 2147483647L)
 
             _throw_unless_parsed(status)
@@ -43,7 +43,7 @@ namespace Ghul is
         /// outside `uint`'s range.
         ///
         /// - text: the text to parse
-        parse(text: string) -> uint static is
+        parse(text: string) -> uint static pure is
             let (status, value) = _parse_integer(text, 0L, 4294967295L)
 
             _throw_unless_parsed(status)
@@ -76,7 +76,7 @@ namespace Ghul is
         /// outside `ulong`'s range.
         ///
         /// - text: the text to parse
-        parse(text: string) -> ulong static is
+        parse(text: string) -> ulong static pure is
             let (status, value) = _parse_unsigned(text)
 
             _throw_unless_parsed(status)
@@ -109,7 +109,7 @@ namespace Ghul is
         /// outside `long`'s range.
         ///
         /// - text: the text to parse
-        parse(text: string) -> long static is
+        parse(text: string) -> long static pure is
             let (status, value) = _parse_integer(text, -9223372036854775807L - 1L, 9223372036854775807L)
 
             _throw_unless_parsed(status)
@@ -141,7 +141,7 @@ namespace Ghul is
         /// The `double` that `text` holds; throws where it holds none.
         ///
         /// - text: the text to parse
-        parse(text: string) -> double static is
+        parse(text: string) -> double static pure is
             let (status, value) = _parse_double(text)
 
             _throw_unless_parsed(status)

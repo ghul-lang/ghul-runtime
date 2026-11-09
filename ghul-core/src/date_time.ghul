@@ -220,7 +220,7 @@ namespace System is
         /// which on the source-core targets is the same moment.
         ///
         /// - text: the text to read
-        parse(text: string) -> DateTime static =>
+        parse(text: string) -> DateTime static pure =>
             Ghul.Internal.DATE_PARSE.parse(text.trim())
 
         // The custom format a standard format letter stands for.
@@ -424,7 +424,7 @@ namespace System is
         /// a whole number of days, with white space around it.
         ///
         /// - text: the text to read
-        parse(text: string) -> TimeSpan static => Ghul.Internal.TIME_SPAN_TEXT.parse(text.trim())
+        parse(text: string) -> TimeSpan static pure => Ghul.Internal.TIME_SPAN_TEXT.parse(text.trim())
 
         /// The interval `text` writes in the custom format `format`.
         ///

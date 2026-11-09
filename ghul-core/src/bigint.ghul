@@ -158,7 +158,7 @@ namespace Ghul is
         /// white space and a leading sign.
         ///
         /// - text: the decimal text to read
-        parse(text: string) -> bigint static is
+        parse(text: string) -> bigint static pure is
             if !_is_integer_text(text) then
                 throw FormatException("the value could not be parsed")
             fi
