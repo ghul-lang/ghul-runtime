@@ -1,0 +1,43 @@
+use default
+
+// Two- and three-dimensional arrays: read-only ARRAY_2 and ARRAY_3, mutable
+// MATRIX_2 and MATRIX_3, indexed as m[i, j], iterating their rows, with
+// rows and planes as views of the elements.
+let a = ARRAY_2([[1, 2, 3], [4, 5, 6]])
+
+write_line("{a[1, 2]} {a.count} {a[1]} {a.lengths.columns}")
+write_line("{a}")
+write_line("{a.elements |> join(" ")}")
+
+let m = MATRIX[int](2, 3)
+let row = m[1]
+
+m[1, 2] = 7
+m[0, 0] = m[1, 2] * 2
+
+write_line("{m} {row[2]}")
+
+let filled = MATRIX(3, 2, (r: int, c: int) -> int => r * 10 + c)
+
+write_line("{filled[2, 1]} {filled =~ MATRIX(filled)} {filled =~ a}")
+
+let cube = MATRIX(2, 2, 2, (p: int, r: int, c: int) -> int => p * 100 + r * 10 + c)
+
+cube[1, 1, 1] = 0
+
+write_line("{cube[1]} {cube[0, 1, 0]} {cube.count}")
+
+let fixed = ARRAY_3([[[1, 2]], [[3, 4]]])
+
+write_line("{fixed[1, 0, 1]} {fixed.lengths}")
+
+refuses_ragged_rows() -> string is
+    try
+        ARRAY_2([[1, 2], [3]])
+        return "built"
+    catch e: System.Exception
+        return "refused"
+    yrt
+si
+
+write_line(refuses_ragged_rows())
