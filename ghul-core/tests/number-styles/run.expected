@@ -1,0 +1,39 @@
+'ff' 515: int 255 long 255
+'FFFFFFFF' 515: int -1 long 4294967295
+'7fffffff' 515: int 2147483647 long 2147483647
+'100000000' 515: int overflow long 4294967296
+'0000000ff' 515: int 255 long 255
+' 1a ' 515: int 26 long 26
+'0x1a' 515: int format long format
+'-1a' 515: int format long format
+'' 515: int format long format
+'g' 515: int format long format
+'1,234' 111: int 1234 long 1234
+'1,234,567.00' 111: int 1234567 long 1234567
+'1234.5' 111: int overflow long overflow
+',123' 111: int format long format
+'1,,2' 111: int 12 long 12
+'12-' 111: int -12 long -12
+' -12 ' 111: int -12 long -12
+'- 12' 111: int format long format
+'(12)' 16: int -12 long -12
+'(12' 16: int format long format
+'1e3' 167: int 1000 long 1000
+'1.5e1' 167: int 15 long 15
+'1.55e1' 167: int overflow long overflow
+'1e-1' 167: int overflow long overflow
+'10e-1' 167: int 1 long 1
+'2147483648' 7: int overflow long 2147483648
+'-2147483648' 7: int -2147483648 long -2147483648
+'+5' 7: int 5 long 5
+'5' 0: int 5 long 5
+' 5' 0: int format long format
+'¤5' 383: int 5 long 5
+'5¤' 383: int 5 long 5
+'1010' 1027: int 10 long 10
+'11111111111111111111111111111111' 1027: int -1 long 4294967295
+'0.000' 111: int 0 long 0
+'.5' 111: int overflow long overflow
+'5.' 111: int 5 long 5
+'-0' 7: int 0 long 0
+uint 4294967295 ulong 18446744073709551615 short -32768 ubyte 10 byte -128 ushort 0

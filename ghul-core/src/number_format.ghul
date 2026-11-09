@@ -212,6 +212,12 @@ namespace Ghul is
     // A custom format of `0` and `#` placeholders, at most one `.`, and `,`
     // between the integer placeholders to group thousands.
     _custom_layout(negative: bool, digits: string, point: int, format: string, keep_negative_zero: bool) -> string is
+        let exponent_at = _exponent_marker(format)
+
+        if exponent_at >= 0 then
+            return _custom_scientific(negative, digits, point, format, exponent_at, keep_negative_zero)
+        fi
+
         let dot = format.index_of('.')
         let integer_part = if dot < 0 then format else format.substring(0, dot) fi
         let fraction_part = if dot < 0 then "" else format.substring(dot + 1) fi
@@ -271,6 +277,126 @@ namespace Ghul is
         let shown = negative /\ text.length > 0 /\ (keep_negative_zero \/ rounded.digits.length > 0)
 
         return if shown then _string_concat("-", text) else text fi
+    si
+
+    // Where a custom format's exponent starts: an `e` or `E`, then an
+    // optional sign, then at least one `0`. -1 where there is none.
+    _exponent_marker(format: string) -> int is
+        let i mut = 0
+
+        while i < format.length do
+            let c = format[i]
+
+            if c == 'e' \/ c == 'E' then
+                let j mut = i + 1
+
+                if j < format.length /\ (format[j] == '+' \/ format[j] == '-') then
+                    j = j + 1
+                fi
+
+                if j < format.length /\ format[j] == '0' then
+                    return i
+                fi
+            fi
+
+            i = i + 1
+        od
+
+        return -1
+    si
+
+    // A custom format with an exponent, such as `0.000000e+00`: as many
+    // digits before the point as the pattern has placeholders there, the
+    // exponent making up the rest, written with at least as many digits as
+    // the `0`s after the `e`, and with its sign always where the `e` is
+    // followed by `+`.
+    _custom_scientific(negative: bool, digits: string, point: int, format: string, exponent_at: int, keep_negative_zero: bool) -> string is
+        let mantissa = format.substring(0, exponent_at)
+        let dot = mantissa.index_of('.')
+        let integer_part = if dot < 0 then mantissa else mantissa.substring(0, dot) fi
+        let fraction_part = if dot < 0 then "" else mantissa.substring(dot + 1) fi
+
+        let whole_places mut = 0
+        let i mut = 0
+
+        while i < integer_part.length do
+            let c = integer_part[i]
+
+            if c == '0' \/ c == '#' then
+                whole_places = whole_places + 1
+            elif c != ',' then
+                throw FormatException("Format specifier was invalid.")
+            fi
+
+            i = i + 1
+        od
+
+        let places = fraction_part.length
+        let fraction_minimum mut = 0
+        i = 0
+
+        while i < places do
+            let c = fraction_part[i]
+
+            if c == '0' then
+                fraction_minimum = i + 1
+            elif c != '#' then
+                throw FormatException("Format specifier was invalid.")
+            fi
+
+            i = i + 1
+        od
+
+        let marker = format[exponent_at]
+        let j mut = exponent_at + 1
+        let always_signed = format[j] == '+'
+
+        if format[j] == '+' \/ format[j] == '-' then
+            j = j + 1
+        fi
+
+        let exponent_digits mut = 0
+
+        while j < format.length /\ format[j] == '0' do
+            exponent_digits = exponent_digits + 1
+            j = j + 1
+        od
+
+        if j < format.length then
+            throw FormatException("Format specifier was invalid.")
+        fi
+
+        let shown_whole = if whole_places > 0 then whole_places else 1 fi
+        let rounded = _rounded(digits, point, shown_whole + places, false)
+        let exponent = if rounded.digits.length > 0 then rounded.point - shown_whole else 0 fi
+
+        let significant mut = rounded.digits
+
+        while significant.length < shown_whole + places do
+            significant = _string_concat(significant, "0")
+        od
+
+        let whole = if whole_places > 0 then significant.substring(0, shown_whole) else "" fi
+        let fraction mut = significant.substring(shown_whole, places)
+
+        while fraction.length > fraction_minimum /\ fraction[fraction.length - 1] == '0' do
+            fraction = fraction.substring(0, fraction.length - 1)
+        od
+
+        let text mut = if fraction.length > 0 then _string_concat(_string_concat(whole, "."), fraction) else whole fi
+        let magnitude = if exponent < 0 then -exponent else exponent fi
+
+        text = _string_concat(text, _string_from_char(marker))
+
+        if exponent < 0 then
+            text = _string_concat(text, "-")
+        elif always_signed then
+            text = _string_concat(text, "+")
+        fi
+
+        text = _string_concat(text, _padded_left(_decimal_text(magnitude), exponent_digits, '0'))
+
+        return if negative /\ (keep_negative_zero \/ rounded.digits.length > 0) then _string_concat("-", text) else text fi
     si
 
     // A format string read as a standard specifier and its precision, or as

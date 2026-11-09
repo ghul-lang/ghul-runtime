@@ -1,0 +1,13 @@
+four values read: 4
+first read 5: line 
+rest line: [one]
+next line: [líne two 😀] peek 116
+to end: [third] end true read -1 line null
+whole: 27
+decoded 7: 65 65533 40 55357 56832 65533 65533
+missing file: not found
+encoding utf-8 utf-8 us-ascii utf-16 utf-32
+width 0 height 0
+stdin stream true false false
+stdin 12 [héllo 😀
+two]

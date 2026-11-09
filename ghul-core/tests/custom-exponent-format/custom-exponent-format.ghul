@@ -1,0 +1,8 @@
+use default
+let values = [0.0, 1.0, -1.0, 0.4533744, 4.533744e-01, 123456.789, 9.9999995, 0.00012345, 1.0e-300, 1.7e308, -0.0, 5.0e-324, 0.5, 99.5, 1.25e10]
+let formats = ["0.000000e+00", "0.00e0", "0.0E-00", "00.00e+0", "#.##e+0", "0e0", "0.###E+000", "##0.0e+0"]
+for f in formats do
+    write_line("{f}: {values |> map(v => v.to_string(f)) |> join(" ")}")
+od
+write_line("int: {(12345).to_string("0.00e+00")} {(-7).to_string("0e0")} {(0).to_string("0.0e+0")} {1234567890L.to_string("0.000E+0")}")
+write_line("single: {cast single(3.14159).to_string("0.000e+00")}")

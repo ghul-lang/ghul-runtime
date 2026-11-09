@@ -1,0 +1,44 @@
+use default
+
+random_32_bits() -> uint is
+    let use device = IO.File.open_read("/dev/urandom")
+    let bytes = repeat(0ub, 4) |> ARRAY()
+    let read mut = 0
+    while read < bytes.count do
+        let got = device.read(bytes, read, bytes.count - read)
+        assert got > 0 else "/dev/urandom gave nothing"
+        read = read + got
+    od
+    return (uint(bytes[0]) << 24) | (uint(bytes[1]) << 16) | (uint(bytes[2]) << 8) | uint(bytes[3])
+si
+
+let values = 0..4 |> map(_ => random_32_bits()) |> list()
+write_line("four values read: {values.count}")
+
+IO.File.write_all_text("probe-data.txt", "line one\nlíne two 😀\r\nthird")
+let use stream = IO.File.open_read("probe-data.txt")
+let buffer = repeat(0ub, 5) |> ARRAY()
+let first = stream.read(buffer, 0, 5)
+write_line("first read {first}: {System.Text.Encoding.utf8.get_string(buffer, 0, first)}")
+let reader = IO.StreamReader(stream)
+write_line("rest line: [{reader.read_line()}]")
+write_line("next line: [{reader.read_line()}] peek {reader.peek()}")
+write_line("to end: [{reader.read_to_end()}] end {reader.end_of_stream} read {reader.read()} line {reader.read_line() ?? "null"}")
+let all = IO.StreamReader("probe-data.txt")
+write_line("whole: {all.read_to_end().length}")
+all.dispose()
+let bad = IO.MemoryStream([0xEFub, 0xBBub, 0xBFub, 0x41ub, 0xC3ub, 0x28ub, 0xF0ub, 0x9Fub, 0x98ub, 0x80ub, 0xFFub, 0xE2ub, 0x82ub] |> ARRAY())
+let text = IO.StreamReader(bad).read_to_end()
+write_line("decoded {text.length}: {text |> map(c => int(c)) |> join(" ")}")
+try
+    IO.File.open_read("no-such-file.txt")
+catch e: IO.FileNotFoundException
+    write_line("missing file: not found")
+yrt
+write_line("encoding {IO.Std.output_encoding.web_name} {IO.Std.input_encoding.web_name} {System.Text.Encoding.ascii.web_name} {System.Text.Encoding.unicode.web_name} {System.Text.Encoding.utf32.web_name}")
+write_line("width {IO.Std.window_width} height {IO.Std.window_height}")
+let input = IO.Std.open_standard_input()
+write_line("stdin stream {input.can_read} {input.can_seek} {input.can_write}")
+let stdin_text = IO.StreamReader(input).read_to_end()
+write_line("stdin {stdin_text.length} [{stdin_text}]")
+IO.File.delete("probe-data.txt")

@@ -61,6 +61,10 @@ namespace Ghul.Pipes is
         @IF.dotnet()
         to_string() -> string => $(self)
 
+        /// Renders the pipe's elements, in order, as text.
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
+
         /// Disposes the underlying iterator.
         dispose() => _iterator.dispose()
     si

@@ -64,6 +64,10 @@ namespace Ghul.Pipes is
         /// Renders the pipe's elements, in order, as text.
         @IF.dotnet()
         to_string() -> string => $(self)
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
     si
 
     // Lift an `Iterable[T]` (any producer with a `.iterator` —
@@ -179,6 +183,10 @@ namespace Ghul.Pipes is
         @IF.dotnet()
         to_string() -> string =>
             $(self)
+
+        /// Renders the pipe's elements, in order, as text.
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
 
         /// Has no effect by default; a stage that holds a resource overrides
         /// it to release that resource.

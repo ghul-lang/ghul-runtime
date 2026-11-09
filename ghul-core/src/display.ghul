@@ -24,6 +24,12 @@ namespace Ghul is
         _counts: _DISPLAY_COUNT
         _depth: int
 
+        // The state rendering a value by its own `to_string`, and that value,
+        // so a pipe whose `to_string` renders its elements renders them into
+        // that state rather than starting a new one.
+        _text_host: DISPLAY_STATE? static
+        _text_value: object? static
+
         /// The default limit on how many elements of a sequence are rendered.
         default_max_elements: int static => 100
 
@@ -110,7 +116,18 @@ namespace Ghul is
                 displayable.display(self)
                 _depth = _depth - 1
             elif !_display(value, self) then
-                append(value.to_string())
+                let outer_host = _text_host
+                let outer_value = _text_value
+
+                _text_host = self
+                _text_value = value
+
+                try
+                    append(value.to_string())
+                finally
+                    _text_host = outer_host
+                    _text_value = outer_value
+                yrt
             fi
 
             if let link = _path then
@@ -120,6 +137,29 @@ namespace Ghul is
 
         /// The rendering written so far.
         to_string() -> string => _text.to_string()
+
+        /// `items`' elements in brackets, as `$` renders a sequence: the
+        /// `to_string` of a pipe. Where a render is asking `items` for its
+        /// `to_string`, the elements go into that render, which keeps its
+        /// mode and depth, and the text answered is empty.
+        ///
+        /// - items: the sequence to render
+        elements_text[T](items: Collections.Iterable[T]) -> string static is
+            if let host = _text_host /\ _text_value == cast object(items) then
+                _text_host = null
+                _text_value = null
+
+                host._elements(items)
+
+                return ""
+            fi
+
+            let state = DISPLAY_STATE()
+
+            state._elements(items)
+
+            return state.to_string()
+        si
 
         // A string or a character is quoted in the detailed mode anywhere
         // but at the top.

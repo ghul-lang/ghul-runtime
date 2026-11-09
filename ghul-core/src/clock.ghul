@@ -120,6 +120,37 @@ namespace System is
         /// `utc_now` marked as local.
         now: DateTime static => DateTime(utc_now.ticks, DateTimeKind.LOCAL)
 
+        /// 1970-01-01T00:00:00 in UTC, where Unix time starts.
+        unix_epoch: DateTime static => DateTime(_unix_epoch_ticks, DateTimeKind.UTC)
+
+        /// The moment, in UTC, that the Windows file time `file_time` stands
+        /// for: intervals of 100 nanoseconds since 1601-01-01T00:00:00 UTC.
+        ///
+        /// - file_time: the file time
+        from_file_time_utc(file_time: long) -> DateTime static is
+            if file_time < 0L \/ file_time > 2_650_467_743_999_999_999L then
+                throw Ghul.ArgumentOutOfRangeException("file_time", "not a valid Windows file time")
+            fi
+
+            return DateTime(file_time + _file_time_epoch_ticks, DateTimeKind.UTC)
+        si
+
+        /// The moment as a Windows file time: intervals of 100 nanoseconds
+        /// since 1601-01-01T00:00:00 UTC. A moment that is not marked UTC is
+        /// taken as UTC, there being no other time zone.
+        to_file_time_utc() -> long is
+            let file_time = ticks - _file_time_epoch_ticks
+
+            if file_time < 0L then
+                throw Ghul.ArgumentOutOfRangeException("this", "the moment is before 1601")
+            fi
+
+            return file_time
+        si
+
+        // 1601-01-01T00:00:00, in ticks since 0001-01-01T00:00:00.
+        _file_time_epoch_ticks: long static => 504_911_232_000_000_000L
+
         /// The current time, in UTC.
         utc_now: DateTime static =>
             DateTime(_unix_epoch_ticks + cast long(_wall_clock_milliseconds() * 10_000.0), DateTimeKind.UTC)

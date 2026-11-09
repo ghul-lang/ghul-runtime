@@ -482,11 +482,16 @@ si
 namespace Ghul.Internal is
     use System.DateTime
     use System.DateTimeKind
+    use System.TimeSpan
     use Text.STRING_BUILDER
 
     // Writes a date in a custom format under the invariant culture.
     class DATE_FORMAT is
-        write(moment: DateTime, format: string) -> string static is
+        write(moment: DateTime, format: string) -> string static => write(moment, format, null)
+
+        // `offset` is the offset from UTC that `z` and `K` write, where the
+        // moment is a `DateTimeOffset`'s.
+        write(moment: DateTime, format: string, offset: TimeSpan?) -> string static is
             let result = STRING_BUILDER()
             let i mut = 0
 
@@ -542,6 +547,10 @@ namespace Ghul.Internal is
                     let marker = if moment.hour < 12 then "AM" else "PM" fi
 
                     result.append(if run == 1 then marker.substring(0, 1) else marker fi)
+                elif c == 'K' /\ offset? then
+                    result.append(_offset_text(offset, 3))
+                elif c == 'z' /\ offset? then
+                    result.append(_offset_text(offset, run))
                 elif c == 'K' then
                     if moment.kind == DateTimeKind.UTC then
                         result.append("Z")
@@ -567,6 +576,21 @@ namespace Ghul.Internal is
             od
 
             return result.to_string()
+        si
+
+        // An offset from UTC as `z` (`+5`), `zz` (`+05`) or `zzz` and more
+        // (`+05:30`) writes it.
+        _offset_text(offset: TimeSpan, run: int) -> string static is
+            let negative = offset.ticks < 0L
+            let minutes = cast int((if negative then -offset.ticks else offset.ticks fi) / 600_000_000L)
+            let sign = if negative then "-" else "+" fi
+            let hours = minutes / 60
+
+            return
+                if run == 1 then "{sign}{hours}"
+                elif run == 2 then "{sign}{_padded(hours, 2)}"
+                else "{sign}{_padded(hours, 2)}:{_padded(minutes % 60, 2)}"
+                fi
         si
 
         _padded(value: int, width: int) -> string static is

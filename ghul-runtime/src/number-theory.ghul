@@ -2035,7 +2035,6 @@ namespace Ghul.NumberTheory is
         si
 
         /// Renders the pipe's elements, in order, as text.
-        @IF.dotnet()
         to_string() -> string => "primes"
 
         /// Has no effect.
@@ -2102,7 +2101,6 @@ namespace Ghul.NumberTheory is
         si
 
         /// Renders the pipe's elements, in order, as text.
-        @IF.dotnet()
         to_string() -> string => "primes"
 
         /// Has no effect.
@@ -2153,7 +2151,6 @@ namespace Ghul.NumberTheory is
         si
 
         /// Renders the pipe's elements, in order, as text.
-        @IF.dotnet()
         to_string() -> string => "primes"
 
         /// Has no effect.
