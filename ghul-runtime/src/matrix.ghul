@@ -1,0 +1,588 @@
+namespace Collections is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
+    use Ghul.Pipes
+    use Ghul.Pipes.LIST_SLICE
+
+    /// A read-only two-dimensional array: rows of equal length. It is a list
+    /// of its rows, so it iterates row by row, `m[i]` is row `i`, and `count`
+    /// is the number of rows. `m[i, j]` reads one element.
+    trait Matrix2[T: out]: List[T[]] is
+        /// The number of rows and the number of columns.
+        lengths: (rows: int, columns: int)
+
+        /// Every element, row by row.
+        elements: Iterable[T]
+
+        /// The element in `row` at `column`. Throws if either is out of range.
+        [row: int, column: int]: T => self[row][column]
+    si
+
+    /// A read-only three-dimensional array: planes of equal shape. It is a
+    /// list of its planes, each a two-dimensional array, and `m[i, j, k]`
+    /// reads one element.
+    trait Matrix3[T: out]: List[Matrix2[T]] is
+        /// The number of planes, rows and columns.
+        lengths: (planes: int, rows: int, columns: int)
+
+        /// Every element, plane by plane and row by row.
+        elements: Iterable[T]
+
+        /// The element in `plane` at `row` and `column`. Throws if any is out
+        /// of range.
+        [plane: int, row: int, column: int]: T => self[plane][row, column]
+    si
+
+    /// A read-only two-dimensional view of `rows` rows of `columns` elements,
+    /// held in `cells` row by row from `offset`. Nothing is copied, so a later
+    /// change to `cells` shows through the view.
+    class MATRIX_2_VIEW[T]: Matrix2[T] is
+        _cells: List[T]
+        _offset: int
+        _rows: int
+        _columns: int
+
+        /// A view of `cells` from `offset`. Throws if either extent is negative.
+        ///
+        /// - cells: the elements, row by row
+        /// - offset: where the first row starts in `cells`
+        /// - rows: the number of rows
+        /// - columns: the number of elements in each row
+        init(cells: List[T], offset: int, rows: int, columns: int) is
+            _MATRIX_EXTENTS.check([rows, columns])
+
+            _cells = cells
+            _offset = offset
+            _rows = rows
+            _columns = columns
+        si
+
+        /// The number of rows and the number of columns.
+        lengths: (rows: int, columns: int) => (rows = _rows, columns = _columns)
+
+        /// The number of rows.
+        count: int => _rows
+
+        /// Every element, row by row.
+        elements: Iterable[T] => LIST_SLICE[T](_cells, _offset, _rows * _columns)
+
+        /// Row `row`, as a view of the elements it holds. Throws if `row` is
+        /// out of range.
+        [row: int]: T[] pure is
+            _MATRIX_EXTENTS.check_index(row, _rows, "row")
+
+            return LIST_SLICE[T](_cells, _offset + row * _columns, _columns)
+        si
+
+        /// The element in `row` at `column`. Throws if either is out of range.
+        [row: int, column: int]: T is
+            _MATRIX_EXTENTS.check_index(row, _rows, "row")
+            _MATRIX_EXTENTS.check_index(column, _columns, "column")
+
+            return _cells[_offset + row * _columns + column]
+        si
+
+        /// Iterates the rows in order.
+        iterator: Iterator[T[]] is
+            let rows = LIST[T[]]()
+
+            for row in 0.._rows do
+                rows.add(self[row])
+            od
+
+            return rows.iterator
+        si
+
+        /// Whether `other` has the same extents and equal elements in the same
+        /// places.
+        =~(other: Matrix2[T]) -> bool pure is
+            let (rows, columns) = other.lengths
+
+            if rows != _rows \/ columns != _columns then
+                return false
+            fi
+
+            for row in 0.._rows do
+                for column in 0.._columns do
+                    if !(self[row, column] =~ other[row, column]) then
+                        return false
+                    fi
+                od
+            od
+
+            return true
+        si
+
+        /// A hash of the extents and the elements, alike for matrices that are
+        /// equal.
+        get_hash_code() -> int is
+            let hash mut = _rows * 31 + _columns
+
+            for element in elements do
+                hash = hash * 31 + (if (cast object?(element))? then element.get_hash_code() else 0 fi)
+            od
+
+            return hash
+        si
+    si
+
+    /// A read-only two-dimensional array, which an array literal of rows
+    /// builds where a `T[,]` is expected.
+    class ARRAY_2[T]: MATRIX_2_VIEW[T] is
+        _array: ARRAY[T]
+
+        /// An array copied from `rows`, which must all be the same length.
+        /// Throws if they aren't.
+        ///
+        /// - rows: the rows, in order
+        init(rows: T[][]) is
+            let (cells, height, width) = _MATRIX_EXTENTS.flatten_rows(rows)
+            let array = cells.to_array()
+
+            super.init(array, 0, height, width)
+
+            _array = array
+        si
+
+        /// An array of `rows` rows of `columns` elements, taken row by row from
+        /// the first `rows * columns` elements of `source`; any further
+        /// elements are left unread, so `source` can be unbounded. Throws if
+        /// `source` has fewer: `repeat('.') |> ARRAY_2(5, 4)`.
+        ///
+        /// - source: the elements, row by row
+        /// - rows: the number of rows
+        /// - columns: the number of elements in each row
+        init(source: T{}, rows: int, columns: int) is
+            let array = _MATRIX_EXTENTS.take(source, [rows, columns]).to_array()
+
+            super.init(array, 0, rows, columns)
+
+            _array = array
+        si
+
+        /// Row `row`, as a view of the elements it holds. Throws if `row` is
+        /// out of range.
+        [row: int]: T[] pure => _MATRIX_EXTENTS.row_of(_array, row, lengths.rows, lengths.columns)
+
+        /// The element in `row` at `column`. Throws if either is out of range.
+        [row: int, column: int]: T => _array[_MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)]
+    si
+
+    /// A mutable two-dimensional array: `m[i, j] = v` sets one element. Build
+    /// one with `MATRIX(...)`.
+    class MATRIX_2[T]: MATRIX_2_VIEW[T] is
+        _list: LIST[T]
+
+        /// A matrix copied from `rows`, which must all be the same length.
+        /// Throws if they aren't.
+        ///
+        /// - rows: the rows, in order
+        init(rows: T[][]) is
+            let (cells, height, width) = _MATRIX_EXTENTS.flatten_rows(rows)
+            let list = LIST[T](cells)
+
+            super.init(list, 0, height, width)
+
+            _list = list
+        si
+
+        /// A matrix of `rows` rows of `columns` elements, taken row by row from
+        /// the first `rows * columns` elements of `source`; any further
+        /// elements are left unread, so `source` can be unbounded. Throws if
+        /// `source` has fewer: `repeat('.') |> MATRIX(5, 4)`.
+        ///
+        /// - source: the elements, row by row
+        /// - rows: the number of rows
+        /// - columns: the number of elements in each row
+        init(source: T{}, rows: int, columns: int) is
+            let list = _MATRIX_EXTENTS.take(source, [rows, columns])
+
+            super.init(list, 0, rows, columns)
+
+            _list = list
+        si
+
+        /// Row `row`, as a view of the elements it holds, which shows later
+        /// changes to them. Throws if `row` is out of range.
+        [row: int]: T[] pure => _MATRIX_EXTENTS.row_of(_list, row, lengths.rows, lengths.columns)
+
+        /// The element in `row` at `column`, which can be assigned. Throws if
+        /// either is out of range.
+        [row: int, column: int]: T => _list[_position(row, column)], = value is _list[_position(row, column)] = value; si
+
+        _position(row: int, column: int) -> int => _MATRIX_EXTENTS.position(row, column, lengths.rows, lengths.columns)
+    si
+
+    /// A read-only three-dimensional view of `planes` planes of `rows` rows of
+    /// `columns` elements, held in `cells` plane by plane and row by row.
+    /// Nothing is copied, so a later change to `cells` shows through the view.
+    class MATRIX_3_VIEW[T]: Matrix3[T] is
+        _cells: List[T]
+        _planes: int
+        _rows: int
+        _columns: int
+
+        /// A view of `cells`. Throws if any extent is negative.
+        ///
+        /// - cells: the elements, plane by plane and row by row
+        /// - planes: the number of planes
+        /// - rows: the number of rows in each plane
+        /// - columns: the number of elements in each row
+        init(cells: List[T], planes: int, rows: int, columns: int) is
+            _MATRIX_EXTENTS.check([planes, rows, columns])
+
+            _cells = cells
+            _planes = planes
+            _rows = rows
+            _columns = columns
+        si
+
+        /// The number of planes, rows and columns.
+        lengths: (planes: int, rows: int, columns: int) => (planes = _planes, rows = _rows, columns = _columns)
+
+        /// The number of planes.
+        count: int => _planes
+
+        /// Every element, plane by plane and row by row.
+        elements: Iterable[T] => LIST_SLICE[T](_cells, 0, _planes * _rows * _columns)
+
+        /// Plane `plane`, as a view of the elements it holds. Throws if
+        /// `plane` is out of range.
+        [plane: int]: Matrix2[T] pure is
+            _MATRIX_EXTENTS.check_index(plane, _planes, "plane")
+
+            return MATRIX_2_VIEW[T](_cells, plane * _rows * _columns, _rows, _columns)
+        si
+
+        /// The element in `plane` at `row` and `column`. Throws if any is out
+        /// of range.
+        [plane: int, row: int, column: int]: T is
+            _MATRIX_EXTENTS.check_index(plane, _planes, "plane")
+            _MATRIX_EXTENTS.check_index(row, _rows, "row")
+            _MATRIX_EXTENTS.check_index(column, _columns, "column")
+
+            return _cells[(plane * _rows + row) * _columns + column]
+        si
+
+        /// Iterates the planes in order.
+        iterator: Iterator[Matrix2[T]] is
+            let planes = LIST[Matrix2[T]]()
+
+            for plane in 0.._planes do
+                planes.add(self[plane])
+            od
+
+            return planes.iterator
+        si
+
+        /// Whether `other` has the same extents and equal elements in the same
+        /// places.
+        =~(other: Matrix3[T]) -> bool pure is
+            let (planes, rows, columns) = other.lengths
+
+            if planes != _planes \/ rows != _rows \/ columns != _columns then
+                return false
+            fi
+
+            for plane in 0.._planes do
+                for row in 0.._rows do
+                    for column in 0.._columns do
+                        if !(self[plane, row, column] =~ other[plane, row, column]) then
+                            return false
+                        fi
+                    od
+                od
+            od
+
+            return true
+        si
+
+        /// A hash of the extents and the elements, alike for matrices that are
+        /// equal.
+        get_hash_code() -> int is
+            let hash mut = (_planes * 31 + _rows) * 31 + _columns
+
+            for element in elements do
+                hash = hash * 31 + (if (cast object?(element))? then element.get_hash_code() else 0 fi)
+            od
+
+            return hash
+        si
+    si
+
+    /// A read-only three-dimensional array, which an array literal of planes
+    /// builds where a `T[,,]` is expected.
+    class ARRAY_3[T]: MATRIX_3_VIEW[T] is
+        _array: ARRAY[T]
+
+        /// An array copied from `planes`, which must all have the same shape.
+        /// Throws if they don't.
+        ///
+        /// - planes: the planes, in order, each a sequence of rows
+        init(planes: T[][][]) is
+            let (cells, depth, height, width) = _MATRIX_EXTENTS.flatten_planes(planes)
+            let array = cells.to_array()
+
+            super.init(array, depth, height, width)
+
+            _array = array
+        si
+
+        /// An array of `planes` planes of `rows` rows of `columns` elements,
+        /// taken plane by plane and row by row from the first
+        /// `planes * rows * columns` elements of `source`; any further elements
+        /// are left unread, so `source` can be unbounded. Throws if `source`
+        /// has fewer: `from(1) |> ARRAY_3(2, 3, 4)`.
+        ///
+        /// - source: the elements, plane by plane and row by row
+        /// - planes: the number of planes
+        /// - rows: the number of rows in each plane
+        /// - columns: the number of elements in each row
+        init(source: T{}, planes: int, rows: int, columns: int) is
+            let array = _MATRIX_EXTENTS.take(source, [planes, rows, columns]).to_array()
+
+            super.init(array, planes, rows, columns)
+
+            _array = array
+        si
+
+        /// Plane `plane`, as a view of the elements it holds. Throws if
+        /// `plane` is out of range.
+        [plane: int]: Matrix2[T] pure => _MATRIX_EXTENTS.plane_of(_array, plane, lengths.planes, lengths.rows, lengths.columns)
+
+        /// The element in `plane` at `row` and `column`. Throws if any is out
+        /// of range.
+        [plane: int, row: int, column: int]: T => _array[_MATRIX_EXTENTS.position(plane, row, column, lengths.planes, lengths.rows, lengths.columns)]
+    si
+
+    /// A mutable three-dimensional array: `m[i, j, k] = v` sets one element.
+    /// Build one with `MATRIX(...)`.
+    class MATRIX_3[T]: MATRIX_3_VIEW[T] is
+        _list: LIST[T]
+
+        /// A matrix copied from `planes`, which must all have the same shape.
+        /// Throws if they don't.
+        ///
+        /// - planes: the planes, in order, each a sequence of rows
+        init(planes: T[][][]) is
+            let (cells, depth, height, width) = _MATRIX_EXTENTS.flatten_planes(planes)
+            let list = LIST[T](cells)
+
+            super.init(list, depth, height, width)
+
+            _list = list
+        si
+
+        /// A matrix of `planes` planes of `rows` rows of `columns` elements,
+        /// taken plane by plane and row by row from the first
+        /// `planes * rows * columns` elements of `source`; any further elements
+        /// are left unread, so `source` can be unbounded. Throws if `source`
+        /// has fewer: `from(1) |> MATRIX(2, 3, 4)`.
+        ///
+        /// - source: the elements, plane by plane and row by row
+        /// - planes: the number of planes
+        /// - rows: the number of rows in each plane
+        /// - columns: the number of elements in each row
+        init(source: T{}, planes: int, rows: int, columns: int) is
+            let list = _MATRIX_EXTENTS.take(source, [planes, rows, columns])
+
+            super.init(list, planes, rows, columns)
+
+            _list = list
+        si
+
+        /// Plane `plane`, as a view of the elements it holds, which shows
+        /// later changes to them. Throws if `plane` is out of range.
+        [plane: int]: Matrix2[T] pure => _MATRIX_EXTENTS.plane_of(_list, plane, lengths.planes, lengths.rows, lengths.columns)
+
+        /// The element in `plane` at `row` and `column`, which can be
+        /// assigned. Throws if any is out of range.
+        [plane: int, row: int, column: int]: T => _list[_position(plane, row, column)], = value is _list[_position(plane, row, column)] = value; si
+
+        _position(plane: int, row: int, column: int) -> int =>
+            _MATRIX_EXTENTS.position(plane, row, column, lengths.planes, lengths.rows, lengths.columns)
+    si
+
+    // Checks and flattening the matrix types share.
+    class _MATRIX_EXTENTS is
+        init() is si
+
+        check(extents: int[]) static is
+            for extent in extents do
+                if extent < 0 then
+                    throw Ghul.ArgumentOutOfRangeException("extent", "{extent} is not a matrix extent: it is below zero")
+                fi
+            od
+        si
+
+        size(extents: int[]) -> int static is
+            check(extents)
+
+            let result mut = 1
+
+            for extent in extents do
+                result = result * extent
+            od
+
+            return result
+        si
+
+        position(row: int, column: int, rows: int, columns: int) -> int static is
+            check_index(row, rows, "row")
+            check_index(column, columns, "column")
+
+            return row * columns + column
+        si
+
+        position(plane: int, row: int, column: int, planes: int, rows: int, columns: int) -> int static is
+            check_index(plane, planes, "plane")
+            check_index(row, rows, "row")
+            check_index(column, columns, "column")
+
+            return (plane * rows + row) * columns + column
+        si
+
+        row_of[T](cells: List[T], row: int, rows: int, columns: int) -> T[] static pure is
+            check_index(row, rows, "row")
+
+            return LIST_SLICE[T](cells, row * columns, columns)
+        si
+
+        plane_of[T](cells: List[T], plane: int, planes: int, rows: int, columns: int) -> Matrix2[T] static pure is
+            check_index(plane, planes, "plane")
+
+            return MATRIX_2_VIEW[T](cells, plane * rows * columns, rows, columns)
+        si
+
+        // The first elements of `source` that fill `extents`, reading no
+        // further; throws where `source` has fewer.
+        take[T](source: Iterable[T], extents: int[]) -> LIST[T] static is
+            let needed = size(extents)
+            let result = LIST[T](needed)
+
+            if needed > 0 then
+                for element in source do
+                    result.add(element)
+
+                    if result.count == needed then
+                        return result
+                    fi
+                od
+
+                throw Ghul.ArgumentException("a matrix of {extents |> join(" by ")} needs {needed} elements, and the source has only {result.count}")
+            fi
+
+            return result
+        si
+
+        check_index(index: int, extent: int, name: string) static is
+            if index < 0 \/ index >= extent then
+                throw Ghul.ArgumentOutOfRangeException(name, "{index} is not a {name} of a matrix with {extent}")
+            fi
+        si
+
+        // The elements of `rows` row by row, with the number of rows and
+        // the length they all share; throws where a row's length differs.
+        flatten_rows[T](rows: T[][]) -> (cells: LIST[T], rows: int, columns: int) static is
+            let cells = LIST[T]()
+            let height mut = 0
+            let width mut = -1
+
+            for row in rows do
+                let before = cells.count
+
+                for element in row do
+                    cells.add(element)
+                od
+
+                let length = cells.count - before
+
+                if width < 0 then
+                    width = length
+                elif length != width then
+                    throw Ghul.ArgumentException("row {height} has {length} elements where the rows before it have {width}: a matrix's rows must be the same length")
+                fi
+
+                height = height + 1
+            od
+
+            return (cells = cells, rows = height, columns = if width < 0 then 0 else width fi)
+        si
+
+        // As `flatten_rows`, for planes of rows; throws where a plane's shape
+        // differs.
+        flatten_planes[T](planes: T[][][]) -> (cells: LIST[T], planes: int, rows: int, columns: int) static is
+            let cells = LIST[T]()
+            let depth mut = 0
+            let height mut = -1
+            let width mut = -1
+
+            for plane in planes do
+                let (flat, plane_rows, plane_columns) = flatten_rows(plane)
+
+                if height < 0 then
+                    height = plane_rows
+                    width = plane_columns
+                elif plane_rows != height \/ plane_columns != width then
+                    throw Ghul.ArgumentException("plane {depth} is {plane_rows} by {plane_columns} where the planes before it are {height} by {width}: a matrix's planes must be the same shape")
+                fi
+
+                cells.add_range(flat)
+
+                depth = depth + 1
+            od
+
+            return (
+                cells = cells,
+                planes = depth,
+                rows = if height < 0 then 0 else height fi,
+                columns = if width < 0 then 0 else width fi)
+        si
+    si
+si
+
+namespace Collections is
+    use Ghul.Pipes
+
+    // A matrix is built from its rows or planes, or from a source of its
+    // elements and its extents: `rows |> MATRIX()`, `repeat('.') |>
+    // MATRIX(5, 4)`. The extents follow the source, so a fill value and an
+    // extent are never two ints side by side.
+
+    /// A mutable matrix copied from `rows`, which must all be the same length.
+    ///
+    /// - rows: the rows, in order
+    @suppress("non-snake-case-name")
+    MATRIX[T](rows: T[][]) -> MATRIX_2[T] => MATRIX_2[T](rows)
+
+    /// A mutable matrix of `rows` rows of `columns` elements, taken row by row
+    /// from the first `rows * columns` elements of `source`; any further are
+    /// left unread, so `source` can be unbounded. Throws if `source` has
+    /// fewer.
+    ///
+    /// - source: the elements, row by row
+    /// - rows: the number of rows
+    /// - columns: the number of elements in each row
+    @suppress("non-snake-case-name")
+    MATRIX[T](source: T{}, rows: int, columns: int) -> MATRIX_2[T] => MATRIX_2[T](source, rows, columns)
+
+    /// A mutable three-dimensional matrix copied from `planes`, which must all
+    /// have the same shape. A list of planes is also a list of rows of lists,
+    /// so give the element type to have this one: `MATRIX[int](planes)`.
+    ///
+    /// - planes: the planes, in order, each a list of rows
+    @suppress("non-snake-case-name")
+    MATRIX[T](planes: T[][][]) -> MATRIX_3[T] => MATRIX_3[T](planes)
+
+    /// A mutable three-dimensional matrix of `planes` planes of `rows` rows of
+    /// `columns` elements, taken plane by plane and row by row from the first
+    /// `planes * rows * columns` elements of `source`; any further are left
+    /// unread, so `source` can be unbounded. Throws if `source` has fewer.
+    ///
+    /// - source: the elements, plane by plane and row by row
+    /// - planes: the number of planes
+    /// - rows: the number of rows in each plane
+    /// - columns: the number of elements in each row
+    @suppress("non-snake-case-name")
+    MATRIX[T](source: T{}, planes: int, rows: int, columns: int) -> MATRIX_3[T] =>
+        MATRIX_3[T](source, planes, rows, columns)
+si

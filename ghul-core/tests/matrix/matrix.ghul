@@ -1,0 +1,50 @@
+use default
+
+// Two- and three-dimensional arrays: read-only ARRAY_2 and ARRAY_3, mutable
+// MATRIX_2 and MATRIX_3, indexed as m[i, j], iterating their rows, with
+// rows and planes as views of the elements. Each is built from its rows or
+// planes, or from a source of its elements and its extents.
+let a = ARRAY_2([[1, 2, 3], [4, 5, 6]])
+
+write_line("{a[1, 2]} {a.count} {a[1]} {a.lengths.columns}")
+write_line("{a}")
+write_line("{a.elements |> join(" ")}")
+
+let m = repeat(0) |> MATRIX(2, 3)
+let row = m[1]
+
+m[1, 2] = 7
+m[0, 0] = m[1, 2] * 2
+
+write_line("{m} {row[2]}")
+
+let counted = from(1) |> MATRIX(3, 2)
+
+write_line("{counted[2, 1]} {counted =~ (counted |> MATRIX())} {counted =~ a}")
+
+let cube = from(0) |> MATRIX(2, 2, 2)
+
+cube[1, 1, 1] = 0
+
+write_line("{cube[1]} {cube[0, 1, 0]} {cube.count}")
+
+let fixed = ARRAY_3([[[1, 2]], [[3, 4]]])
+
+write_line("{fixed[1, 0, 1]} {fixed.lengths}")
+
+let board = repeat('.') |> MATRIX(2, 4)
+
+board[1, 1] = '#'
+
+write_line("{board[1] |> join("")}")
+
+refuses(build: () -> void) -> string is
+    try
+        build()
+        return "built"
+    catch e: System.Exception
+        return "refused"
+    yrt
+si
+
+write_line("{refuses(() is ARRAY_2([[1, 2], [3]]); si)} {refuses(() is [1, 2, 3] |> MATRIX(2, 2); si)}")
