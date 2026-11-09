@@ -1,9 +1,10 @@
 namespace Ghul is
-    // Parsing integers and doubles from text, as .NET parses them under the
-    // invariant culture with the default number styles: white space around
-    // the number, an optional leading sign, digits, and for a double a
-    // decimal point and an exponent. Group separators, currency, hex and
-    // the infinity and NaN names are not accepted.
+    // Parsing scalars from text, as .NET parses them under the invariant
+    // culture with the default number styles: white space around the
+    // number, an optional leading sign and digits. A double or a single
+    // can also have commas among the digits before its decimal point, a
+    // decimal point and an exponent, or be one of the names Infinity and
+    // NaN in any case. Currency and hex are not accepted.
 
     partial int is
         /// The `int` that `text` holds; throws where it holds none, or one
@@ -137,12 +138,141 @@ namespace Ghul is
         si
     si
 
+    partial byte is
+        /// The `byte` that `text` holds; throws where it holds none, or one
+        /// outside `byte`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> byte static pure is
+            let (status, value) = _parse_integer(text, -128L, 127L)
+
+            _throw_unless_parsed(status)
+
+            return cast byte(value)
+        si
+    si
+
+    partial ubyte is
+        /// The `ubyte` that `text` holds; throws where it holds none, or one
+        /// outside `ubyte`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> ubyte static pure is
+            let (status, value) = _parse_integer(text, 0L, 255L)
+
+            _throw_unless_parsed(status)
+
+            return cast ubyte(value)
+        si
+    si
+
+    partial short is
+        /// The `short` that `text` holds; throws where it holds none, or one
+        /// outside `short`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> short static pure is
+            let (status, value) = _parse_integer(text, -32768L, 32767L)
+
+            _throw_unless_parsed(status)
+
+            return cast short(value)
+        si
+    si
+
+    partial ushort is
+        /// The `ushort` that `text` holds; throws where it holds none, or one
+        /// outside `ushort`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> ushort static pure is
+            let (status, value) = _parse_integer(text, 0L, 65535L)
+
+            _throw_unless_parsed(status)
+
+            return cast ushort(value)
+        si
+    si
+
+    partial word is
+        /// The `word` that `text` holds; throws where it holds none, or one
+        /// outside `word`'s range.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> word static pure is
+            let (status, value) = _parse_integer(text, -9223372036854775807L - 1L, 9223372036854775807L)
+
+            _throw_unless_parsed(status)
+
+            return cast word(value)
+        si
+    si
+
+    partial single is
+        /// The `single` that `text` holds, rounded once to the nearest
+        /// `single`; throws where it holds none. A value too large for a
+        /// `single` is infinity.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> single static pure is
+            let (status, value) = _parse_float(text, 24, -149, 104, false)
+
+            _throw_unless_parsed(status)
+
+            return cast single(value)
+        si
+    si
+
+    partial char is
+        /// The one character `text` holds; throws where it holds more or
+        /// fewer.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> char static pure is
+            if text.length != 1 then
+                throw FormatException("the string must be exactly one character long")
+            fi
+
+            return text[0]
+        si
+    si
+
+    partial bool is
+        /// `true` or `false` as `text` names it, in any case, with white space
+        /// and NUL characters around it ignored; throws where it names
+        /// neither.
+        ///
+        /// - text: the text to parse
+        parse(text: string) -> bool static pure is
+            let start mut = 0
+            let end mut = text.length
+
+            while start < end /\ _is_bool_padding(text[start]) do
+                start = start + 1
+            od
+
+            while end > start /\ _is_bool_padding(text[end - 1]) do
+                end = end - 1
+            od
+
+            let name = text.substring(start, end - start).to_lower_invariant()
+
+            if name =~ "true" then
+                return true
+            elif name =~ "false" then
+                return false
+            fi
+
+            throw FormatException("the string was not recognized as a valid boolean")
+        si
+    si
+
     partial double is
         /// The `double` that `text` holds; throws where it holds none.
         ///
         /// - text: the text to parse
         parse(text: string) -> double static pure is
-            let (status, value) = _parse_double(text)
+            let (status, value) = _parse_float(text, 53, -1074, 971, true)
 
             _throw_unless_parsed(status)
 
@@ -156,7 +286,7 @@ namespace Ghul is
         /// - result: where the value is written
         try_parse(text: string?, result: double ref) -> bool static is
             if text? then
-                let (status, value) = _parse_double(text)
+                let (status, value) = _parse_float(text, 53, -1074, 971, true)
 
                 if status == 0 then
                     result! = value
@@ -168,6 +298,8 @@ namespace Ghul is
             return false
         si
     si
+
+    _is_bool_padding(c: char) -> bool => char.is_white_space(c) \/ c == '\u0000'
 
     // The outcome of a parse: 0 parsed, 1 not a number, 2 out of range.
     _throw_unless_parsed(status: int) is
@@ -259,7 +391,11 @@ namespace Ghul is
         return (0, value)
     si
 
-    _parse_double(text: string) -> (status: int, value: double) is
+    // A floating-point value of `precision` significant bits, whose least
+    // significant bit's exponent is at least `minimum_shift` and at most
+    // `maximum_shift`, as a double that holds it exactly. `fast` allows the
+    // shortcut that rounds once only where the result is a double.
+    _parse_float(text: string, precision: int, minimum_shift: int, maximum_shift: int, fast: bool) -> (status: int, value: double) is
         let end = _end_of_number(text)
         let i mut = _start_of_number(text)
 
@@ -267,6 +403,18 @@ namespace Ghul is
 
         if i < end /\ (text[i] == '-' \/ text[i] == '+') then
             i = i + 1
+        fi
+
+        if i < end /\ (text[i] == 'I' \/ text[i] == 'i' \/ text[i] == 'N' \/ text[i] == 'n') then
+            let name = text.substring(i, end - i).to_lower_invariant()
+
+            if name =~ "infinity" then
+                return (0, if is_negative then double.negative_infinity else double.positive_infinity fi)
+            elif name =~ "nan" then
+                return (0, double.na_n)
+            fi
+
+            return (1, 0.0)
         fi
 
         let mantissa mut = 0L
@@ -279,10 +427,15 @@ namespace Ghul is
         let all_digits = Text.STRING_BUILDER()
         let fraction_digits mut = 0
 
-        while i < end /\ char.is_digit(text[i]) do
-            all_digits.append(text[i])
-            _accumulate_digit(text[i], mantissa ref, significant ref, scale ref, false)
-            digits = digits + 1
+        // Commas group the digits before the decimal point, anywhere after
+        // the first of them, and are otherwise ignored.
+        while i < end /\ (char.is_digit(text[i]) \/ (text[i] == ',' /\ digits > 0)) do
+            if text[i] != ',' then
+                all_digits.append(text[i])
+                _accumulate_digit(text[i], mantissa ref, significant ref, scale ref, false)
+                digits = digits + 1
+            fi
+
             i = i + 1
         od
 
@@ -340,10 +493,10 @@ namespace Ghul is
         fi
 
         let magnitude =
-            if significant <= 18 /\ mantissa <= 9007199254740992L /\ scale >= -22 /\ scale <= 22 /\ !_drops_digits(all_digits) then
+            if fast /\ significant <= 18 /\ mantissa <= 9007199254740992L /\ scale >= -22 /\ scale <= 22 /\ !_drops_digits(all_digits) then
                 _scale(cast double(mantissa), scale)
             else
-                _exact(all_digits.to_string(), written_exponent - fraction_digits)
+                _exact(all_digits.to_string(), written_exponent - fraction_digits, precision, minimum_shift, maximum_shift)
             fi
 
         return (0, if is_negative then -magnitude else magnitude fi)
@@ -418,11 +571,14 @@ namespace Ghul is
         return kept > 18
     si
 
-    // The double nearest the decimal digits `text` times ten to the power
-    // `exponent`, ties to even, as .NET's parse gives it: the exact
-    // quotient is taken to 53 bits with the remainder deciding the
-    // rounding, then scaled by a power of two in steps that are each exact.
-    _exact(text: string, exponent: int) -> double is
+    // The value of `precision` significant bits nearest the decimal digits
+    // `text` times ten to the power `exponent`, ties to even, as .NET's
+    // parse gives it: the exact quotient is taken to `precision` bits with
+    // the remainder deciding the rounding, then scaled by a power of two in
+    // steps that are each exact. The least significant bit's exponent is
+    // kept to at least `minimum_shift`, for the subnormals; past
+    // `maximum_shift` the value is infinity.
+    _exact(text: string, exponent: int, precision: int, minimum_shift: int, maximum_shift: int) -> double is
         let first mut = 0
 
         while first < text.length /\ text[first] == '0' do
@@ -449,15 +605,16 @@ namespace Ghul is
         let denominator = if exponent < 0 then bigint.pow(10n, -exponent) else 1n fi
 
         // The binary exponent of the result's least significant bit: the
-        // quotient at this exponent holds 53 bits, or fewer for a subnormal.
-        let shift mut = cast int(numerator.get_bit_length() - denominator.get_bit_length()) - 53
+        // quotient at this exponent holds `precision` bits, or fewer for a
+        // subnormal.
+        let shift mut = cast int(numerator.get_bit_length() - denominator.get_bit_length()) - precision
         let quotient mut = 0n
         let remainder mut = 0n
         let divisor mut = 1n
 
         do
-            if shift < -1074 then
-                shift = -1074
+            if shift < minimum_shift then
+                shift = minimum_shift
             fi
 
             let scaled = if shift < 0 then numerator << -shift else numerator fi
@@ -466,9 +623,9 @@ namespace Ghul is
             quotient = scaled / divisor
             remainder = scaled - quotient * divisor
 
-            if _bits(quotient) > 53 then
+            if _bits(quotient) > precision then
                 shift = shift + 1
-            elif _bits(quotient) < 53 /\ shift > -1074 then
+            elif _bits(quotient) < precision /\ shift > minimum_shift then
                 shift = shift - 1
             else
                 break
@@ -480,13 +637,13 @@ namespace Ghul is
         if twice > divisor \/ (twice =~ divisor /\ !quotient.is_even) then
             quotient = quotient + 1n
 
-            if _bits(quotient) > 53 then
+            if _bits(quotient) > precision then
                 quotient = quotient >> 1
                 shift = shift + 1
             fi
         fi
 
-        if shift > 971 then
+        if shift > maximum_shift then
             return 1.0e308 * 10.0
         fi
 

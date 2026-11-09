@@ -1,0 +1,55 @@
+// parse on the scalars that had none on the source core, against the
+// values and exceptions .NET gives for the same text: white space, signs,
+// each range's edges, malformed text, NUL padding around a bool, and a
+// single rounded once from the decimal written, and the forms a single and
+// a double share: digit-group commas and the names Infinity and NaN.
+use IO.Std.write_line
+
+show(name: string, text: string, f: string -> string) is
+    let shown = text.replace("\t", "\\t").replace("\n", "\\n").replace("\u0000", "\\0")
+    try
+        write_line("{name} [{shown}] {f(text)}")
+    catch e: Ghul.Exception
+        write_line("{name} [{shown}] {e.get_type().name}")
+    yrt
+si
+
+// NaN's sign differs between platforms, so a NaN is shown by name.
+single_bits(v: single) -> string => if single.is_na_n(v) then "NaN" else "{cast uint(v.to_bits())}" fi
+
+double_bits(v: double) -> string => if double.is_na_n(v) then "NaN" else "{cast ulong(v.to_bits())}" fi
+
+entry() is
+    let integers = ["0", " 12 ", "\t7\n", "+5", "-0", "+0", "-1", "127", "128", "-128", "-129", "255", "256",
+        "32767", "32768", "-32768", "-32769", "65535", "65536", "9223372036854775807", "9223372036854775808",
+        "-9223372036854775808", "", " ", "+", "-", "1_0", "0x10", "1.0", "1,0", "00012", "+-1", "1 2"]
+
+    for t in integers do
+        show("byte", t, s => "{byte.parse(s)}")
+        show("ubyte", t, s => "{ubyte.parse(s)}")
+        show("short", t, s => "{short.parse(s)}")
+        show("ushort", t, s => "{ushort.parse(s)}")
+        show("word", t, s => "{word.parse(s)}")
+    od
+
+    for t in ["a", "", "ab", " a", "a ", "ｱ", "\u0000"] do
+        show("char", t, s => "{cast int(char.parse(s))}")
+    od
+
+    for t in ["true", "True", "TRUE", " false ", "\tFalse\n", "false\u0000", "false\u0000\u0000 ", "\u0000false", "yes", "", "1", "tru", "true x"] do
+        show("bool", t, s => "{bool.parse(s)}")
+    od
+
+    let singles = ["1.5", "-2.25", " 3 ", "3.4028235e38", "3.40282356e38", "3.4028236e38", "3.5e38", "1e39",
+        "1.4e-45", "1e-45", "7e-46", "7.1e-46", "1e-46", "1.1754943e-38", "0.1", "16777217", "16777219",
+        "1.00000005960464477539062500001", "1.000000059604644775390625", "1.0000001788139343261718750",
+        "-0", "0", ".5", "5.", "1e", "abc", "", "1,000", "Infinity", "NaN", "-Infinity", "1e+3", "1E-3",
+        "123456789012345678901234567890", "0.000000000000000000000000000000000000000001",
+        "-Infinity", "+Infinity", "infinity", "INFINITY", " Infinity ", "∞", "Inf", "Infinityx", "nan", "NAN", "-NaN", " NaN ", "na",
+        "1,,000", ",1", "1,", "1,000.5", "1.000,5", "1e1,0", "-1,234", "1,2,3", "0,5", ".,5", "1.5,", "1e3,", "+,1"]
+
+    for t in singles do
+        show("single", t, s => single_bits(single.parse(s)))
+        show("double", t, s => double_bits(double.parse(s)))
+    od
+si

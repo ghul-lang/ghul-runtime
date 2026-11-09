@@ -17,7 +17,7 @@
       "rollForward": false
     },
     "ghul.cli": {
-      "version": "9.5.6",
+      "version": "9.5.12",
       "commands": [
         "ghul"
       ],
