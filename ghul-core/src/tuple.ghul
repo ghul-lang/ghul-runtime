@@ -278,6 +278,212 @@ namespace Ghul is
         si
     si
 
+    // Tuples order element by element, as .NET's value tuples do, so a
+    // tuple can be the key of max_by, min_by and sort_by on every target.
+    impl Comparable[TUPLE_1[T1]] for TUPLE_1[T1] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_1[T1]) -> int pure is
+            return _compare_of(`0, other.`0)
+        si
+    si
+
+    impl Comparable[TUPLE_2[T1, T2]] for TUPLE_2[T1, T2] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_2[T1, T2]) -> int pure is
+            let order0 = _compare_of(`0, other.`0)
+
+            if order0 != 0 then
+                return order0
+            fi
+
+            return _compare_of(`1, other.`1)
+        si
+    si
+
+    impl Comparable[TUPLE_3[T1, T2, T3]] for TUPLE_3[T1, T2, T3] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_3[T1, T2, T3]) -> int pure is
+            let order0 = _compare_of(`0, other.`0)
+
+            if order0 != 0 then
+                return order0
+            fi
+
+            let order1 = _compare_of(`1, other.`1)
+
+            if order1 != 0 then
+                return order1
+            fi
+
+            return _compare_of(`2, other.`2)
+        si
+    si
+
+    impl Comparable[TUPLE_4[T1, T2, T3, T4]] for TUPLE_4[T1, T2, T3, T4] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_4[T1, T2, T3, T4]) -> int pure is
+            let order0 = _compare_of(`0, other.`0)
+
+            if order0 != 0 then
+                return order0
+            fi
+
+            let order1 = _compare_of(`1, other.`1)
+
+            if order1 != 0 then
+                return order1
+            fi
+
+            let order2 = _compare_of(`2, other.`2)
+
+            if order2 != 0 then
+                return order2
+            fi
+
+            return _compare_of(`3, other.`3)
+        si
+    si
+
+    impl Comparable[TUPLE_5[T1, T2, T3, T4, T5]] for TUPLE_5[T1, T2, T3, T4, T5] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_5[T1, T2, T3, T4, T5]) -> int pure is
+            let order0 = _compare_of(`0, other.`0)
+
+            if order0 != 0 then
+                return order0
+            fi
+
+            let order1 = _compare_of(`1, other.`1)
+
+            if order1 != 0 then
+                return order1
+            fi
+
+            let order2 = _compare_of(`2, other.`2)
+
+            if order2 != 0 then
+                return order2
+            fi
+
+            let order3 = _compare_of(`3, other.`3)
+
+            if order3 != 0 then
+                return order3
+            fi
+
+            return _compare_of(`4, other.`4)
+        si
+    si
+
+    impl Comparable[TUPLE_6[T1, T2, T3, T4, T5, T6]] for TUPLE_6[T1, T2, T3, T4, T5, T6] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_6[T1, T2, T3, T4, T5, T6]) -> int pure is
+            let order0 = _compare_of(`0, other.`0)
+
+            if order0 != 0 then
+                return order0
+            fi
+
+            let order1 = _compare_of(`1, other.`1)
+
+            if order1 != 0 then
+                return order1
+            fi
+
+            let order2 = _compare_of(`2, other.`2)
+
+            if order2 != 0 then
+                return order2
+            fi
+
+            let order3 = _compare_of(`3, other.`3)
+
+            if order3 != 0 then
+                return order3
+            fi
+
+            let order4 = _compare_of(`4, other.`4)
+
+            if order4 != 0 then
+                return order4
+            fi
+
+            return _compare_of(`5, other.`5)
+        si
+    si
+
+    impl Comparable[TUPLE_7[T1, T2, T3, T4, T5, T6, T7]] for TUPLE_7[T1, T2, T3, T4, T5, T6, T7] is
+        /// Orders by the first elements, and by each later pair where all
+        /// those before it are equal.
+        <>(other: TUPLE_7[T1, T2, T3, T4, T5, T6, T7]) -> int pure is
+            let order0 = _compare_of(`0, other.`0)
+
+            if order0 != 0 then
+                return order0
+            fi
+
+            let order1 = _compare_of(`1, other.`1)
+
+            if order1 != 0 then
+                return order1
+            fi
+
+            let order2 = _compare_of(`2, other.`2)
+
+            if order2 != 0 then
+                return order2
+            fi
+
+            let order3 = _compare_of(`3, other.`3)
+
+            if order3 != 0 then
+                return order3
+            fi
+
+            let order4 = _compare_of(`4, other.`4)
+
+            if order4 != 0 then
+                return order4
+            fi
+
+            let order5 = _compare_of(`5, other.`5)
+
+            if order5 != 0 then
+                return order5
+            fi
+
+            return _compare_of(`6, other.`6)
+        si
+    si
+
+    // How `left` orders against `right`, for an element type the tuple
+    // does not constrain. An absent value orders before a present one, and
+    // one that isn't comparable throws, as .NET's default comparer does.
+    _compare_of[T](left: T, right: T) -> int pure is
+        let l = cast object?(left)
+        let r = cast object?(right)
+
+        if !l? then
+            return if r? then -1 else 0 fi
+        fi
+
+        if !r? then
+            return 1
+        fi
+
+        if let comparable: Comparable[T] = l then
+            return comparable <> right
+        fi
+
+        throw System.InvalidOperationException("a value of {typeof T} can't be ordered")
+    si
+
     // The hash of `value`, which is zero where it is absent.
     _hash_of[T](value: T) -> int =>
         if (cast object?(value))? then value.get_hash_code() else 0 fi
