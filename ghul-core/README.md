@@ -110,6 +110,19 @@ the member's own body and holds overrides to nothing, the member is marked
   through its `Ghul.Environment`
 - `tests/arguments` — a program reading the command-line arguments it was
   run with
+- `tests/system-members` — `BitConverter`, `RandomNumberGenerator`, `Version`, `Uri`'s escaping,
+  the `Obsolete` attribute, `bigint.div_rem`, `get_command_line_args` and the ranges over the
+  smaller integer types, against .NET's output
+- `tests/number-styles` — integers parsed under `NumberStyles`: hex, binary, grouping, a decimal
+  point, an exponent, parentheses and signs either side, against .NET's answers
+- `tests/custom-exponent-format` — custom numeric formats with an exponent, such as
+  `0.000000e+00`, against .NET's text
+- `tests/date-time-offset` — `DateTimeOffset` at different offsets, its formats, arithmetic and
+  Unix time, and `ISOWeek`, against .NET's output
+- `tests/streams` — a file read as it is asked for, so `/dev/urandom` can be read in part, a
+  `StreamReader` over a stream, standard input as a stream, and the console's encodings
+- `tests/pipe-display` — a pipe passed straight to `write_line`, written as interpolation writes
+  it
 - `tests/dotnet-members` — the numeric types' ranges and floating-point special
   values, ASCII and surrogate classification, `string.concat`, a builder made
   from a string, `uint.parse` and `Math.div_rem`, against .NET's output

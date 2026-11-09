@@ -77,8 +77,9 @@ si
 namespace System is
     /// The members of .NET's `System.Environment` the wasm target has: the
     /// time since the program started, for measuring intervals, reading and
-    /// writing a variable, the working directory, and ending the process. The
-    /// whole environment and the arguments are `Ghul.Environment`.
+    /// writing a variable, the working directory, the command line, and ending
+    /// the process. The whole environment and the arguments are
+    /// `Ghul.Environment`.
     class Environment is
         /// Milliseconds since the program started, which only ever increase.
         tick_count64: long static => cast long(_monotonic_milliseconds())

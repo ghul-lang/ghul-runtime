@@ -1236,7 +1236,18 @@ namespace IO is
             _open = true
         si
 
+        _read_so_far: long
+
         can_read: bool => _open
+
+        // The size of the file, as `FileInfo.length` measures it.
+        length: long => long(_FILE_STORE.read(_full_path).count)
+
+        // How many bytes have been read; the position cannot be moved.
+        position: long public => _read_so_far,
+            = value is
+                throw Ghul.NotSupportedException("Stream does not support seeking.")
+            si
 
         read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
             if !_open then
@@ -1255,7 +1266,11 @@ namespace IO is
                 throw Ghul.ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.")
             fi
 
-            return _HOST_FILES.read_into(_descriptor, buffer, offset, count, _full_path)
+            let got = _HOST_FILES.read_into(_descriptor, buffer, offset, count, _full_path)
+
+            _read_so_far = _read_so_far + long(got)
+
+            return got
         si
 
         dispose() is
