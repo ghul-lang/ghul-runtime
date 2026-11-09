@@ -1,0 +1,15 @@
+name: [] same: true
+int: 1,234
+long: 9876543210 FF
+double: 2.5 3.14
+parse: 42 -7 1.5
+date: 2024-02-29
+title: Alphabeta And NASA, Ok
+case: AB cd
+variable: set
+removed: true
+processors: 1
+directory: true
+directory again: true
+bigint: 12,345,678,901,234,567,890
+bigint sum_by: 6000000000000

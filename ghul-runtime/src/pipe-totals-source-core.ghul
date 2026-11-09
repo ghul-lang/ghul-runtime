@@ -289,4 +289,17 @@ namespace Ghul.Pipes is
 
         return running
     si
+
+    /// The total of what `selector` returns for each of `source`'s elements,
+    /// or zero when it's empty.
+    @IF.source_core()
+    sum_by[T..](source: Iterable[T], selector: T.. -> bigint pure) -> bigint pure is
+        let total mut = 0n
+
+        for value in source do
+            total = total + selector(value)
+        od
+
+        return total
+    si
 si

@@ -1,0 +1,166 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Globalization is
+    /// A culture, as .NET's `System.Globalization.CultureInfo` is one. The
+    /// source-core targets format, parse and change case under the invariant
+    /// culture whatever culture is asked for, so the one culture there is
+    /// the invariant culture, and passing it anywhere a format provider is
+    /// taken changes nothing.
+    class CultureInfo: Ghul.FormatProvider is
+        _instance: CultureInfo static
+
+        init() static is
+            _instance = CultureInfo()
+        si
+
+        init() is
+        si
+
+        /// The invariant culture.
+        invariant_culture: CultureInfo static => _instance
+
+        /// The culture the program runs under, which is the invariant culture.
+        current_culture: CultureInfo static => _instance
+
+        /// The culture's name, which is empty for the invariant culture.
+        name: string => ""
+
+        /// How the culture changes the case of text.
+        text_info: TextInfo => TextInfo()
+
+        /// No formatting object: formatting here is always invariant.
+        ///
+        /// - format_type: the type of formatting object wanted
+        get_format(format_type: Ghul.Type?) -> object? => null
+
+        to_string() -> string => ""
+    si
+
+    /// How a culture changes the case of text, as .NET's
+    /// `System.Globalization.TextInfo` does, here under the invariant culture.
+    class TextInfo is
+        init() is
+        si
+
+        /// `text` in upper case.
+        ///
+        /// - text: the text to change
+        to_upper(text: string) -> string => text.to_upper_invariant()
+
+        /// `text` in lower case.
+        ///
+        /// - text: the text to change
+        to_lower(text: string) -> string => text.to_lower_invariant()
+
+        /// `text` with each word's first letter in upper case and the rest of
+        /// it in lower case, as .NET writes title case. A word written wholly
+        /// in upper case is left as it is, as .NET leaves an acronym.
+        ///
+        /// - text: the text to change
+        to_title_case(text: string) -> string is
+            let result mut = ""
+            let at mut = 0
+
+            while at < text.length do
+                if !char.is_letter(text[at]) then
+                    result = "{result}{text[at]}"
+                    at = at + 1
+                    continue
+                fi
+
+                let start = at
+
+                while at < text.length /\ char.is_letter(text[at]) do
+                    at = at + 1
+                od
+
+                let word = text.substring(start, at - start)
+
+                result =
+                    if word =~ word.to_upper_invariant() then
+                        "{result}{word}"
+                    else
+                        "{result}{word.substring(0, 1).to_upper_invariant()}{word.substring(1).to_lower_invariant()}"
+                    fi
+            od
+
+            return result
+        si
+    si
+si
+
+namespace Ghul is
+    // Each numeric type's `to_string` and `parse` with a format provider, as
+    // .NET declares them. The source-core targets format and parse under the
+    // invariant culture, so the provider is accepted and ignored.
+
+    partial int is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        /// - provider: ignored; formatting is invariant
+        to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
+
+        /// `text` read as an `int`, as `parse(text)` reads it.
+        ///
+        /// - text: the text to read
+        /// - provider: ignored; parsing is invariant
+        parse(text: string, provider: FormatProvider?) -> int static => parse(text)
+    si
+
+    partial long is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        /// - provider: ignored; formatting is invariant
+        to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
+
+        /// `text` read as a `long`, as `parse(text)` reads it.
+        ///
+        /// - text: the text to read
+        /// - provider: ignored; parsing is invariant
+        parse(text: string, provider: FormatProvider?) -> long static => parse(text)
+    si
+
+    partial double is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        /// - provider: ignored; formatting is invariant
+        to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
+
+        /// `text` read as a `double`, as `parse(text)` reads it.
+        ///
+        /// - text: the text to read
+        /// - provider: ignored; parsing is invariant
+        parse(text: string, provider: FormatProvider?) -> double static => parse(text)
+    si
+
+    partial bigint is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        /// - provider: ignored; formatting is invariant
+        to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
+    si
+
+    partial single is
+        /// The value written under the numeric format string `format`.
+        ///
+        /// - format: a standard or custom numeric format string
+        /// - provider: ignored; formatting is invariant
+        to_string(format: string, provider: FormatProvider?) -> string pure => to_string(format)
+    si
+si
+
+namespace System is
+    partial DateTime is
+        /// `text` read as a moment, as `parse(text)` reads it.
+        ///
+        /// - text: the text to read
+        /// - provider: ignored; parsing is invariant
+        parse(text: string, provider: Ghul.FormatProvider?) -> DateTime static => parse(text)
+    si
+si

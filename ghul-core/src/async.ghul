@@ -76,8 +76,9 @@ si
 
 namespace System is
     /// The members of .NET's `System.Environment` the wasm target has: the
-    /// time since the program started, for measuring intervals, and reading a
-    /// variable. The whole environment and the arguments are `Ghul.Environment`.
+    /// time since the program started, for measuring intervals, reading and
+    /// writing a variable, the working directory, and ending the process. The
+    /// whole environment and the arguments are `Ghul.Environment`.
     class Environment is
         /// Milliseconds since the program started, which only ever increase.
         tick_count64: long static => cast long(_monotonic_milliseconds())
@@ -96,6 +97,33 @@ namespace System is
         /// - name: the variable's name
         get_environment_variable(name: string) -> string? static =>
             Ghul.ENVIRONMENT.instance[name]
+
+        /// Sets the environment variable `name` to `value`, or removes it
+        /// where `value` is null or empty, as .NET does.
+        ///
+        /// - name: the variable's name
+        /// - value: its new value
+        set_environment_variable(name: string, value: string?) static is
+            Ghul.ENVIRONMENT.instance[name] = if value? /\ value.length > 0 then value else null fi
+        si
+
+        /// The working directory, as `IO.Directory` reads and sets it.
+        current_directory: string public static => IO.Directory.get_current_directory(),
+            = path is
+                IO.Directory.set_current_directory(path)
+            si
+
+        /// How many processors the program can run on: 1 on the source-core
+        /// targets, which run one thread.
+        processor_count: int static => 1
+
+        /// Ends the process with `exit_code` as its exit status, after writing
+        /// out what the program has written to standard output.
+        ///
+        /// - exit_code: the process's exit status
+        exit(exit_code: int) static is
+            Ghul.ENVIRONMENT.instance.exit(exit_code)
+        si
 
         // Milliseconds since the program started, as the host measures them.
         @intrinsic("host.monotonic_milliseconds")
