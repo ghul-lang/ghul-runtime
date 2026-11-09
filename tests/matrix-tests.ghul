@@ -109,7 +109,7 @@ namespace Tests is
 
         @Test()
         Matrix_3_ReadsPlanesRowsAndElements() is
-            let m = MATRIX(2, 2, 3, (plane: int, row: int, column: int) -> int => 0)
+            let m = MATRIX[int](2, 2, 3)
 
             m[1, 0, 2] = 5
 
@@ -117,6 +117,23 @@ namespace Tests is
             are_equal(5, m[1][0, 2])
             are_equal(2, m.count)
             are_equal("[[0, 0, 0], [0, 0, 0]]", "{m[0]}")
+        si
+
+        @Test()
+        Array_3_FillFromFunction_PutsEachCellInPlace() is
+            let m = ARRAY_3(2, 2, 2, (plane: int, row: int, column: int) -> int => plane * 100 + row * 10 + column)
+
+            are_equal(111, m[1, 1, 1])
+            are_equal(10, m[0, 1, 0])
+        si
+
+        // A grid of function values is built from its rows, or by a
+        // function returning the function for each cell.
+        @Test()
+        Matrix_2_OfFunctions_IsBuiltByAFunctionReturningThem() is
+            let m = MATRIX(1, 2, (row: int, column: int) -> (int -> int) => (x: int) -> int => x + column)
+
+            are_equal(11, m[0, 1](10))
         si
 
         @Test()

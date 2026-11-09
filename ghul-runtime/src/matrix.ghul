@@ -183,13 +183,14 @@ namespace Collections is
             _list = list
         si
 
-        /// A matrix of `rows` rows of `columns` elements, each `fill`.
+        /// A matrix of `rows` rows of `columns` elements, each given by `cell`
+        /// from its row and column.
         ///
         /// - rows: the number of rows
         /// - columns: the number of elements in each row
-        /// - fill: the value of every element
-        init(rows: int, columns: int, fill: T) is
-            let list = LIST[T](repeat(fill, MATRIX_EXTENTS.size([rows, columns])))
+        /// - cell: the value of the element at a row and column
+        init(rows: int, columns: int, cell: (int, int) -> T) is
+            let list = LIST[T](0..MATRIX_EXTENTS.size([rows, columns]) |> map(i => cell(i / columns, i % columns)))
 
             super.init(list, 0, rows, columns)
 
@@ -323,14 +324,14 @@ namespace Collections is
         si
 
         /// An array of `planes` planes of `rows` rows of `columns` elements,
-        /// each `fill`.
+        /// each given by `cell` from its plane, row and column.
         ///
         /// - planes: the number of planes
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
-        /// - fill: the value of every element
-        init(planes: int, rows: int, columns: int, fill: T) is
-            let array = LIST[T](repeat(fill, MATRIX_EXTENTS.size([planes, rows, columns]))).to_array()
+        /// - cell: the value of the element at a plane, row and column
+        init(planes: int, rows: int, columns: int, cell: (int, int, int) -> T) is
+            let array = MATRIX_EXTENTS.cells(planes, rows, columns, cell).to_array()
 
             super.init(array, planes, rows, columns)
 
@@ -365,14 +366,14 @@ namespace Collections is
         si
 
         /// A matrix of `planes` planes of `rows` rows of `columns` elements,
-        /// each `fill`.
+        /// each given by `cell` from its plane, row and column.
         ///
         /// - planes: the number of planes
         /// - rows: the number of rows in each plane
         /// - columns: the number of elements in each row
-        /// - fill: the value of every element
-        init(planes: int, rows: int, columns: int, fill: T) is
-            let list = LIST[T](repeat(fill, MATRIX_EXTENTS.size([planes, rows, columns])))
+        /// - cell: the value of the element at a plane, row and column
+        init(planes: int, rows: int, columns: int, cell: (int, int, int) -> T) is
+            let list = MATRIX_EXTENTS.cells(planes, rows, columns, cell)
 
             super.init(list, planes, rows, columns)
 
@@ -440,6 +441,21 @@ namespace Collections is
             check_index(plane, planes, "plane")
 
             return MATRIX_2_VIEW[T](cells, plane * rows * columns, rows, columns)
+        si
+
+        // The elements `cell` gives, plane by plane and row by row.
+        cells[T](planes: int, rows: int, columns: int, cell: (int, int, int) -> T) -> LIST[T] static is
+            let result = LIST[T](size([planes, rows, columns]))
+
+            for plane in 0..planes do
+                for row in 0..rows do
+                    for column in 0..columns do
+                        result.add(cell(plane, row, column))
+                    od
+                od
+            od
+
+            return result
         si
 
         check_index(index: int, extent: int, name: string) static is
@@ -511,9 +527,10 @@ si
 namespace Collections is
     use Ghul.Pipes
 
-    // A three-dimensional matrix is built from its planes or from a
-    // function of its plane, row and column: three extents alone would also
-    // read as two extents and a fill.
+    // Each family is built from its rows or planes, or by a function of each
+    // element's position; a mutable matrix can also start at the default
+    // value. There is no fill with one value: `MATRIX(r, c, (_, _) => v)`
+    // spells it, since a matrix of function values is a thing to build too.
 
     /// A mutable matrix copied from `rows`, which must all be the same length.
     ///
@@ -527,7 +544,7 @@ namespace Collections is
     /// - rows: the number of rows
     /// - columns: the number of elements in each row
     @suppress("non-snake-case-name")
-    MATRIX[T](rows: int, columns: int) -> MATRIX_2[T] => MATRIX_2[T](rows, columns, _[T])
+    MATRIX[T](rows: int, columns: int) -> MATRIX_2[T] => MATRIX_2[T](rows, columns, (row: int, column: int) -> T => _[T])
 
     /// A mutable matrix of `rows` rows of `columns` elements, each given by
     /// `cell` from its row and column.
@@ -536,17 +553,7 @@ namespace Collections is
     /// - columns: the number of elements in each row
     /// - cell: the value of the element at a row and column
     @suppress("non-snake-case-name")
-    MATRIX[T](rows: int, columns: int, cell: (int, int) -> T) -> MATRIX_2[T] is
-        let result = MATRIX_2[T](rows, columns, _[T])
-
-        for row in 0..rows do
-            for column in 0..columns do
-                result[row, column] = cell(row, column)
-            od
-        od
-
-        return result
-    si
+    MATRIX[T](rows: int, columns: int, cell: (int, int) -> T) -> MATRIX_2[T] => MATRIX_2[T](rows, columns, cell)
 
     /// A mutable three-dimensional matrix copied from `planes`, which must all
     /// have the same shape.
@@ -554,6 +561,16 @@ namespace Collections is
     /// - planes: the planes, in order, each a sequence of rows
     @suppress("non-snake-case-name")
     MATRIX[T](planes: Iterable[Iterable[Iterable[T]]]) -> MATRIX_3[T] => MATRIX_3[T](planes)
+
+    /// A mutable three-dimensional matrix of `planes` planes of `rows` rows
+    /// of `columns` elements, each the default value of `T`.
+    ///
+    /// - planes: the number of planes
+    /// - rows: the number of rows in each plane
+    /// - columns: the number of elements in each row
+    @suppress("non-snake-case-name")
+    MATRIX[T](planes: int, rows: int, columns: int) -> MATRIX_3[T] =>
+        MATRIX_3[T](planes, rows, columns, (plane: int, row: int, column: int) -> T => _[T])
 
     /// A mutable three-dimensional matrix of `planes` planes of `rows` rows
     /// of `columns` elements, each given by `cell` from its plane, row and
@@ -564,17 +581,6 @@ namespace Collections is
     /// - columns: the number of elements in each row
     /// - cell: the value of the element at a plane, row and column
     @suppress("non-snake-case-name")
-    MATRIX[T](planes: int, rows: int, columns: int, cell: (int, int, int) -> T) -> MATRIX_3[T] is
-        let result = MATRIX_3[T](planes, rows, columns, _[T])
-
-        for plane in 0..planes do
-            for row in 0..rows do
-                for column in 0..columns do
-                    result[plane, row, column] = cell(plane, row, column)
-                od
-            od
-        od
-
-        return result
-    si
+    MATRIX[T](planes: int, rows: int, columns: int, cell: (int, int, int) -> T) -> MATRIX_3[T] =>
+        MATRIX_3[T](planes, rows, columns, cell)
 si
