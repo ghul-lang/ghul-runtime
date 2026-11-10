@@ -2,10 +2,14 @@
 // arrive, and reading it once it has. The input is supplied whole and
 // closed, so every wait is answered true and the end of the input is itself
 // something to wait for.
+//
+// The waits have no timeout, so how long the host takes to start watching
+// the input doesn't change what they answer. Once the end has been read, a
+// wait with a timeout answers at once.
 
 use default
 
-while IO.Std.wait_for_input(5000) do
+while IO.Std.wait_for_input(0) do
     let line = IO.Std.read_line()
 
     if !line? then
@@ -15,5 +19,6 @@ while IO.Std.wait_for_input(5000) do
     write_line("line: [{line}]")
 od
 
-write_line("ended: {IO.Std.wait_for_input(5000)} {IO.Std.has_pending_input()}")
+write_line("ended: {IO.Std.wait_for_input(0)} {IO.Std.has_pending_input()}")
+write_line("ended, with a timeout: {IO.Std.wait_for_input(1)}")
 write_line("heap: {System.GC.get_total_memory(false) > 0L} {System.GC.get_total_memory(true) > 0L}")

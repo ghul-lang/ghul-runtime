@@ -5,4 +5,5 @@ line: [four]
 line: []
 line: [last]
 ended: true false
+ended, with a timeout: true
 heap: true true
