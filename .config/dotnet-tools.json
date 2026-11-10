@@ -24,7 +24,7 @@
       "rollForward": false
     },
     "ghul.compiler": {
-      "version": "71.4.4",
+      "version": "71.4.5",
       "commands": [
         "ghul-compiler"
       ],
