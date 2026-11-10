@@ -170,7 +170,7 @@ namespace Ghul is
         ///
         /// - value: the base
         /// - exponent: the non-negative power
-        pow(value: bigint, exponent: int) -> bigint static is
+        pow(value: bigint, exponent: int) -> bigint static pure is
             if exponent < 0 then
                 throw ArgumentOutOfRangeException("exponent", "the exponent is negative")
             fi
@@ -209,7 +209,7 @@ namespace Ghul is
         /// - value: the base
         /// - exponent: the non-negative power
         /// - modulus: the divisor
-        mod_pow(value: bigint, exponent: bigint, modulus: bigint) -> bigint static is
+        mod_pow(value: bigint, exponent: bigint, modulus: bigint) -> bigint static pure is
             if exponent.sign < 0 then
                 throw ArgumentOutOfRangeException("exponent", "the exponent is negative")
             fi
@@ -249,7 +249,7 @@ namespace Ghul is
         ///
         /// - a: the first value
         /// - b: the second value
-        greatest_common_divisor(a: bigint, b: bigint) -> bigint static is
+        greatest_common_divisor(a: bigint, b: bigint) -> bigint static pure is
             if _bigint_is_small(a) /\ _bigint_is_small(b) /\ _bigint_small(a) != _lowest /\ _bigint_small(b) != _lowest then
                 let x mut = _bigint_small(a)
                 let y mut = _bigint_small(b)
@@ -272,13 +272,13 @@ namespace Ghul is
         /// The magnitude of `value`.
         ///
         /// - value: the value
-        abs(value: bigint) -> bigint static => if value.sign < 0 then -value else value fi
+        abs(value: bigint) -> bigint static pure => if value.sign < 0 then -value else value fi
 
         /// -1, 0 or 1 as `a` is less than, equal to or greater than `b`.
         ///
         /// - a: the first value
         /// - b: the second value
-        compare(a: bigint, b: bigint) -> int static => _order(a, b)
+        compare(a: bigint, b: bigint) -> int static pure => _order(a, b)
 
         /// The quotient of `dividend` by `divisor`, truncated toward zero, with
         /// the remainder, which takes the sign of `dividend`, in `remainder`.
@@ -301,17 +301,17 @@ namespace Ghul is
         ///
         /// - left: the value divided
         /// - right: the value it is divided by
-        div_rem(left: bigint, right: bigint) -> (quotient: bigint, remainder: bigint) static is
+        div_rem(left: bigint, right: bigint) -> (quotient: bigint, remainder: bigint) static pure is
             let quotient = left / right
 
             return (quotient, left - quotient * right)
         si
 
         /// The larger of `a` and `b`.
-        max(a: bigint, b: bigint) -> bigint static => if a < b then b else a fi
+        max(a: bigint, b: bigint) -> bigint static pure => if a < b then b else a fi
 
         /// The smaller of `a` and `b`.
-        min(a: bigint, b: bigint) -> bigint static => if b < a then b else a fi
+        min(a: bigint, b: bigint) -> bigint static pure => if b < a then b else a fi
 
         // The operators work on the i64 where both operands are small and
         // the result fits, and ask the host otherwise.
@@ -676,28 +676,28 @@ namespace Ghul is
         /// `value` as an int.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> int static => cast int(_bigint_checked(value, -2147483648n, 2147483647n))
+        op_explicit(value: bigint) -> int static pure => cast int(_bigint_checked(value, -2147483648n, 2147483647n))
     si
 
     partial uint is
         /// `value` as a uint.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> uint static => cast uint(_bigint_checked(value, 0n, 4294967295n))
+        op_explicit(value: bigint) -> uint static pure => cast uint(_bigint_checked(value, 0n, 4294967295n))
     si
 
     partial long is
         /// `value` as a long.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> long static => _bigint_checked(value, -9223372036854775808n, 9223372036854775807n)
+        op_explicit(value: bigint) -> long static pure => _bigint_checked(value, -9223372036854775808n, 9223372036854775807n)
     si
 
     partial ulong is
         /// `value` as a ulong.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> ulong static is
+        op_explicit(value: bigint) -> ulong static pure is
             if value.sign < 0 \/ value > 18446744073709551615n then
                 throw OverflowException("the value was too large or too small for the target type")
             fi
@@ -710,48 +710,48 @@ namespace Ghul is
         /// `value` as a short.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> short static => cast short(_bigint_checked(value, -32768n, 32767n))
+        op_explicit(value: bigint) -> short static pure => cast short(_bigint_checked(value, -32768n, 32767n))
     si
 
     partial ushort is
         /// `value` as a ushort.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> ushort static => cast ushort(_bigint_checked(value, 0n, 65535n))
+        op_explicit(value: bigint) -> ushort static pure => cast ushort(_bigint_checked(value, 0n, 65535n))
     si
 
     partial byte is
         /// `value` as a byte.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> byte static => cast byte(_bigint_checked(value, -128n, 127n))
+        op_explicit(value: bigint) -> byte static pure => cast byte(_bigint_checked(value, -128n, 127n))
     si
 
     partial ubyte is
         /// `value` as a ubyte.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> ubyte static => cast ubyte(_bigint_checked(value, 0n, 255n))
+        op_explicit(value: bigint) -> ubyte static pure => cast ubyte(_bigint_checked(value, 0n, 255n))
     si
 
     partial char is
         /// The character whose code is `value`.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> char static => cast char(_bigint_checked(value, 0n, 65535n))
+        op_explicit(value: bigint) -> char static pure => cast char(_bigint_checked(value, 0n, 65535n))
     si
 
     partial double is
         /// `value` as a double, its magnitude truncated to the 53 bits a double holds.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> double static => _bigint_to_double(value)
+        op_explicit(value: bigint) -> double static pure => _bigint_to_double(value)
     si
 
     partial single is
         /// `value` as a single, rounded from the double it converts to.
         ///
         /// - value: the bigint to convert
-        op_explicit(value: bigint) -> single static => cast single(_bigint_to_double(value))
+        op_explicit(value: bigint) -> single static pure => cast single(_bigint_to_double(value))
     si
 si

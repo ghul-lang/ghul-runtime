@@ -73,14 +73,14 @@ namespace System is
         /// Whether `year` is a leap year.
         ///
         /// - year: the year, from 1 to 9999
-        is_leap_year(year: int) -> bool static =>
+        is_leap_year(year: int) -> bool static pure =>
             year % 4 == 0 /\ (year % 100 != 0 \/ year % 400 == 0)
 
         /// The number of days in `month` of `year`.
         ///
         /// - year: the year, from 1 to 9999
         /// - month: the month, from 1 to 12
-        days_in_month(year: int, month: int) -> int static is
+        days_in_month(year: int, month: int) -> int static pure is
             if month < 1 \/ month > 12 then
                 throw ArgumentOutOfRangeException("month", "the month must be from 1 to 12")
             fi
@@ -366,45 +366,45 @@ namespace System is
         /// An interval of `minutes` minutes, to the nearest tick.
         ///
         /// - minutes: the length of the interval
-        from_minutes(minutes: double) -> TimeSpan static =>
+        from_minutes(minutes: double) -> TimeSpan static pure =>
             TimeSpan(cast long(Ghul.Math.round(minutes * 600_000_000.0)))
 
         /// An interval of `hours` hours, to the nearest tick.
         ///
         /// - hours: the length of the interval
-        from_hours(hours: double) -> TimeSpan static =>
+        from_hours(hours: double) -> TimeSpan static pure =>
             TimeSpan(cast long(Ghul.Math.round(hours * 36_000_000_000.0)))
 
         /// An interval of `days` days, to the nearest tick.
         ///
         /// - days: the length of the interval
-        from_days(days: double) -> TimeSpan static =>
+        from_days(days: double) -> TimeSpan static pure =>
             TimeSpan(cast long(Ghul.Math.round(days * 864_000_000_000.0)))
 
         /// An interval of `value` ticks.
         ///
         /// - value: the length of the interval
-        from_ticks(value: long) -> TimeSpan static => TimeSpan(value)
+        from_ticks(value: long) -> TimeSpan static pure => TimeSpan(value)
 
         /// An interval of `days` days.
         ///
         /// - days: the length of the interval
-        from_days(days: int) -> TimeSpan static => TimeSpan(cast long(days) * 864_000_000_000L)
+        from_days(days: int) -> TimeSpan static pure => TimeSpan(cast long(days) * 864_000_000_000L)
 
         /// An interval of `hours` hours.
         ///
         /// - hours: the length of the interval
-        from_hours(hours: int) -> TimeSpan static => TimeSpan(cast long(hours) * 36_000_000_000L)
+        from_hours(hours: int) -> TimeSpan static pure => TimeSpan(cast long(hours) * 36_000_000_000L)
 
         /// An interval of `minutes` minutes.
         ///
         /// - minutes: the length of the interval
-        from_minutes(minutes: long) -> TimeSpan static => TimeSpan(minutes * 600_000_000L)
+        from_minutes(minutes: long) -> TimeSpan static pure => TimeSpan(minutes * 600_000_000L)
 
         /// An interval of `seconds` seconds.
         ///
         /// - seconds: the length of the interval
-        from_seconds(seconds: long) -> TimeSpan static => TimeSpan(seconds * 10_000_000L)
+        from_seconds(seconds: long) -> TimeSpan static pure => TimeSpan(seconds * 10_000_000L)
 
         /// The interval written in `format`: `c`, `g` or `G`, .NET's standard
         /// formats as the invariant culture spells them, or a custom format of
@@ -431,7 +431,7 @@ namespace System is
         /// - text: the text to read
         /// - format: the custom format it is written in
         /// - format_provider: ignored; text follows the invariant culture
-        parse_exact(text: string, format: string, format_provider: Ghul.FormatProvider?) -> TimeSpan static =>
+        parse_exact(text: string, format: string, format_provider: Ghul.FormatProvider?) -> TimeSpan static pure =>
             Ghul.Internal.TIME_SPAN_TEXT.parse_exact(text, format)
 
         /// The whole days in the interval.
@@ -608,7 +608,7 @@ namespace Ghul.Internal is
 
     // Reads a date in the forms the invariant culture writes most often.
     class DATE_PARSE is
-        parse(text: string) -> DateTime static is
+        parse(text: string) -> DateTime static pure is
             let at mut = 0
             let year mut = 0
             let month mut = 0
@@ -806,7 +806,7 @@ namespace Ghul.Internal is
             return result.to_string()
         si
 
-        parse(text: string) -> System.TimeSpan static is
+        parse(text: string) -> System.TimeSpan static pure is
             let negative = text.starts_with("-")
             let body = if negative then text.substring(1) else text fi
 
@@ -846,7 +846,7 @@ namespace Ghul.Internal is
             return System.TimeSpan(if negative then -ticks else ticks fi)
         si
 
-        parse_exact(text: string, format: string) -> System.TimeSpan static is
+        parse_exact(text: string, format: string) -> System.TimeSpan static pure is
             let days mut = 0L
             let hours mut = 0L
             let minutes mut = 0L

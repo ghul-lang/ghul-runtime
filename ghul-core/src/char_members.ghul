@@ -155,7 +155,7 @@ namespace Ghul is
         /// not a code point or is a surrogate.
         ///
         /// - utf32: the code point
-        convert_from_utf32(utf32: int) -> string static is
+        convert_from_utf32(utf32: int) -> string static pure is
             if utf32 < 0 \/ utf32 > 0x10FFFF \/ (utf32 >= 0xD800 /\ utf32 <= 0xDFFF) then
                 throw ArgumentOutOfRangeException("utf32", "A valid UTF32 value is between 0x000000 and 0x10ffff, inclusive, and should not include surrogate codepoint values (0x00d800 ~ 0x00dfff).")
             fi
@@ -176,7 +176,7 @@ namespace Ghul is
         ///
         /// - high: the high surrogate
         /// - low: the low surrogate
-        convert_to_utf32(high: char, low: char) -> int static is
+        convert_to_utf32(high: char, low: char) -> int static pure is
             if !is_high_surrogate(high) then
                 throw ArgumentOutOfRangeException("highSurrogate", "A valid high surrogate character is between 0xd800 and 0xdbff, inclusive.")
             fi
@@ -194,7 +194,7 @@ namespace Ghul is
         ///
         /// - text: the text
         /// - index: where the code point starts
-        convert_to_utf32(text: string, index: int) -> int static is
+        convert_to_utf32(text: string, index: int) -> int static pure is
             if index < 0 \/ index >= text.length then
                 throw ArgumentOutOfRangeException("index", "Index was out of range. Must be non-negative and less than the size of the collection.")
             fi

@@ -85,7 +85,7 @@ namespace System is
         /// zero.
         ///
         /// - seconds: seconds of Unix time
-        from_unix_time_seconds(seconds: long) -> DateTimeOffset static is
+        from_unix_time_seconds(seconds: long) -> DateTimeOffset static pure is
             if seconds < -62_135_596_800L \/ seconds > 253_402_300_799L then
                 throw ArgumentOutOfRangeException("seconds", "outside the range of a DateTimeOffset")
             fi
@@ -97,7 +97,7 @@ namespace System is
         /// at offset zero.
         ///
         /// - milliseconds: milliseconds of Unix time
-        from_unix_time_milliseconds(milliseconds: long) -> DateTimeOffset static is
+        from_unix_time_milliseconds(milliseconds: long) -> DateTimeOffset static pure is
             if milliseconds < -62_135_596_800_000L \/ milliseconds > 253_402_300_799_999L then
                 throw ArgumentOutOfRangeException("milliseconds", "outside the range of a DateTimeOffset")
             fi
@@ -353,7 +353,7 @@ namespace System.Globalization is
         /// The ISO week of the year `date` falls in, from 1 to 53.
         ///
         /// - date: the date
-        get_week_of_year(date: DateTime) -> int static is
+        get_week_of_year(date: DateTime) -> int static pure is
             let week = _week_number(date)
 
             if week < 1 then
@@ -371,7 +371,7 @@ namespace System.Globalization is
         /// calendar year for a few days around the new year.
         ///
         /// - date: the date
-        get_year(date: DateTime) -> int static is
+        get_year(date: DateTime) -> int static pure is
             let week = _week_number(date)
 
             if week < 1 then
@@ -388,17 +388,17 @@ namespace System.Globalization is
         /// The Monday of week 1 of ISO year `year`.
         ///
         /// - year: the ISO year, from 1 to 9999
-        get_year_start(year: int) -> DateTime static => to_date_time(year, 1, DayOfWeek.MONDAY)
+        get_year_start(year: int) -> DateTime static pure => to_date_time(year, 1, DayOfWeek.MONDAY)
 
         /// The Sunday of the last week of ISO year `year`.
         ///
         /// - year: the ISO year, from 1 to 9999
-        get_year_end(year: int) -> DateTime static => to_date_time(year, get_weeks_in_year(year), DayOfWeek.SUNDAY)
+        get_year_end(year: int) -> DateTime static pure => to_date_time(year, get_weeks_in_year(year), DayOfWeek.SUNDAY)
 
         /// How many weeks ISO year `year` has: 52 or 53.
         ///
         /// - year: the ISO year, from 1 to 9999
-        get_weeks_in_year(year: int) -> int static is
+        get_weeks_in_year(year: int) -> int static pure is
             if year < 1 \/ year > 9999 then
                 throw Ghul.ArgumentOutOfRangeException("year", "the year must be from 1 to 9999")
             fi
@@ -411,7 +411,7 @@ namespace System.Globalization is
         /// - year: the ISO year, from 1 to 9999
         /// - week: the week, from 1 to 53
         /// - day_of_week: the day of the week
-        to_date_time(year: int, week: int, day_of_week: DayOfWeek) -> DateTime static is
+        to_date_time(year: int, week: int, day_of_week: DayOfWeek) -> DateTime static pure is
             if year < 1 \/ year > 9999 then
                 throw Ghul.ArgumentOutOfRangeException("year", "the year must be from 1 to 9999")
             fi
