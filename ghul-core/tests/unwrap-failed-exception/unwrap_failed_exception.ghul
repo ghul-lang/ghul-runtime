@@ -5,7 +5,7 @@ namespace Test is
 
     struct POINT(x: int, y: int)
 
-    union OUTCOME is
+    union Outcome is
         GOOD
         BAD
     si
@@ -19,9 +19,9 @@ namespace Test is
         yrt
 
         try
-            throw Ghul.UnwrapFailedException[OUTCOME](OUTCOME.BAD)
-        catch e: Ghul.UnwrapFailedException[OUTCOME]
-            if e.payload =~ OUTCOME.BAD then
+            throw Ghul.UnwrapFailedException[Outcome](Outcome.BAD)
+        catch e: Ghul.UnwrapFailedException[Outcome]
+            if e.payload =~ Outcome.BAD then
                 write_line("bad")
             else
                 write_line("good")

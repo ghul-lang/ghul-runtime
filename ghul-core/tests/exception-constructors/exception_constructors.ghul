@@ -5,7 +5,7 @@
 namespace Test is
     use IO.Std.write_line
 
-    class QUIET: Ghul.Exception is
+    class Quiet: Ghul.Exception is
         init() is
             super.init()
         si
@@ -19,7 +19,7 @@ namespace Test is
         yrt
 
         try
-            throw QUIET()
+            throw Quiet()
         catch e: Ghul.Exception
             write_line(e.message)
         yrt
