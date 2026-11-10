@@ -1,0 +1,28 @@
+// The helper the compiler calls for System.Enum.parse and try_parse, with
+// the members of an enum PUSH = 1, HALT = 2, JUMP = 4, against what .NET's
+// Enum.Parse gives for the same text: names, a comma list of them, numbers
+// whether or not a member has them, white space, case, and each failure.
+use IO.Std.write_line
+use Ghul.Internal.ENUM_TEXT
+
+let names = ["PUSH", "HALT", "JUMP"] |> ARRAY()
+let values = [1, 2, 4] |> ARRAY()
+
+show(text: string) is
+    try
+        write_line("[{text}] {ENUM_TEXT.value_of(text, false, names, values)}")
+    catch e: Ghul.Exception
+        write_line("[{text}] {e.get_type().name}: {e.message}")
+    yrt
+si
+
+for t in ["HALT", " HALT ", "halt", "PUSH, JUMP", "PUSH,JUMP", " 4 ", "7", "-3", "+2", "99999999999", "NOPE", "", "  ", "PUSH, NOPE", "1, 2", "PUSH,", "HALT, 4", "4x"] do
+    show(t)
+od
+
+let r mut = 1
+write_line("{ENUM_TEXT.try_value_of("halt", false, names, values, r ref)} {r}")
+write_line("{ENUM_TEXT.try_value_of("halt", true, names, values, r ref)} {r}")
+write_line("{ENUM_TEXT.try_value_of("NOPE", false, names, values, r ref)} {r}")
+write_line("{ENUM_TEXT.try_value_of(null, false, names, values, r ref)} {r}")
+write_line("{ENUM_TEXT.value_of("jump", true, names, values)}")

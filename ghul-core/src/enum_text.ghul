@@ -60,5 +60,116 @@ namespace Ghul.Internal is
 
             return text.to_string()
         si
+
+        /// The value of an enum that `text` names, as .NET's `Enum.Parse`
+        /// reads it, called by the compiler with the enum's members. Throws
+        /// where `text` names none.
+        ///
+        /// Surrounding white space is ignored. Text starting with a digit or
+        /// a sign is the value itself, whether or not a member has it;
+        /// anything else is one or more member names separated by commas,
+        /// whose values are combined.
+        ///
+        /// - text: the text to read
+        /// - ignore_case: whether a name matches whatever its case
+        /// - names: the enum's member names, in ascending order of value
+        /// - values: each member's value, in the same order as `names`
+        value_of(text: string, ignore_case: bool, names: ARRAY[string], values: ARRAY[int]) -> int static is
+            let (status, value) = _parse(text, ignore_case, names, values)
+
+            if status == _BLANK then
+                throw ArgumentException("Must specify valid information for parsing in the string. (Parameter 'value')")
+            elif status == _NOT_FOUND then
+                throw ArgumentException("Requested value '{text}' was not found.")
+            elif status == _OUT_OF_RANGE then
+                throw OverflowException("Value was either too large or too small for an Int32.")
+            fi
+
+            return value
+        si
+
+        /// Whether `text` names a value of an enum, as .NET's `Enum.TryParse`
+        /// reads it, writing the value to `result` where it does and zero
+        /// where it does not; called by the compiler with the enum's members.
+        ///
+        /// - text: the text to read, or null
+        /// - ignore_case: whether a name matches whatever its case
+        /// - names: the enum's member names, in ascending order of value
+        /// - values: each member's value, in the same order as `names`
+        /// - result: where the value is written
+        try_value_of(text: string?, ignore_case: bool, names: ARRAY[string], values: ARRAY[int], result: int ref) -> bool static is
+            if let t = text then
+                let (status, value) = _parse(t, ignore_case, names, values)
+
+                if status == _PARSED then
+                    result! = value
+                    return true
+                fi
+            fi
+
+            result! = 0
+            return false
+        si
+
+        _PARSED: int static => 0
+        _BLANK: int static => 1
+        _NOT_FOUND: int static => 2
+        _OUT_OF_RANGE: int static => 3
+
+        _parse(text: string, ignore_case: bool, names: ARRAY[string], values: ARRAY[int]) -> (status: int, value: int) static is
+            let trimmed = text.trim()
+
+            if trimmed.length == 0 then
+                return (_BLANK, 0)
+            fi
+
+            if _is_number(trimmed) then
+                let wide: long mut
+
+                if !long.try_parse(trimmed, wide ref) \/ wide < -2147483648L \/ wide > 2147483647L then
+                    return (_OUT_OF_RANGE, 0)
+                fi
+
+                return (_PARSED, cast int(wide))
+            fi
+
+            let value mut = 0
+
+            for part in trimmed.split(',') do
+                let name = part.trim()
+                let found mut = false
+
+                for i in 0..names.count do
+                    if name =~ names[i] \/ (ignore_case /\ name.to_lower_invariant() =~ names[i].to_lower_invariant()) then
+                        value = value | values[i]
+                        found = true
+                        break
+                    fi
+                od
+
+                if !found then
+                    return (_NOT_FOUND, 0)
+                fi
+            od
+
+            return (_PARSED, value)
+        si
+
+        // Whether `text` is an optional sign followed by one or more digits.
+        _is_number(text: string) -> bool static is
+            let start = if text[0] == '-' \/ text[0] == '+' then 1 else 0 fi
+
+            if start >= text.length then
+                return false
+            fi
+
+            for i in start..text.length do
+                if !char.is_digit(text[i]) then
+                    return false
+                fi
+            od
+
+            return true
+        si
     si
 si

@@ -293,6 +293,40 @@ namespace System is
 
     /// Reflection over enums.
     class Enum is
+        /// The value of the enum `T` that `value` names: a member's name,
+        /// several names separated by commas, whose values are combined, or
+        /// a number. Throws where it names none. The compiler supplies `T`'s
+        /// members where it knows `T` at the call; called where `T` is a
+        /// type parameter, it throws.
+        ///
+        /// - value: the text to read
+        parse[T: struct](value: string) -> T static => throw _not_lowered()
+
+        /// The value of the enum `T` that `value` names, matching names
+        /// whatever their case where `ignore_case` is true.
+        ///
+        /// - value: the text to read
+        /// - ignore_case: whether a name matches whatever its case
+        parse[T: struct](value: string, ignore_case: bool) -> T static => throw _not_lowered()
+
+        /// Whether `value` names a value of the enum `T`, writing it to
+        /// `result` where it does and zero where it does not.
+        ///
+        /// - value: the text to read, or null
+        /// - result: where the value is written
+        try_parse[T: struct](value: string?, result: T ref) -> bool static => throw _not_lowered()
+
+        /// Whether `value` names a value of the enum `T`, matching names
+        /// whatever their case where `ignore_case` is true.
+        ///
+        /// - value: the text to read, or null
+        /// - ignore_case: whether a name matches whatever its case
+        /// - result: where the value is written
+        try_parse[T: struct](value: string?, ignore_case: bool, result: T ref) -> bool static => throw _not_lowered()
+
+        _not_lowered() -> NotSupportedException static =>
+            NotSupportedException("Enum.parse and Enum.try_parse need the enum to be known where they are called")
+
         /// The names of `enum_type`'s members, in ascending order of value.
         ///
         /// - enum_type: the enum
