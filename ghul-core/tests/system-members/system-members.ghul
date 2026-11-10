@@ -98,3 +98,12 @@ try
 catch e: System.ArgumentException
     write_line("bad bound throws")
 yrt
+
+// MethodImpl is accepted, as on .NET, where it sets the method's flags
+@System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+twice(x: int) -> int => x * 2
+
+@System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NO_INLINING)
+thrice(x: int) -> int => x * 3
+
+write_line("method impl: {twice(21)} {thrice(14)}")

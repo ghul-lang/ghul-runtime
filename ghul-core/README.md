@@ -111,7 +111,7 @@ the member's own body and holds overrides to nothing, the member is marked
 - `tests/arguments` — a program reading the command-line arguments it was
   run with
 - `tests/system-members` — `BitConverter`, `RandomNumberGenerator`, `Version`, `Uri`'s escaping,
-  the `Obsolete` attribute, `bigint.div_rem`, `get_command_line_args` and the ranges over the
+  the `Obsolete` and `MethodImpl` attributes, `bigint.div_rem`, `get_command_line_args` and the ranges over the
   smaller integer types, against .NET's output
 - `tests/number-styles` — integers parsed under `NumberStyles`: hex, binary, grouping, a decimal
   point, an exponent, parentheses and signs either side, against .NET's answers

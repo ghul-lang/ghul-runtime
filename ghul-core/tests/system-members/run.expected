@@ -69,3 +69,4 @@ single value range: 5
 bytes: 16
 non-zero: true
 bad bound throws
+method impl: 42 42

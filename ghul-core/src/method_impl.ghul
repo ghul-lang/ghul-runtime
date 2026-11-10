@@ -1,0 +1,53 @@
+// .NET's names for these types are kept, so source written against .NET
+// builds here unchanged.
+@@suppress("non-upper-snake-case-name")
+
+namespace System.Runtime.CompilerServices is
+    /// How a method is to be compiled, as .NET's
+    /// `System.Runtime.CompilerServices.MethodImplOptions` says. The members
+    /// combine as flags. On the source-core targets they are accepted and
+    /// change nothing.
+    @Ghul.Flags()
+    enum MethodImplOptions is
+        /// The method is implemented in unmanaged code.
+        UNMANAGED = 4,
+        /// The method is never inlined.
+        NO_INLINING = 8,
+        /// The method is declared but its body is supplied elsewhere.
+        FORWARD_REF = 16,
+        /// The method runs under a lock, one thread at a time.
+        SYNCHRONIZED = 32,
+        /// The method is not optimised.
+        NO_OPTIMIZATION = 64,
+        /// The method's signature is exported exactly as declared.
+        PRESERVE_SIG = 128,
+        /// The method is inlined wherever possible.
+        AGGRESSIVE_INLINING = 256,
+        /// The method is compiled with full optimisation straight away.
+        AGGRESSIVE_OPTIMIZATION = 512,
+        /// The method is implemented by the runtime itself.
+        INTERNAL_CALL = 4096
+    si
+
+    /// Says how a method is to be compiled, as .NET's
+    /// `System.Runtime.CompilerServices.MethodImplAttribute` does: on .NET it
+    /// sets the method's implementation flags. Written
+    /// `@System.Runtime.CompilerServices.MethodImpl(MethodImplOptions.AGGRESSIVE_INLINING)`.
+    /// On the source-core targets it is accepted and changes nothing.
+    class MethodImplAttribute is
+        /// The options given.
+        value: MethodImplOptions
+
+        /// The attribute with no options.
+        init() is
+            value = cast MethodImplOptions(0)
+        si
+
+        /// The attribute with `options`.
+        ///
+        /// - options: how the method is to be compiled
+        init(options: MethodImplOptions) is
+            value = options
+        si
+    si
+si
