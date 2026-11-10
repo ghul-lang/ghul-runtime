@@ -173,5 +173,26 @@ namespace Tests is
 
             are_equal(3, plane[0, 1])
         si
+        // m[i, j] is fast on .NET only while each class's index helper is
+        // inlined into the indexer, which the JIT doesn't do by itself once
+        // the helper calls out to throw.
+        @Test()
+        Element_Index_Helpers_AreMarkedForInlining() is
+            let flags = System.Reflection.BindingFlags.INSTANCE | System.Reflection.BindingFlags.NON_PUBLIC
+
+            for (type, name) in [
+                (typeof MATRIX_2_VIEW[int], "_view_index"),
+                (typeof ARRAY_2[int], "_array_index"),
+                (typeof MATRIX_2[int], "_position"),
+                (typeof MATRIX_3_VIEW[int], "_view_index"),
+                (typeof ARRAY_3[int], "_array_index"),
+                (typeof MATRIX_3[int], "_position")
+            ] do
+                let method = type.get_method(name, flags)!
+                let inlined = (cast int(method.method_implementation_flags) & cast int(System.Reflection.MethodImplAttributes.AGGRESSIVE_INLINING)) != 0
+
+                are_equal("{type.name}.{name} inlined", "{type.name}.{name} {if inlined then "inlined" else "not inlined" fi}")
+            od
+        si
     si
 si
