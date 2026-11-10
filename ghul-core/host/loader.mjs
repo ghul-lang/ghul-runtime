@@ -171,6 +171,9 @@ export async function run(options = {}) {
         stdin_peek: () => pump.reader().peek(),
         stdin_read_to_end: () => pump.reader().read_to_end(),
 
+        // Output is written as it comes, so there is nothing to flush.
+        flush: () => {},
+
         stdin_pending: () => pump.pending(),
         stdin_wait: (ms) => pump.wait(ms),
 
