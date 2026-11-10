@@ -443,7 +443,9 @@ namespace Ghul.Internal is
 
             let describe: (TYPE_DESCRIPTION) -> void mut
 
-            if !_describers.try_get_value(type, describe ref) then
+            if let held = type.describer then
+                describe = held
+            elif !_describers.try_get_value(type, describe ref) then
                 throw Ghul.NotSupportedException("reflection over {type.full_name} needs the program built with --rtti")
             fi
 

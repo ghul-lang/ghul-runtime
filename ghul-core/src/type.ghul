@@ -16,6 +16,12 @@ namespace Ghul is
     class Type is
         _full_name: string
 
+        // What describes the type for reflection, where the program was built
+        // with descriptions of its types. A target whose type objects are
+        // constants holds it here from the start, so nothing runs before the
+        // program first reflects.
+        _describe: ((TYPE_DESCRIPTION) -> void)?
+
         /// - full_name: the type's name, qualified by its namespace
         init(full_name: string) is
             _full_name = full_name
@@ -28,13 +34,16 @@ namespace Ghul is
         ///   the first time one is asked for
         init(full_name: string, describe: (TYPE_DESCRIPTION) -> void) is
             _full_name = full_name
-
-            TYPE_DESCRIPTIONS.register(self, describe)
+            _describe = describe
         si
 
         /// The type's name, qualified by its namespace, with its type
         /// arguments in brackets.
         full_name: string => _full_name
+
+        /// What fills in the type's description for reflection, where the
+        /// program was built to describe its types; null otherwise.
+        describer: ((TYPE_DESCRIPTION) -> void)? => _describe
 
         /// The type's name, without its namespace or its type arguments.
         name: string is
