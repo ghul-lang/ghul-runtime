@@ -5,8 +5,9 @@
 namespace System.Runtime.CompilerServices is
     /// How a method is to be compiled, as .NET's
     /// `System.Runtime.CompilerServices.MethodImplOptions` says. The members
-    /// combine as flags. On the source-core targets they are accepted and
-    /// change nothing.
+    /// combine as flags. On llvm, `NO_INLINING` and `AGGRESSIVE_INLINING`
+    /// keep a method from being inlined and inline it wherever it is
+    /// called; the other options, and every option on wasm, change nothing.
     @Ghul.Flags()
     enum MethodImplOptions is
         /// The method is implemented in unmanaged code.
@@ -33,7 +34,8 @@ namespace System.Runtime.CompilerServices is
     /// `System.Runtime.CompilerServices.MethodImplAttribute` does: on .NET it
     /// sets the method's implementation flags. Written
     /// `@System.Runtime.CompilerServices.MethodImpl(MethodImplOptions.AGGRESSIVE_INLINING)`.
-    /// On the source-core targets it is accepted and changes nothing.
+    /// On llvm it asks for or against inlining as `MethodImplOptions`
+    /// describes, and on wasm it is accepted and changes nothing.
     class MethodImplAttribute is
         /// The options given.
         value: MethodImplOptions
