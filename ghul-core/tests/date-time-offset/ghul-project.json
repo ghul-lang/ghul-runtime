@@ -2,7 +2,7 @@
     "name": "date-time-offset",
     "targets": ["wasm", "llvm"],
     "sources": ["*.ghul"],
-    "options": { "suppress": ["assembly-attribute-unmatched"] },
+    "options": { "suppress": ["assembly-attribute-unmatched", "impure-function-argument"] },
     "dependencies": {
         "ghul-runtime": { "path": "../../.." }
     }
