@@ -2,7 +2,7 @@
     "name": "append-null",
     "targets": ["wasm"],
     "sources": ["*.ghul"],
-    "options": { "suppress": ["assembly-attribute-unmatched", "cast-may-throw"] },
+    "diagnostics": { "suppress": ["assembly-attribute-unmatched", "cast-may-throw"] },
     "dependencies": {
         "ghul-runtime": { "path": "../../.." }
     }
