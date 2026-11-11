@@ -9,6 +9,30 @@ namespace System is
             return cast long(_heap_bytes(force_full_collection))
         si
 
+        /// Collects while the program has nothing else to do. The collection
+        /// gives up as soon as standard input has something to read, and is
+        /// skipped where little has been allocated since the last one. Only
+        /// the llvm target collects; elsewhere this does nothing.
+        ///
+        /// Answers true when the collection finished or was not needed, and
+        /// false when it gave up, so a caller knows whether to try again.
+        collect_when_idle() -> bool static => _collect_when_idle()
+
+        /// Sets how eagerly the collector grows the heap rather than
+        /// collecting: it collects after allocating about the heap's size
+        /// divided by this. A larger divisor collects more often and keeps
+        /// the heap smaller. Only the llvm target uses it; elsewhere this does
+        /// nothing.
+        ///
+        /// - divisor: greater than zero; zero or less changes nothing
+        set_free_space_divisor(divisor: int) static => _set_free_space_divisor(divisor)
+
+        @intrinsic("host.gc_collect_when_idle")
+        _collect_when_idle() -> bool static
+
+        @intrinsic("host.gc_set_free_space_divisor")
+        _set_free_space_divisor(divisor: int) static
+
         /// The engine's own account of the heap: a forced collection first
         /// where asked, then what the engine says is in use.
         @intrinsic("host.heap_bytes")
