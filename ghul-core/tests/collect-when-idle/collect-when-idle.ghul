@@ -1,0 +1,7 @@
+// Sets the collector's free-space divisor, then asks for an idle collection
+// with little allocated since the program started: on llvm it is skipped,
+// and elsewhere there is nothing to do, so both answer true.
+
+System.GC.set_free_space_divisor(2)
+System.GC.set_free_space_divisor(0)
+IO.Std.write_line("idle: {System.GC.collect_when_idle()}")
