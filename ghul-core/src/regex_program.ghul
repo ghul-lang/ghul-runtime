@@ -485,8 +485,8 @@ namespace Ghul.Internal is
         _same(c: int, wanted: int, ignore_case: bool) -> bool =>
             c == wanted \/
             ignore_case /\ (
-                cast int(char.to_lower(cast char(c))) == cast int(char.to_lower(cast char(wanted))) \/
-                cast int(char.to_upper(cast char(c))) == cast int(char.to_upper(cast char(wanted)))
+                cast int((cast char(c)).to_lower()) == cast int((cast char(wanted)).to_lower()) \/
+                cast int((cast char(c)).to_upper()) == cast int((cast char(wanted)).to_upper())
             )
 
         _is_boundary(at: int) -> bool is

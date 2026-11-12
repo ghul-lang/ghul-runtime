@@ -34,7 +34,7 @@ entry() is
     write_line("{ulong.try_parse("18446744073709551616", big ref)} {big}")
     write_line("{ulong.try_parse("12x", big ref)} {ulong.parse("+42")}")
 
-    write_line("{char.is_symbol('+')} {char.is_symbol('a')} {char.is_symbol('×')} {char.is_symbol('⊕')} {char.is_symbol('〈')}")
+    write_line("{'+'.is_symbol} {'a'.is_symbol} {'×'.is_symbol} {'⊕'.is_symbol} {'〈'.is_symbol}")
 
     let first = NODE("first")
     let second = NODE("second")

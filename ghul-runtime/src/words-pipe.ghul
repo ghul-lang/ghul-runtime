@@ -26,7 +26,7 @@ namespace Ghul.Pipes is
 
         /// Produces the next word; ends when only white space is left.
         move_next() -> bool is
-            while _at < _text.length /\ char.is_white_space(_text[_at]) do
+            while _at < _text.length /\ _text[_at].is_white_space do
                 _at = _at + 1
             od
 
@@ -36,7 +36,7 @@ namespace Ghul.Pipes is
 
             let start = _at
 
-            while _at < _text.length /\ !char.is_white_space(_text[_at]) do
+            while _at < _text.length /\ !_text[_at].is_white_space do
                 _at = _at + 1
             od
 

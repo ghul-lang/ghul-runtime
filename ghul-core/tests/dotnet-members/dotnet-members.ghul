@@ -28,7 +28,7 @@ entry() is
     write_line("{double.degrees_to_radians(180.0)} {double.radians_to_degrees(1.0)}")
 
     for c in ['a', 'Z', '5', 'f', 'G', '_', ' ', '\u00e9', '\ud83d', '\ude00', '\u007f', '\u0080'] do
-        write_line("{cast int(c)}: {char.is_ascii(c)} {char.is_ascii_digit(c)} {char.is_ascii_hex_digit(c)} {char.is_ascii_letter(c)} {char.is_ascii_letter_lower(c)} {char.is_ascii_letter_upper(c)} {char.is_ascii_letter_or_digit(c)} {char.is_high_surrogate(c)} {char.is_low_surrogate(c)} {char.is_surrogate(c)}")
+        write_line("{cast int(c)}: {c.is_ascii} {c.is_ascii_digit} {c.is_ascii_hex_digit} {c.is_ascii_letter} {c.is_ascii_letter_lower} {c.is_ascii_letter_upper} {c.is_ascii_letter_or_digit} {c.is_high_surrogate} {c.is_low_surrogate} {c.is_surrogate}")
     od
 
     let smile = char.convert_from_utf32(0x1F600)

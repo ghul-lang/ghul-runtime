@@ -87,7 +87,7 @@ namespace Tests is
         Stream_EnumeratedAgain_YieldsTheSameValues() is
             _assert_repeatable(
                 "[1, 2, 3]",
-                stream(1, (s: int) => if s > 3 then STREAM.DONE[int, int]() else s || s + 1 fi)
+                stream(1, (s: int) => if s > 3 then null else (s, s + 1) fi)
             )
         si
 

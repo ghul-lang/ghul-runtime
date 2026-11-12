@@ -9,7 +9,7 @@ namespace Tests is
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
     parse_digit(text: string) -> int? =>
-        if text.length == 1 /\ char.is_digit(text[0]) then int(text[0]) - int('0') else null fi
+        if text.length == 1 /\ text[0].is_digit then int(text[0]) - int('0') else null fi
 
     // filter_map, pairwise, take_last, skip_last, nth, contains, frequencies
     // and the seedless reduce.

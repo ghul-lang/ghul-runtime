@@ -145,7 +145,7 @@ namespace Tests is
 
         @Test()
         Memo_OverInfiniteStream_PullsOnlyWhatIsConsumed() is
-            let naturals = stream(0, n => n || n + 1)
+            let naturals = stream(0, n => (n, n + 1))
             let p = list(naturals)
 
             are_equal("0, 1, 2", p |> take(3) |> join(", "))

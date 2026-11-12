@@ -53,6 +53,9 @@
     <GhulOptions Include="--warn redundant-semicolon" />
     <GhulOptions Include="--warn-as-error redundant-semicolon" />
 
+    <!-- The members src/char-members.ghul adds to char. -->
+    <GhulOptions Include="--allow-member-injection" />
+
     <Content Include="build\ghul.runtime.targets" PackagePath="\build">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

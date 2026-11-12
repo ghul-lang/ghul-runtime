@@ -8,17 +8,17 @@ flags(c: char) -> string is
 
     result.append("U+{cast int(c):X4} category {cast int(char.get_unicode_category(c))}:")
 
-    if char.is_letter(c) then result.append(" letter") fi
-    if char.is_upper(c) then result.append(" upper") fi
-    if char.is_lower(c) then result.append(" lower") fi
-    if char.is_digit(c) then result.append(" digit") fi
-    if char.is_number(c) then result.append(" number") fi
-    if char.is_letter_or_digit(c) then result.append(" letter-or-digit") fi
-    if char.is_punctuation(c) then result.append(" punctuation") fi
-    if char.is_symbol(c) then result.append(" symbol") fi
-    if char.is_separator(c) then result.append(" separator") fi
-    if char.is_control(c) then result.append(" control") fi
-    if char.is_white_space(c) then result.append(" white-space") fi
+    if c.is_letter then result.append(" letter") fi
+    if c.is_upper then result.append(" upper") fi
+    if c.is_lower then result.append(" lower") fi
+    if c.is_digit then result.append(" digit") fi
+    if c.is_number then result.append(" number") fi
+    if c.is_letter_or_digit then result.append(" letter-or-digit") fi
+    if c.is_punctuation then result.append(" punctuation") fi
+    if c.is_symbol then result.append(" symbol") fi
+    if c.is_separator then result.append(" separator") fi
+    if c.is_control then result.append(" control") fi
+    if c.is_white_space then result.append(" white-space") fi
 
     return result.to_string()
 si

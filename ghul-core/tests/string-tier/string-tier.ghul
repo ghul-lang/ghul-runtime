@@ -11,7 +11,7 @@ letters(text: string) -> int is
     let count mut = 0
 
     for c in text do
-        if char.is_letter(c) then
+        if c.is_letter then
             count = count + 1
         fi
     od
@@ -20,11 +20,11 @@ letters(text: string) -> int is
 si
 
 entry() is
-    write_line("{show(char.is_digit('7'))} {show(char.is_digit('x'))}")
-    write_line("{show(char.is_letter('q'))} {show(char.is_letter('3'))} {show(char.is_letter_or_digit('3'))}")
-    write_line("{show(char.is_upper('Q'))} {show(char.is_lower('Q'))} {show(char.is_white_space('\t'))}")
-    write_line("{char.to_upper('a')}{char.to_lower('B')}{char.to_upper('!')}")
-    write_line("{cast int(char.to_upper(cast char(181)))} {cast int(char.to_upper(cast char(255)))}")
+    write_line("{show('7'.is_digit)} {show('x'.is_digit)}")
+    write_line("{show('q'.is_letter)} {show('3'.is_letter)} {show('3'.is_letter_or_digit)}")
+    write_line("{show('Q'.is_upper)} {show('Q'.is_lower)} {show('\t'.is_white_space)}")
+    write_line("{'a'.to_upper()}{'B'.to_lower()}{'!'.to_upper()}")
+    write_line("{cast int((cast char(181)).to_upper())} {cast int((cast char(255)).to_upper())}")
 
     write_line("{int.parse(" -42 ")} {long.parse("9000000000")} {int.parse("+7")}")
 

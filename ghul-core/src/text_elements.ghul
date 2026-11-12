@@ -107,11 +107,11 @@ namespace Ghul is
         _code_at(text: string, index: int) -> int static is
             let c = text[index]
 
-            if char.is_high_surrogate(c) /\ index + 1 < text.length /\ char.is_low_surrogate(text[index + 1]) then
+            if c.is_high_surrogate /\ index + 1 < text.length /\ text[index + 1].is_low_surrogate then
                 return char.convert_to_utf32(c, text[index + 1])
             fi
 
-            if char.is_surrogate(c) then
+            if c.is_surrogate then
                 return 0xFFFD
             fi
 

@@ -1,44 +1,16 @@
 namespace Ghul.Pipes is
     use Collections
 
-    // One step of a state-stepping stream.
-    //
-    //   DONE                       — sequence is over.
-    //   YIELD(value: T, state: S)  — yielded element, plus the state to
-    //                                feed into the next step.
-    //
-    // `T` is the output element type; `S` is the user-chosen state type.
-    // State and output are decoupled: state can be any shape (tuple,
-    // index cursor, accumulator) and is never seen by callers of a
-    // `stream`-produced `Pipe[T]`.
-    /// One step of a state-stepping sequence: either the sequence is over,
-    /// or the next element together with the state to feed into the next step.
-    @suppress("non-pascal-case-name")
-    union STREAM[T, S] is
-        /// The sequence is over.
-        DONE
-        /// The yielded element, and the state to advance with on the next call.
-        YIELD(value: T, state: S)
-    si
-
-    // Drives a state-stepping `advance` function through the `Pipe[T]`
-    // surface. Each `move_next` calls `advance(_state)`; the result is
-    // either `DONE` (sequence over) or `YIELD(value, next_state)` —
-    // the yielded element and the state to feed into the next call.
-    //
-    // The mutable state cursor lives on the class; the user's
-    // `advance` is a pure `S -> STREAM[T, S]` — no recursion, no
-    // closure-per-step allocation.
     /// Drives a state-stepping `advance` function through the `Pipe[T]` surface.
     class STREAM_PIPE[T, S]: PipeStage[T] is
         _initial: S
         _state:   S
-        _advance: S -> STREAM[T, S]
+        _advance: S -> (T, S)?
 
         /// The most recently yielded element.
         current: T
 
-        init(initial: S, advance: S -> STREAM[T, S]) is
+        init(initial: S, advance: S -> (T, S)?) is
             super.init()
 
             assert advance?
@@ -51,14 +23,13 @@ namespace Ghul.Pipes is
         /// A new sequence from the initial state, not yet read.
         fresh() -> PipeStage[T] => STREAM_PIPE[T, S](_initial, _advance)
 
-        /// Calls `advance` with the current state; on `YIELD` advances and
-        /// returns true, on `DONE` returns false.
+        /// Calls `advance` with the current state: where it returns an
+        /// element and the next state, takes them and returns true; where it
+        /// returns null, returns false.
         move_next() -> bool is
-            let step = _advance(_state)
-
-            if let next: STREAM.YIELD[T, S] = step then
-                current = next.value
-                _state  = next.state
+            if let (value, state) = _advance(_state) then
+                current = value
+                _state  = state
                 return true
             fi
 
@@ -78,17 +49,19 @@ namespace Ghul.Pipes is
         si
     si
 
-    // Build a `Pipe[T]` from an initial state and a pure step function
-    // `S.. -> STREAM[T, S]`. The step returns `DONE` to terminate, or
-    // `YIELD(value, next_state)` (which the `||` infix produces) to
-    // yield a value and advance. `S` is a tuple when the state has more
-    // than one part, and the pack marker lets the step take it spread
-    // out - `(previous, current) => ...` - rather than as one bound
-    // tuple parameter.
-    /// Builds a `Pipe[T]` from an initial state and a step function that
-    /// returns `STREAM.DONE` to end the sequence or `STREAM.YIELD` to
-    /// produce the next element and state.
-    stream[T, S..](initial: S, advance: S.. -> STREAM[T, S]) -> Iterable[T] is
+    /// A sequence made by stepping a state: each read calls `advance` with
+    /// the current state, which returns the next element together with the
+    /// state to step from next, or null to end the sequence. Where the state
+    /// is a tuple, `advance` can take its parts as separate parameters.
+    ///
+    /// ```ghul
+    /// let fibonacci = stream((0, 1), (a, b) => (a, (b, a + b)))
+    /// let countdown = stream(3, n => if n == 0 then null else (n, n - 1) fi)
+    /// ```
+    ///
+    /// - initial: the state the first read steps from
+    /// - advance: the step: the next element and state, or null at the end
+    stream[T, S..](initial: S, advance: S.. -> (T, S)?) -> Iterable[T] is
         return STREAM_PIPE[T, S](initial, advance)
     si
 si
