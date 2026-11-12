@@ -228,7 +228,7 @@ namespace IO is
         write(text: string) pure =>
             _write(text, _stream)
 
-        // A native host holds standard output back until it has a buffer's
+        // A host can hold standard output back until it has a buffer's
         // worth; this writes it out now.
         flush() is
             _flush(_stream)
