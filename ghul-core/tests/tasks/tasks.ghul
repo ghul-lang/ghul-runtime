@@ -66,7 +66,7 @@ entry() is
     try
         let _ = fails().result
     catch e: Ghul.AggregateException
-        write_line("aggregate: {e.inner_exception.message}")
+        write_line("aggregate: {e.inner_exception?.message}")
     yrt
 
     write_line("from_result: {Tasks.TASK.from_result(7).result}")

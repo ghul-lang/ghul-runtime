@@ -54,21 +54,83 @@ namespace Ghul is
 
     /// Thrown by waiting for a task that threw, holding what it threw.
     class AggregateException: Exception is
-        /// What the task threw.
-        inner_exception: Exception
+        /// What was thrown, where one exception is held.
+        inner_exception: Exception?
+
+        /// An exception that says only that errors occurred.
+        init() is
+            super.init("One or more errors occurred.")
+        si
+
+        /// - message: what went wrong
+        init(message: string) is
+            super.init(message)
+        si
 
         /// - inner_exception: what the task threw
         init(inner_exception: Exception) is
             super.init("One or more errors occurred. ({inner_exception.message})")
             self.inner_exception = inner_exception
         si
+
+        /// - inner_exceptions: what was thrown; the first is `inner_exception`
+        init(inner_exceptions: Collections.Iterable[Exception]) is
+            super.init(_message("One or more errors occurred.", inner_exceptions))
+
+            for e in inner_exceptions do
+                self.inner_exception = e
+                break
+            od
+        si
+
+        /// - message: what went wrong
+        /// - inner_exception: what was thrown
+        init(message: string, inner_exception: Exception) is
+            super.init("{message} ({inner_exception.message})")
+            self.inner_exception = inner_exception
+        si
+
+        _message(message: string, inner_exceptions: Collections.Iterable[Exception]) -> string static is
+            let result = Text.STRING_BUILDER()
+
+            result.append(message)
+
+            for e in inner_exceptions do
+                result.append(" (")
+                result.append(e.message)
+                result.append(")")
+            od
+
+            return result.to_string()
+        si
     si
 
-    /// Thrown when an object that has been closed or disposed is used.
+    /// Thrown when an object that has been closed or disposed is used. As on
+    /// .NET, the message names the object where an object name is given.
     class ObjectDisposedException: InvalidOperationException is
-        /// - message: what was used after it was closed
-        init(message: string) is
-            super.init(message);
+        /// The name of the object that was used, or empty.
+        object_name: string
+
+        /// - object_name: the name of the object that was used, or null
+        init(object_name: string?) is
+            init(object_name, null)
+        si
+
+        /// - object_name: the name of the object that was used, or null
+        /// - message: what went wrong, or null for the general message
+        init(object_name: string?, message: string?) is
+            super.init(_message(object_name, message))
+            self.object_name = object_name ?? ""
+        si
+
+        _message(object_name: string?, message: string?) -> string static is
+            let text = message ?? "Cannot access a disposed object."
+
+            if let name = object_name /\ name.length > 0 then
+                return "{text}\nObject name: '{name}'."
+            fi
+
+            return text
         si
     si
 
