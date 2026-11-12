@@ -156,5 +156,20 @@ namespace Tests is
             are_equal(System.Math.e, Ghul.Math.e, "e")
             are_equal(System.Math.tau, Ghul.Math.tau, "tau")
         si
+
+        @Test()
+        BigintOverloads_AgreeWithBigInteger() is
+            let values = [0n, 1n, -1n, 7n, -7n, 123456789012345678901234567890n, -123456789012345678901234567890n]
+
+            for a in values do
+                are_equal(bigint.abs(a), Ghul.Math.abs(a), "abs({a})")
+                are_equal(a.sign, Ghul.Math.sign(a), "sign({a})")
+
+                for b in values do
+                    are_equal(bigint.min(a, b), Ghul.Math.min(a, b), "min({a}, {b})")
+                    are_equal(bigint.max(a, b), Ghul.Math.max(a, b), "max({a}, {b})")
+                od
+            od
+        si
     si
 si

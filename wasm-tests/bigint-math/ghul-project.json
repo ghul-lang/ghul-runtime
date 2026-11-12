@@ -1,0 +1,7 @@
+{
+    "name": "bigint-math",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
