@@ -74,6 +74,11 @@ namespace Ghul is
         /// The program's environment.
         instance: ENVIRONMENT static => _instance
 
+        /// The version the program was built as: the one the compiler's
+        /// `--version` gave it, which a project's manifest names as its
+        /// `version`, or `0.0.0-local` where it was built with none.
+        program_version: string static => _program_version()
+
         /// The program's command-line arguments, in order.
         arguments: ARRAY[string] static is
             let count = _argument_count()
@@ -247,6 +252,9 @@ namespace Ghul is
 
         @intrinsic("host.exit")
         _exit(status: int) static
+
+        @intrinsic("build.version")
+        _program_version() -> string static
 
         @IF.llvm()
         @intrinsic("host.process_path")
