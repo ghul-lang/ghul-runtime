@@ -995,11 +995,29 @@ namespace IO is
             return lines.to_array()
         si
 
-        /// The lines of the file at `path`, read as they are asked for.
+        /// The lines of the file at `path`, read as they are asked for. Each
+        /// read of the result opens the file again and reads it from the
+        /// start. Throws `FileNotFoundException` here, rather than at the
+        /// first read, where there is no file at `path`.
         ///
         /// - path: the file to read
-        read_lines(path: string) -> Collections.Iterable[string] static =>
-            read_all_lines(path)
+        read_lines(path: string) -> Collections.Iterable[string] static is
+            if !exists(path) then
+                throw FileNotFoundException("Could not find file '{_FILE_STORE.full(path)}'.")
+            fi
+
+            return _read_lines(path)
+        si
+
+        _read_lines(path: string) -> string{} static is
+            let reader = StreamReader(path)
+
+            while let line = reader.read_line() do
+                yield line
+            od
+
+            reader.dispose()
+        si
 
         /// The whole text of the file at `path`.
         ///

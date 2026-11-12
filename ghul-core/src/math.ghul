@@ -68,6 +68,9 @@ namespace Ghul.Math is
     abs(value: single) -> single pure =>
         if value < 0.0s then -value elif value == 0.0s then 0.0s else value fi
 
+    /// The magnitude of `value`.
+    abs(value: bigint) -> bigint => if value < 0n then -value else value fi
+
     /// The lesser of `a` and `b`.
     min(a: int, b: int) -> int pure => if a <= b then a else b fi
 
@@ -87,6 +90,9 @@ namespace Ghul.Math is
     /// The lesser of `a` and `b`, or NaN where either is NaN.
     min(a: single, b: single) -> single pure =>
         if a != a then a elif b != b then b elif a < b then a elif b < a then b elif _is_negative(a) then a else b fi
+
+    /// The lesser of `a` and `b`.
+    min(a: bigint, b: bigint) -> bigint => if a <= b then a else b fi
 
     /// The greater of `a` and `b`.
     max(a: int, b: int) -> int pure => if a >= b then a else b fi
@@ -108,6 +114,9 @@ namespace Ghul.Math is
     max(a: single, b: single) -> single pure =>
         if a != a then a elif b != b then b elif a > b then a elif b > a then b elif _is_negative(a) then b else a fi
 
+    /// The greater of `a` and `b`.
+    max(a: bigint, b: bigint) -> bigint => if a >= b then a else b fi
+
     /// `value` held between `min` and `max`, inclusive.
     clamp(value: int, min: int, max: int) -> int pure =>
         if value < min then min elif value > max then max else value fi
@@ -125,6 +134,9 @@ namespace Ghul.Math is
 
     /// -1, 0 or 1, as `value` is negative, zero or positive.
     sign(value: long) -> int pure => if value < 0L then -1 elif value > 0L then 1 else 0 fi
+
+    /// -1, 0 or 1, as `value` is negative, zero or positive.
+    sign(value: bigint) -> int => if value < 0n then -1 elif value > 0n then 1 else 0 fi
 
     /// -1, 0 or 1, as `value` is negative, zero or positive. Throws
     /// `ArithmeticException` where `value` is NaN.

@@ -1,0 +1,32 @@
+// File.read_lines reads the file as its lines are asked for, as it does on
+// .NET: a read after the file changes sees the new text, and a file that
+// is missing is reported when read_lines is called.
+use IO.Std.write_line
+use IO.File
+
+entry() is
+    let path = "read-lines-lazy.txt"
+
+    File.write_all_text(path, "one\ntwo\n")
+
+    let lines = File.read_lines(path)
+
+    for line in lines do
+        write_line("first read: {line}")
+    od
+
+    File.write_all_text(path, "three\n")
+
+    for line in lines do
+        write_line("second read: {line}")
+    od
+
+    File.delete(path)
+
+    try
+        File.read_lines(path)
+        write_line("missing file: not reported")
+    catch e: IO.FileNotFoundException
+        write_line("missing file: reported")
+    yrt
+si

@@ -1,0 +1,12 @@
+// The bigint overloads of abs, min, max and sign, compiled from the
+// runtime's own sources, print what the same program prints on .NET.
+use IO.Std.write_line
+use Ghul.Math
+
+entry() is
+    let big = 123456789012345678901234567890n
+
+    write_line("{abs(-big)} {abs(big)} {abs(0n)}")
+    write_line("{min(big, -big)} {max(big, -big)} {min(3n, 3n)}")
+    write_line("{sign(-big)} {sign(0n)} {sign(big)}")
+si
