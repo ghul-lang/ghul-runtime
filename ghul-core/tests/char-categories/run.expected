@@ -1,0 +1,26 @@
+U+0061 category 1: letter lower letter-or-digit
+U+005A category 0: letter upper letter-or-digit
+U+0035 category 8: digit number letter-or-digit
+U+0020 category 11: separator white-space
+U+0021 category 24: punctuation
+U+0024 category 26: symbol
+U+0009 category 14: control white-space
+U+00AA category 4: letter letter-or-digit
+U+01C5 category 2: letter letter-or-digit
+U+02B0 category 3: letter letter-or-digit
+U+4E2D category 4: letter letter-or-digit
+U+05D0 category 4: letter letter-or-digit
+U+0627 category 4: letter letter-or-digit
+U+0663 category 8: digit number letter-or-digit
+U+2167 category 9: number
+U+00BD category 10: number
+U+2014 category 19: punctuation
+U+00AB category 22: punctuation
+U+20AC category 26: symbol
+U+2200 category 25: symbol
+U+00A0 category 11: separator white-space
+U+2028 category 12: separator white-space
+U+0301 category 5:
+U+E000 category 17:
+U+D800 category 16:
+U+FFFF category 29:
