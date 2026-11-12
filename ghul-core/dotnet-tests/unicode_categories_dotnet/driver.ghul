@@ -1,0 +1,30 @@
+// Classifies every UTF-16 code unit with the core library's category table
+// and with .NET's char.GetUnicodeCategory, and prints how many differ.
+namespace Harness is
+    use IO.Std.write_line
+    use Ghul._UNICODE_CATEGORIES
+
+    entry() is
+        let checked mut = 0
+        let differ mut = 0
+        let code mut = 0
+
+        while code <= 0xFFFF do
+            let mine = _UNICODE_CATEGORIES.of(code)
+            let theirs = cast int(char.get_unicode_category(cast char(code)))
+
+            if mine != theirs then
+                if differ < 20 then
+                    write_line("differ at U+{code:X4}: {mine} not {theirs}")
+                fi
+
+                differ = differ + 1
+            fi
+
+            checked = checked + 1
+            code = code + 1
+        od
+
+        write_line("checked {checked}, {differ} differ")
+    si
+si

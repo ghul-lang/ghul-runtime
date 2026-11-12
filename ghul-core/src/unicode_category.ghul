@@ -1,0 +1,36 @@
+namespace Text is
+    /// The Unicode general category of a character, with .NET's
+    /// `UnicodeCategory` values.
+    enum UnicodeCategory is
+        UPPERCASE_LETTER = 0,
+        LOWERCASE_LETTER = 1,
+        TITLECASE_LETTER = 2,
+        MODIFIER_LETTER = 3,
+        OTHER_LETTER = 4,
+        NON_SPACING_MARK = 5,
+        SPACING_COMBINING_MARK = 6,
+        ENCLOSING_MARK = 7,
+        DECIMAL_DIGIT_NUMBER = 8,
+        LETTER_NUMBER = 9,
+        OTHER_NUMBER = 10,
+        SPACE_SEPARATOR = 11,
+        LINE_SEPARATOR = 12,
+        PARAGRAPH_SEPARATOR = 13,
+        CONTROL = 14,
+        FORMAT = 15,
+        SURROGATE = 16,
+        PRIVATE_USE = 17,
+        CONNECTOR_PUNCTUATION = 18,
+        DASH_PUNCTUATION = 19,
+        OPEN_PUNCTUATION = 20,
+        CLOSE_PUNCTUATION = 21,
+        INITIAL_QUOTE_PUNCTUATION = 22,
+        FINAL_QUOTE_PUNCTUATION = 23,
+        OTHER_PUNCTUATION = 24,
+        MATH_SYMBOL = 25,
+        CURRENCY_SYMBOL = 26,
+        MODIFIER_SYMBOL = 27,
+        OTHER_SYMBOL = 28,
+        OTHER_NOT_ASSIGNED = 29
+    si
+si

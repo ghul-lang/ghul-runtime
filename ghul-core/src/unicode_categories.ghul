@@ -1,0 +1,83 @@
+namespace Ghul is
+    // The general category of each UTF-16 code unit, as .NET's
+    // char.GetUnicodeCategory gives it, from the generated text of
+    // _unicode_category_ranges. Categories are UnicodeCategory values.
+    class _UNICODE_CATEGORIES is
+        // The first code unit of each range, in order; the ranges cover every
+        // code unit, so each runs up to the next one's first.
+        _starts: ARRAY[int] static
+
+        // The category of each range in _starts.
+        _categories: ARRAY[int] static
+
+        // The category of each Latin-1 code unit, looked up directly.
+        _latin1: ARRAY[int] static
+
+        init() static is
+            let text = _unicode_category_ranges()
+            let count = text.length / 13
+            let starts = Collections.LIST[int](count)
+            let categories = Collections.LIST[int](count)
+            let i mut = 0
+
+            while i < count do
+                let at = i * 13
+
+                starts.add(_hex(text, at, 4))
+                categories.add(_hex(text, at + 10, 2))
+
+                i = i + 1
+            od
+
+            _starts = starts.to_array()
+            _categories = categories.to_array()
+
+            let latin1 = Collections.LIST[int](256)
+            let code mut = 0
+
+            while code < 256 do
+                latin1.add(_search(code))
+                code = code + 1
+            od
+
+            _latin1 = latin1.to_array()
+        si
+
+        // The general category of the code unit `code`, from 0 to 0xFFFF.
+        of(code: int) -> int static =>
+            if code < 256 then _latin1[code] else _search(code) fi
+
+        _search(code: int) -> int static is
+            let starts = _starts
+            let low mut = 0
+            let high mut = starts.count - 1
+
+            while low < high do
+                let middle = (low + high + 1) / 2
+
+                if starts[middle] <= code then
+                    low = middle
+                else
+                    high = middle - 1
+                fi
+            od
+
+            return _categories[low]
+        si
+
+        _hex(text: string, at: int, digits: int) -> int static is
+            let value mut = 0
+            let i mut = 0
+
+            while i < digits do
+                let c = text[at + i]
+                let digit = if c <= '9' then cast int(c) - cast int('0') else cast int(c) - cast int('A') + 10 fi
+
+                value = value * 16 + digit
+                i = i + 1
+            od
+
+            return value
+        si
+    si
+si
