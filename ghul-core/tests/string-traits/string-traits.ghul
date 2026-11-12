@@ -10,7 +10,7 @@ count_letters(text: Collections.Iterable[char]) -> int is
     let count mut = 0
 
     for c in text do
-        if char.is_letter(c) then
+        if c.is_letter then
             count = count + 1
         fi
     od

@@ -1,0 +1,69 @@
+namespace Tests is
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    use System.Text.Rune
+
+    // The members the runtime gives char on .NET, checked against .NET's own
+    // answers for every UTF-16 code unit that is a whole scalar value, as
+    // System.Text.Rune gives them.
+    @TestClass()
+    class CHAR_MEMBER_TESTS is
+        init() is si
+
+        @Test()
+        Each_classification_property__agrees_with_dotnet_for_every_non_surrogate_code_unit() is
+            for code in 0..0x10000 do
+                if code >= 0xD800 /\ code <= 0xDFFF then
+                    continue
+                fi
+
+                let c = cast char(code)
+                let r = Rune(c)
+
+                are_equal(Rune.is_digit(r), c.is_digit, "is_digit {code:X4}")
+                are_equal(Rune.is_number(r), c.is_number, "is_number {code:X4}")
+                are_equal(Rune.is_letter(r), c.is_letter, "is_letter {code:X4}")
+                are_equal(Rune.is_letter_or_digit(r), c.is_letter_or_digit, "is_letter_or_digit {code:X4}")
+                are_equal(Rune.is_upper(r), c.is_upper, "is_upper {code:X4}")
+                are_equal(Rune.is_lower(r), c.is_lower, "is_lower {code:X4}")
+                are_equal(Rune.is_white_space(r), c.is_white_space, "is_white_space {code:X4}")
+                are_equal(Rune.is_punctuation(r), c.is_punctuation, "is_punctuation {code:X4}")
+                are_equal(Rune.is_symbol(r), c.is_symbol, "is_symbol {code:X4}")
+                are_equal(Rune.is_separator(r), c.is_separator, "is_separator {code:X4}")
+                are_equal(Rune.is_control(r), c.is_control, "is_control {code:X4}")
+                are_equal(Rune.to_upper_invariant(r).value, cast int(c.to_upper()), "to_upper {code:X4}")
+                are_equal(Rune.to_lower_invariant(r).value, cast int(c.to_lower()), "to_lower {code:X4}")
+            od
+        si
+
+        @Test()
+        The_ascii_properties__hold_exactly_in_their_ranges() is
+            for code in 0..0x100 do
+                let c = cast char(code)
+
+                are_equal(code <= 0x7F, c.is_ascii)
+                are_equal(code >= 0x30 /\ code <= 0x39, c.is_ascii_digit)
+                are_equal(code >= 0x61 /\ code <= 0x7A, c.is_ascii_letter_lower)
+                are_equal(code >= 0x41 /\ code <= 0x5A, c.is_ascii_letter_upper)
+                are_equal(c.is_ascii_letter_lower \/ c.is_ascii_letter_upper, c.is_ascii_letter)
+                are_equal(c.is_ascii_letter \/ c.is_ascii_digit, c.is_ascii_letter_or_digit)
+                are_equal(c.is_ascii_digit \/ (code >= 0x61 /\ code <= 0x66), c.is_ascii_hex_digit_lower)
+                are_equal(c.is_ascii_digit \/ (code >= 0x41 /\ code <= 0x46), c.is_ascii_hex_digit_upper)
+                are_equal(c.is_ascii_hex_digit_lower \/ c.is_ascii_hex_digit_upper, c.is_ascii_hex_digit)
+            od
+        si
+
+        @Test()
+        The_surrogate_properties__hold_exactly_in_their_ranges() is
+            are_equal(false, '퟿'.is_surrogate)
+            are_equal(true, '\uD800'.is_high_surrogate)
+            are_equal(false, '\uD800'.is_low_surrogate)
+            are_equal(true, '\uDBFF'.is_high_surrogate)
+            are_equal(true, '\uDC00'.is_low_surrogate)
+            are_equal(true, '\uDFFF'.is_surrogate)
+            are_equal(false, ''.is_surrogate)
+        si
+    si
+si

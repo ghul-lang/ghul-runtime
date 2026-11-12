@@ -1,0 +1,103 @@
+@@IF.dotnet()
+
+namespace Ghul.Internal is
+    // The members ghūl gives char on .NET: the classification predicates as
+    // properties and the case mappings as methods. They replace System.Char's
+    // statics of the same names, which the compiler doesn't import where these
+    // are present. Categories are .NET's, and case maps as the invariant
+    // culture maps it.
+    partial char is
+        /// Whether the character is a decimal digit in any script: category
+        /// `DECIMAL_DIGIT_NUMBER`.
+        is_digit: bool pure => _category == 8
+
+        /// Whether the character is a number of any kind: a decimal digit, a
+        /// letter number or another number.
+        is_number: bool pure => let category = _category in category >= 8 /\ category <= 10
+
+        /// Whether the character is a letter: upper case, lower case, title
+        /// case, modifier or other.
+        is_letter: bool pure => _category <= 4
+
+        /// Whether the character is a letter or a decimal digit.
+        is_letter_or_digit: bool pure => let category = _category in category <= 4 \/ category == 8
+
+        /// Whether the character is an upper-case letter.
+        is_upper: bool pure => _category == 0
+
+        /// Whether the character is a lower-case letter.
+        is_lower: bool pure => _category == 1
+
+        /// Whether the character is white space, as .NET's `char.IsWhiteSpace`
+        /// counts it: a space, line or paragraph separator, a tab, line feed,
+        /// vertical tab, form feed, carriage return or next line.
+        is_white_space: bool pure =>
+            let code = cast int(self) in
+            (code >= 0x09 /\ code <= 0x0D) \/ code == 0x20 \/ code == 0x85 \/ code == 0xA0 \/
+            (code > 0xFF /\ (let category = _category in category >= 11 /\ category <= 13))
+
+        /// Whether the character is punctuation: connector, dash, open, close,
+        /// initial quote, final quote or other.
+        is_punctuation: bool pure => let category = _category in category >= 18 /\ category <= 24
+
+        /// Whether the character is a symbol: mathematical, currency, modifier
+        /// or other.
+        is_symbol: bool pure => let category = _category in category >= 25 /\ category <= 28
+
+        /// Whether the character is a separator: a space, line or paragraph
+        /// separator.
+        is_separator: bool pure => let category = _category in category >= 11 /\ category <= 13
+
+        /// Whether the character is a control character.
+        is_control: bool pure => _category == 14
+
+        /// The character in upper case, as the invariant culture maps it; a
+        /// character with no upper-case form is itself.
+        to_upper() -> char pure => char.to_upper_invariant(self)
+
+        /// The character in lower case, as the invariant culture maps it; a
+        /// character with no lower-case form is itself.
+        to_lower() -> char pure => char.to_lower_invariant(self)
+
+        /// Whether the character is in the ASCII range, U+0000 to U+007F.
+        is_ascii: bool pure => cast int(self) <= 0x7F
+
+        /// Whether the character is an ASCII digit, `0` to `9`.
+        is_ascii_digit: bool pure => self >= '0' /\ self <= '9'
+
+        /// Whether the character is an ASCII hexadecimal digit: `0` to `9`,
+        /// `a` to `f` or `A` to `F`.
+        is_ascii_hex_digit: bool pure => is_ascii_digit \/ is_ascii_hex_digit_lower \/ is_ascii_hex_digit_upper
+
+        /// Whether the character is a lower-case ASCII hexadecimal digit: `0`
+        /// to `9` or `a` to `f`.
+        is_ascii_hex_digit_lower: bool pure => is_ascii_digit \/ (self >= 'a' /\ self <= 'f')
+
+        /// Whether the character is an upper-case ASCII hexadecimal digit: `0`
+        /// to `9` or `A` to `F`.
+        is_ascii_hex_digit_upper: bool pure => is_ascii_digit \/ (self >= 'A' /\ self <= 'F')
+
+        /// Whether the character is a lower-case ASCII letter, `a` to `z`.
+        is_ascii_letter_lower: bool pure => self >= 'a' /\ self <= 'z'
+
+        /// Whether the character is an upper-case ASCII letter, `A` to `Z`.
+        is_ascii_letter_upper: bool pure => self >= 'A' /\ self <= 'Z'
+
+        /// Whether the character is an ASCII letter.
+        is_ascii_letter: bool pure => is_ascii_letter_lower \/ is_ascii_letter_upper
+
+        /// Whether the character is an ASCII letter or digit.
+        is_ascii_letter_or_digit: bool pure => is_ascii_letter \/ is_ascii_digit
+
+        /// Whether the character is a high surrogate, U+D800 to U+DBFF.
+        is_high_surrogate: bool pure => cast int(self) >= 0xD800 /\ cast int(self) <= 0xDBFF
+
+        /// Whether the character is a low surrogate, U+DC00 to U+DFFF.
+        is_low_surrogate: bool pure => cast int(self) >= 0xDC00 /\ cast int(self) <= 0xDFFF
+
+        /// Whether the character is a surrogate, U+D800 to U+DFFF.
+        is_surrogate: bool pure => cast int(self) >= 0xD800 /\ cast int(self) <= 0xDFFF
+
+        _category: int pure => cast int(char.get_unicode_category(self))
+    si
+si

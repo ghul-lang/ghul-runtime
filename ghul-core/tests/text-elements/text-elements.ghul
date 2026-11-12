@@ -17,7 +17,7 @@ codes(text: string) -> string is
 
         let c = text[at]
 
-        if char.is_high_surrogate(c) /\ at + 1 < text.length /\ char.is_low_surrogate(text[at + 1]) then
+        if c.is_high_surrogate /\ at + 1 < text.length /\ text[at + 1].is_low_surrogate then
             result.append("{char.convert_to_utf32(c, text[at + 1]):X}")
             at = at + 2
         else

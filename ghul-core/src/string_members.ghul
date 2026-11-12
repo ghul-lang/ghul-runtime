@@ -190,28 +190,28 @@ namespace Ghul is
         /// The string without its trailing white space.
         trim_end() -> string pure => substring(0, _last_non_white_space() + 1)
 
-        /// The string with each letter made upper case, as `char.to_upper`
+        /// The string with each letter made upper case, as `(x => x.to_upper())`
         /// maps it.
         to_upper() -> string pure is
             let result = STRING_BUILDER()
             let i mut = 0
 
             while i < length do
-                result.append(char.to_upper(self[i]))
+                result.append(self[i].to_upper())
                 i = i + 1
             od
 
             return result.to_string()
         si
 
-        /// The string with each letter made lower case, as `char.to_lower`
+        /// The string with each letter made lower case, as `(x => x.to_lower())`
         /// maps it.
         to_lower() -> string pure is
             let result = STRING_BUILDER()
             let i mut = 0
 
             while i < length do
-                result.append(char.to_lower(self[i]))
+                result.append(self[i].to_lower())
                 i = i + 1
             od
 

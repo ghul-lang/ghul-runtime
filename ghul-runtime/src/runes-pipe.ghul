@@ -32,10 +32,10 @@ namespace Ghul.Pipes is
 
             let c = _text[_at]
 
-            if char.is_high_surrogate(c) /\ _at + 1 < _text.length /\ char.is_low_surrogate(_text[_at + 1]) then
+            if c.is_high_surrogate /\ _at + 1 < _text.length /\ _text[_at + 1].is_low_surrogate then
                 current = Rune(c, _text[_at + 1])
                 _at = _at + 2
-            elif char.is_surrogate(c) then
+            elif c.is_surrogate then
                 current = Rune.replacement_char
                 _at = _at + 1
             else

@@ -299,7 +299,7 @@ namespace Ghul is
         si
     si
 
-    _is_bool_padding(c: char) -> bool => char.is_white_space(c) \/ c == '\u0000'
+    _is_bool_padding(c: char) -> bool => c.is_white_space \/ c == '\u0000'
 
     // The outcome of a parse: 0 parsed, 1 not a number, 2 out of range.
     _throw_unless_parsed(status: int) is
@@ -332,7 +332,7 @@ namespace Ghul is
         while i < end do
             let c = text[i]
 
-            if !char.is_digit(c) then
+            if !c.is_digit then
                 return (1, 0L)
             fi
 
@@ -374,7 +374,7 @@ namespace Ghul is
         while i < end do
             let c = text[i]
 
-            if !char.is_digit(c) then
+            if !c.is_digit then
                 return (1, 0UL)
             fi
 
@@ -429,7 +429,7 @@ namespace Ghul is
 
         // Commas group the digits before the decimal point, anywhere after
         // the first of them, and are otherwise ignored.
-        while i < end /\ (char.is_digit(text[i]) \/ (text[i] == ',' /\ digits > 0)) do
+        while i < end /\ (text[i].is_digit \/ (text[i] == ',' /\ digits > 0)) do
             if text[i] != ',' then
                 all_digits.append(text[i])
                 _accumulate_digit(text[i], mantissa ref, significant ref, scale ref, false)
@@ -442,7 +442,7 @@ namespace Ghul is
         if i < end /\ text[i] == '.' then
             i = i + 1
 
-            while i < end /\ char.is_digit(text[i]) do
+            while i < end /\ text[i].is_digit do
                 all_digits.append(text[i])
                 fraction_digits = fraction_digits + 1
                 _accumulate_digit(text[i], mantissa ref, significant ref, scale ref, true)
@@ -473,7 +473,7 @@ namespace Ghul is
             let exponent mut = 0
 
             while i < end do
-                if !char.is_digit(text[i]) then
+                if !text[i].is_digit then
                     return (1, 0.0)
                 fi
 
@@ -688,7 +688,7 @@ namespace Ghul is
     _start_of_number(text: string) -> int is
         let i mut = 0
 
-        while i < text.length /\ char.is_white_space(text[i]) do
+        while i < text.length /\ text[i].is_white_space do
             i = i + 1
         od
 
@@ -698,7 +698,7 @@ namespace Ghul is
     _end_of_number(text: string) -> int is
         let end mut = text.length
 
-        while end > 0 /\ char.is_white_space(text[end - 1]) do
+        while end > 0 /\ text[end - 1].is_white_space do
             end = end - 1
         od
 

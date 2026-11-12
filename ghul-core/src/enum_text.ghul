@@ -164,7 +164,7 @@ namespace Ghul.Internal is
             fi
 
             for i in start..text.length do
-                if !char.is_digit(text[i]) then
+                if !text[i].is_digit then
                     return false
                 fi
             od

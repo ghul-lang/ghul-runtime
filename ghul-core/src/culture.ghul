@@ -64,7 +64,7 @@ namespace System.Globalization is
             let at mut = 0
 
             while at < text.length do
-                if !char.is_letter(text[at]) then
+                if !text[at].is_letter then
                     result = "{result}{text[at]}"
                     at = at + 1
                     continue
@@ -72,7 +72,7 @@ namespace System.Globalization is
 
                 let start = at
 
-                while at < text.length /\ char.is_letter(text[at]) do
+                while at < text.length /\ text[at].is_letter do
                     at = at + 1
                 od
 

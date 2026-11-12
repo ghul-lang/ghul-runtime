@@ -10,5 +10,9 @@
     <GhulSources Include="**/*.ghul" />
     <GhulSources Include="../../src/text_elements.ghul" />
     <GhulSources Include="../../src/text_element_tables.ghul" />
+    <!-- The members the runtime gives char on .NET, which the core
+         sources use. -->
+    <GhulSources Include="../../../ghul-runtime/src/char-members.ghul" />
+    <GhulOptions Include="--allow-member-injection" />
   </ItemGroup>
 </Project>

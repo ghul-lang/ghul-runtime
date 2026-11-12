@@ -26,7 +26,7 @@ namespace System.Text is
         ///
         /// - ch: the character
         init(ch: char) is
-            if char.is_surrogate(ch) then
+            if ch.is_surrogate then
                 throw Ghul.ArgumentOutOfRangeException("ch", "Specified argument was out of the range of valid values.")
             fi
 
@@ -67,11 +67,11 @@ namespace System.Text is
 
             let c = input[index]
 
-            if !char.is_surrogate(c) then
+            if !c.is_surrogate then
                 return Rune(c)
             fi
 
-            if char.is_high_surrogate(c) /\ index + 1 < input.length /\ char.is_low_surrogate(input[index + 1]) then
+            if c.is_high_surrogate /\ index + 1 < input.length /\ input[index + 1].is_low_surrogate then
                 return Rune(c, input[index + 1])
             fi
 
