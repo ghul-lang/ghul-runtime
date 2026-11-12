@@ -1,0 +1,498 @@
+namespace Ghul.Internal is
+    use Collections.LIST
+
+    // One instruction of a compiled pattern.
+    class RX_OP is
+        op: int public
+        a: int public
+        b: int public
+        ignore_case: bool public
+        set: RX_SET? public
+
+        init(op: int, a: int, b: int) is
+            self.op = op
+            self.a = a
+            self.b = b
+        si
+
+        CHAR: int static => 0
+        ANY: int static => 1
+        ANY_BUT_LINE_FEED: int static => 2
+        SET: int static => 3
+        TEXT_START: int static => 4
+        LINE_START: int static => 5
+        TEXT_END: int static => 6
+        TEXT_END_OR_FINAL_LINE_FEED: int static => 7
+        LINE_END: int static => 8
+        BOUNDARY: int static => 9
+        NOT_BOUNDARY: int static => 10
+        SPLIT: int static => 11
+        JUMP: int static => 12
+        SAVE: int static => 13
+        MARK: int static => 14
+        PROGRESSED: int static => 15
+        MATCH: int static => 16
+        CLOSE: int static => 17
+    si
+
+    // A compiled pattern: its instructions, and how many save slots a match
+    // needs. Slots 2n and 2n + 1 hold where group n starts and ends; the
+    // slots after those hold where each open group began, and where each
+    // loop that can match empty began its current iteration.
+    class RX_PROGRAM is
+        ops: LIST[RX_OP] public
+        group_count: int public
+        slot_count: int public
+
+        // Each group's name, by number; a group with no name is named by its
+        // number.
+        names: LIST[string] public
+
+        init(pattern: string, options: int) is
+            let flags = RX_FLAGS(
+                options & 1 != 0,
+                options & 2 != 0,
+                options & 16 != 0,
+                options & 4 != 0,
+                options & 32 != 0)
+
+            if options & 64 != 0 then
+                throw ArgumentException("RegexOptions.RIGHT_TO_LEFT is not supported on this target.")
+            fi
+
+            if options & 256 != 0 then
+                throw ArgumentException("RegexOptions.ECMA_SCRIPT is not supported on this target.")
+            fi
+
+            if options & 1024 != 0 then
+                throw ArgumentException("RegexOptions.NON_BACKTRACKING is not supported on this target.")
+            fi
+
+            let parser = RX_PARSER(pattern)
+            let tree = parser.parse(flags)
+
+            group_count = parser.group_count
+            slot_count = group_count * 2
+            ops = LIST[RX_OP]()
+
+            names = LIST[string]()
+            let n mut = 0
+
+            while n < group_count do
+                names.add("{n}")
+                n = n + 1
+            od
+
+            for g in parser.groups do
+                if let name = g.name then
+                    names[g.number] = name
+                fi
+            od
+
+            _emit(RX_OP.SAVE, 0, 0)
+            _compile(tree)
+            _emit(RX_OP.SAVE, 1, 0)
+            _emit(RX_OP.MATCH, 0, 0)
+        si
+
+        // The number of the group named `name`, or -1.
+        number_of(name: string) -> int is
+            let i mut = 0
+
+            while i < names.count do
+                if names[i] =~ name then
+                    return i
+                fi
+
+                i = i + 1
+            od
+
+            return -1
+        si
+
+        _emit(op: int, a: int, b: int) -> RX_OP is
+            let result = RX_OP(op, a, b)
+            ops.add(result)
+            return result
+        si
+
+        _compile(node: RX_NODE) is
+            let kind = node.kind
+
+            if kind == RX_NODE.CHAR then
+                let op = _emit(RX_OP.CHAR, node.c, 0)
+                op.ignore_case = node.ignore_case
+            elif kind == RX_NODE.ANY then
+                _emit(if node.flag then RX_OP.ANY else RX_OP.ANY_BUT_LINE_FEED fi, 0, 0)
+            elif kind == RX_NODE.SET then
+                let op = _emit(RX_OP.SET, 0, 0)
+                op.set = node.set
+                op.ignore_case = node.ignore_case
+            elif kind == RX_NODE.LINE_START then
+                _emit(if node.flag then RX_OP.LINE_START else RX_OP.TEXT_START fi, 0, 0)
+            elif kind == RX_NODE.LINE_END then
+                _emit(if node.flag then RX_OP.LINE_END else RX_OP.TEXT_END_OR_FINAL_LINE_FEED fi, 0, 0)
+            elif kind == RX_NODE.TEXT_START then
+                _emit(RX_OP.TEXT_START, 0, 0)
+            elif kind == RX_NODE.TEXT_END_OR_FINAL_LINE_FEED then
+                _emit(RX_OP.TEXT_END_OR_FINAL_LINE_FEED, 0, 0)
+            elif kind == RX_NODE.TEXT_END then
+                _emit(RX_OP.TEXT_END, 0, 0)
+            elif kind == RX_NODE.BOUNDARY then
+                _emit(RX_OP.BOUNDARY, 0, 0)
+            elif kind == RX_NODE.NOT_BOUNDARY then
+                _emit(RX_OP.NOT_BOUNDARY, 0, 0)
+            elif kind == RX_NODE.CONCAT then
+                for child in node.children do
+                    _compile(child)
+                od
+            elif kind == RX_NODE.ALTERNATE then
+                _alternate(node.children, 0)
+            elif kind == RX_NODE.GROUP then
+                if let group = node.group then
+                    // A group's start is held privately until it closes, so a
+                    // group nested in another of the same name can't move the
+                    // outer one's start.
+                    let start = slot_count
+                    slot_count = slot_count + 1
+
+                    _emit(RX_OP.SAVE, start, 0)
+                    _compile(node.children[0])
+                    _emit(RX_OP.CLOSE, group.number, start)
+                else
+                    _compile(node.children[0])
+                fi
+            elif kind == RX_NODE.REPEAT then
+                _repeat(node)
+            fi
+        si
+
+        // Alternatives from `from` on: try the first, and on failure the rest.
+        _alternate(branches: LIST[RX_NODE], from: int) is
+            if from == branches.count - 1 then
+                _compile(branches[from])
+                return
+            fi
+
+            let split = _emit(RX_OP.SPLIT, 0, 0)
+            split.a = ops.count
+            _compile(branches[from])
+            let jump = _emit(RX_OP.JUMP, 0, 0)
+            split.b = ops.count
+            _alternate(branches, from + 1)
+            jump.a = ops.count
+        si
+
+        // `body` from `node.min` to `node.max` times. From the iteration
+        // that reaches the minimum on, one that consumes nothing is kept
+        // and ends the repetition, as .NET's engine does.
+        _repeat(node: RX_NODE) is
+            let body = node.children[0]
+            let guard = body.can_be_empty /\ node.min > 0 /\ (node.max < 0 \/ node.max > node.min)
+            let slot = slot_count
+            let exits = LIST[RX_OP]()
+
+            if guard then
+                slot_count = slot_count + 1
+            fi
+
+            let i mut = 0
+
+            while i < node.min do
+                let last = i == node.min - 1
+
+                if guard /\ last then
+                    _emit(RX_OP.MARK, slot, 0)
+                fi
+
+                _compile(body)
+
+                if guard /\ last then
+                    exits.add(_emit(RX_OP.PROGRESSED, slot, 0))
+                fi
+
+                i = i + 1
+            od
+
+            if node.max < 0 then
+                _loop(body, node.lazy)
+            else
+                _optional(body, node.max - node.min, node.lazy)
+            fi
+
+            for exit in exits do
+                exit.b = ops.count
+            od
+        si
+
+        // Up to `count` more of `body`, each skipping the rest.
+        _optional(body: RX_NODE, count: int, lazy: bool) is
+            let guard = body.can_be_empty
+            let slot = slot_count
+            let skips = LIST[RX_OP]()
+            let exits = LIST[RX_OP]()
+
+            if guard then
+                slot_count = slot_count + 1
+            fi
+
+            let i mut = 0
+
+            while i < count do
+                let split = _emit(RX_OP.SPLIT, 0, 0)
+                skips.add(split)
+
+                if lazy then
+                    split.b = ops.count
+                else
+                    split.a = ops.count
+                fi
+
+                if guard then
+                    _emit(RX_OP.MARK, slot, 0)
+                fi
+
+                _compile(body)
+
+                if guard then
+                    exits.add(_emit(RX_OP.PROGRESSED, slot, 0))
+                fi
+
+                i = i + 1
+            od
+
+            for split in skips do
+                if lazy then
+                    split.a = ops.count
+                else
+                    split.b = ops.count
+                fi
+            od
+
+            for exit in exits do
+                exit.b = ops.count
+            od
+        si
+
+        // Any number of `body`, greedy or lazy. An iteration that consumes
+        // nothing is kept and ends the loop, as .NET's engine does.
+        _loop(body: RX_NODE, lazy: bool) is
+            let guard = body.can_be_empty
+            let slot = slot_count
+
+            if guard then
+                slot_count = slot_count + 1
+            fi
+
+            let top = ops.count
+            let split = _emit(RX_OP.SPLIT, 0, 0)
+            let enter = ops.count
+
+            if guard then
+                _emit(RX_OP.MARK, slot, 0)
+            fi
+
+            _compile(body)
+
+            let progressed = if guard then _emit(RX_OP.PROGRESSED, slot, 0) else null fi
+
+            _emit(RX_OP.JUMP, top, 0)
+
+            if let p = progressed then
+                p.b = ops.count
+            fi
+
+            if lazy then
+                split.a = ops.count
+                split.b = enter
+            else
+                split.a = enter
+                split.b = ops.count
+            fi
+        si
+    si
+
+    // Runs a compiled pattern against a string by backtracking, trying
+    // alternatives in order as .NET's engine does, with an explicit stack so
+    // that a long input can't overflow the native one.
+    class RX_MATCHER is
+        _program: RX_PROGRAM
+        _text: string
+        _slots: LIST[int]
+        _undo: LIST[int]
+        _choices: LIST[int]
+
+        init(program: RX_PROGRAM, text: string) is
+            _program = program
+            _text = text
+            _slots = LIST[int]()
+
+            let i mut = 0
+
+            while i < program.slot_count do
+                _slots.add(-1)
+                i = i + 1
+            od
+            _undo = LIST[int]()
+            _choices = LIST[int]()
+        si
+
+        // The group spans of the first match starting at or after `start`,
+        // two slots per group, -1 for a group that took no part; or null.
+        find(start: int) -> LIST[int]? is
+            let at mut = start
+
+            while at <= _text.length do
+                if _run(at) then
+                    let result = LIST[int]()
+                    let i mut = 0
+
+                    while i < _program.group_count * 2 do
+                        result.add(_slots[i])
+                        i = i + 1
+                    od
+
+                    return result
+                fi
+
+                at = at + 1
+            od
+
+            return null
+        si
+
+        _run(start: int) -> bool is
+            let i mut = 0
+
+            while i < _slots.count do
+                _slots[i] = -1
+                i = i + 1
+            od
+
+            _undo.clear()
+            _choices.clear()
+
+            let ops = _program.ops
+            let text = _text
+            let length = text.length
+            let pc mut = 0
+            let at mut = start
+
+            while true do
+                let op = ops[pc]
+                let code = op.op
+                let ok mut = true
+
+                if code == RX_OP.CHAR then
+                    if at < length /\ _same(cast int(text[at]), op.a, op.ignore_case) then
+                        at = at + 1
+                        pc = pc + 1
+                    else
+                        ok = false
+                    fi
+                elif code == RX_OP.ANY then
+                    if at < length then
+                        at = at + 1
+                        pc = pc + 1
+                    else
+                        ok = false
+                    fi
+                elif code == RX_OP.ANY_BUT_LINE_FEED then
+                    if at < length /\ text[at] != '\n' then
+                        at = at + 1
+                        pc = pc + 1
+                    else
+                        ok = false
+                    fi
+                elif code == RX_OP.SET then
+                    if at < length /\ op.set!.contains(cast int(text[at]), op.ignore_case) then
+                        at = at + 1
+                        pc = pc + 1
+                    else
+                        ok = false
+                    fi
+                elif code == RX_OP.TEXT_START then
+                    ok = at == 0
+                    pc = pc + 1
+                elif code == RX_OP.LINE_START then
+                    ok = at == 0 \/ text[at - 1] == '\n'
+                    pc = pc + 1
+                elif code == RX_OP.TEXT_END then
+                    ok = at == length
+                    pc = pc + 1
+                elif code == RX_OP.TEXT_END_OR_FINAL_LINE_FEED then
+                    ok = at == length \/ (at == length - 1 /\ text[at] == '\n')
+                    pc = pc + 1
+                elif code == RX_OP.LINE_END then
+                    ok = at == length \/ text[at] == '\n'
+                    pc = pc + 1
+                elif code == RX_OP.BOUNDARY then
+                    ok = _is_boundary(at)
+                    pc = pc + 1
+                elif code == RX_OP.NOT_BOUNDARY then
+                    ok = !_is_boundary(at)
+                    pc = pc + 1
+                elif code == RX_OP.SPLIT then
+                    _choices.add(op.b)
+                    _choices.add(at)
+                    _choices.add(_undo.count)
+                    pc = op.a
+                elif code == RX_OP.JUMP then
+                    pc = op.a
+                elif code == RX_OP.SAVE \/ code == RX_OP.MARK then
+                    _undo.add(op.a)
+                    _undo.add(_slots[op.a])
+                    _slots[op.a] = at
+                    pc = pc + 1
+                elif code == RX_OP.PROGRESSED then
+                    pc = if _slots[op.a] == at then op.b else pc + 1 fi
+                elif code == RX_OP.CLOSE then
+                    let first = op.a * 2
+
+                    _undo.add(first)
+                    _undo.add(_slots[first])
+                    _undo.add(first + 1)
+                    _undo.add(_slots[first + 1])
+                    _slots[first] = _slots[op.b]
+                    _slots[first + 1] = at
+                    pc = pc + 1
+                elif code == RX_OP.MATCH then
+                    return true
+                fi
+
+                if !ok then
+                    if _choices.count == 0 then
+                        return false
+                    fi
+
+                    let top = _choices.count
+                    let undo_to = _choices[top - 1]
+                    at = _choices[top - 2]
+                    pc = _choices[top - 3]
+                    _choices.remove_range(top - 3, 3)
+
+                    while _undo.count > undo_to do
+                        let n = _undo.count
+                        _slots[_undo[n - 2]] = _undo[n - 1]
+                        _undo.remove_range(n - 2, 2)
+                    od
+                fi
+            od
+
+            return false
+        si
+
+        _same(c: int, wanted: int, ignore_case: bool) -> bool =>
+            c == wanted \/
+            ignore_case /\ (
+                cast int(char.to_lower(cast char(c))) == cast int(char.to_lower(cast char(wanted))) \/
+                cast int(char.to_upper(cast char(c))) == cast int(char.to_upper(cast char(wanted)))
+            )
+
+        _is_boundary(at: int) -> bool is
+            let before = at > 0 /\ RX_CLASSES.is_boundary_word(cast int(_text[at - 1]))
+            let after = at < _text.length /\ RX_CLASSES.is_boundary_word(cast int(_text[at]))
+            return before != after
+        si
+    si
+si

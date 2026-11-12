@@ -1,0 +1,1123 @@
+namespace Ghul.Internal is
+    use Collections.LIST
+
+    // A character class: ranges of code units, Unicode general categories
+    // taken whole, and categories taken by their complement, any of which
+    // admits a code unit; the whole is negated where the class is.
+    class RX_SET is
+        _ranges: LIST[int]
+        _categories: long
+        _complements: LIST[long]
+
+        negated: bool public
+
+        init() is
+            _ranges = LIST[int]()
+            _categories = 0L
+            _complements = LIST[long]()
+        si
+
+        add_range(first: int, last: int) is
+            _ranges.add(first)
+            _ranges.add(last)
+        si
+
+        add_char(c: int) is
+            add_range(c, c)
+        si
+
+        add_categories(mask: long) is
+            _categories = _categories | mask
+        si
+
+        add_complement(mask: long) is
+            _complements.add(mask)
+        si
+
+        // Admits everything `other` admits; `other` is not negated.
+        add_set(other: RX_SET) is
+            let i mut = 0
+
+            while i < other._ranges.count do
+                _ranges.add(other._ranges[i])
+                i = i + 1
+            od
+
+            _categories = _categories | other._categories
+
+            for mask in other._complements do
+                _complements.add(mask)
+            od
+        si
+
+        // Admits everything `other` doesn't admit; `other` is a single
+        // category class such as \w, with no ranges of its own.
+        add_negation(other: RX_SET) is
+            assert other._ranges.count == 0 /\ other._complements.count == 0
+
+            _complements.add(other._categories)
+        si
+
+        contains(c: int) -> bool => _admits(c) != negated
+
+        contains(c: int, ignore_case: bool) -> bool =>
+            if !ignore_case then
+                contains(c)
+            else
+                let lower = cast int(char.to_lower(cast char(c))), upper = cast int(char.to_upper(cast char(c))) in
+                    (_admits(c) \/ _admits(lower) \/ _admits(upper)) != negated
+            fi
+
+        _admits(c: int) -> bool is
+            let i mut = 0
+
+            while i < _ranges.count do
+                if c >= _ranges[i] /\ c <= _ranges[i + 1] then
+                    return true
+                fi
+
+                i = i + 2
+            od
+
+            if _categories == 0L /\ _complements.count == 0 then
+                return false
+            fi
+
+            let bit = 1L << _UNICODE_CATEGORIES.of(c)
+
+            if _categories & bit != 0L then
+                return true
+            fi
+
+            for mask in _complements do
+                if mask & bit == 0L then
+                    return true
+                fi
+            od
+
+            return false
+        si
+    si
+
+    // The category masks of the classes the escapes name, as .NET defines
+    // them.
+    class RX_CLASSES is
+        // \w: letters, non-spacing marks, decimal digits and connector
+        // punctuation.
+        WORD: long static => _mask([0, 1, 2, 3, 4, 5, 8, 18])
+
+        // \d: decimal digits.
+        DIGIT: long static => _mask([8])
+
+        // Every category whose name starts with `letter`, or the one
+        // category `name` names, or 0 where it names none.
+        category(name: string) -> long static =>
+            case name
+            when "L" then _mask([0, 1, 2, 3, 4])
+            when "Lu" then _mask([0])
+            when "Ll" then _mask([1])
+            when "Lt" then _mask([2])
+            when "Lm" then _mask([3])
+            when "Lo" then _mask([4])
+            when "M" then _mask([5, 6, 7])
+            when "Mn" then _mask([5])
+            when "Mc" then _mask([6])
+            when "Me" then _mask([7])
+            when "N" then _mask([8, 9, 10])
+            when "Nd" then _mask([8])
+            when "Nl" then _mask([9])
+            when "No" then _mask([10])
+            when "Z" then _mask([11, 12, 13])
+            when "Zs" then _mask([11])
+            when "Zl" then _mask([12])
+            when "Zp" then _mask([13])
+            when "C" then _mask([14, 15, 16, 17, 29])
+            when "Cc" then _mask([14])
+            when "Cf" then _mask([15])
+            when "Cs" then _mask([16])
+            when "Co" then _mask([17])
+            when "Cn" then _mask([29])
+            when "P" then _mask([18, 19, 20, 21, 22, 23, 24])
+            when "Pc" then _mask([18])
+            when "Pd" then _mask([19])
+            when "Ps" then _mask([20])
+            when "Pe" then _mask([21])
+            when "Pi" then _mask([22])
+            when "Pf" then _mask([23])
+            when "Po" then _mask([24])
+            when "S" then _mask([25, 26, 27, 28])
+            when "Sm" then _mask([25])
+            when "Sc" then _mask([26])
+            when "Sk" then _mask([27])
+            when "So" then _mask([28])
+            else 0L
+            esac
+
+        word() -> RX_SET static is
+            let result = RX_SET()
+            result.add_categories(WORD)
+            return result
+        si
+
+        digit() -> RX_SET static is
+            let result = RX_SET()
+            result.add_categories(DIGIT)
+            return result
+        si
+
+        // \s: form feed, line feed, carriage return, tab, vertical tab,
+        // next line, and the separators.
+        space() -> RX_SET static is
+            let result = RX_SET()
+            result.add_range(0x09, 0x0D)
+            result.add_char(0x85)
+            result.add_categories(_mask([11, 12, 13]))
+            return result
+        si
+
+        // Whether `c` counts as a word character for \b and \B: \w, and the
+        // zero-width joiner and non-joiner.
+        is_boundary_word(c: int) -> bool static =>
+            c == 0x200D \/ c == 0x200C \/ (1L << _UNICODE_CATEGORIES.of(c)) & WORD != 0L
+
+        _mask(categories: int[]) -> long static is
+            let result mut = 0L
+
+            for c in categories do
+                result = result | (1L << c)
+            od
+
+            return result
+        si
+    si
+
+    // A capturing group: its number, assigned once the whole pattern is
+    // read, and its name, which is its number written out where it has no
+    // other.
+    class RX_GROUP is
+        name: string? public
+        number: int public
+
+        init(name: string?) is
+            self.name = name
+            number = -1
+        si
+    si
+
+    // A node of a parsed pattern.
+    class RX_NODE is
+        kind: int public
+        c: int public
+        ignore_case: bool public
+        flag: bool public
+        set: RX_SET? public
+        group: RX_GROUP? public
+        children: LIST[RX_NODE] public
+        min: int public
+        max: int public
+        lazy: bool public
+
+        init(kind: int) is
+            self.kind = kind
+            children = LIST[RX_NODE]()
+            max = -1
+        si
+
+        CHAR: int static => 0
+        ANY: int static => 1
+        SET: int static => 2
+        LINE_START: int static => 3
+        LINE_END: int static => 4
+        TEXT_START: int static => 5
+        TEXT_END_OR_FINAL_LINE_FEED: int static => 6
+        TEXT_END: int static => 7
+        BOUNDARY: int static => 8
+        NOT_BOUNDARY: int static => 9
+        CONCAT: int static => 10
+        ALTERNATE: int static => 11
+        GROUP: int static => 12
+        REPEAT: int static => 13
+        EMPTY: int static => 14
+
+        // Whether the node can match without consuming anything.
+        can_be_empty: bool is
+            if kind == CHAR \/ kind == ANY \/ kind == SET then
+                return false
+            elif kind == CONCAT then
+                for child in children do
+                    if !child.can_be_empty then
+                        return false
+                    fi
+                od
+
+                return true
+            elif kind == ALTERNATE then
+                for child in children do
+                    if child.can_be_empty then
+                        return true
+                    fi
+                od
+
+                return false
+            elif kind == GROUP then
+                return children[0].can_be_empty
+            elif kind == REPEAT then
+                return min == 0 \/ children[0].can_be_empty
+            fi
+
+            return true
+        si
+    si
+
+    // The options that apply at a point in a pattern, as inline options
+    // change them.
+    class RX_FLAGS is
+        ignore_case: bool public
+        multiline: bool public
+        singleline: bool public
+        explicit_capture: bool public
+        ignore_whitespace: bool public
+
+        init(ignore_case: bool, multiline: bool, singleline: bool, explicit_capture: bool, ignore_whitespace: bool) is
+            self.ignore_case = ignore_case
+            self.multiline = multiline
+            self.singleline = singleline
+            self.explicit_capture = explicit_capture
+            self.ignore_whitespace = ignore_whitespace
+        si
+
+        copy() -> RX_FLAGS => RX_FLAGS(ignore_case, multiline, singleline, explicit_capture, ignore_whitespace)
+    si
+
+    // Reads a pattern in the subset of .NET's syntax the engine runs, and
+    // throws ArgumentException naming anything outside it.
+    class RX_PARSER is
+        _pattern: string
+        _at: int
+        _groups: LIST[RX_GROUP]
+        _scan: int
+
+        // Escapes such as \12, a backreference if that group exists and
+        // octal otherwise, with where each starts.
+        _maybe_references: LIST[(string, int)]
+
+        groups: LIST[RX_GROUP] => _groups
+
+        init(pattern: string) is
+            _pattern = pattern
+            _at = 0
+            _groups = LIST[RX_GROUP]()
+            _maybe_references = LIST[(string, int)]()
+        si
+
+        // The pattern's tree under `flags`, with every group numbered as .NET
+        // numbers it: unnamed groups first, left to right, then named ones.
+        parse(flags: RX_FLAGS) -> RX_NODE is
+            let result = _alternation(flags)
+
+            if _at < _pattern.length then
+                _fail("too many )'s", _at)
+            fi
+
+            _number_groups()
+
+            for (digits, offset) in _maybe_references do
+                let number = int.parse(digits)
+
+                for g in _groups do
+                    if g.number == number then
+                        _unsupported("a backreference \\{digits}", offset)
+                    fi
+                od
+            od
+
+            return result
+        si
+
+        group_count: int is
+            let highest mut = 0
+
+            for g in _groups do
+                if g.number > highest then
+                    highest = g.number
+                fi
+            od
+
+            return highest + 1
+        si
+
+        _number_groups() is
+            let next mut = 1
+
+            for g in _groups do
+                if !g.name? then
+                    g.number = next
+                    next = next + 1
+                fi
+            od
+
+            let named = Collections.MAP[string, int]()
+
+            for g in _groups do
+                if let name = g.name then
+                    let explicit = _number_named(name)
+
+                    if explicit >= 0 then
+                        g.number = explicit
+
+                        if explicit >= next then
+                            next = explicit + 1
+                        fi
+                    else
+                        let found mut = 0
+
+                        if named.try_get_value(name, found ref) then
+                            g.number = found
+                        else
+                            g.number = next
+                            named[name] = next
+                            next = next + 1
+                        fi
+                    fi
+                fi
+            od
+        si
+
+        _number_named(name: string) -> int is
+            let value mut = 0
+
+            for c in name do
+                if c < '0' \/ c > '9' then
+                    return -1
+                fi
+
+                value = value * 10 + (cast int(c) - cast int('0'))
+            od
+
+            return value
+        si
+
+        // The alternatives of a group, which share one scope for inline
+        // options: an option set in one branch applies to the rest of the
+        // group, later branches included.
+        _alternation(outer: RX_FLAGS) -> RX_NODE is
+            let flags = outer.copy()
+            let branches = LIST[RX_NODE]()
+
+            branches.add(_sequence(flags))
+
+            while _at < _pattern.length /\ _pattern[_at] == '|' do
+                _at = _at + 1
+                branches.add(_sequence(flags))
+            od
+
+            if branches.count == 1 then
+                return branches[0]
+            fi
+
+            let result = RX_NODE(RX_NODE.ALTERNATE)
+
+            for b in branches do
+                result.children.add(b)
+            od
+
+            return result
+        si
+
+        // A run of quantified atoms, up to the next `|` or `)`. An inline
+        // option group with no colon changes `flags` for the rest of the
+        // enclosing group.
+        _sequence(flags: RX_FLAGS) -> RX_NODE is
+            let result = RX_NODE(RX_NODE.CONCAT)
+
+            while _at < _pattern.length do
+                let c = _pattern[_at]
+
+                if c == '|' \/ c == ')' then
+                    break
+                fi
+
+                if flags.ignore_whitespace /\ _skip_whitespace() then
+                    continue
+                fi
+
+                let atom = _atom(flags)
+
+                if atom? then
+                    result.children.add(_quantified(atom, flags))
+                fi
+            od
+
+            return result
+        si
+
+        // Skips white space and a `#` comment where IgnorePatternWhitespace
+        // applies; true where it skipped anything.
+        _skip_whitespace() -> bool is
+            let c = _pattern[_at]
+
+            if c == ' ' \/ c == '\t' \/ c == '\n' \/ c == '\r' \/ c == '\u000C' then
+                _at = _at + 1
+                return true
+            fi
+
+            if c == '#' then
+                while _at < _pattern.length /\ _pattern[_at] != '\n' do
+                    _at = _at + 1
+                od
+
+                return true
+            fi
+
+            return false
+        si
+
+        _quantified(atom: RX_NODE, flags: RX_FLAGS) -> RX_NODE is
+            let result mut = atom
+            let quantified mut = false
+
+            while _at < _pattern.length do
+                if flags.ignore_whitespace /\ _skip_whitespace() then
+                    continue
+                fi
+
+                let c = _pattern[_at]
+                let min mut = 0
+                let max mut = -1
+                let start = _at
+
+                if c == '*' then
+                    _at = _at + 1
+                elif c == '+' then
+                    min = 1
+                    _at = _at + 1
+                elif c == '?' then
+                    max = 1
+                    _at = _at + 1
+                elif c == '{' then
+                    let counts = _counts()
+
+                    if !counts? then
+                        break
+                    fi
+
+                    min = counts.min
+                    max = counts.max
+                else
+                    break
+                fi
+
+                if quantified then
+                    _fail("Nested quantifier '{_pattern[start]}'", start)
+                fi
+
+                let lazy = _at < _pattern.length /\ _pattern[_at] == '?'
+
+                if lazy then
+                    _at = _at + 1
+                fi
+
+                if _at < _pattern.length /\ _pattern[_at] == '+' then
+                    _fail("Nested quantifier '+'", _at)
+                fi
+
+                let repeat = RX_NODE(RX_NODE.REPEAT)
+                repeat.children.add(result)
+                repeat.min = min
+                repeat.max = max
+                repeat.lazy = lazy
+
+                result = repeat
+                quantified = true
+            od
+
+            return result
+        si
+
+        // {n}, {n,} or {n,m} at the current position, read and consumed, or
+        // null with nothing consumed where the brace starts no count, which
+        // makes it a literal.
+        _counts() -> (min: int, max: int)? is
+            let start = _at
+            _scan = _at + 1
+            let min = _number()
+
+            if min < 0 then
+                return null
+            fi
+
+            let max mut = min
+
+            if _scan < _pattern.length /\ _pattern[_scan] == ',' then
+                _scan = _scan + 1
+
+                if _scan < _pattern.length /\ _pattern[_scan] == '}' then
+                    max = -1
+                else
+                    max = _number()
+
+                    if max < 0 then
+                        return null
+                    fi
+                fi
+            fi
+
+            if _scan >= _pattern.length \/ _pattern[_scan] != '}' then
+                return null
+            fi
+
+            if max >= 0 /\ max < min then
+                _fail("Illegal {{x,y}} with x > y", start)
+            fi
+
+            _at = _scan + 1
+
+            return (min = min, max = max)
+        si
+
+        // The decimal number at _scan, consumed, or -1 where none starts there.
+        _number() -> int is
+            let start = _scan
+            let value mut = 0
+
+            while _scan < _pattern.length /\ _pattern[_scan] >= '0' /\ _pattern[_scan] <= '9' do
+                value = value * 10 + (cast int(_pattern[_scan]) - cast int('0'))
+                _scan = _scan + 1
+            od
+
+            return if _scan == start then -1 else value fi
+        si
+
+        // The atom at the current position, or null for an inline option
+        // group or a comment, which change or say nothing.
+        _atom(flags: RX_FLAGS) -> RX_NODE? is
+            let c = _pattern[_at]
+            let start = _at
+
+            if c == '(' then
+                return _group(flags)
+            elif c == '[' then
+                _at = _at + 1
+                let set = _class(flags)
+                let node = RX_NODE(RX_NODE.SET)
+                node.set = set
+                node.ignore_case = flags.ignore_case
+                return node
+            elif c == '.' then
+                _at = _at + 1
+                let node = RX_NODE(RX_NODE.ANY)
+                node.flag = flags.singleline
+                return node
+            elif c == '^' then
+                _at = _at + 1
+                let node = RX_NODE(RX_NODE.LINE_START)
+                node.flag = flags.multiline
+                return node
+            elif c == '$' then
+                _at = _at + 1
+                let node = RX_NODE(RX_NODE.LINE_END)
+                node.flag = flags.multiline
+                return node
+            elif c == '\\' then
+                return _escape(flags)
+            elif c == '*' \/ c == '+' \/ c == '?' then
+                _fail("Quantifier '{c}' following nothing", start)
+            elif c == '{' /\ _counts_at_start() then
+                _fail("Quantifier '{{x,y}}' following nothing", start)
+            fi
+
+            _at = _at + 1
+            return _char(cast int(c), flags)
+        si
+
+        _counts_at_start() -> bool is
+            let saved = _at
+            let counts = _counts()
+            _at = saved
+            return counts?
+        si
+
+        _char(c: int, flags: RX_FLAGS) -> RX_NODE is
+            let node = RX_NODE(RX_NODE.CHAR)
+            node.c = c
+            node.ignore_case = flags.ignore_case
+            return node
+        si
+
+        _set_node(set: RX_SET, flags: RX_FLAGS) -> RX_NODE is
+            let node = RX_NODE(RX_NODE.SET)
+            node.set = set
+            node.ignore_case = flags.ignore_case
+            return node
+        si
+
+        _group(flags: RX_FLAGS) -> RX_NODE? is
+            let start = _at
+            _at = _at + 1
+
+            let inner = flags.copy()
+            let group: RX_GROUP? mut = null
+
+            if _at < _pattern.length /\ _pattern[_at] == '?' then
+                _at = _at + 1
+
+                if _at >= _pattern.length then
+                    _fail("Unterminated (? construct", start)
+                fi
+
+                let c = _pattern[_at]
+
+                if c == ':' then
+                    _at = _at + 1
+                elif c == '#' then
+                    while _at < _pattern.length /\ _pattern[_at] != ')' do
+                        _at = _at + 1
+                    od
+
+                    if _at >= _pattern.length then
+                        _fail("Unterminated (?#...) comment", start)
+                    fi
+
+                    _at = _at + 1
+                    return null
+                elif c == '<' /\ _at + 1 < _pattern.length /\ (_pattern[_at + 1] == '=' \/ _pattern[_at + 1] == '!') then
+                    _unsupported("lookbehind (?<{_pattern[_at + 1]}...)", start)
+                elif c == '<' \/ c == '\'' then
+                    let close = if c == '<' then '>' else '\'' fi
+                    _at = _at + 1
+                    let name_start = _at
+
+                    while _at < _pattern.length /\ _pattern[_at] != close do
+                        if _pattern[_at] == '-' then
+                            _unsupported("a balancing group", start)
+                        fi
+
+                        if !char.is_letter_or_digit(_pattern[_at]) /\ _pattern[_at] != '_' then
+                            _fail("Invalid group name", _at)
+                        fi
+
+                        _at = _at + 1
+                    od
+
+                    if _at >= _pattern.length \/ _at == name_start then
+                        _fail("Invalid group name", name_start)
+                    fi
+
+                    let name = _pattern.substring(name_start, _at - name_start)
+
+                    if char.is_digit(name[0]) then
+                        for d in name do
+                            if !char.is_digit(d) then
+                                _fail("Invalid group name: Group names must begin with a word character", name_start)
+                            fi
+                        od
+                    fi
+
+                    _at = _at + 1
+
+                    group = RX_GROUP(name)
+                    _groups.add(group)
+                elif c == '=' \/ c == '!' then
+                    _unsupported("lookahead (?{c}...)", start)
+                elif c == '>' then
+                    _unsupported("an atomic group (?>...)", start)
+                elif c == '(' then
+                    _unsupported("a conditional (?(...)...)", start)
+                else
+                    let saved = _at
+                    _inline_options(inner)
+
+                    if _at < _pattern.length /\ _pattern[_at] == ')' then
+                        // No colon: the options apply to the rest of the
+                        // enclosing group.
+                        _at = saved
+                        _inline_options(flags)
+                        _at = _at + 1
+                        return null
+                    fi
+
+                    if _at >= _pattern.length \/ _pattern[_at] != ':' then
+                        _fail("Unrecognized grouping construct", start)
+                    fi
+
+                    _at = _at + 1
+                fi
+            elif !flags.explicit_capture then
+                group = RX_GROUP(null)
+                _groups.add(group)
+            fi
+
+            let body = _alternation(inner)
+
+            if _at >= _pattern.length \/ _pattern[_at] != ')' then
+                _fail("Not enough )'s", start)
+            fi
+
+            _at = _at + 1
+
+            let node = RX_NODE(RX_NODE.GROUP)
+            node.group = group
+            node.children.add(body)
+            return node
+        si
+
+        // Reads imnsx-imnsx and applies them to `result`.
+        _inline_options(result: RX_FLAGS) is
+            let on mut = true
+
+            while _at < _pattern.length do
+                let c = _pattern[_at]
+
+                if c == '-' then
+                    on = false
+                elif c == 'i' then
+                    result.ignore_case = on
+                elif c == 'm' then
+                    result.multiline = on
+                elif c == 'n' then
+                    result.explicit_capture = on
+                elif c == 's' then
+                    result.singleline = on
+                elif c == 'x' then
+                    result.ignore_whitespace = on
+                else
+                    break
+                fi
+
+                _at = _at + 1
+            od
+        si
+
+        _escape(flags: RX_FLAGS) -> RX_NODE is
+            let start = _at
+            _at = _at + 1
+
+            if _at >= _pattern.length then
+                _fail("Illegal \\ at end of pattern", start)
+            fi
+
+            let c = _pattern[_at]
+            _at = _at + 1
+
+            if c == 'A' then
+                return RX_NODE(RX_NODE.TEXT_START)
+            elif c == 'Z' then
+                return RX_NODE(RX_NODE.TEXT_END_OR_FINAL_LINE_FEED)
+            elif c == 'z' then
+                return RX_NODE(RX_NODE.TEXT_END)
+            elif c == 'b' then
+                return RX_NODE(RX_NODE.BOUNDARY)
+            elif c == 'B' then
+                return RX_NODE(RX_NODE.NOT_BOUNDARY)
+            elif c == 'G' then
+                _unsupported("\\G", start)
+            elif c == 'k' then
+                _unsupported("a backreference \\k", start)
+            elif c >= '1' /\ c <= '9' then
+                // \1 to \9 are backreferences. A longer number is one if
+                // that group exists, which is only known once every group is
+                // numbered, and otherwise octal.
+                let digits_end mut = _at
+
+                while digits_end < _pattern.length /\ _pattern[digits_end] >= '0' /\ _pattern[digits_end] <= '9' do
+                    digits_end = digits_end + 1
+                od
+
+                if digits_end == _at then
+                    _unsupported("a backreference \\{c}", start)
+                fi
+
+                _maybe_references.add((_pattern.substring(start + 1, digits_end - start - 1), start))
+            fi
+
+            let set = _class_escape(c, start)
+
+            if set? then
+                return _set_node(set, flags)
+            fi
+
+            return _char(_char_escape(c, start, false), flags)
+        si
+
+        // The class a class escape such as \d, \W or \p{L} names, or null
+        // where `c` starts none. The escape's letter is already consumed.
+        _class_escape(c: char, start: int) -> RX_SET? is
+            if c == 'd' then
+                return RX_CLASSES.digit()
+            elif c == 'w' then
+                return RX_CLASSES.word()
+            elif c == 's' then
+                return RX_CLASSES.space()
+            elif c == 'D' \/ c == 'W' \/ c == 'S' then
+                let inner = if c == 'D' then RX_CLASSES.digit() elif c == 'W' then RX_CLASSES.word() else RX_CLASSES.space() fi
+
+                if c == 'S' then
+                    inner.negated = true
+                    return inner
+                fi
+
+                let result = RX_SET()
+                result.add_negation(inner)
+                return result
+            elif c == 'p' \/ c == 'P' then
+                if _at >= _pattern.length \/ _pattern[_at] != '{' then
+                    _fail("Malformed \\p{{X}} character escape", start)
+                fi
+
+                let close = _pattern.index_of('}', _at)
+
+                if close < 0 then
+                    _fail("Incomplete \\p{{X}} character escape", start)
+                fi
+
+                let name = _pattern.substring(_at + 1, close - _at - 1)
+                _at = close + 1
+
+                let mask = RX_CLASSES.category(name)
+
+                if mask == 0L then
+                    if name.starts_with("Is") then
+                        _unsupported("the named block \\p{{{name}}}", start)
+                    fi
+
+                    _fail("Unknown property '{name}'", start)
+                fi
+
+                let result = RX_SET()
+
+                if c == 'p' then
+                    result.add_categories(mask)
+                else
+                    result.add_complement(mask)
+                fi
+
+                return result
+            fi
+
+            return null
+        si
+
+        // The code unit a character escape names. `c` is consumed; `in_class`
+        // makes \b a backspace.
+        _char_escape(c: char, start: int, in_class: bool) -> int is
+            if c == 't' then return 9 fi
+            if c == 'n' then return 10 fi
+            if c == 'r' then return 13 fi
+            if c == 'f' then return 12 fi
+            if c == 'v' then return 11 fi
+            if c == 'e' then return 27 fi
+            if c == 'a' then return 7 fi
+            if c == 'b' /\ in_class then return 8 fi
+
+            if c >= '0' /\ c <= '7' then
+                let value mut = cast int(c) - cast int('0')
+                let digits mut = 0
+
+                while digits < 2 /\ _at < _pattern.length /\ _pattern[_at] >= '0' /\ _pattern[_at] <= '7' do
+                    value = value * 8 + (cast int(_pattern[_at]) - cast int('0'))
+                    _at = _at + 1
+                    digits = digits + 1
+                od
+
+                return value & 0xFF
+            fi
+
+            if c == 'x' then return _hex(2, start) fi
+            if c == 'u' then return _hex(4, start) fi
+
+            if c == 'c' then
+                if _at >= _pattern.length then
+                    _fail("Missing control character", start)
+                fi
+
+                let letter = cast int(char.to_upper(_pattern[_at]))
+                _at = _at + 1
+
+                if letter < 0x40 \/ letter > 0x5F then
+                    _fail("Unrecognized control character", start)
+                fi
+
+                return letter - 0x40
+            fi
+
+            if char.is_letter_or_digit(c) \/ c == '_' then
+                _fail("Unrecognized escape sequence \\{c}", start)
+            fi
+
+            return cast int(c)
+        si
+
+        _hex(digits: int, start: int) -> int is
+            let value mut = 0
+            let i mut = 0
+
+            while i < digits do
+                if _at >= _pattern.length then
+                    _fail("Insufficient hexadecimal digits", start)
+                fi
+
+                let c = _pattern[_at]
+                let digit =
+                    if c >= '0' /\ c <= '9' then cast int(c) - cast int('0')
+                    elif c >= 'a' /\ c <= 'f' then cast int(c) - cast int('a') + 10
+                    elif c >= 'A' /\ c <= 'F' then cast int(c) - cast int('A') + 10
+                    else -1
+                    fi
+
+                if digit < 0 then
+                    _fail("Insufficient hexadecimal digits", start)
+                fi
+
+                value = value * 16 + digit
+                _at = _at + 1
+                i = i + 1
+            od
+
+            return value
+        si
+
+        // A class, after its opening `[`, up to and including the `]`.
+        _class(flags: RX_FLAGS) -> RX_SET is
+            let start = _at - 1
+            let result = RX_SET()
+
+            if _at < _pattern.length /\ _pattern[_at] == '^' then
+                result.negated = true
+                _at = _at + 1
+            fi
+
+            let first mut = true
+
+            while true do
+                if _at >= _pattern.length then
+                    _fail("Unterminated [] set", start)
+                fi
+
+                let c = _pattern[_at]
+
+                if c == ']' /\ !first then
+                    _at = _at + 1
+                    break
+                fi
+
+                first = false
+
+                if c == '-' /\ _at + 1 < _pattern.length /\ _pattern[_at + 1] == '[' then
+                    _unsupported("class subtraction -[...]", _at)
+                fi
+
+                let low mut = 0
+
+                if c == '\\' then
+                    let escape_start = _at
+                    _at = _at + 1
+
+                    if _at >= _pattern.length then
+                        _fail("Illegal \\ at end of pattern", escape_start)
+                    fi
+
+                    let e = _pattern[_at]
+                    _at = _at + 1
+
+                    let inner = _class_escape(e, escape_start)
+
+                    if inner? then
+                        if inner.negated then
+                            // \S inside a class: everything \s doesn't admit.
+                            let positive = RX_CLASSES.space()
+                            let complement = RX_SET()
+                            complement.add_range(0, 0x08)
+                            complement.add_range(0x0E, 0x84)
+                            complement.add_range(0x86, 0xFFFF)
+                            _add_non_separators(result, complement)
+                        else
+                            result.add_set(inner)
+                        fi
+
+                        continue
+                    fi
+
+                    low = _char_escape(e, escape_start, true)
+                else
+                    low = cast int(c)
+                    _at = _at + 1
+                fi
+
+                if _at + 1 < _pattern.length /\ _pattern[_at] == '-' /\ _pattern[_at + 1] != ']' then
+                    _at = _at + 1
+
+                    let h = _pattern[_at]
+                    let high mut = 0
+
+                    if h == '\\' then
+                        let escape_start = _at
+                        _at = _at + 1
+
+                        if _at >= _pattern.length then
+                            _fail("Illegal \\ at end of pattern", escape_start)
+                        fi
+
+                        let e = _pattern[_at]
+                        _at = _at + 1
+
+                        if _class_escape(e, escape_start)? then
+                            _fail("A subtraction must be the last element in a character class", escape_start)
+                        fi
+
+                        high = _char_escape(e, escape_start, true)
+                    else
+                        high = cast int(h)
+                        _at = _at + 1
+                    fi
+
+                    if high < low then
+                        _fail("[x-y] range in reverse order", start)
+                    fi
+
+                    result.add_range(low, high)
+                else
+                    result.add_char(low)
+                fi
+            od
+
+            return result
+        si
+
+        // \S inside a class: the code units outside \s's ranges, less the
+        // separators.
+        _add_non_separators(result: RX_SET, outside_ranges: RX_SET) is
+            let space = RX_CLASSES.space()
+            let i mut = 0
+
+            // The ranges that aren't \s's explicit ones, then every code unit
+            // in them that isn't a separator, as runs.
+            let run_start mut = -1
+            let c mut = 0
+
+            while c <= 0xFFFF do
+                let admitted = outside_ranges.contains(c) /\ !space.contains(c)
+
+                if admitted /\ run_start < 0 then
+                    run_start = c
+                elif !admitted /\ run_start >= 0 then
+                    result.add_range(run_start, c - 1)
+                    run_start = -1
+                fi
+
+                c = c + 1
+            od
+
+            if run_start >= 0 then
+                result.add_range(run_start, 0xFFFF)
+            fi
+        si
+
+        _unsupported(construct: string, at: int) is
+            throw ArgumentException("Invalid pattern '{_pattern}' at offset {at}. {construct} is not supported on this target.")
+        si
+
+        _fail(message: string, at: int) is
+            throw ArgumentException("Invalid pattern '{_pattern}' at offset {at + 1}. {message}.")
+        si
+    si
+si
