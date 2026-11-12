@@ -204,11 +204,38 @@ namespace Ghul.Pipes is
     ++[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         cat(source, right)
 
-    /// The elements of `source` and `right` combined, with duplicates removed.
+    /// The union of `source` and `right`: the elements of `source` and then
+    /// those of `right`, each once, read lazily. `|` shares a precedence
+    /// level with `&` and binds tighter than a range, so `(1::3) | (2::5)`
+    /// needs its parentheses.
+    |[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
+        distinct(cat(source, right))
+
+    /// The intersection of `source` and `right`: the elements of `source`
+    /// that also appear in `right`, each once, read lazily.
+    &[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
+        INTERSECT_PIPE[T](source, right)
+
+    /// The difference of `source` and `right`: the elements of `source` that
+    /// don't appear in `right`, each once, read lazily. `--` has the
+    /// precedence of `++`.
+    --[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
+        EXCEPT_PIPE[T](source, right)
+
+    /// The elements of `source` and `right` combined, with duplicates
+    /// removed: `source | right`.
+    @System.Obsolete("use source | right instead")
     union_with[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         distinct(cat(source, right))
 
-    /// The elements of `source` that also appear in `right`, with duplicates removed.
+    /// The elements of `source` that also appear in `right`, with duplicates
+    /// removed: `source & right`.
+    intersect[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
+        INTERSECT_PIPE[T](source, right)
+
+    /// The elements of `source` that also appear in `right`, with duplicates
+    /// removed.
+    @System.Obsolete("use intersect, or source & right, instead")
     intersect_with[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         INTERSECT_PIPE[T](source, right)
 

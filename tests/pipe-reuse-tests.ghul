@@ -60,12 +60,12 @@ namespace Tests is
 
         @Test()
         IntersectWith_EnumeratedAgain_YieldsTheSameValues() is
-            _assert_repeatable("[3, 4]", _values |> intersect_with(_other))
+            _assert_repeatable("[3, 4]", _values & _other)
         si
 
         @Test()
         UnionWith_EnumeratedAgain_YieldsTheSameValues() is
-            _assert_repeatable("[1, 2, 3, 4, 5, 9]", _values |> union_with(_other))
+            _assert_repeatable("[1, 2, 3, 4, 5, 9]", _values | _other)
         si
 
         @Test()
