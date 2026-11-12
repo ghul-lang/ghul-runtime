@@ -12,5 +12,9 @@
     <GhulSources Include="../../src/regex_program.ghul" />
     <GhulSources Include="../../src/unicode_categories.ghul" />
     <GhulSources Include="../../src/unicode_category_tables.ghul" />
+    <!-- The members the runtime gives char on .NET, which the core
+         sources use. -->
+    <GhulSources Include="../../../ghul-runtime/src/char-members.ghul" />
+    <GhulOptions Include="--allow-member-injection" />
   </ItemGroup>
 </Project>

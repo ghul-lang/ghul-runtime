@@ -64,7 +64,7 @@ namespace Ghul.Internal is
             if !ignore_case then
                 contains(c)
             else
-                let lower = cast int(char.to_lower(cast char(c))), upper = cast int(char.to_upper(cast char(c))) in
+                let lower = cast int((cast char(c)).to_lower()), upper = cast int((cast char(c)).to_upper()) in
                     (_admits(c) \/ _admits(lower) \/ _admits(upper)) != negated
             fi
 
@@ -692,7 +692,7 @@ namespace Ghul.Internal is
                             _unsupported("a balancing group", start)
                         fi
 
-                        if !char.is_letter_or_digit(_pattern[_at]) /\ _pattern[_at] != '_' then
+                        if !_pattern[_at].is_letter_or_digit /\ _pattern[_at] != '_' then
                             _fail("Invalid group name", _at)
                         fi
 
@@ -705,9 +705,9 @@ namespace Ghul.Internal is
 
                     let name = _pattern.substring(name_start, _at - name_start)
 
-                    if char.is_digit(name[0]) then
+                    if name[0].is_digit then
                         for d in name do
-                            if !char.is_digit(d) then
+                            if !d.is_digit then
                                 _fail("Invalid group name: Group names must begin with a word character", name_start)
                             fi
                         od
@@ -930,7 +930,7 @@ namespace Ghul.Internal is
                     _fail("Missing control character", start)
                 fi
 
-                let letter = cast int(char.to_upper(_pattern[_at]))
+                let letter = cast int(_pattern[_at].to_upper())
                 _at = _at + 1
 
                 if letter < 0x40 \/ letter > 0x5F then
@@ -940,7 +940,7 @@ namespace Ghul.Internal is
                 return letter - 0x40
             fi
 
-            if char.is_letter_or_digit(c) \/ c == '_' then
+            if c.is_letter_or_digit \/ c == '_' then
                 _fail("Unrecognized escape sequence \\{c}", start)
             fi
 
