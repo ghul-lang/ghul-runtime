@@ -93,6 +93,15 @@ namespace Tests is
         si
 
         @Test()
+        SortBy_ReadingTheSource_DisposesItOnce() is
+            let source = DISPOSE_COUNTING()
+
+            source |> sort_by(x => -x) |> first()
+
+            are_equal(1, source.disposed)
+        si
+
+        @Test()
         Cursor_Read_DisposesNothing() is
             let source = DISPOSE_COUNTING()
             let it = source.iterator

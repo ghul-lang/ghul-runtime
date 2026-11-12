@@ -845,8 +845,6 @@ namespace Ghul.Pipes is
             result.add(pair.`1)
         od
 
-        it.dispose()
-
         return pipe(result)
     si
 
