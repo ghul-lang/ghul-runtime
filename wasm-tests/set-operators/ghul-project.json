@@ -1,0 +1,7 @@
+{
+    "name": "set-operators",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

@@ -79,14 +79,14 @@ namespace Tests is
         UnionWith_OverlappingSequences_ReturnsDistinctElementsFromBoth() is
             let pipe = [1, 2, 3]
 
-            assert_are_equal([1, 2, 3, 4], pipe |> union_with([3, 4]))
+            assert_are_equal([1, 2, 3, 4], pipe | [3, 4])
         si
 
         @Test()
         IntersectWith_OverlappingSequences_ReturnsDistinctCommonElements() is
             let pipe = [1, 2, 2, 3]
 
-            assert_are_equal([2, 3], pipe |> intersect_with([2, 3, 4]))
+            assert_are_equal([2, 3], pipe |> intersect([2, 3, 4]))
         si
 
         @Test()
@@ -94,6 +94,22 @@ namespace Tests is
             let pipe = [1, 2, 2, 3]
 
             assert_are_equal([1], pipe |> except([2, 3, 4]))
+        si
+
+        @Test()
+        set_operators__union_intersection_and_difference__give_each_element_once() is
+            assert_are_equal([1, 2, 3, 4], [1, 2, 3, 3] | [3, 4])
+            assert_are_equal([3], [1, 2, 3, 3] & [3, 4])
+            assert_are_equal([1, 2], [1, 2, 3, 3] -- [3, 4])
+            assert_are_equal([2, 3], [1, 2] ++ [3] -- [1])
+            assert_are_equal([3, 2, 4, 9], [1, 2, 3] & [3, 4] | [2, 4, 9])
+        si
+
+        @Test()
+        set_operators__leave_integer_and_flags_operators_alone() is
+            are_equal(7, 5 | 2)
+            are_equal(2, 6 & 3)
+            are_equal(3, [1, 2, 3] |> reduce(0, (a, b) => a | b))
         si
     si
 si
