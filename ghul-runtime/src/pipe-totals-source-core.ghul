@@ -12,15 +12,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[int]) -> int pure is
         let total mut = 0
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -30,15 +24,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[int]) -> int pure is
         let running mut = 1
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -49,15 +37,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> int pure) -> int pure is
         let total mut = 0
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -67,15 +49,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[uint]) -> uint pure is
         let total mut = 0u
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -85,15 +61,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[uint]) -> uint pure is
         let running mut = 1u
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -104,15 +74,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> uint pure) -> uint pure is
         let total mut = 0u
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -122,15 +86,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[long]) -> long pure is
         let total mut = 0L
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -140,15 +98,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[long]) -> long pure is
         let running mut = 1L
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -159,15 +111,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> long pure) -> long pure is
         let total mut = 0L
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -177,15 +123,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[ulong]) -> ulong pure is
         let total mut = 0ul
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -195,15 +135,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[ulong]) -> ulong pure is
         let running mut = 1ul
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -214,15 +148,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> ulong pure) -> ulong pure is
         let total mut = 0ul
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -232,15 +160,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[single]) -> single pure is
         let total mut = 0.0s
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -250,15 +172,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[single]) -> single pure is
         let running mut = 1.0s
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -269,15 +185,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> single pure) -> single pure is
         let total mut = 0.0s
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -287,15 +197,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[double]) -> double pure is
         let total mut = 0.0
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -305,15 +209,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[double]) -> double pure is
         let running mut = 1.0
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -324,15 +222,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> double pure) -> double pure is
         let total mut = 0.0
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -342,15 +234,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[decimal]) -> decimal pure is
         let total mut = 0m
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -360,15 +246,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[decimal]) -> decimal pure is
         let running mut = 1m
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -379,15 +259,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> decimal pure) -> decimal pure is
         let total mut = 0m
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si
@@ -397,15 +271,9 @@ namespace Ghul.Pipes is
     sum(source: Iterable[bigint]) -> bigint pure is
         let total mut = 0n
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + value
         od
-
-        it.dispose()
 
         return total
     si
@@ -415,15 +283,9 @@ namespace Ghul.Pipes is
     product(source: Iterable[bigint]) -> bigint pure is
         let running mut = 1n
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             running = running * value
         od
-
-        it.dispose()
 
         return running
     si
@@ -434,15 +296,9 @@ namespace Ghul.Pipes is
     sum_by[T..](source: Iterable[T], selector: T.. -> bigint pure) -> bigint pure is
         let total mut = 0n
 
-        let it = source.iterator
-
-        while it.move_next() do
-            let value = it.current
-
+        for value in source do
             total = total + selector(value)
         od
-
-        it.dispose()
 
         return total
     si

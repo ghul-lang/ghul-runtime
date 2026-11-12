@@ -210,7 +210,7 @@ namespace Tests is
 
         @Test()
         Render_an_unbounded_generator_without_hanging() is
-            let rendered = $(Ghul.Pipes.stream(0, i => i || i + 1))
+            let rendered = $(Ghul.Pipes.stream(0, i => (i, i + 1)))
 
             is_true(rendered.ends_with(", ...]"))
         si
