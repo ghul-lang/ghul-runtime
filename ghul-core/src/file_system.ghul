@@ -1006,17 +1006,7 @@ namespace IO is
                 throw FileNotFoundException("Could not find file '{_FILE_STORE.full(path)}'.")
             fi
 
-            return _read_lines(path)
-        si
-
-        _read_lines(path: string) -> string{} static is
-            let reader = StreamReader(path)
-
-            while let line = reader.read_line() do
-                yield line
-            od
-
-            reader.dispose()
+            return _LINES(path)
         si
 
         /// The whole text of the file at `path`.
@@ -1200,6 +1190,52 @@ namespace IO is
             od
 
             return text.to_string()
+        si
+    si
+
+    // The lines of a file. Each iterator opens the file again.
+    class _LINES: Collections.Iterable[string] is
+        _path: string
+
+        init(path: string) is
+            _path = path
+        si
+
+        iterator: Collections.Iterator[string] => _LINE_ITERATOR(_path)
+    si
+
+    // Reads a file a line at a time. The file is closed at the end of the
+    // text, or by dispose, whichever comes first; after that move_next
+    // returns false.
+    class _LINE_ITERATOR: Collections.Iterator[string] is
+        _reader: StreamReader?
+        _current: string
+
+        init(path: string) is
+            _reader = StreamReader(path)
+            _current = ""
+        si
+
+        current: string => _current
+
+        move_next() -> bool is
+            if let reader = _reader then
+                if let line = reader.read_line() then
+                    _current = line
+                    return true
+                fi
+
+                dispose()
+            fi
+
+            return false
+        si
+
+        dispose() is
+            if let reader = _reader then
+                _reader = null
+                reader.dispose()
+            fi
         si
     si
 

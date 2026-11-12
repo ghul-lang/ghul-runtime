@@ -1,0 +1,9 @@
+early exit read: one
+early exit read: two
+early exit: reads after dispose: false
+exception read: one
+exception read: two
+caught: stop at two
+exception: reads after dispose: false
+disposed twice: reads after dispose: false
+to the end: 4 lines, reads after the end: false
