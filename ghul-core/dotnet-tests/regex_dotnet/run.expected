@@ -1,0 +1,31 @@
+.NET disagrees with itself: /(A(\b)+?.?)/ options 0 on "A\n"
+  mine:   [0+1 0+1 1+0 ]
+  theirs: [0+1 1+0 1+0 ]
+.NET disagrees with itself: /(?:\w{1,2}(?:\ba\s+)?(?:\s{0,2}?\b|(?i:a\p{L}?\w?^?|[ab]a{1,2}){2}x\p{L}\b)+?)\w?(?<g>^{0,2}?x??[^a]?){0,2}?/ options 16 on "abb_\nAB\n"
+  mine:   [2+2 - ][5+2 - ]
+  theirs: [4+0 - ][7+0 - ]
+.NET disagrees with itself: /(?<g>^?ab*?(\p{L}{0,2}?\p{L}^??|(\b{2}x{0,2}?){2})+?[^a]?|[^a])^?x*$*?/ options 1 on "a_b _A\n"
+  mine:   [1+1 - - 1+1 ][2+1 - - 2+1 ][3+1 - - 3+1 ][4+1 - - 4+1 ][5+2 6+0 6+0 5+2 ]
+  theirs: [1+1 - - 1+1 ][2+1 - - 2+1 ][3+1 - - 3+1 ][4+1 - - 4+1 ][5+2 6+0 6+0 6+1 ]
+.NET disagrees with itself: /\w+(?i:(?:b(?i:.??x{0,2}?[a-c1]{0,2}?b{1,2})?(?:\wx)){0,2}?ab(?i:a{0,2}?|(?:[a-c1]${0,2}?^)?[ab]){0,2}?|\b(?i:(?i:x??|[^a]\d[a-c1].)b\s)??\w??)+?a*/ options 2 on "\naAa a"
+  mine:   [1+3 ][5+1 ]
+  theirs: [4+0 ][6+0 ]
+.NET disagrees with itself: /(?<g>^*?[a-c1]{1,2}(?:\w*){2}x*|.*?(\b|[ab]??^a^{1,2})+?([ab]{2}\w?\w[^a])??[^a]?){1,2}(?<g>\p{L}{2}^??^{1,2}a?|\p{L}?\w??)/ options 0 on "a"
+  mine:   [0+1 1+0 - 1+0 ][1+0 1+0 - 1+0 ]
+  theirs: [1+0 1+0 - 1+0 ]
+.NET disagrees with itself: /.?a*((?:\b|(?i:b{1,2}a)?x^{0,2}?\s){0,2}?a.\w{0,2}?|\s?)+?[a-c1]*?/ options 1 on "1_ B a"
+  mine:   [0+1 1+0 ][1+2 2+1 ][3+2 4+1 ][5+1 6+0 ][6+0 6+0 ]
+  theirs: [1+0 1+0 ][3+0 3+0 ][6+0 6+0 ]
+.NET disagrees with itself: /.{1,2}(?<g>\p{L}{0,2}?)+?(?<g>(?i:x?(?<g>.[^a]{2}${1,2}){0,2}?.(?<g>[ab]{1,2})?|\p{L}b{0,2}?b{0,2}?a{0,2}?)??[ab](?:(\sab{0,2}?|\p{L}{0,2}?)??\p{L}b\s{1,2})^{2})*\p{L}*?/ options 1 on "\n1A"
+  mine:   [1+2 - 3+0 ]
+  theirs: [3+0 - 3+0 ]
+.NET disagrees with itself: /a[a-c1](?i:a+?(?<g>(?:[a-c1]??)??)+?(?i:\b?[a-c1]*?))/ options 2 on "x_aaaa"
+  mine:   [2+3 5+0 ]
+  theirs: [5+0 5+0 ]
+.NET disagrees with itself: /(?<g>((\b){0,2}?(?i:$\b|b)(?i:\b??[a-c1])?|(\w?)?)+?${1,2}(?<g>b(${0,2}?[ab]{2}^{1,2})+?\b+ab*?){0,2}?|\s+?\ba*?)?/ options 0 on "xAa"
+  mine:   [0+3 2+1 - 2+1 - 0+3 ][3+0 3+0 - - - 3+0 ]
+  theirs: [0+3 2+1 - 2+1 - 0+3 ][3+0 3+0 - - - 3+5 ]
+.NET disagrees with itself: /\p{L}*?.{2}($?)+?([^a]{1,2}|a?^{2}){0,2}?/ options 16 on "A1A_"
+  mine:   [0+2 2+0 - ][2+2 4+0 - ]
+  theirs: [2+0 2+0 - ]
+checked 20067, 0 differ, 5 too slow for .NET to finish, 12 where .NET disagrees with itself or its compiled engine

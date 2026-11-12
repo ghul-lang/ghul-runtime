@@ -1,0 +1,396 @@
+// Matches patterns in the subset the core library's engine runs with both
+// that engine and .NET's, over a table of cases and generated ones, and
+// prints how many give different matches: the spans of every group of
+// every successive match, or one engine refusing a pattern the other takes.
+namespace Harness is
+    use IO.Std.write_line
+    use Collections.LIST
+    use System.Text.RegularExpressions.Regex
+    use System.Text.RegularExpressions.RegexOptions
+    use Ghul.Internal.RX_PROGRAM
+    use Ghul.Internal.RX_MATCHER
+
+    class CHECK is
+        checked: int
+        differ: int
+        slow: int
+        timeouts: int
+        inconsistent: int
+
+        stopwatch: System.Diagnostics.Stopwatch
+
+        init() is
+            stopwatch = System.Diagnostics.Stopwatch.start_new()
+        si
+
+        CASE_LIMIT_MS: int static => 2000
+        TOTAL_LIMIT_MS: long static => 300_000L
+
+        compare(pattern: string, options: int, input: string) is
+            checked = checked + 1
+
+            let clock = System.Diagnostics.Stopwatch.start_new()
+            let theirs = _theirs(pattern, options, input)
+            let theirs_ms = clock.elapsed_milliseconds
+            clock.restart()
+            let work = Tasks.TASK.run(() => _mine(pattern, options, input))
+
+            if !work.wait(CASE_LIMIT_MS) then
+                write_line("runaway: /{_shown(pattern)}/ options {options} on \"{_shown(input)}\" ran past {CASE_LIMIT_MS} ms; .NET: {theirs}")
+                System.Environment.exit(2)
+            fi
+
+            if stopwatch.elapsed_milliseconds > TOTAL_LIMIT_MS then
+                write_line("stopped after {TOTAL_LIMIT_MS} ms at case {checked}: /{_shown(pattern)}/")
+                System.Environment.exit(3)
+            fi
+
+            let mine = work.result
+            let mine_ms = clock.elapsed_milliseconds
+
+            if theirs =~ "timeout" then
+                timeouts = timeouts + 1
+                return
+            fi
+
+            if mine_ms > 100L /\ mine_ms > 20L * (theirs_ms + 1L) then
+                IO.Std.error.write_line("slow: /{_shown(pattern)}/ options {options} on \"{_shown(input)}\": {mine_ms} ms against .NET's {theirs_ms} ms")
+                slow = slow + 1
+            fi
+
+            if mine !~ theirs then
+                // .NET's interpreter has bugs its compiled engine doesn't:
+                // `(A(\b)+?.?)` on "A\n" gives group 1 as 1+0, though group 1 is
+                // the whole match, 0+1. Where the compiled engine agrees with
+                // ours, the interpreter's answer is not evidence about ours.
+                if mine =~ _theirs(pattern, options | 8, input) \/ !_consistent(pattern, options, input, _first_start(mine)) then
+                    if inconsistent < 10 then
+                        write_line(".NET disagrees with itself: /{_shown(pattern)}/ options {options} on \"{_shown(input)}\"")
+                        write_line("  mine:   {mine}")
+                        write_line("  theirs: {theirs}")
+                    fi
+
+                    inconsistent = inconsistent + 1
+                    return
+                fi
+
+                if differ < 30 then
+                    write_line("differ: /{_shown(pattern)}/ options {options} on \"{_shown(input)}\"")
+                    write_line("  mine:   {mine}")
+                    write_line("  theirs: {theirs}")
+                fi
+
+                differ = differ + 1
+            fi
+        si
+
+        _mine(pattern: string, options: int, input: string) -> string is
+            let program = _program(pattern, options)
+
+            if !program? then
+                return "refused"
+            fi
+
+            let result = Text.STRING_BUILDER()
+            let at mut = 0
+            let count mut = 0
+
+            while at <= input.length /\ count < 50 do
+                let spans = RX_MATCHER(program, input).find(at)
+
+                if !spans? then
+                    break
+                fi
+
+                result.append("[")
+
+                let i mut = 0
+
+                while i < spans.count do
+                    let start = spans[i]
+                    let end = spans[i + 1]
+
+                    if start >= 0 /\ end >= start then
+                        result.append("{start}+{end - start} ")
+                    else
+                        result.append("- ")
+                    fi
+
+                    i = i + 2
+                od
+
+                result.append("]")
+
+                let length = spans[1] - spans[0]
+                at = if length == 0 then spans[0] + 1 else spans[1] fi
+                count = count + 1
+            od
+
+            return result.to_string()
+        si
+
+        // Whether each of .NET's matches, with its groups, is the one its
+        // own engine finds when made to start there with \G, and whether \G
+        // finds no match at an earlier start where ours found one. A
+        // backtracking engine has to agree with itself on both; where .NET
+        // doesn't, its answer is not evidence about ours.
+        _consistent(pattern: string, options: int, input: string, mine_start: int) -> bool is
+            let timeout = System.TimeSpan.from_milliseconds(1000.0)
+
+            try
+                let anchored = Regex("\\G(?:{pattern})", cast RegexOptions(options), timeout)
+                let first = Regex(pattern, cast RegexOptions(options), timeout).match(input)
+
+                if mine_start >= 0 /\ (!first.success \/ mine_start < first.index) then
+                    if anchored.match(input, mine_start).success then
+                        return false
+                    fi
+                fi
+
+                let m mut = first
+                let count mut = 0
+
+                while m.success /\ count < 50 do
+                    let again = anchored.match(input, m.index)
+
+                    if !again.success \/ again.groups.count != m.groups.count then
+                        return false
+                    fi
+
+                    let i mut = 0
+
+                    while i < m.groups.count do
+                        let g = m.groups[i]
+                        let h = again.groups[i]
+
+                        if g.success != h.success \/ g.success /\ (g.index != h.index \/ g.length != h.length) then
+                            return false
+                        fi
+
+                        i = i + 1
+                    od
+
+                    m = m.next_match()
+                    count = count + 1
+                od
+
+                return true
+            catch e: System.Exception
+                return true
+            yrt
+        si
+
+        _program(pattern: string, options: int) -> RX_PROGRAM? is
+            try
+                return RX_PROGRAM(pattern, options)
+            catch e: System.ArgumentException
+                return null
+            yrt
+        si
+
+        _regex(pattern: string, options: int) -> Regex? is
+            try
+                return Regex(pattern, cast RegexOptions(options), System.TimeSpan.from_milliseconds(1000.0))
+            catch e: System.ArgumentException
+                return null
+            yrt
+        si
+
+        _theirs(pattern: string, options: int, input: string) -> string is
+            let regex = _regex(pattern, options)
+
+            if !regex? then
+                return "refused"
+            fi
+
+            try
+                return _all(regex, input)
+            catch e: System.Text.RegularExpressions.RegexMatchTimeoutException
+                return "timeout"
+            yrt
+        si
+
+        _all(regex: Regex, input: string) -> string is
+            let result = Text.STRING_BUILDER()
+            let m mut = regex.match(input)
+            let count mut = 0
+
+            while m.success /\ count < 50 do
+                result.append("[")
+
+                let i mut = 0
+
+                while i < m.groups.count do
+                    let g = m.groups[i]
+
+                    if g.success then
+                        result.append("{g.index}+{g.length} ")
+                    else
+                        result.append("- ")
+                    fi
+
+                    i = i + 1
+                od
+
+                result.append("]")
+
+                m = m.next_match()
+                count = count + 1
+            od
+
+            return result.to_string()
+        si
+
+        // Where the first match in a result from `_mine` starts, or -1.
+        _first_start(result: string) -> int =>
+            if result.starts_with("[") then int.parse(result.substring(1, result.index_of('+') - 1)) else -1 fi
+
+        _shown(text: string) -> string => text.replace("\n", "\\n").replace("\t", "\\t")
+    si
+
+    entry() is
+        let check = CHECK()
+
+        // The constructs the surveyed programs use, and their edges.
+        let cases = [
+            ("(\\w+)@(?<host>\\w+)\\.com", 0, "mail bob@example.com and amy@test.com"),
+            ("a*", 0, "baaab"),
+            ("a*?", 0, "aaa"),
+            ("(a|ab)(c|bcd)(d*)", 0, "abcd"),
+            ("^\\d{{3}}-\\d{{4}}$", 0, "555-1234"),
+            ("^abc$", 2, "x\nabc\ny"),
+            ("^abc$", 0, "abc\n"),
+            ("a.c", 0, "a\nc abc"),
+            ("a.c", 16, "a\nc abc"),
+            ("HELLO", 1, "say hello Hello"),
+            ("(?i)hello", 0, "HeLLo"),
+            ("(?i:a)b", 0, "Ab AB ab"),
+            ("\\bcat\\b", 0, "cat concat cat."),
+            ("\\Bcat", 0, "cat concat"),
+            ("[a-z]+", 0, "abc DEF ghi"),
+            ("[^aeiou\\s]+", 0, "hello world"),
+            ("[\\d.]+", 0, "v1.2.3 and 45"),
+            ("\\p{{L}}+", 0, "naïve café 中文"),
+            ("\\P{{L}}+", 0, "ab12 cd"),
+            ("\\p{{Lu}}\\p{{Ll}}*", 0, "Hello World ÉCOLE"),
+            ("(a)|(b)", 0, "ab"),
+            ("(a)*", 0, "aaa"),
+            ("(a|b)*c", 0, "ababc"),
+            ("(?:ab)+", 0, "ababab"),
+            ("x{{2,3}}", 0, "xxxxxxx"),
+            ("x{{2,}}?", 0, "xxxxx"),
+            ("x{{0}}", 0, "xx"),
+            ("(\\d+)-(\\d+)", 0, "10-20 30-40"),
+            ("(?<y>\\d{{4}})-(?<m>\\d{{2}})", 0, "2026-11"),
+            ("(x)(?<n>y)(z)", 0, "xyz"),
+            ("(?n)(a)(?<b>b)", 0, "ab"),
+            ("a\\s+b", 0, "a \t\n b"),
+            ("\\S+", 0, "  word\u00A0x  "),
+            ("\\W+", 0, "a, b; c"),
+            ("\\D+", 0, "a1b22c"),
+            ("a b # comment", 32, "ab"),
+            ("\\u0041\\x42\\103", 0, "ABC"),
+            ("\\t\\n", 0, "a\t\nb"),
+            ("[\\]\\[]", 0, "a[b]c"),
+            ("[a\\-z]", 0, "-az"),
+            ("\\.\\*\\+\\?", 0, ".*+?"),
+            ("(()|a)+", 0, "aa"),
+            ("(a*)*", 0, "aab"),
+            ("(a*)+b", 0, "aab"),
+            ("$", 0, "ab\n"),
+            ("\\Z", 0, "ab\n"),
+            ("\\z", 0, "ab\n"),
+            ("\\A\\w", 0, "ab"),
+            ("", 0, "ab"),
+            ("|a", 0, "ab"),
+            ("(?#comment)a", 0, "a"),
+            ("[^\\n]+", 0, "one\ntwo"),
+            ("\\w+", 0, "under_score über"),
+            ("(?<word>\\w+)\\s(?<word>\\w+)", 0, "a b"),
+            ("(a)|b", 4, "ab"),
+            ("[A-Z]", 1, "abc"),
+            ("\\p{{N}}+", 0, "x٣4Ⅻ½"),
+            ("{{", 0, "a{{b"),
+            ("a{{,2}}", 0, "a{{,2}}"),
+            ("x{{2}}y", 0, "xxy"),
+            ("f v", 32, "fv f v"),
+            ("a\\fb", 0, "a\u000Cb afb"),
+            ("\\103\\x42\\u0041", 0, "CBA"),
+            ("(x?){{1,2}}y", 0, "xy y"),
+            ("(x?)+y", 0, "xy y"),
+            ("(?<g>a(?<g>b))", 0, "ab"),
+            ("(A(\\b)+?.?)", 0, "A\n")
+        ]
+
+        for (pattern, options, input) in cases do
+            check.compare(pattern, options, input)
+        od
+
+        // Patterns built at random from the subset's pieces, on inputs of
+        // the characters they mention.
+        let pieces = ["a", "b", "ab", ".", "\\d", "\\w", "\\s", "\\b", "[ab]", "[^a]", "[a-c1]", "^", "$", "\\p{{L}}", "x"]
+        let quantifiers = ["", "", "", "*", "+", "?", "*?", "+?", "??", "{{2}}", "{{1,2}}", "{{0,2}}?"]
+        let alphabet = "aab1 x\nAB_"
+        let random = Ghul.RANDOM(4021)
+        let n mut = 0
+
+        while n < 20000 do
+            let pattern = _pattern(random, pieces, quantifiers, 3, false)
+            let input = Text.STRING_BUILDER()
+            let length = random.next(12)
+            let k mut = 0
+
+            while k < length do
+                input.append(alphabet[random.next(alphabet.length)])
+                k = k + 1
+            od
+
+            let options = [0, 0, 1, 2, 16][random.next(5)]
+
+            check.compare(pattern, options, input.to_string())
+            n = n + 1
+        od
+
+        write_line("checked {check.checked}, {check.differ} differ, {check.timeouts} too slow for .NET to finish, {check.inconsistent} where .NET disagrees with itself or its compiled engine")
+    si
+
+    // A pattern of up to `depth` nested groups. Inside a group repeated
+    // without bound, nothing repeats without bound again, so no pattern
+    // needs exponential backtracking to fail.
+    _pattern(random: Ghul.RANDOM, pieces: string[], quantifiers: string[], depth: int, in_loop: bool) -> string is
+        let result = Text.STRING_BUILDER()
+        let parts = 1 + random.next(4)
+        let i mut = 0
+
+        while i < parts do
+            let quantifier mut = quantifiers[random.next(quantifiers.count)]
+
+            if in_loop /\ _unbounded(quantifier) then
+                quantifier = ""
+            fi
+
+            let choice = random.next(10)
+
+            if choice < 2 /\ depth > 0 then
+                let inner = in_loop \/ _unbounded(quantifier)
+                let group = ["(", "(?:", "(?<g>", "(?i:"][random.next(4)]
+                result.append("{group}{_pattern(random, pieces, quantifiers, depth - 1, inner)}")
+
+                if random.next(3) == 0 then
+                    result.append("|{_pattern(random, pieces, quantifiers, depth - 1, inner)}")
+                fi
+
+                result.append(")")
+            else
+                result.append(pieces[random.next(pieces.count)])
+            fi
+
+            result.append(quantifier)
+            i = i + 1
+        od
+
+        return result.to_string()
+    si
+
+    _unbounded(quantifier: string) -> bool => quantifier.starts_with("*") \/ quantifier.starts_with("+")
+si

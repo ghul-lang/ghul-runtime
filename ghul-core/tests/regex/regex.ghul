@@ -1,0 +1,161 @@
+// Regular expressions on this target, over the constructs programs use
+// and their edges. The expected output is .NET's, from the same program
+// compiled there.
+use IO.Std.write_line
+
+shown(text: string) -> string => text.replace("\n", "\\n").replace("\t", "\\t")
+
+describe(m: Text.MATCH, regex: Text.REGEX) -> string is
+    let result = Text.STRING_BUILDER()
+    let i mut = 0
+
+    while i < m.groups.count do
+        let g = m.groups[i]
+
+        if g.success then
+            result.append(" {g.name}={g.index}+{g.length}'{shown(g.value)}'")
+        else
+            result.append(" {g.name}=-")
+        fi
+
+        i = i + 1
+    od
+
+    return result.to_string()
+si
+
+    let cases = [
+        ("(\\w+)@(?<host>\\w+)\\.com", 0, "mail bob@example.com and amy@test.com"),
+        ("a*", 0, "baaab"),
+        ("a*?", 0, "aaa"),
+        ("(a|ab)(c|bcd)(d*)", 0, "abcd"),
+        ("^\\d{{3}}-\\d{{4}}$", 0, "555-1234"),
+        ("^abc$", 2, "x\nabc\ny"),
+        ("^abc$", 0, "abc\n"),
+        ("a.c", 0, "a\nc abc"),
+        ("a.c", 16, "a\nc abc"),
+        ("HELLO", 1, "say hello Hello"),
+        ("(?i)hello", 0, "HeLLo"),
+        ("(?i:a)b", 0, "Ab AB ab"),
+        ("\\bcat\\b", 0, "cat concat cat."),
+        ("\\Bcat", 0, "cat concat"),
+        ("[a-z]+", 0, "abc DEF ghi"),
+        ("[^aeiou\\s]+", 0, "hello world"),
+        ("[\\d.]+", 0, "v1.2.3 and 45"),
+        ("\\p{{L}}+", 0, "naïve café 中文"),
+        ("\\P{{L}}+", 0, "ab12 cd"),
+        ("\\p{{Lu}}\\p{{Ll}}*", 0, "Hello World ÉCOLE"),
+        ("(a)|(b)", 0, "ab"),
+        ("(a)*", 0, "aaa"),
+        ("(a|b)*c", 0, "ababc"),
+        ("(?:ab)+", 0, "ababab"),
+        ("x{{2,3}}", 0, "xxxxxxx"),
+        ("x{{2,}}?", 0, "xxxxx"),
+        ("x{{0}}", 0, "xx"),
+        ("(\\d+)-(\\d+)", 0, "10-20 30-40"),
+        ("(?<y>\\d{{4}})-(?<m>\\d{{2}})", 0, "2026-11"),
+        ("(x)(?<n>y)(z)", 0, "xyz"),
+        ("(?n)(a)(?<b>b)", 0, "ab"),
+        ("a\\s+b", 0, "a \t\n b"),
+        ("\\S+", 0, "  word\u00A0x  "),
+        ("\\W+", 0, "a, b; c"),
+        ("\\D+", 0, "a1b22c"),
+        ("a b # comment", 32, "ab"),
+        ("\\u0041\\x42\\103", 0, "ABC"),
+        ("\\t\\n", 0, "a\t\nb"),
+        ("[\\]\\[]", 0, "a[b]c"),
+        ("[a\\-z]", 0, "-az"),
+        ("\\.\\*\\+\\?", 0, ".*+?"),
+        ("(()|a)+", 0, "aa"),
+        ("(a*)*", 0, "aab"),
+        ("(a*)+b", 0, "aab"),
+        ("$", 0, "ab\n"),
+        ("\\Z", 0, "ab\n"),
+        ("\\z", 0, "ab\n"),
+        ("\\A\\w", 0, "ab"),
+        ("", 0, "ab"),
+        ("|a", 0, "ab"),
+        ("(?#comment)a", 0, "a"),
+        ("[^\\n]+", 0, "one\ntwo"),
+        ("\\w+", 0, "under_score über"),
+        ("(?<word>\\w+)\\s(?<word>\\w+)", 0, "a b"),
+        ("(a)|b", 4, "ab"),
+        ("[A-Z]", 1, "abc"),
+        ("\\p{{N}}+", 0, "x٣4Ⅻ½"),
+        ("{{", 0, "a{{b"),
+        ("a{{,2}}", 0, "a{{,2}}"),
+        ("x{{2}}y", 0, "xxy")
+    ]
+
+let n mut = 0
+
+for (pattern, options, input) in cases do
+    let regex = Text.REGEX(pattern, cast Text.RegexOptions(options))
+    write_line("{n} /{shown(pattern)}/ {options} \"{shown(input)}\"")
+
+    let m mut = regex.match(input)
+    let count mut = 0
+
+    while m.success /\ count < 20 do
+        write_line("  {describe(m, regex)}")
+        m = m.next_match()
+        count = count + 1
+    od
+
+    n = n + 1
+od
+
+// The rest of the surface.
+let mail = Text.REGEX("(\\w+)@(?<host>\\w+)\\.com")
+let found = mail.match("mail bob@example.com now")
+write_line("{found.success} {found.value} {found.index} {found.length} {found.groups[1].value} {found.groups["host"].value} {found.groups["nothing"].success}")
+write_line("{mail.is_match("none here")} {mail.is_match("a@b.com")} {mail.is_match("a@b.com", 1)} {mail.is_match("a@b.com", 2)}")
+write_line("{mail.match("x@y.com z@w.com", 3).value}")
+write_line("{mail.matches("x@y.com z@w.com u@v.com").count}")
+
+let both = mail.matches("x@y.com z@w.com")
+
+for i in 0..both.count do
+    write_line("each {both[i].value} {both[i].groups["host"]}")
+od
+
+write_line(mail.replace("x@y.com and z@w.com", "$2 <${{host}}> $1 [$&] $$"))
+write_line(mail.replace("x@y.com and z@w.com", "[$`|$'|$+|$_]"))
+write_line(Text.REGEX("\\d+").replace("a1b22c333", m => "{m.value.length}"))
+write_line(Text.REGEX.replace("a-b--c", "-+", "+"))
+write_line(Text.REGEX.replace("A-b-C", "[a-z]", "?", Text.RegexOptions.IGNORE_CASE))
+write_line(Text.REGEX.replace("one two", "\\w+", m => m.value.to_upper()))
+
+for piece in Text.REGEX.split("a, b,c ,d", "\\s*,\\s*") do
+    write_line("piece '{piece}'")
+od
+
+for piece in Text.REGEX("(-)").split("1-2-3") do
+    write_line("with capture '{piece}'")
+od
+
+for piece in Text.REGEX("x*").split("abc") do
+    write_line("empty separator '{piece}'")
+od
+
+write_line(Text.REGEX.escape("a.b*c(d)[e]{{f}} g#h\\i^$|?+\t"))
+write_line("{Text.REGEX.is_match("Hello", "^h", Text.RegexOptions.IGNORE_CASE)} {Text.REGEX.is_match("Hello", "^h")}")
+write_line("{Text.REGEX.match("key=value", "(?<k>\\w+)=(?<v>\\w+)").groups["v"].value}")
+write_line("{Text.REGEX.matches("a1b2c3", "\\d").count} {Text.REGEX.matches("A1B2", "[a-z]", Text.RegexOptions.IGNORE_CASE).count}")
+write_line("{Text.REGEX("a+", Text.RegexOptions.COMPILED).match("baaa").value} {Text.REGEX("a+")}")
+write_line("{Text.REGEX("x").match("abc").success} '{Text.REGEX("x").match("abc").value}' {Text.REGEX("x").match("abc").index}")
+
+// Inputs long enough to overflow a recursive matcher's native stack.
+let long = Text.STRING_BUILDER()
+let k mut = 0
+
+while k < 200000 do
+    long.append(if k % 2 == 0 then "a" else "b" fi)
+    k = k + 1
+od
+
+long.append("c")
+
+let deep = long.to_string()
+write_line("{Text.REGEX("(a|b)*c").match(deep).length} {Text.REGEX("(?:ab)+c").match(deep).length} {Text.REGEX("[ab]*?c").match(deep).length}")
+write_line("{Text.REGEX("^(a|b)*d").is_match(deep)}")

@@ -1,0 +1,53 @@
+// What this target's regular expressions refuse: constructs outside the
+// subset it runs, options it doesn't support, and invalid patterns. Each
+// is an ArgumentException naming the construct or the problem.
+use IO.Std.write_line
+
+try_pattern(pattern: string, options: Text.RegexOptions) is
+    try
+        Text.REGEX(pattern, options)
+        write_line("accepted /{pattern}/")
+    catch e: Ghul.ArgumentException
+        write_line(e.message)
+    yrt
+si
+
+try_pattern(pattern: string) is
+    try_pattern(pattern, Text.RegexOptions.NONE)
+si
+
+// Outside the subset.
+try_pattern("a(?=b)")
+try_pattern("a(?!b)")
+try_pattern("(?<=a)b")
+try_pattern("(?<!a)b")
+try_pattern("(?>a+)b")
+try_pattern("(?(a)b|c)")
+try_pattern("(?<o-c>a)")
+try_pattern("\\Ga")
+try_pattern("(a)\\1")
+try_pattern("(?<n>a)\\k<n>")
+try_pattern("[a-z-[aeiou]]")
+try_pattern("\\p{{IsGreek}}")
+try_pattern("a", Text.RegexOptions.RIGHT_TO_LEFT)
+try_pattern("a", Text.RegexOptions.ECMA_SCRIPT)
+try_pattern("a", Text.RegexOptions.NON_BACKTRACKING)
+
+// In the subset, near the refused ones.
+try_pattern("\\103")
+try_pattern("(a)\\12")
+try_pattern("a", Text.RegexOptions.COMPILED | Text.RegexOptions.CULTURE_INVARIANT)
+
+// Invalid patterns.
+try_pattern("(a")
+try_pattern("a)")
+try_pattern("a{{2,1}}")
+try_pattern("[z-a]")
+try_pattern("[a")
+try_pattern("*a")
+try_pattern("a**")
+try_pattern("a\\")
+try_pattern("\\q")
+try_pattern("\\x4")
+try_pattern("\\p{{Nope}}")
+try_pattern("(?<1a>x)")

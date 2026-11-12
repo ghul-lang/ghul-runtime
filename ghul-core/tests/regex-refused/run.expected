@@ -1,0 +1,30 @@
+Invalid pattern 'a(?=b)' at offset 1. lookahead (?=...) is not supported on this target.
+Invalid pattern 'a(?!b)' at offset 1. lookahead (?!...) is not supported on this target.
+Invalid pattern '(?<=a)b' at offset 0. lookbehind (?<=...) is not supported on this target.
+Invalid pattern '(?<!a)b' at offset 0. lookbehind (?<!...) is not supported on this target.
+Invalid pattern '(?>a+)b' at offset 0. an atomic group (?>...) is not supported on this target.
+Invalid pattern '(?(a)b|c)' at offset 0. a conditional (?(...)...) is not supported on this target.
+Invalid pattern '(?<o-c>a)' at offset 0. a balancing group is not supported on this target.
+Invalid pattern '\Ga' at offset 0. \G is not supported on this target.
+Invalid pattern '(a)\1' at offset 3. a backreference \1 is not supported on this target.
+Invalid pattern '(?<n>a)\k<n>' at offset 7. a backreference \k is not supported on this target.
+Invalid pattern '[a-z-[aeiou]]' at offset 4. class subtraction -[...] is not supported on this target.
+Invalid pattern '\p{IsGreek}' at offset 0. the named block \p{IsGreek} is not supported on this target.
+RegexOptions.RIGHT_TO_LEFT is not supported on this target.
+RegexOptions.ECMA_SCRIPT is not supported on this target.
+RegexOptions.NON_BACKTRACKING is not supported on this target.
+accepted /\103/
+accepted /(a)\12/
+accepted /a/
+Invalid pattern '(a' at offset 1. Not enough )'s.
+Invalid pattern 'a)' at offset 2. too many )'s.
+Invalid pattern 'a{2,1}' at offset 2. Illegal {x,y} with x > y.
+Invalid pattern '[z-a]' at offset 1. [x-y] range in reverse order.
+Invalid pattern '[a' at offset 1. Unterminated [] set.
+Invalid pattern '*a' at offset 1. Quantifier '*' following nothing.
+Invalid pattern 'a**' at offset 3. Nested quantifier '*'.
+Invalid pattern 'a\' at offset 2. Illegal \ at end of pattern.
+Invalid pattern '\q' at offset 1. Unrecognized escape sequence \q.
+Invalid pattern '\x4' at offset 1. Insufficient hexadecimal digits.
+Invalid pattern '\p{Nope}' at offset 1. Unknown property 'Nope'.
+Invalid pattern '(?<1a>x)' at offset 4. Invalid group name: Group names must begin with a word character.
