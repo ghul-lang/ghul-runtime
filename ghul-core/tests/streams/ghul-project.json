@@ -2,7 +2,7 @@
     "name": "streams",
     "targets": ["wasm", "llvm"],
     "sources": ["*.ghul"],
-    "options": { "suppress": ["assembly-attribute-unmatched", "impure-function-argument"] },
+    "diagnostics": { "suppress": ["assembly-attribute-unmatched", "impure-function-argument"] },
     "dependencies": {
         "ghul-runtime": { "path": "../../.." }
     }

@@ -2,7 +2,7 @@
     "name": "async-surface",
     "targets": ["wasm", "llvm"],
     "sources": ["*.ghul"],
-    "options": { "suppress": ["assembly-attribute-unmatched"] },
+    "diagnostics": { "suppress": ["assembly-attribute-unmatched"] },
     "dependencies": {
         "ghul-runtime": { "path": "../../.." }
     }

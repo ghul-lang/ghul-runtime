@@ -1,7 +1,7 @@
 {
     "name": "memo",
     "targets": ["wasm", "llvm"],
-    "options": { "suppress": ["impure-function-argument"] },
+    "diagnostics": { "suppress": ["impure-function-argument"] },
     "dependencies": {
         "ghul-runtime": { "path": "../.." }
     }
