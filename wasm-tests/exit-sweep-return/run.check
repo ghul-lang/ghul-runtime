@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# The writer and the stream were never disposed: the sweep at exit wrote them.
+set -u
+status=0
+[ "$(cat "$1")" = "returning" ] || { echo "output: $(cat "$1")"; status=1; }
+[ "$(cat exit-sweep-return.txt 2>/dev/null)" = "left open by a return" ] || { echo "writer: '$(cat exit-sweep-return.txt 2>/dev/null)'"; status=1; }
+[ "$(od -An -tu1 exit-sweep-return.bin 2>/dev/null | tr -d ' ')" = "42" ] || { echo "stream: '$(od -An -tu1 exit-sweep-return.bin 2>/dev/null)'"; status=1; }
+rm -f exit-sweep-return.txt exit-sweep-return.bin
+exit $status

@@ -1,0 +1,16 @@
+// A writer the program never disposes is flushed after an exception nothing
+// catches has been reported. A writer it did dispose is not written again.
+// run.check reads the files they leave.
+use IO.Std.write_line
+use IO.File
+
+entry() is
+    (let use disposed = File.create_text("exit-sweep-unhandled-disposed.txt"); disposed.write("disposed"))
+    File.write_all_text("exit-sweep-unhandled-disposed.txt", "replaced after dispose")
+
+    let writer = File.create_text("exit-sweep-unhandled.txt")
+    writer.write("left open by an exception")
+
+    write_line("throwing")
+    throw Ghul.InvalidOperationException("nothing catches this")
+si

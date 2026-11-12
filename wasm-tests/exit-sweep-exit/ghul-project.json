@@ -1,0 +1,7 @@
+{
+    "name": "exit-sweep-exit",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

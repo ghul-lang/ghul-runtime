@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# The open writer was flushed after the report; the disposed one was not
+# written again over what replaced it.
+set -u
+status=0
+[ "$(cat "$1")" = "throwing" ] || { echo "output: $(cat "$1")"; status=1; }
+[ "$(cat exit-sweep-unhandled.txt 2>/dev/null)" = "left open by an exception" ] || { echo "writer: '$(cat exit-sweep-unhandled.txt 2>/dev/null)'"; status=1; }
+[ "$(cat exit-sweep-unhandled-disposed.txt 2>/dev/null)" = "replaced after dispose" ] || { echo "disposed writer: '$(cat exit-sweep-unhandled-disposed.txt 2>/dev/null)'"; status=1; }
+rm -f exit-sweep-unhandled.txt exit-sweep-unhandled-disposed.txt
+exit $status
