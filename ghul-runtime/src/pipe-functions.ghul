@@ -265,9 +265,15 @@ namespace Ghul.Pipes is
     reduce[T..,TRunning](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure) -> TRunning pure is
         let running mut = seed
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             running = accumulator(running, element)
         od
+
+        it.dispose()
 
         return running
     si
@@ -277,9 +283,15 @@ namespace Ghul.Pipes is
     reduce[T..,TRunning,TOut](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure, mapper: (TRunning) -> TOut pure) -> TOut pure is
         let running mut = seed
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             running = accumulator(running, element)
         od
+
+        it.dispose()
 
         return mapper(running)
     si
@@ -318,9 +330,15 @@ namespace Ghul.Pipes is
     collect_mutable[T](source: Iterable[T]) -> LIST[T] pure is
         let result = LIST[T]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             result.add(element)
         od
+
+        it.dispose()
 
         return result
     si
@@ -329,9 +347,15 @@ namespace Ghul.Pipes is
     collect_set[T](source: Iterable[T]) -> SET[T] pure is
         let result = SET[T]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             result.add(element)
         od
+
+        it.dispose()
 
         return result
     si
@@ -348,9 +372,15 @@ namespace Ghul.Pipes is
     collect_mutable_map[T..,K,V](source: Iterable[T], key_selector: T.. -> K pure, value_selector: T.. -> V pure) -> MAP[K,V] pure is
         let result = MAP[K,V]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             result.add(key_selector(element), value_selector(element))
         od
+
+        it.dispose()
 
         return result
     si
@@ -369,9 +399,15 @@ namespace Ghul.Pipes is
     collect_mutable_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure is
         let result = MAP[K, V]()
 
-        for (key, value) in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let (key, value) = it.current
+
             result.add(key, value)
         od
+
+        it.dispose()
 
         return result
     si
@@ -382,13 +418,19 @@ namespace Ghul.Pipes is
         let matching = LIST[T]()
         let non_matching = LIST[T]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             if predicate(element) then
                 matching.add(element)
             else
                 non_matching.add(element)
             fi
         od
+
+        it.dispose()
 
         return (matching, non_matching)
     si
@@ -399,7 +441,10 @@ namespace Ghul.Pipes is
         let result = MAP[K, List[T]]()
         let groups = MAP[K, LIST[T]]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
             let key = key_selector(element)
             let group: LIST[T] mut
 
@@ -411,6 +456,8 @@ namespace Ghul.Pipes is
 
             group.add(element)
         od
+
+        it.dispose()
 
         return result
     si
@@ -433,8 +480,12 @@ namespace Ghul.Pipes is
                 fi
             od
 
+            it.dispose()
+
             return MAYBE(result)
         fi
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -457,8 +508,12 @@ namespace Ghul.Pipes is
                 fi
             od
 
+            it.dispose()
+
             return MAYBE(result)
         fi
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -480,6 +535,8 @@ namespace Ghul.Pipes is
             result = result + 1
         od
 
+        it.dispose()
+
         return result
     si
 
@@ -495,6 +552,8 @@ namespace Ghul.Pipes is
             fi
         od
 
+        it.dispose()
+
         return result
     si
 
@@ -506,9 +565,12 @@ namespace Ghul.Pipes is
             let element = it.current
 
             if predicate(element) then
+                it.dispose()
                 return MAYBE(element)
             fi
         od
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -546,9 +608,12 @@ namespace Ghul.Pipes is
             let maybe_result = mapper(element)
 
             if maybe_result? then
+                it.dispose()
                 return maybe_result
             fi
         od
+
+        it.dispose()
 
         return MAYBE[U]()
     si
@@ -560,6 +625,7 @@ namespace Ghul.Pipes is
         let it = source.iterator
 
         if !it.move_next() then
+            it.dispose()
             return MAYBE[T]()
         fi
 
@@ -569,6 +635,8 @@ namespace Ghul.Pipes is
             found = it.current
         od
 
+        it.dispose()
+
         return MAYBE(found)
     si
 
@@ -577,8 +645,12 @@ namespace Ghul.Pipes is
         let it = source.iterator
 
         if it.move_next() then
-            return MAYBE(it.current)
+            let result = MAYBE(it.current)
+            it.dispose()
+            return result
         fi
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -593,9 +665,12 @@ namespace Ghul.Pipes is
             let maybe_result = mapper(element)
 
             if maybe_result? then
+                it.dispose()
                 return maybe_result
             fi
         fi
+
+        it.dispose()
 
         return MAYBE[U]()
     si
@@ -608,11 +683,16 @@ namespace Ghul.Pipes is
             let result = it.current
 
             if it.move_next() then
+                it.dispose()
                 return MAYBE[T]()
             fi
 
+            it.dispose()
+
             return MAYBE(result)
         fi
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -625,9 +705,12 @@ namespace Ghul.Pipes is
             let element = it.current
 
             if predicate(element) then
+                it.dispose()
                 return true
             fi
         od
+
+        it.dispose()
 
         return false
     si
@@ -640,9 +723,12 @@ namespace Ghul.Pipes is
             let element = it.current
 
             if !predicate(element) then
+                it.dispose()
                 return false
             fi
         od
+
+        it.dispose()
 
         return true
     si
@@ -654,6 +740,8 @@ namespace Ghul.Pipes is
         while it.move_next() do
             action(it.current)
         od
+
+        it.dispose()
     si
 
     /// The elements of `source` in reverse order.
@@ -739,9 +827,15 @@ namespace Ghul.Pipes is
     _sort_by[T,K: Ghul.Comparable[K]](source: Iterable[T], key_selector: (T) -> K pure, descending: bool) -> Iterable[T] pure is
         let keyed = LIST[(K,T)]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             keyed.add((key_selector(element), element))
         od
+
+        it.dispose()
 
         keyed.sort(PAIR_KEY_COMPARER[K,T](descending))
 
@@ -750,6 +844,8 @@ namespace Ghul.Pipes is
         for pair in keyed do
             result.add(pair.`1)
         od
+
+        it.dispose()
 
         return pipe(result)
     si
@@ -769,6 +865,8 @@ namespace Ghul.Pipes is
 
             seen_any = true
         od
+
+        it.dispose()
 
         return into
     si
@@ -1072,11 +1170,18 @@ namespace Ghul.Pipes is
         let wanted = SET[T]()
         wanted.add(value)
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
+
             if wanted.contains(element) then
+                it.dispose()
                 return true
             fi
         od
+
+        it.dispose()
 
         return false
     si
@@ -1089,7 +1194,10 @@ namespace Ghul.Pipes is
     frequencies[T](source: Iterable[T]) -> Map[T, int] pure is
         let result = MAP[T, int]()
 
-        for element in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let element = it.current
             let seen: int mut
 
             if result.try_get_value(element, seen ref) then
@@ -1098,6 +1206,8 @@ namespace Ghul.Pipes is
                 result.add(element, 1)
             fi
         od
+
+        it.dispose()
 
         return result
     si

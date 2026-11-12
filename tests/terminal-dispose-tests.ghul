@@ -1,0 +1,105 @@
+@@suppress("pipe-fusion")
+
+namespace Tests is
+    use Ghul.Pipes
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Counts how often an iterator over 1 to 5 is opened and disposed.
+    class DISPOSE_COUNTING: Collections.Iterable[int] is
+        opened: int public
+        disposed: int public
+
+        init() is si
+
+        iterator: Collections.Iterator[int] is
+            opened = opened + 1
+
+            return DISPOSE_COUNTING_ITERATOR(self)
+        si
+    si
+
+    class DISPOSE_COUNTING_ITERATOR: Collections.Iterator[int] is
+        _owner: DISPOSE_COUNTING
+        _next: int
+
+        init(owner: DISPOSE_COUNTING) is
+            _owner = owner
+        si
+
+        current: int => _next
+
+        move_next() -> bool is
+            _next = _next + 1
+
+            return _next <= 5
+        si
+
+        reset() is
+            _next = 0
+        si
+
+        dispose() is
+            _owner.disposed = _owner.disposed + 1
+        si
+    si
+
+    @TestClass()
+    class TerminalDisposeShould is
+        init() is si
+
+        @Test()
+        First_StoppingEarly_DisposesTheIterator() is
+            let source = DISPOSE_COUNTING()
+
+            are_equal(1, (source |> first())!)
+            are_equal(1, source.disposed)
+        si
+
+        @Test()
+        Any_StoppingEarly_DisposesTheIterator() is
+            let source = DISPOSE_COUNTING()
+
+            is_true(source |> any(x => x > 1))
+            are_equal(1, source.disposed)
+        si
+
+        @Test()
+        Count_ReadingToTheEnd_DisposesTheIterator() is
+            let source = DISPOSE_COUNTING()
+
+            are_equal(5, source |> count())
+            are_equal(1, source.disposed)
+        si
+
+        @Test()
+        Take_UnderATerminal_DisposesTheSource() is
+            let source = DISPOSE_COUNTING()
+
+            are_equal(2, source |> take(2) |> count())
+            are_equal(source.opened, source.disposed)
+        si
+
+        @Test()
+        StoredChain_ReadTwice_DisposesEachRead() is
+            let source = DISPOSE_COUNTING()
+            let chain = source |> map(x => x * 2)
+
+            chain |> count()
+            chain |> count()
+
+            are_equal(2, source.disposed)
+        si
+
+        @Test()
+        Cursor_Read_DisposesNothing() is
+            let source = DISPOSE_COUNTING()
+            let it = source.iterator
+
+            cursor(it) |> first()
+
+            are_equal(0, source.disposed)
+        si
+    si
+si
