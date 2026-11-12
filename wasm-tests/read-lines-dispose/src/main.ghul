@@ -1,0 +1,83 @@
+// Disposing an iterator of File.read_lines closes the file, as it does on
+// .NET: after a `use` ends a loop early, or an exception leaves it, the
+// iterator reads nothing more. Disposing it twice is harmless, and an
+// iterator read to the end has closed the file already.
+use IO.Std.write_line
+use IO.File
+
+after_dispose(name: string, lines: Collections.Iterator[string]) is
+    write_line("{name}: reads after dispose: {lines.move_next()}")
+si
+
+// `use` disposes when the enclosing block ends, so the loop has a function
+// of its own.
+read_to_two(lines: Collections.Iterator[string]) is
+    for line in use lines do
+        write_line("early exit read: {line}")
+
+        if line =~ "two" then
+            break
+        fi
+    od
+si
+
+early_exit(path: string) is
+    let lines = File.read_lines(path).iterator
+
+    read_to_two(lines)
+
+    after_dispose("early exit", lines)
+si
+
+exception(path: string) is
+    let lines = File.read_lines(path).iterator
+
+    try
+        for line in use lines do
+            write_line("exception read: {line}")
+
+            if line =~ "two" then
+                throw System.InvalidOperationException("stop at {line}")
+            fi
+        od
+    catch e: System.InvalidOperationException
+        write_line("caught: {e.message}")
+    yrt
+
+    after_dispose("exception", lines)
+si
+
+twice(path: string) is
+    let lines = File.read_lines(path).iterator
+
+    lines.move_next()
+    lines.dispose()
+    lines.dispose()
+
+    after_dispose("disposed twice", lines)
+si
+
+to_the_end(path: string) is
+    let lines = File.read_lines(path).iterator
+    let count mut = 0
+
+    while lines.move_next() do
+        count = count + 1
+    od
+
+    write_line("to the end: {count} lines, reads after the end: {lines.move_next()}")
+    lines.dispose()
+si
+
+entry() is
+    let path = "read-lines-dispose.txt"
+
+    File.write_all_text(path, "one\ntwo\nthree\nfour\n")
+
+    early_exit(path)
+    exception(path)
+    twice(path)
+    to_the_end(path)
+
+    File.delete(path)
+si
