@@ -51,6 +51,8 @@ namespace Ghul.Pipes is
     // both iterable and an iterator, so overloading on the two would be
     // ambiguous at every call site a pipe reaches.
     /// Lifts a bare `Iterator[T]` into a `Pipe[T]` so the combinators can drive it.
+    /// The iterator stays its creator's: reading the cursor, to the end or not,
+    /// never disposes it, so a `use` on the iterator is what releases it.
     cursor[T](source: Iterator[T]) -> Pipe[T] pure => ITERATOR_PIPE[T](source)
 
     /// Advances `iter` and returns the element it reaches, or absent once
