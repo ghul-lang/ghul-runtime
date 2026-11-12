@@ -149,5 +149,23 @@ namespace Tests is
             is_true(path?)
             is_true(IO.File.exists(path!))
         si
+
+        // On .NET the version is the entry assembly's informational version:
+        // here the test host's, which carries one.
+        @Test()
+        Environment_ProgramVersion_IsTheEntryAssemblysInformationalVersion() is
+            let entry = System.Reflection.Assembly.get_entry_assembly()
+
+            is_true(entry?)
+
+            let attributes = entry!.get_custom_attributes(typeof System.Reflection.AssemblyInformationalVersionAttribute, false)
+
+            is_true(attributes.count > 0)
+
+            let expected = cast System.Reflection.AssemblyInformationalVersionAttribute(attributes[0]).informational_version
+
+            are_equal(expected, Ghul.ENVIRONMENT.program_version)
+            is_false(Ghul.ENVIRONMENT.program_version =~ "0.0.0-local")
+        si
     si
 si

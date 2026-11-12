@@ -71,6 +71,21 @@ namespace Ghul is
         /// The process environment.
         instance: ENVIRONMENT static => _instance
 
+        /// The version the program was built as: its entry assembly's
+        /// informational version, which a .NET build's `Version` sets, or
+        /// `0.0.0-local` where it has none.
+        program_version: string static is
+            if let assembly = System.Reflection.Assembly.get_entry_assembly() then
+                for attribute in assembly.get_custom_attributes(typeof System.Reflection.AssemblyInformationalVersionAttribute, false) do
+                    if let informational: System.Reflection.AssemblyInformationalVersionAttribute = attribute then
+                        return informational.informational_version
+                    fi
+                od
+            fi
+
+            return "0.0.0-local"
+        si
+
         /// Reads or writes `key` in the process environment directly, with no snapshot behind it.
         [key: string]: string? =>
             System.Environment.get_environment_variable(key),
