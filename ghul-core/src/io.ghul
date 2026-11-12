@@ -140,6 +140,30 @@ namespace IO is
         /// Reads the next character, or -1 at the end of the text.
         read() -> int;
 
+        /// Reads up to `count` characters into `buffer` from `index`, and
+        /// answers how many it read: fewer than `count` only at the end of
+        /// the text, where it answers 0.
+        ///
+        /// - buffer: where to put the characters
+        /// - index: the first position in `buffer` to fill
+        /// - count: the most characters to read
+        read(buffer: ARRAY[char], index: int, count: int) -> int is
+            let read_so_far mut = 0
+
+            while read_so_far < count do
+                let c = read()
+
+                if c < 0 then
+                    return read_so_far
+                fi
+
+                Ghul._array_set(buffer, index + read_so_far, cast char(c))
+                read_so_far = read_so_far + 1
+            od
+
+            return read_so_far
+        si
+
         /// The next character, left unread, or -1 at the end of the text.
         peek() -> int;
 

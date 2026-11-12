@@ -1,0 +1,71 @@
+// The reader and stream adaptors over files. `use` holds the reader, the
+// adaptor reads it, and a second read carries on from where the first
+// stopped. `write_lines` flushes what it wrote, so a second handle reads it
+// while the writer is still open, and a `use` in a parenthesised block is
+// disposed when that block ends. A pipe read after its reader is disposed
+// throws.
+use IO.Std.write_line
+use IO.File
+use Ghul.Pipes
+
+class LOGGED: Ghul.Disposable is
+    init() is
+        write_line("logged: open")
+    si
+
+    dispose() is
+        write_line("logged: dispose")
+    si
+si
+
+flushed_before_the_block_ends(path: string) is
+    let use writer = File.create_text(path)
+
+    ["first", "second", "third"] |> write_lines(writer)
+
+    write_line("readable while the writer is open: {(let use reader = File.open_text(path); reader |> lines() |> count())} lines")
+si
+
+escaped(path: string) -> Pipe[string] =>
+    (let use reader = File.open_text(path) in reader |> lines())
+
+entry() is
+    let path = "reader-adaptors.txt"
+
+    flushed_before_the_block_ends(path)
+
+    (let use logged = LOGGED(); write_line("logged: in the block"))
+    write_line("logged: after the block")
+
+    let total = (let use reader = File.open_text(path); reader |> lines() |> map(l => l.length) |> sum())
+    write_line("total length: {total}")
+
+    (
+        let use reader = File.open_text(path);
+        write_line("header: {reader |> lines() |> first()}");
+        write_line("body lines: {reader |> lines() |> count()}")
+    )
+
+    (
+        let use reader = File.open_text(path);
+
+        for line in reader |> lines() do
+            if line =~ "second" then
+                write_line("found: {line}")
+                break
+            fi
+        od
+    )
+
+    write_line("chars: {(let use reader = File.open_text(path); reader |> chars() |> count())}")
+    write_line("bytes: {(let use stream = File.open_read(path); stream |> bytes() |> count())}")
+    write_line("chunks of 5: {(let use stream = File.open_read(path); stream |> chunks(5) |> map(c => c.count) |> join(","))}")
+
+    try
+        write_line("escaped: {escaped(path) |> count()}")
+    catch e: Ghul.ObjectDisposedException
+        write_line("escaped: read after dispose throws")
+    yrt
+
+    File.delete(path)
+si

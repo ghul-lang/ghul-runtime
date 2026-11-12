@@ -1,0 +1,13 @@
+readable while the writer is open: 3 lines
+logged: open
+logged: in the block
+logged: dispose
+logged: after the block
+total length: 16
+header: first
+body lines: 2
+found: second
+chars: 19
+bytes: 19
+chunks of 5: 5,5,5,4
+escaped: read after dispose throws

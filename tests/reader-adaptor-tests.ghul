@@ -1,0 +1,102 @@
+namespace Tests is
+    use Ghul
+
+    use Collections
+
+    use Ghul.Pipes
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class READER_ADAPTORS_SHOULD is
+        init() is si
+
+        _stream(byte_values: int[]) -> IO.MemoryStream =>
+            IO.MemoryStream(byte_values |> map(b => ubyte(b)) |> ARRAY())
+
+        @Test()
+        lines__reads_each_line_without_its_break() is
+            let reader = IO.StringReader("one\ntwo\r\nthree")
+
+            are_equal("one|two|three", reader |> lines() |> join("|"))
+        si
+
+        @Test()
+        lines__a_second_read_carries_on_where_the_first_stopped() is
+            let reader = IO.StringReader("header\nbody 1\nbody 2\n")
+
+            are_equal("header", reader |> lines() |> first())
+            are_equal(2, reader |> lines() |> count())
+        si
+
+        @Test()
+        lines__does_not_dispose_the_reader() is
+            let reader = IO.StringReader("one\ntwo\n")
+
+            let it = (reader |> lines()).iterator
+            it.move_next()
+            it.dispose()
+
+            are_equal("two", reader.read_line())
+        si
+
+        @Test()
+        chars__reads_every_character_across_blocks() is
+            let text = repeat("abc", 3000) |> join("")
+
+            are_equal(9000, IO.StringReader(text) |> chars() |> count())
+            are_equal(text, IO.StringReader(text) |> chars() |> string())
+        si
+
+        @Test()
+        chars__a_second_read_carries_on() is
+            let reader = IO.StringReader("xyz")
+
+            are_equal('x', (reader |> chars() |> first())!)
+        si
+
+        @Test()
+        bytes__reads_every_byte() is
+            are_equal("1,2,3", _stream([1, 2, 3]) |> bytes() |> join(","))
+        si
+
+        @Test()
+        chunks__gives_full_blocks_then_a_short_last_one() is
+            let sizes = _stream([1, 2, 3, 4, 5, 6, 7]) |> chunks(3) |> map(c => c.count) |> join(",")
+
+            are_equal("3,3,1", sizes)
+        si
+
+        @Test()
+        chunks__gives_each_block_its_own_array() is
+            let blocks = _stream([1, 2, 3, 4]) |> chunks(2) |> LIST()
+
+            are_equal(1, int(blocks[0][0]))
+            are_equal(3, int(blocks[1][0]))
+        si
+
+        @Test()
+        chunks__of_less_than_one_byte_throws() is
+            let thrown mut = false
+
+            try
+                _stream([1]) |> chunks(0)
+            catch e: ArgumentOutOfRangeException
+                thrown = true
+            yrt
+
+            is_true(thrown)
+        si
+
+        @Test()
+        write_lines__writes_each_line_and_leaves_the_writer_open() is
+            let writer = IO.StringWriter()
+
+            ["a", "b"] |> write_lines(writer)
+            writer.write("c")
+
+            are_equal("a{System.Environment.new_line}b{System.Environment.new_line}c", writer.to_string())
+        si
+    si
+si
