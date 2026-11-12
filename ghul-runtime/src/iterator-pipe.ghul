@@ -40,8 +40,10 @@ namespace Ghul.Pipes is
         @IF.source_core()
         to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
 
-        /// Disposes the underlying iterator.
-        dispose() => _iterator.dispose()
+        /// Has no effect: the underlying iterator isn't this pipe's to dispose.
+        dispose() is
+            // The iterator is borrowed: whoever made the cursor disposes it.
+        si
     si
 
     // Lift a bare `Iterator[T]` into a pipe so the combinators can
@@ -49,6 +51,8 @@ namespace Ghul.Pipes is
     // both iterable and an iterator, so overloading on the two would be
     // ambiguous at every call site a pipe reaches.
     /// Lifts a bare `Iterator[T]` into a `Pipe[T]` so the combinators can drive it.
+    /// The iterator stays its creator's: reading the cursor, to the end or not,
+    /// never disposes it, so a `use` on the iterator is what releases it.
     cursor[T](source: Iterator[T]) -> Pipe[T] pure => ITERATOR_PIPE[T](source)
 
     /// Advances `iter` and returns the element it reaches, or absent once

@@ -100,8 +100,12 @@ namespace Ghul.Pipes is
                 fi
             od
 
+            it.dispose()
+
             return MAYBE(result)
         fi
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -119,8 +123,12 @@ namespace Ghul.Pipes is
                 fi
             od
 
+            it.dispose()
+
             return MAYBE(result)
         fi
+
+        it.dispose()
 
         return MAYBE[T]()
     si
@@ -137,9 +145,15 @@ namespace Ghul.Pipes is
     sum[T: INumber[T]](source: Iterable[T]) -> T pure is
         let total mut = T.zero
 
-        for value in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let value = it.current
+
             total = total + value
         od
+
+        it.dispose()
 
         return total
     si
@@ -149,9 +163,15 @@ namespace Ghul.Pipes is
     product[T: INumber[T]](source: Iterable[T]) -> T pure is
         let running mut = T.one
 
-        for value in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let value = it.current
+
             running = running * value
         od
+
+        it.dispose()
 
         return running
     si
@@ -162,9 +182,15 @@ namespace Ghul.Pipes is
     sum_by[T..,N: INumber[N]](source: Iterable[T], selector: T.. -> N pure) -> N pure is
         let total mut = N.zero
 
-        for value in source do
+        let it = source.iterator
+
+        while it.move_next() do
+            let value = it.current
+
             total = total + selector(value)
         od
+
+        it.dispose()
 
         return total
     si

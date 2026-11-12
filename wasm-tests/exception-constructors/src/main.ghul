@@ -1,0 +1,23 @@
+// The exceptions the core library declares take the constructors .NET's do
+// and give the same messages.
+use IO.Std.write_line
+
+entry() is
+    write_line(Ghul.ObjectDisposedException("reader").message)
+    write_line(Ghul.ObjectDisposedException(null).message)
+    write_line(Ghul.ObjectDisposedException("reader", "Cannot read a closed reader.").message)
+    write_line(Ghul.ObjectDisposedException(null, "Cannot read a closed reader.").message)
+    write_line("[{Ghul.ObjectDisposedException(null).object_name}] [{Ghul.ObjectDisposedException("reader").object_name}]")
+
+    write_line(Ghul.AggregateException().message)
+    write_line(Ghul.AggregateException("it failed").message)
+
+    let inner = Ghul.InvalidOperationException("the inner one")
+
+    let both: Ghul.Exception{} = [inner, Ghul.FormatException("another")]
+
+    write_line(Ghul.AggregateException(both).message)
+    write_line(Ghul.AggregateException(both).inner_exception?.message ?? "none")
+    write_line(Ghul.AggregateException("it failed", inner).message)
+    write_line(Ghul.AggregateException("it failed", inner).inner_exception?.message ?? "none")
+si

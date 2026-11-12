@@ -1,0 +1,7 @@
+{
+    "name": "terminals-dispose",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
