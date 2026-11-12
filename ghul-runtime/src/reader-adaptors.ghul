@@ -1,0 +1,237 @@
+namespace Ghul.Pipes is
+    use Collections
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
+
+    // The adaptors read a reader or a stream they borrow. Each pipe is its
+    // own iterator, as a cursor is: there is no owning sequence to take a
+    // fresh one from, so a second read carries on from wherever the reader
+    // was left, and disposing the pipe leaves the reader open.
+
+    /// The lines of `reader`, each without its line break, read as they are
+    /// asked for. The pipe borrows the reader: reading it never disposes the
+    /// reader, and a second read carries on from where the first stopped.
+    /// Hold the reader with `use` to close it:
+    /// `use IO.File.open_text(path) |> lines()`. `use` closes it when the
+    /// enclosing block ends; a parenthesised block closes it sooner:
+    /// `(let use reader = IO.File.open_text(path); reader |> lines() |> first())`.
+    ///
+    /// - reader: the reader to read
+    lines(reader: IO.TextReader) -> Pipe[string] => _READER_LINES(reader)
+
+    /// The characters of `reader`, read as they are asked for, a block at a
+    /// time. The pipe borrows the reader, as `lines` does.
+    ///
+    /// - reader: the reader to read
+    chars(reader: IO.TextReader) -> Pipe[char] => _READER_CHARS(reader)
+
+    /// The bytes of `stream`, read as they are asked for, a block at a time.
+    /// The pipe borrows the stream: reading it never disposes the stream,
+    /// and a second read carries on from where the first stopped.
+    ///
+    /// - stream: the stream to read
+    bytes(stream: IO.Stream) -> Pipe[ubyte] => _STREAM_BYTES(stream)
+
+    /// The bytes of `stream` in blocks of `size`, read as they are asked
+    /// for. Each block is an array of its own, and only the last can be
+    /// shorter. The pipe borrows the stream, as `bytes` does.
+    ///
+    /// - stream: the stream to read
+    /// - size: the number of bytes in each block, at least 1
+    chunks(stream: IO.Stream, size: int) -> Pipe[ARRAY[ubyte]] is
+        if size < 1 then
+            throw ArgumentOutOfRangeException("size")
+        fi
+
+        return _STREAM_CHUNKS(stream, size)
+    si
+
+    /// Writes each element of `source` to `writer`, followed by a line
+    /// break, then flushes the writer, so what was written is in place when
+    /// the call returns. The writer is borrowed and stays open: hold it with
+    /// `use` to close it, in a parenthesised block to close it straight
+    /// away: `(let use writer = IO.File.create_text(path); lines |> write_lines(writer))`.
+    ///
+    /// - source: the lines to write
+    /// - writer: where to write them
+    write_lines(source: Iterable[string], writer: IO.TextWriter) is
+        for line in source do
+            writer.write_line(line)
+        od
+
+        writer.flush()
+    si
+
+    class _READER_LINES: Pipe[string] is
+        _reader: IO.TextReader
+        _current: string
+
+        init(reader: IO.TextReader) is
+            _reader = reader
+            _current = ""
+        si
+
+        iterator: Iterator[string] => self
+
+        current: string => _current
+
+        move_next() -> bool is
+            if let line = _reader.read_line() then
+                _current = line
+                return true
+            fi
+
+            return false
+        si
+
+        reset() is
+        si
+
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
+
+        dispose() is
+        si
+    si
+
+    class _READER_CHARS: Pipe[char] is
+        _reader: IO.TextReader
+        _buffer: ARRAY[char]
+        _count: int
+        _at: int
+
+        init(reader: IO.TextReader) is
+            _reader = reader
+            _buffer = LIST[char](repeat(cast char(0), 4096)).to_array()
+        si
+
+        iterator: Iterator[char] => self
+
+        current: char => _buffer[_at]
+
+        move_next() -> bool is
+            _at = _at + 1
+
+            if _at < _count then
+                return true
+            fi
+
+            _count = _reader.read(_buffer, 0, _buffer.count)
+            _at = 0
+
+            return _count > 0
+        si
+
+        reset() is
+        si
+
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
+
+        dispose() is
+        si
+    si
+
+    class _STREAM_BYTES: Pipe[ubyte] is
+        _stream: IO.Stream
+        _buffer: ARRAY[ubyte]
+        _count: int
+        _at: int
+
+        init(stream: IO.Stream) is
+            _stream = stream
+            _buffer = LIST[ubyte](repeat(0ub, 4096)).to_array()
+        si
+
+        iterator: Iterator[ubyte] => self
+
+        current: ubyte => _buffer[_at]
+
+        move_next() -> bool is
+            _at = _at + 1
+
+            if _at < _count then
+                return true
+            fi
+
+            _count = _stream.read(_buffer, 0, _buffer.count)
+            _at = 0
+
+            return _count > 0
+        si
+
+        reset() is
+        si
+
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
+
+        dispose() is
+        si
+    si
+
+    class _STREAM_CHUNKS: Pipe[ARRAY[ubyte]] is
+        _stream: IO.Stream
+        _size: int
+        _current: ARRAY[ubyte]
+
+        init(stream: IO.Stream, size: int) is
+            _stream = stream
+            _size = size
+            _current = LIST[ubyte]().to_array()
+        si
+
+        iterator: Iterator[ARRAY[ubyte]] => self
+
+        current: ARRAY[ubyte] => _current
+
+        move_next() -> bool is
+            let block = LIST[ubyte](repeat(0ub, _size)).to_array()
+            let filled mut = 0
+
+            // A stream can answer fewer bytes than asked for before its
+            // end, so a block is read until it is full or the stream ends.
+            while filled < _size do
+                let got = _stream.read(block, filled, _size - filled)
+
+                if got <= 0 then
+                    break
+                fi
+
+                filled = filled + got
+            od
+
+            if filled == 0 then
+                return false
+            fi
+
+            if filled < _size then
+                _current = LIST[ubyte](block |> take(filled)).to_array()
+            else
+                _current = block
+            fi
+
+            return true
+        si
+
+        reset() is
+        si
+
+        @IF.dotnet()
+        to_string() -> string => $(self)
+
+        @IF.source_core()
+        to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
+
+        dispose() is
+        si
+    si
+si

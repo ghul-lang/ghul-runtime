@@ -1,0 +1,7 @@
+{
+    "name": "reader-adaptors",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
