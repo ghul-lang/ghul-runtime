@@ -379,7 +379,7 @@ namespace IO is
 
         _check_open() is
             if !_open then
-                throw Ghul.ObjectDisposedException(null, "Cannot access a closed Stream.")
+                throw Ghul.ObjectDisposedException("Cannot access a closed Stream.")
             fi
         si
 

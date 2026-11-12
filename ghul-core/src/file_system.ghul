@@ -1269,7 +1269,7 @@ namespace IO is
 
         read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
             if !_open then
-                throw Ghul.ObjectDisposedException(null, "Cannot access a closed file.")
+                throw Ghul.ObjectDisposedException("Cannot access a closed file.")
             fi
 
             if offset < 0 then
