@@ -64,7 +64,12 @@ namespace Ghul.Pipes is
         DISTINCT_PIPE[T](source)
 
     /// The elements of `source` unchanged, calling `action` on each as it passes through.
-    peek[T..](source: Iterable[T], action: T.. -> void) -> Iterable[T] pure =>
+    ///
+    /// `peek` is the lazy stage for effects: `action` need not be pure, and runs
+    /// each time an element is read, by whatever reads the result. So `peek` is
+    /// not declared pure, unlike the other lazy stages, and a call to it counts as
+    /// one that can store.
+    peek[T..](source: Iterable[T], action: T.. -> void) -> Iterable[T] =>
         PEEK_PIPE[T](source, action)
 
     /// `source` as a `T[]`, a read-only list, without reading it all first. Use it
