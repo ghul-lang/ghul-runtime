@@ -1,0 +1,5 @@
+// The C library's description of an errno value, on llvm.
+use IO.Std.write_line
+
+write_line(Ghul.Interop.error_text(2))
+write_line(Ghul.Interop.error_text(9))

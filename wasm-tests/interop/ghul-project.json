@@ -1,0 +1,7 @@
+{
+    "name": "interop",
+    "targets": ["llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

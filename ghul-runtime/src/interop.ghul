@@ -1,0 +1,24 @@
+/// Helpers for programs that call foreign code through `@extern`.
+namespace Ghul.Interop is
+    /// The C library's description of the error `code`, an errno value such
+    /// as an extern declared with `errno =` answers in its ERROR variant. On
+    /// .NET it is the platform's message for the code. There is no errno on
+    /// wasm, so this is not declared there.
+    ///
+    /// - code: the errno value
+    @IF.llvm()
+    error_text(code: int) -> string => _strerror(code) ?? "unknown error {code}"
+
+    @IF.llvm()
+    @extern("", "strerror", result = "copy")
+    _strerror(code: int) -> string?
+
+    /// The C library's description of the error `code`, an errno value such
+    /// as an extern declared with `errno =` answers in its ERROR variant. On
+    /// .NET it is the platform's message for the code. There is no errno on
+    /// wasm, so this is not declared there.
+    ///
+    /// - code: the errno value
+    @IF.dotnet()
+    error_text(code: int) -> string => System.Runtime.InteropServices.Marshal.get_p_invoke_error_message(code)
+si
