@@ -1,12 +1,11 @@
-// .NET's name for this type is kept, so source written against .NET
-// builds here unchanged.
+// The secure generator, under its Crypto name; the compiler keeps its
+// System.Security.Cryptography name as a second spelling.
 @@suppress("non-upper-snake-case-name")
 
-namespace System.Security.Cryptography is
-    /// Random numbers and bytes fit for cryptography, as .NET's
-    /// `System.Security.Cryptography.RandomNumberGenerator` gives them: each
-    /// comes from the operating system's source of randomness, through the
-    /// host.
+namespace Crypto is
+    /// Random numbers and bytes fit for cryptography, as .NET gives them:
+    /// each comes from the operating system's source of randomness, through
+    /// the host.
     class RandomNumberGenerator: Ghul.Disposable is
         init() is si
 

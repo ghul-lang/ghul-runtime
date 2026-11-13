@@ -1,0 +1,42 @@
+namespace Crypto is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
+
+    /// The 16-byte MD5 digest of `bytes`. MD5 is broken as a cryptographic
+    /// hash; use it for checksums.
+    ///
+    /// - bytes: the bytes to digest
+    md5(bytes: ARRAY[ubyte]) -> ARRAY[ubyte] => MD5.hash_data(bytes)
+
+    /// The 20-byte SHA-1 digest of `bytes`. SHA-1 is broken as a
+    /// cryptographic hash; use it for checksums.
+    ///
+    /// - bytes: the bytes to digest
+    sha1(bytes: ARRAY[ubyte]) -> ARRAY[ubyte] => SHA1.hash_data(bytes)
+
+    /// The 32-byte SHA-256 digest of `bytes`.
+    ///
+    /// - bytes: the bytes to digest
+    sha256(bytes: ARRAY[ubyte]) -> ARRAY[ubyte] => SHA256.hash_data(bytes)
+
+    /// `count` random bytes, fit for cryptography. Throws
+    /// `Ghul.ArgumentOutOfRangeException` when `count` is negative.
+    ///
+    /// - count: how many bytes
+    random_bytes(count: int) -> ARRAY[ubyte] => RandomNumberGenerator.get_bytes(count)
+
+    /// A random `int` from 0 up to but not including `to_exclusive`, every
+    /// value equally likely and fit for cryptography. Throws
+    /// `Ghul.ArgumentOutOfRangeException` when `to_exclusive` is not positive.
+    ///
+    /// - to_exclusive: the bound, which is never returned
+    random_int(to_exclusive: int) -> int => RandomNumberGenerator.get_int32(to_exclusive)
+
+    /// A random `int` from `from_inclusive` up to but not including
+    /// `to_exclusive`, every value equally likely and fit for cryptography.
+    /// Throws `Ghul.ArgumentException` when `from_inclusive` is not below
+    /// `to_exclusive`.
+    ///
+    /// - from_inclusive: the least value returned
+    /// - to_exclusive: the bound, which is never returned
+    random_int(from_inclusive: int, to_exclusive: int) -> int => RandomNumberGenerator.get_int32(from_inclusive, to_exclusive)
+si
