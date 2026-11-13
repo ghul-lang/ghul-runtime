@@ -1,0 +1,4 @@
+LIST as a bag: contains 7 true, contains 9 false
+a bag with the default contains: contains 7 true, contains 9 false
+LIST: index_of 4 0, index_of 7 1, index_of 9 -1
+a list with the default index_of: index_of 4 0, index_of 7 1, index_of 9 -1

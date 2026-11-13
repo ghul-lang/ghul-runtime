@@ -1,0 +1,55 @@
+// The members a collection answers through the traits: contains, remove and
+// index_of on a list as a bag, a set as a bag whose add answers whether it
+// added, a map as a bag of pairs, and the size of a map's keys and values.
+// The expected output is what .NET's own collections print.
+use IO.Std.write_line
+use Collections
+
+as_bag(bag: MutableBag[int]) is
+    bag.add(3)
+    bag.add(5)
+    bag.add(3)
+
+    write_line("count {bag.count}, contains 3 {bag.contains(3)}, contains 4 {bag.contains(4)}")
+    write_line("remove 3 {bag.remove(3)}, remove 4 {bag.remove(4)}, count {bag.count}")
+si
+
+as_list(list: MutableList[string]) is
+    list.add("a")
+    list.add("b")
+    list.add("a")
+
+    write_line("index_of a {list.index_of("a")}, b {list.index_of("b")}, c {list.index_of("c")}")
+si
+
+as_set(set: MutableSet[int]) is
+    write_line("add 1 {set.add(1)}, add 1 again {set.add(1)}")
+si
+
+as_pairs(pairs: MutableBag[KEY_VALUE_PAIR[string, int]]) is
+    write_line("contains (a, 1) {pairs.contains(KEY_VALUE_PAIR("a", 1))}, contains (a, 2) {pairs.contains(KEY_VALUE_PAIR("a", 2))}, contains (z, 1) {pairs.contains(KEY_VALUE_PAIR("z", 1))}")
+    write_line("remove (a, 2) {pairs.remove(KEY_VALUE_PAIR("a", 2))}, remove (a, 1) {pairs.remove(KEY_VALUE_PAIR("a", 1))}, count {pairs.count}")
+si
+
+entry() is
+    write_line("list as a bag:")
+    as_bag(LIST[int]())
+
+    write_line("list:")
+    as_list(LIST[string]())
+
+    write_line("set:")
+    as_set(SET[int]())
+
+    let map = MAP[string, int]()
+    map["a"] = 1
+    map["b"] = 2
+    map["c"] = 3
+
+    write_line("map keys count {map.keys.count}, values count {map.values.count}")
+
+    write_line("map as pairs:")
+    as_pairs(map)
+
+    write_line("map keys count {map.keys.count}, values count {map.values.count}")
+si

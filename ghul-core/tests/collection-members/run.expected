@@ -1,0 +1,12 @@
+list as a bag:
+count 3, contains 3 true, contains 4 false
+remove 3 true, remove 4 false, count 2
+list:
+index_of a 0, b 1, c -1
+set:
+add 1 true, add 1 again false
+map keys count 3, values count 3
+map as pairs:
+contains (a, 1) true, contains (a, 2) false, contains (z, 1) false
+remove (a, 2) false, remove (a, 1) true, count 2
+map keys count 2, values count 2
