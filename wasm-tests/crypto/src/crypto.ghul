@@ -1,6 +1,6 @@
 // The digests, with the Crypto functions and through the types under their
 // Crypto and System.Security.Cryptography names.
-use IO.Std.write_line
+use default
 use Crypto.md5
 use Crypto.sha1
 use Crypto.sha256
