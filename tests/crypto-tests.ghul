@@ -1,0 +1,69 @@
+namespace Tests is
+    use Ghul
+
+    use Crypto.md5
+    use Crypto.sha1
+    use Crypto.sha256
+    use Crypto.random_bytes
+    use Crypto.random_int
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class CryptoShould is
+        init() is si
+
+        @Test()
+        Give_the_md5_digest() is
+            are_equal("900150983CD24FB0D6963F7D28E17F72", Text.to_hex(md5(_abc())))
+        si
+
+        @Test()
+        Give_the_sha1_digest() is
+            are_equal("A9993E364706816ABA3E25717850C26C9CD0D89D", Text.to_hex(sha1(_abc())))
+        si
+
+        @Test()
+        Give_the_sha256_digest() is
+            are_equal("BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD", Text.to_hex(sha256(_abc())))
+        si
+
+        @Test()
+        Give_the_same_digest_through_the_type_under_either_name() is
+            are_equal(Text.to_hex(Crypto.SHA256.hash_data(_abc())), Text.to_hex(System.Security.Cryptography.SHA256.hash_data(_abc())))
+            are_equal(Text.to_hex(sha256(_abc())), Text.to_hex(Crypto.SHA256.hash_data(_abc())))
+        si
+
+        @Test()
+        Give_random_bytes_of_the_count_asked_for() is
+            are_equal(16, random_bytes(16).count)
+            are_equal(0, random_bytes(0).count)
+        si
+
+        @Test()
+        Give_random_ints_within_the_bounds() is
+            for _ in 0..1000 do
+                let below = random_int(7)
+                is_true(below >= 0 /\ below < 7)
+
+                let between = random_int(-3, 4)
+                is_true(between >= -3 /\ between < 4)
+            od
+
+            are_equal(5, random_int(5, 6))
+        si
+
+        @Test()
+        Give_the_generator_under_either_name() is
+            let random: Crypto.RandomNumberGenerator = System.Security.Cryptography.RandomNumberGenerator.create()
+            let bytes = Text.Encoding.ascii.get_bytes("12345678")
+            random.get_bytes(bytes)
+            are_equal(8, bytes.count)
+        si
+
+        _abc() -> ARRAY[ubyte] => Text.Encoding.ascii.get_bytes("abc")
+    si
+si

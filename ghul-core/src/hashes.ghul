@@ -1,12 +1,13 @@
-// .NET's names for these types are kept, so source written against .NET
-// builds here unchanged. The digests are computed in ghūl, so they need no
-// cryptography library on either source-core target.
+// The hashes, under their Crypto names; the compiler keeps their
+// System.Security.Cryptography names as second spellings. The digests are
+// computed in ghūl, so they need no cryptography library on either
+// source-core target.
 @@suppress("non-upper-snake-case-name")
 
-namespace System.Security.Cryptography is
+namespace Crypto is
     use System.Numerics.BitOperations
 
-    /// The MD5 digest, as .NET's `System.Security.Cryptography.MD5` gives it.
+    /// The MD5 digest, as .NET gives it.
     /// MD5 is broken as a cryptographic hash and is here for checksums.
     class MD5 is
         /// The 16-byte MD5 digest of `source`.
@@ -81,8 +82,8 @@ namespace System.Security.Cryptography is
         si
     si
 
-    /// The SHA-1 digest, as .NET's `System.Security.Cryptography.SHA1` gives
-    /// it. SHA-1 is broken as a cryptographic hash and is here for checksums.
+    /// The SHA-1 digest, as .NET gives it.
+    /// SHA-1 is broken as a cryptographic hash and is here for checksums.
     class SHA1 is
         /// The 20-byte SHA-1 digest of `source`.
         ///
@@ -151,8 +152,7 @@ namespace System.Security.Cryptography is
         si
     si
 
-    /// The SHA-256 digest, as .NET's `System.Security.Cryptography.SHA256`
-    /// gives it.
+    /// The SHA-256 digest, as .NET gives it.
     class SHA256 is
         /// The 32-byte SHA-256 digest of `source`.
         ///
