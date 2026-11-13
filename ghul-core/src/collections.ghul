@@ -83,6 +83,20 @@ namespace Collections is
         /// - value: the element to add
         add(value: E);
 
+        /// Whether any element is `=~` to `value`. A collection that can
+        /// answer without reading every element overrides it.
+        ///
+        /// - value: the element to look for
+        contains(value: E) -> bool is
+            for element in self do
+                if element =~ value then
+                    return true
+                fi
+            od
+
+            return false
+        si
+
         /// Removes every element.
         clear();
     si
@@ -116,6 +130,24 @@ namespace Collections is
         ///
         /// - value: the element to remove
         remove(value: E) -> bool;
+
+        /// The position of the first element `=~` to `value`, or -1 where
+        /// none is.
+        ///
+        /// - value: the element to look for
+        index_of(value: E) -> int is
+            let index mut = 0
+
+            for element in self do
+                if element =~ value then
+                    return index
+                fi
+
+                index = index + 1
+            od
+
+            return -1
+        si
     si
 
     /// A read-only map from keys to values, iterated as key and value pairs.
