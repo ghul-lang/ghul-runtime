@@ -1,51 +1,51 @@
 use default
-use System.DateTime
-use System.DateTimeOffset
-use System.DateTimeKind
-use System.DayOfWeek
-use System.TimeSpan
-use System.Globalization.ISOWeek
+use Time.DATE_TIME
+use Time.DATE_TIME_OFFSET
+use Time.DateTimeKind
+use Time.DayOfWeek
+use Time.TIME_SPAN
+use Time.ISO_WEEK
 
 show(library, epoch) =>
     write_line("{library,-22}{epoch,-22:yyyy-MM-dd HH:mm:ss}{epoch.kind == DateTimeKind.UTC}")
 
-let utc_zero = DateTimeOffset(0L, TimeSpan.zero)
-show("System.DateTime", DateTime(0L))
+let utc_zero = DATE_TIME_OFFSET(0L, TIME_SPAN.zero)
+show("System.DateTime", DATE_TIME(0L))
 show("System.DateTimeOffset", utc_zero.utc_date_time)
-show("Unix time", DateTime.unix_epoch)
-show("Windows file time", DateTime.from_file_time_utc(0L))
+show("Unix time", DATE_TIME.unix_epoch)
+show("Windows file time", DATE_TIME.from_file_time_utc(0L))
 
-let instant = DateTime(2026, 9, 21, 12, 0, 0, DateTimeKind.UTC)
-write_line("{DateTimeOffset(instant).to_unix_time_seconds()} {instant.to_file_time_utc()}")
+let instant = DATE_TIME(2026, 9, 21, 12, 0, 0, DateTimeKind.UTC)
+write_line("{DATE_TIME_OFFSET(instant).to_unix_time_seconds()} {instant.to_file_time_utc()}")
 
-let d = DateTimeOffset(2009, 3, 7, 19, 30, 0, TimeSpan.from_hours(-5))
+let d = DATE_TIME_OFFSET(2009, 3, 7, 19, 30, 0, TIME_SPAN.from_hours(-5))
 write_line("{d}")
 write_line("{d.to_string("yyyy-MM-dd HH:mm z zz zzz K")}")
 write_line("{d.to_string("o")} | {d.to_string("u")} | {d.to_string("s")}")
 write_line("{d.utc_date_time} {d.date_time} {d.offset} {d.ticks} {d.utc_ticks} {d.total_offset_minutes}")
 let later = d.add_hours(12.0)
-write_line("{later} {later.to_offset(TimeSpan(5, 30, 0))} {later.to_universal_time()}")
-write_line("{later - d} {d =~ d.to_offset(TimeSpan.from_hours(3))} {d.equals_exact(d.to_offset(TimeSpan.from_hours(3)))} {d < later}")
-write_line("{DateTimeOffset.from_unix_time_seconds(-1L)} {DateTimeOffset.from_unix_time_milliseconds(1234567890123L)} {DateTimeOffset.from_unix_time_seconds(-1L).to_unix_time_seconds()}")
-write_line("{DateTimeOffset.from_unix_time_milliseconds(-1L).to_unix_time_seconds()} {DateTimeOffset.from_unix_time_milliseconds(-1L).to_unix_time_milliseconds()}")
+write_line("{later} {later.to_offset(TIME_SPAN(5, 30, 0))} {later.to_universal_time()}")
+write_line("{later - d} {d =~ d.to_offset(TIME_SPAN.from_hours(3))} {d.equals_exact(d.to_offset(TIME_SPAN.from_hours(3)))} {d < later}")
+write_line("{DATE_TIME_OFFSET.from_unix_time_seconds(-1L)} {DATE_TIME_OFFSET.from_unix_time_milliseconds(1234567890123L)} {DATE_TIME_OFFSET.from_unix_time_seconds(-1L).to_unix_time_seconds()}")
+write_line("{DATE_TIME_OFFSET.from_unix_time_milliseconds(-1L).to_unix_time_seconds()} {DATE_TIME_OFFSET.from_unix_time_milliseconds(-1L).to_unix_time_milliseconds()}")
 write_line("{d.year} {d.month} {d.day} {d.hour} {d.minute} {cast int(d.day_of_week)} {d.day_of_year} {d.add_months(1)} {d.add_years(-1)} {d.add_days(-0.5)}")
-write_line("{DateTimeOffset.unix_epoch} {DateTimeOffset.min_value} {DateTimeOffset.max_value}")
-let now = DateTimeOffset.utc_now
+write_line("{DATE_TIME_OFFSET.unix_epoch} {DATE_TIME_OFFSET.min_value} {DATE_TIME_OFFSET.max_value}")
+let now = DATE_TIME_OFFSET.utc_now
 write_line("utc_now offset {now.offset} after 2026: {now.year >= 2026}")
 try
-    DateTimeOffset(instant, TimeSpan.from_hours(1))
+    DATE_TIME_OFFSET(instant, TIME_SPAN.from_hours(1))
 catch e: System.ArgumentException
     write_line("utc with offset throws")
 yrt
 try
-    DateTimeOffset(0L, TimeSpan.from_minutes(30.5))
+    DATE_TIME_OFFSET(0L, TIME_SPAN.from_minutes(30.5))
 catch e: System.ArgumentException
     write_line("partial minute throws")
 yrt
 
-let rows = 2000::2100 |> filter(y => ISOWeek.get_weeks_in_year(y) == 53) |> list()
+let rows = 2000::2100 |> filter(y => ISO_WEEK.get_weeks_in_year(y) == 53) |> list()
 write_line("53-week years: {rows |> map(y => "{y}") |> join(" ")}")
-for date in [DateTime(2004, 12, 31), DateTime(2005, 1, 1), DateTime(2005, 1, 2), DateTime(2005, 1, 3), DateTime(2007, 12, 31), DateTime(2008, 12, 29), DateTime(2010, 1, 3), DateTime(2026, 11, 9)] do
-    write_line("{date:yyyy-MM-dd} week {ISOWeek.get_week_of_year(date)} of {ISOWeek.get_year(date)}")
+for date in [DATE_TIME(2004, 12, 31), DATE_TIME(2005, 1, 1), DATE_TIME(2005, 1, 2), DATE_TIME(2005, 1, 3), DATE_TIME(2007, 12, 31), DATE_TIME(2008, 12, 29), DATE_TIME(2010, 1, 3), DATE_TIME(2026, 11, 9)] do
+    write_line("{date:yyyy-MM-dd} week {ISO_WEEK.get_week_of_year(date)} of {ISO_WEEK.get_year(date)}")
 od
-write_line("{ISOWeek.get_year_start(2026):yyyy-MM-dd} {ISOWeek.get_year_end(2026):yyyy-MM-dd} {ISOWeek.to_date_time(2020, 53, DayOfWeek.FRIDAY):yyyy-MM-dd} {ISOWeek.to_date_time(2021, 1, DayOfWeek.SUNDAY):yyyy-MM-dd}")
+write_line("{ISO_WEEK.get_year_start(2026):yyyy-MM-dd} {ISO_WEEK.get_year_end(2026):yyyy-MM-dd} {ISO_WEEK.to_date_time(2020, 53, DayOfWeek.FRIDAY):yyyy-MM-dd} {ISO_WEEK.to_date_time(2021, 1, DayOfWeek.SUNDAY):yyyy-MM-dd}")

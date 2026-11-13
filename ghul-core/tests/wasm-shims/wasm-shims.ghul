@@ -13,7 +13,7 @@ write_line("int: {whole.to_string("N0", invariant)}")
 write_line("long: {wide.to_string("D", invariant)} {mask.to_string("X", invariant)}")
 write_line("double: {half.to_string("G", invariant)} {pi.to_string("F2", invariant)}")
 write_line("parse: {int.parse("42", invariant)} {long.parse("-7", invariant)} {double.parse("1.5", invariant)}")
-write_line("date: {System.DateTime.parse("2024-02-29", invariant).to_string("yyyy-MM-dd")}")
+write_line("date: {Time.DATE_TIME.parse("2024-02-29", invariant).to_string("yyyy-MM-dd")}")
 write_line("title: {invariant.text_info.to_title_case("alphaBETA and NASA, ok")}")
 write_line("case: {invariant.text_info.to_upper("ab")} {invariant.text_info.to_lower("CD")}")
 

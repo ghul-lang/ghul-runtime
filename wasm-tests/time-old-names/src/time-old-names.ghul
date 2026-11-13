@@ -1,0 +1,12 @@
+// The date and time types answer to their System names as well as their
+// Time ones.
+use IO.Std.write_line
+
+let span: System.TimeSpan = Time.TIME_SPAN.from_seconds(90.0)
+let date: System.DateTime = Time.DATE_TIME(2026, 11, 13)
+let offset: System.DateTimeOffset = Time.DATE_TIME_OFFSET(date, Time.TIME_SPAN.zero)
+let day: System.DayOfWeek = date.day_of_week
+let kind: System.DateTimeKind = date.kind
+let watch: System.Diagnostics.Stopwatch = Time.STOPWATCH()
+let week = System.Globalization.ISOWeek.get_week_of_year(date)
+write_line("{span.total_minutes} {date.year} {offset.year} {day == Time.DayOfWeek.FRIDAY} {kind == Time.DateTimeKind.UNSPECIFIED} {watch.is_running} {week}")

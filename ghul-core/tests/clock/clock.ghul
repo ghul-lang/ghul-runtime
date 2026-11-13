@@ -2,20 +2,20 @@ use IO.Std.write_line
 
 // TimeSpan, DateTime and Stopwatch measure and print time as .NET does.
 entry() is
-    let span = System.TimeSpan(15_000_000L)
+    let span = Time.TIME_SPAN(15_000_000L)
 
     write_line("{span.total_milliseconds} {span.total_seconds}")
-    write_line("{span.add(System.TimeSpan.from_milliseconds(500.0)).to_string()}")
-    write_line("{span.subtract(System.TimeSpan.from_seconds(3.0)).to_string()}")
+    write_line("{span.add(Time.TIME_SPAN.from_milliseconds(500.0)).to_string()}")
+    write_line("{span.subtract(Time.TIME_SPAN.from_seconds(3.0)).to_string()}")
     write_line("{span.divide(4.0).ticks}")
-    write_line("{System.TimeSpan(900_000_000_123L).to_string()}")
-    write_line("{span <> System.TimeSpan.zero} {span =~ System.TimeSpan(15_000_000L)}")
+    write_line("{Time.TIME_SPAN(900_000_000_123L).to_string()}")
+    write_line("{span <> Time.TIME_SPAN.zero} {span =~ Time.TIME_SPAN(15_000_000L)}")
 
-    let started = System.DateTime.now
+    let started = Time.DATE_TIME.now
 
     write_line(if started.ticks > 637_134_336_000_000_000L then "after 2020" else "before 2020" fi)
 
-    let watch = System.Diagnostics.Stopwatch.start_new()
+    let watch = Time.STOPWATCH.start_new()
     let first = watch.elapsed_milliseconds
 
     write_line("{watch.is_running} {first >= 0L}")
@@ -29,7 +29,7 @@ entry() is
     watch.reset()
     write_line("{watch.elapsed_milliseconds}")
 
-    let later = System.DateTime.now.subtract(started)
+    let later = Time.DATE_TIME.now.subtract(started)
 
     write_line(if later.ticks >= 0L then "time goes forward" else "time went back" fi)
 si

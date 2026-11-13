@@ -26,7 +26,7 @@ namespace System.Threading is
         /// processor. Zero returns at once, and -1 millisecond waits without end.
         ///
         /// - timeout: how long to wait; a duration below -1 millisecond, or above `Int32.MaxValue` milliseconds, throws `ArgumentOutOfRangeException`
-        sleep(timeout: System.TimeSpan) static is
+        sleep(timeout: Time.TIME_SPAN) static is
             let milliseconds = timeout.total_milliseconds
 
             if milliseconds < -1.0 \/ milliseconds > 2147483647.0 then
