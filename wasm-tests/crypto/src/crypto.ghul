@@ -17,9 +17,18 @@ write_line(to_hex_lower(sha256(Text.Encoding.ascii.get_bytes(""))))
 write_line("{to_hex_lower(Crypto.MD5.hash_data(abc)) =~ to_hex_lower(System.Security.Cryptography.MD5.hash_data(abc))}")
 write_line("{to_hex_lower(Crypto.SHA256.hash_data(abc)) =~ to_hex_lower(sha256(abc))}")
 
-let draws = 0::999 |> map(_ => random_int(7)) |> ARRAY()
-let ranged = 0::999 |> map(_ => random_int(-3, 4)) |> ARRAY()
-write_line("{random_bytes(16).count} {random_bytes(0).count} {draws |> all(d => d >= 0 /\ d < 7)} {ranged |> all(d => d >= -3 /\ d < 4)} {random_int(5, 6)}")
+let in_bounds mut = true
+let in_range mut = true
+
+for _ in 0..1000 do
+    let draw = random_int(7)
+    in_bounds = in_bounds /\ draw >= 0 /\ draw < 7
+
+    let ranged = random_int(-3, 4)
+    in_range = in_range /\ ranged >= -3 /\ ranged < 4
+od
+
+write_line("{random_bytes(16).count} {random_bytes(0).count} {in_bounds} {in_range} {random_int(5, 6)}")
 
 let random: Crypto.RandomNumberGenerator = System.Security.Cryptography.RandomNumberGenerator.create()
 write_line("{Crypto.RandomNumberGenerator.get_bytes(4).count} {random == random} {Crypto.RandomNumberGenerator.get_int32(1)}")
