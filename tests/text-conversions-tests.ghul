@@ -61,5 +61,16 @@ namespace Tests is
             are_equal("hello", Text.Encoding.utf8.get_string(from_base64("aGVsbG8=")!))
             is_false(from_base64("!!")?)
         si
+
+        @Test()
+        Answer_to_the_old_names_of_the_moved_types() is
+            let rune: System.Text.Rune = Text.RUNE(0x41)
+            let encoding: System.Text.Encoding = Text.Encoding.utf8
+            let comparison: Ghul.StringComparison = Text.StringComparison.ORDINAL
+
+            are_equal(65, rune.value)
+            are_equal(1, encoding.get_bytes("a").count)
+            is_true(comparison == System.StringComparison.ORDINAL)
+        si
     si
 si
