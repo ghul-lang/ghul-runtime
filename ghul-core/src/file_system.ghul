@@ -1240,25 +1240,62 @@ namespace IO is
     si
 
     // A stream over a file that is being written: the bytes collect in
-    // memory and become the file's content when the stream is flushed.
-    class _FILE_STREAM: MemoryStream is
-        _path: string
+    // memory and become the file's content when the stream is flushed. The
+    // bytes are its state, which the core keeps until the stream is
+    // disposed, so a stream the program never disposed still becomes the
+    // file's content as the program ends.
+    class _FILE_STREAM: Stream is
+        _state: _FILE_STREAM_STATE
+        _slot: int
 
         init(path: string) is
             super.init()
 
-            _path = path
+            _state = _FILE_STREAM_STATE(path)
+            _slot = Ghul.Internal.OPEN_STATES.add(_state)
         si
 
-        _is_disposed: bool
+        can_read: bool => _state.bytes.can_read
+        can_write: bool => _state.bytes.can_write
+        can_seek: bool => _state.bytes.can_seek
+
+        length: long => _state.bytes.length
+
+        position: long public => _state.bytes.position,
+            = value is
+                _state.bytes.position = value
+            si
+
+        read(buffer: ARRAY[ubyte], offset: int, count: int) -> int =>
+            _state.bytes.read(buffer, offset, count)
+
+        read_byte() -> int =>
+            _state.bytes.read_byte()
+
+        write(buffer: ARRAY[ubyte], offset: int, count: int) =>
+            _state.bytes.write(buffer, offset, count)
+
+        write_byte(value: ubyte) =>
+            _state.bytes.write_byte(value)
+
+        seek(offset: long, origin: SeekOrigin) -> long =>
+            _state.bytes.seek(offset, origin)
+
+        set_length(value: long) =>
+            _state.bytes.set_length(value)
 
         flush() =>
-            _FILE_STORE.write(_path, to_array())
+            _state.flush()
 
         dispose() is
-            _is_disposed = true
-            flush()
-            super.dispose()
+            if _slot >= 0 then
+                _state.flush()
+
+                Ghul.Internal.OPEN_STATES.remove(_slot)
+                _slot = -1
+            fi
+
+            _state.bytes.dispose()
         si
 
         // A stream the program let go of without disposing it still
@@ -1267,35 +1304,53 @@ namespace IO is
         @finalizer()
         _finalize() is
             try
-                if !_is_disposed then
-                    flush()
-                fi
+                dispose()
             catch e: Ghul.Exception
             yrt
         si
     si
 
+    // What a file stream holds: the file and the bytes written for it.
+    class _FILE_STREAM_STATE: Ghul.Internal.OpenState is
+        _path: string
+
+        bytes: MemoryStream
+
+        description: string => _path
+
+        init(path: string) is
+            _path = path
+            bytes = MemoryStream()
+        si
+
+        flush() =>
+            _FILE_STORE.write(_path, bytes.to_array())
+
+        close_at_exit() =>
+            flush()
+    si
+
     // A stream reading a file on the host as it is read, over the file's
-    // open descriptor, which disposing the stream closes.
+    // open descriptor, which disposing the stream closes. The descriptor is
+    // its state, which the core keeps until the stream is disposed, so a
+    // descriptor the program never closed is closed as the program ends.
     class _HOST_READ_STREAM: Stream is
-        _descriptor: int
-        _full_path: string
-        _open: bool
+        _state: _HOST_READ_STATE
+        _slot: int
 
         init(descriptor: int, full_path: string) is
             super.init()
 
-            _descriptor = descriptor
-            _full_path = full_path
-            _open = true
+            _state = _HOST_READ_STATE(descriptor, full_path)
+            _slot = Ghul.Internal.OPEN_STATES.add(_state)
         si
 
         _read_so_far: long
 
-        can_read: bool => _open
+        can_read: bool => _state.is_open
 
         // The size of the file, as `FileInfo.length` measures it.
-        length: long => long(_FILE_STORE.read(_full_path).count)
+        length: long => long(_FILE_STORE.read(_state.full_path).count)
 
         // How many bytes have been read; the position cannot be moved.
         position: long public => _read_so_far,
@@ -1304,7 +1359,7 @@ namespace IO is
             si
 
         read(buffer: ARRAY[ubyte], offset: int, count: int) -> int is
-            if !_open then
+            if !_state.is_open then
                 throw Ghul.ObjectDisposedException(null, "Cannot access a closed file.")
             fi
 
@@ -1320,7 +1375,7 @@ namespace IO is
                 throw Ghul.ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.")
             fi
 
-            let got = _HOST_FILES.read_into(_descriptor, buffer, offset, count, _full_path)
+            let got = _HOST_FILES.read_into(_state.descriptor, buffer, offset, count, _state.full_path)
 
             _read_so_far = _read_so_far + long(got)
 
@@ -1328,10 +1383,10 @@ namespace IO is
         si
 
         dispose() is
-            if _open then
-                _open = false
-                _HOST_FILES.close(_descriptor, _full_path)
-            fi
+            _state.close()
+
+            Ghul.Internal.OPEN_STATES.remove(_slot)
+            _slot = -1
         si
 
         // A stream the program let go of without disposing it still
@@ -1343,6 +1398,31 @@ namespace IO is
             catch e: Ghul.Exception
             yrt
         si
+    si
+
+    // What a host read stream holds: the file's open descriptor.
+    class _HOST_READ_STATE: Ghul.Internal.OpenState is
+        descriptor: int
+        full_path: string
+        is_open: bool
+
+        description: string => full_path
+
+        init(descriptor: int, full_path: string) is
+            self.descriptor = descriptor
+            self.full_path = full_path
+            is_open = true
+        si
+
+        close() is
+            if is_open then
+                is_open = false
+                _HOST_FILES.close(descriptor, full_path)
+            fi
+        si
+
+        close_at_exit() =>
+            close()
     si
 
     /// Creates, lists and removes directories. On the wasm target they are
@@ -1651,13 +1731,11 @@ namespace IO is
     /// the writer is flushed or closed.
     @suppress("non-upper-snake-case-name")
     class StreamWriter: TextWriter is
-        // The first flush makes the file `_start` followed by the text, and
-        // each later one adds only the text written since, so what the
-        // writer holds is never more than one flush's worth.
-        _path: string
-        _start: ARRAY[ubyte]
-        _text: Text.STRING_BUILDER
-        _is_written: bool
+        // What the writer holds is its state, which the core keeps until the
+        // writer is disposed, so text a program never disposed is written as
+        // the program ends.
+        _state: _WRITER_STATE
+        _slot: int
 
         /// Whether every write is flushed to the file straight away.
         auto_flush: bool public
@@ -1674,23 +1752,66 @@ namespace IO is
         init(path: string, append: bool) is
             super.init()
 
-            _path = path
-            _start = if append /\ File.exists(path) then _FILE_STORE.read(path) else Ghul._array_new[ubyte](0) fi
-            _text = Text.STRING_BUILDER()
-
-            flush()
+            _state = _WRITER_STATE(path, if append /\ File.exists(path) then _FILE_STORE.read(path) else Ghul._array_new[ubyte](0) fi)
+            _state.flush()
+            _slot = Ghul.Internal.OPEN_STATES.add(_state)
         si
 
         write(text: string) pure is
-            _text.append(text)
+            _state.text.append(text)
 
             if auto_flush then
                 flush()
             fi
         si
 
+        flush() =>
+            _state.flush()
+
+        /// Flushes the writer and releases it.
+        close() =>
+            dispose()
+
+        /// Flushes the writer and releases it.
+        dispose() is
+            _state.flush()
+
+            Ghul.Internal.OPEN_STATES.remove(_slot)
+            _slot = -1
+        si
+
+        // A writer the program let go of without disposing it still
+        // writes what it holds to the file.
+        @finalizer()
+        _finalize() is
+            try
+                dispose()
+            catch e: Ghul.Exception
+            yrt
+        si
+    si
+
+    // What a StreamWriter holds: the file, and the text written to it since
+    // the last flush. The first flush makes the file `_start` followed by the
+    // text, and each later one adds only the text written since, so what the
+    // writer holds is never more than one flush's worth.
+    class _WRITER_STATE: Ghul.Internal.OpenState is
+        _path: string
+        _start: ARRAY[ubyte]
+        _is_written: bool
+
+        text: Text.STRING_BUILDER
+
+        description: string => _path
+
+        init(path: string, start: ARRAY[ubyte]) is
+            _path = path
+            _start = start
+            text = Text.STRING_BUILDER()
+        si
+
         flush() is
-            let bytes = _UTF8.encode(_text.to_string())
+            let bytes = _UTF8.encode(text.to_string())
 
             if !_is_written then
                 _FILE_STORE.write(_path, _FILE_STORE.concat(_start, bytes))
@@ -1700,25 +1821,10 @@ namespace IO is
                 _FILE_STORE.append(_path, bytes)
             fi
 
-            _text.clear()
+            text.clear()
         si
 
-        /// Flushes the writer and releases it.
-        close() =>
+        close_at_exit() =>
             flush()
-
-        /// Flushes the writer and releases it.
-        dispose() =>
-            flush()
-
-        // A writer the program let go of without disposing it still
-        // writes what it holds to the file.
-        @finalizer()
-        _finalize() is
-            try
-                flush()
-            catch e: Ghul.Exception
-            yrt
-        si
     si
 si

@@ -1,0 +1,86 @@
+namespace Ghul.Internal is
+    // State a core object keeps open for the program: a file's unwritten
+    // text, a host descriptor. The object the program holds disposes it;
+    // whatever is still open as the program ends is swept. A state never
+    // refers to the object that holds it, so an object the program lets go
+    // of can still be finalized while its state is held here.
+    trait OpenState is
+        // What the state is, for the one line reported when it cannot be
+        // closed.
+        description: string
+
+        // Writes what the state holds and closes it.
+        close_at_exit();
+    si
+
+    // The states still open. A state is added when it opens and removed when
+    // it is closed, so the sweep finds only what the program never closed.
+    class OPEN_STATES is
+        _states: Collections.LIST[OpenState?] static
+        _free: Collections.LIST[int] static
+
+        init() static is
+            _states = Collections.LIST[OpenState?]()
+            _free = Collections.LIST[int]()
+        si
+
+        // Holds `state` until it is removed, and answers the slot to remove
+        // it by.
+        add(state: OpenState) -> int static is
+            if _free.count > 0 then
+                let slot = _free[_free.count - 1]
+
+                _free.remove_at(_free.count - 1)
+                _states[slot] = state
+
+                return slot
+            fi
+
+            _states.add(state)
+
+            return _states.count - 1
+        si
+
+        // Lets go of the state in `slot`. A slot below zero holds nothing.
+        remove(slot: int) static is
+            if slot >= 0 /\ slot < _states.count /\ _states[slot]? then
+                _states[slot] = null
+                _free.add(slot)
+            fi
+        si
+
+        // Closes every state still held, reporting each that fails on a line
+        // of its own. A failure changes nothing else: the program ends as it
+        // was going to.
+        sweep() static is
+            let index mut = 0
+
+            while index < _states.count do
+                if let held = _states[index] then
+                    _states[index] = null
+
+                    let description = held.description
+
+                    try
+                        held.close_at_exit()
+                    catch e: Ghul.Exception
+                        try
+                            IO.Std.error.write_line("could not close {description} as the program ended: {e.message}")
+                        catch ignored: Ghul.Exception
+                        yrt
+                    yrt
+                fi
+
+                index = index + 1
+            od
+        si
+    si
+
+    /// Writes and closes what the core library still holds open for the
+    /// program: files written and not disposed, descriptors not closed. The
+    /// host calls it once as the program ends: on return from its entry, on
+    /// exit, and after an exception nothing caught. A state that cannot be
+    /// closed is reported on standard error, and the program's exit status
+    /// is not changed.
+    sweep_on_exit() => OPEN_STATES.sweep()
+si

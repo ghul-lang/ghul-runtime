@@ -1,0 +1,13 @@
+// A writer the program never disposes is flushed as the program leaves
+// through an explicit exit, and the exit status is kept. run.check reads
+// the file it leaves.
+use IO.Std.write_line
+use IO.File
+
+entry() is
+    let writer = File.create_text("exit-sweep-exit.txt")
+    writer.write("left open by an exit")
+
+    write_line("exiting")
+    Ghul.ENVIRONMENT.instance.exit(3)
+si

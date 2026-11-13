@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# The writer was never disposed: the sweep at exit wrote it.
+set -u
+status=0
+[ "$(cat "$1")" = "exiting" ] || { echo "output: $(cat "$1")"; status=1; }
+[ "$(cat exit-sweep-exit.txt 2>/dev/null)" = "left open by an exit" ] || { echo "writer: '$(cat exit-sweep-exit.txt 2>/dev/null)'"; status=1; }
+rm -f exit-sweep-exit.txt
+exit $status

@@ -357,6 +357,25 @@ export async function run(options = {}) {
         return UNHANDLED_EXCEPTION_EXIT_CODE;
     };
 
+    // Writes and closes what the program's core library still holds open,
+    // where the program has any: files written and not disposed. It runs once,
+    // as the program ends, however it ends; a failure inside it is the
+    // sweep's to report.
+    let swept = false;
+
+    const sweep = () => {
+        if (swept) {
+            return;
+        }
+
+        swept = true;
+
+        try {
+            instance.exports._exit_sweep?.();
+        } catch {
+        }
+    };
+
     let code;
 
     try {
@@ -372,11 +391,17 @@ export async function run(options = {}) {
             } catch {
             }
 
-            return unhandled(error);
+            const status = unhandled(error);
+
+            sweep();
+
+            return status;
         }
 
         code = error.code;
     }
+
+    sweep();
 
     // A return and an exit both end here, and what is still held is
     // written; a write that fails now fails the program, as it would have

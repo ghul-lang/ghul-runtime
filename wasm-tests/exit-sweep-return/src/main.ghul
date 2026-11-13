@@ -1,0 +1,15 @@
+// A writer and a file stream the program never disposes are flushed and
+// closed as the program returns from its entry. run.check reads the files
+// they leave.
+use IO.Std.write_line
+use IO.File
+
+entry() is
+    let writer = File.create_text("exit-sweep-return.txt")
+    writer.write("left open by a return")
+
+    let stream = File.create("exit-sweep-return.bin")
+    stream.write_byte(42ub)
+
+    write_line("returning")
+si
