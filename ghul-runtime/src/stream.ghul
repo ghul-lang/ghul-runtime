@@ -60,8 +60,10 @@ namespace Ghul.Pipes is
     /// ```
     ///
     /// - initial: the state the first read steps from
-    /// - advance: the step: the next element and state, or null at the end
-    stream[T, S..](initial: S, advance: S.. -> (T, S)?) -> Iterable[T] is
+    /// - advance: the step: the next element and state, or null at the end. It
+    ///   must be pure, as `iterate`'s step must: the sequence calls it again each
+    ///   time it is read.
+    stream[T, S..](initial: S, advance: S.. -> (T, S)? pure) -> Iterable[T] pure is
         return STREAM_PIPE[T, S](initial, advance)
     si
 si
