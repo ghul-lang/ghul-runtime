@@ -1,0 +1,18 @@
+namespace Tests is
+    use Ghul
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class InteropShould is
+        init() is si
+
+        @Test()
+        Describe_an_errno_value() is
+            are_equal("No such file or directory", Ghul.Interop.error_text(2))
+        si
+    si
+si

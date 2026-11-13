@@ -31,6 +31,29 @@ function sibling_module() {
     return url;
 }
 
+// The extern functions the module beside this file with the extension
+// `.externs.mjs` exports, or none where there is no such module.
+async function sibling_externs() {
+    const url = new URL(import.meta.url);
+
+    url.pathname = url.pathname.replace(/\.mjs$/, ".externs.mjs");
+
+    if (is_node && url.protocol === "file:") {
+        const { existsSync } = await import("node:fs");
+        const { fileURLToPath } = await import("node:url");
+
+        if (!existsSync(fileURLToPath(url))) {
+            return {};
+        }
+    }
+
+    try {
+        return { ...(await import(url.href)) };
+    } catch {
+        return {};
+    }
+}
+
 // .NET's exit status when a program ends on an unhandled exception: the
 // runtime aborts, which a shell sees as 128 + SIGABRT.
 const UNHANDLED_EXCEPTION_EXIT_CODE = 134;
@@ -80,8 +103,12 @@ const TERMINAL_STREAMS = ["stdin", "stdout", "stderr"];
 //   anywhere else, which has no file system to reach
 // - options.externs: the functions the program declares extern, as an object
 //   from the name each is declared with to the function that answers it; by
-//   default there are none, and a program that declares one cannot start.
-//   Numbers cross as numbers, a long as a BigInt, and a string as a string
+//   default the exports of the module beside this file with the extension
+//   `.externs.mjs`, where the loader runs its own module and that file exists,
+//   and otherwise none. A program that declares an extern the host doesn't
+//   supply doesn't start: the loader writes the missing names to standard
+//   error and answers 1. Numbers cross as numbers, a long or a word as a
+//   BigInt, and a string as a string
 // - options.terminal: whether each of the program's standard streams is a
 //   terminal, as an object with a boolean for each of `stdin`, `stdout` and
 //   `stderr` it wants to say; this is what the program reads as
@@ -345,11 +372,27 @@ export async function run(options = {}) {
 
     };
 
-    const imports = { "ghul:host": host, "ghul:extern": options.externs ?? {} };
+    const externs = options.externs ?? (options.module ? {} : await sibling_externs());
+    const imports = { "ghul:host": host, "ghul:extern": externs };
     const compile_options = { builtins: ["js-string"] };
 
     const source = await load(options.module ?? sibling_module());
-    ({ instance } = await WebAssembly.instantiate(source, imports, compile_options));
+    const module = await WebAssembly.compile(source, compile_options);
+
+    // Every extern the program declares is imported, called or not, so a
+    // missing one would stop it starting with the engine's message; this
+    // names them all instead.
+    const missing = WebAssembly.Module.imports(module)
+        .filter((i) => i.module === "ghul:extern" && typeof externs[i.name] !== "function")
+        .map((i) => i.name);
+
+    if (missing.length > 0) {
+        stderr(`error: the program calls extern functions the host does not supply: ${missing.join(", ")}\n`);
+
+        return 1;
+    }
+
+    instance = await WebAssembly.instantiate(module, imports);
 
     const unhandled = (error) => {
         stderr(`Unhandled exception. ${describe(error, instance)}\n${frames(error)}`);
