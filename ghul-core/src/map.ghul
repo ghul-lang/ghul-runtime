@@ -96,6 +96,23 @@ namespace Collections is
         /// - value: the value it maps to
         try_add(key: K, value: V) -> bool => _store(key, value, false);
 
+        /// Whether the map has `pair`'s key, mapping to a value `=~` to
+        /// `pair`'s value.
+        ///
+        /// - pair: the entry to look for
+        contains(pair: KEY_VALUE_PAIR[K, V]) -> bool is
+            let value: V mut = _
+
+            return try_get_value(pair.key, value ref) /\ value =~ pair.value
+        si
+
+        /// Removes `pair`'s key where the map has it mapping to a value `=~`
+        /// to `pair`'s value, answering whether it did.
+        ///
+        /// - pair: the entry to remove
+        remove(pair: KEY_VALUE_PAIR[K, V]) -> bool =>
+            contains(pair) /\ remove(pair.key)
+
         /// Removes `key`, answering whether the map had it.
         ///
         /// - key: the key to remove
@@ -205,12 +222,12 @@ namespace Collections is
         /// The keys, in the order the entries are iterated. This is a view of
         /// the map, not a copy: each iteration reads the map as it is when the
         /// iteration starts.
-        keys: Iterable[K] => MAP_VIEW[K](() -> Iterator[K] => MAP_TABLE_ITERATOR[K](_hashes, _keys, _used));
+        keys: Bag[K] => MAP_VIEW[K](() -> int => _count, () -> Iterator[K] => MAP_TABLE_ITERATOR[K](_hashes, _keys, _used));
 
         /// The values, in the order the entries are iterated. This is a view of
         /// the map, not a copy: each iteration reads the map as it is when the
         /// iteration starts.
-        values: Iterable[V] => MAP_VIEW[V](() -> Iterator[V] => MAP_TABLE_ITERATOR[V](_hashes, _values, _used));
+        values: Bag[V] => MAP_VIEW[V](() -> int => _count, () -> Iterator[V] => MAP_TABLE_ITERATOR[V](_hashes, _values, _used));
 
         /// An iterator over the entries.
         iterator: Iterator[KEY_VALUE_PAIR[K, V]] => MAP_ITERATOR[K, V](_hashes, _keys, _values, _used);
@@ -416,15 +433,22 @@ namespace Collections is
 
     /// The keys or the values of a map, read from the map each time they are
     /// iterated rather than copied out of it.
-    class MAP_VIEW[T]: Iterable[T] is
+    class MAP_VIEW[T]: Bag[T] is
+        _count: () -> int;
         _make: () -> Iterator[T];
 
-        /// A view whose iterations come from `make`.
+        /// A view whose size comes from `count` and whose iterations come
+        /// from `make`.
         ///
+        /// - count: the map's size as it then stands
         /// - make: starts an iteration over the map as it then stands
-        init(make: () -> Iterator[T]) is
+        init(count: () -> int, make: () -> Iterator[T]) is
+            _count = count;
             _make = make;
         si
+
+        /// The number of entries in the map as it stands now.
+        count: int pure => _count();
 
         /// An iterator over the map as it stands now.
         iterator: Iterator[T] => _make();

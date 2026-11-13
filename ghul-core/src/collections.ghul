@@ -97,6 +97,12 @@ namespace Collections is
             return false
         si
 
+        /// Removes the first element `=~` to `value`, answering whether
+        /// there was one.
+        ///
+        /// - value: the element to remove
+        remove(value: E) -> bool;
+
         /// Removes every element.
         clear();
     si
@@ -169,10 +175,10 @@ namespace Collections is
         try_get_value(key: K, value: V ref) -> bool pure;
 
         /// The keys.
-        keys: Iterable[K];
+        keys: Bag[K];
 
         /// The values.
-        values: Iterable[V];
+        values: Bag[V];
     si
 
     /// A map whose entries can be added, replaced and removed.
@@ -207,10 +213,10 @@ namespace Collections is
         try_get_value(key: K, value: V ref) -> bool;
 
         /// The keys.
-        keys: Iterable[K];
+        keys: Bag[K];
 
         /// The values.
-        values: Iterable[V];
+        values: Bag[V];
     si
 
     /// A read-only set: a collection holding no element twice.
