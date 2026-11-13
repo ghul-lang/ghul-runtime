@@ -6,7 +6,7 @@ use IO.Std.write_line
 use Ghul.Pipes
 
 for subject in ["knights", "\uD835\uDD28\uD835\uDD2B\uD835\uDD26\uD835\uDD24\uD835\uDD25\uD835\uDD31\uD835\uDD30"] do
-    let cs = graphemes(subject) |> collect()
+    let cs = graphemes(subject) |> ARRAY()
 
     write_line("first character removed: {cs[1..<0] |> string()}")
     write_line("last character removed:  {cs[0..<1] |> string()}")

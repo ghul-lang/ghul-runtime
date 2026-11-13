@@ -23,9 +23,9 @@ namespace Tests is
         si
 
         _assert_repeatable[T](expected: string, pipe: Iterable[T]) is
-            are_equal(expected, "{$(pipe |> collect_mutable())}", "first pass")
-            are_equal(expected, "{$(pipe |> collect_mutable())}", "second pass")
-            are_equal(expected, "{$(pipe |> collect_mutable())}", "third pass")
+            are_equal(expected, "{$(pipe |> LIST())}", "first pass")
+            are_equal(expected, "{$(pipe |> LIST())}", "second pass")
+            are_equal(expected, "{$(pipe |> LIST())}", "third pass")
         si
 
         @Test()
