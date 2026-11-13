@@ -26,6 +26,7 @@ flushed_before_the_block_ends(path: string) is
     write_line("readable while the writer is open: {(let use reader = File.open_text(path); reader |> lines() |> count())} lines")
 si
 
+@suppress("use-escapes")
 escaped(path: string) -> Pipe[string] =>
     (let use reader = File.open_text(path) in reader |> lines())
 

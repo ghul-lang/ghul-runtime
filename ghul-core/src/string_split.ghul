@@ -1,4 +1,4 @@
-namespace Ghul is
+namespace Text is
     use Collections.LIST
 
     /// What `split` does with the pieces it finds.
@@ -12,6 +12,11 @@ namespace Ghul is
         /// Trim each piece, then leave out the ones left empty.
         REMOVE_EMPTY_AND_TRIM_ENTRIES = 3,
     si
+si
+
+namespace Ghul is
+    use Collections.LIST
+    use Text.StringSplitOptions
 
     partial string is
         /// The pieces between each occurrence of any of `separators`, in

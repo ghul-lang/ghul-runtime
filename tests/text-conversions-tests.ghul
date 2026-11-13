@@ -1,0 +1,76 @@
+namespace Tests is
+    use Ghul
+
+    use Text.to_base
+    use Text.from_base
+    use Text.to_hex
+    use Text.to_hex_lower
+    use Text.from_hex
+    use Text.to_base64
+    use Text.from_base64
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class TextConversionsShould is
+        init() is si
+
+        @Test()
+        Write_a_number_in_a_base() is
+            are_equal("11111111", to_base(255, 2))
+            are_equal("ffffffff", to_base(-1, 16))
+            are_equal("ff", to_base(255L, 16))
+            are_equal("12", to_base(10ub, 8))
+            are_equal("-42", to_base(-42, 10))
+        si
+
+        @Test()
+        Read_a_number_in_a_base() is
+            are_equal(255L, from_base("ff", 16)!)
+            are_equal(10L, from_base("1010", 2)!)
+            are_equal(-1L, from_base("ffffffffffffffff", 16)!)
+            are_equal(-42L, from_base("-42", 10)!)
+        si
+
+        @Test()
+        Give_null_for_text_that_is_not_a_number_in_the_base() is
+            is_false(from_base("zz", 16)?)
+            is_false(from_base("", 10)?)
+            is_false(from_base("12", 2)?)
+        si
+
+        @Test()
+        Write_and_read_hexadecimal() is
+            let bytes = ARRAY[ubyte]([10ub, 255ub, 0ub])
+
+            are_equal("0AFF00", to_hex(bytes))
+            are_equal("0aff00", to_hex_lower(bytes))
+            are_equal("0AFF00", to_hex(from_hex("0aFF00")!))
+            is_false(from_hex("abc")?)
+            is_false(from_hex("zz")?)
+        si
+
+        @Test()
+        Write_and_read_base64() is
+            let hello = Text.Encoding.utf8.get_bytes("hello")
+
+            are_equal("aGVsbG8=", to_base64(hello))
+            are_equal("hello", Text.Encoding.utf8.get_string(from_base64("aGVsbG8=")!))
+            is_false(from_base64("!!")?)
+        si
+
+        @Test()
+        Answer_to_the_old_names_of_the_moved_types() is
+            let rune: System.Text.Rune = Text.RUNE(0x41)
+            let encoding: System.Text.Encoding = Text.Encoding.utf8
+            let comparison: Ghul.StringComparison = Text.StringComparison.ORDINAL
+
+            are_equal(65, rune.value)
+            are_equal(1, encoding.get_bytes("a").count)
+            is_true(comparison == System.StringComparison.ORDINAL)
+        si
+    si
+si

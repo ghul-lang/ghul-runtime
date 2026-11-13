@@ -1,0 +1,105 @@
+namespace Text is
+    use System.Convert
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
+
+    /// `value`'s digits in `base`, which is 2, 8, 10 or 16. In base 10 a
+    /// negative value has a minus sign; in the other bases it is written as
+    /// its two's-complement bits, all of the type's width. Throws
+    /// `ArgumentException` for any other base.
+    ///
+    /// - value: the number to write
+    /// - base: the base to write it in
+    to_base(value: ubyte, base: int) -> string => Convert.to_string(value, base)
+
+    /// `value`'s digits in `base`, which is 2, 8, 10 or 16. In base 10 a
+    /// negative value has a minus sign; in the other bases it is written as
+    /// its two's-complement bits, all of the type's width. Throws
+    /// `ArgumentException` for any other base.
+    ///
+    /// - value: the number to write
+    /// - base: the base to write it in
+    to_base(value: short, base: int) -> string => Convert.to_string(value, base)
+
+    /// `value`'s digits in `base`, which is 2, 8, 10 or 16. In base 10 a
+    /// negative value has a minus sign; in the other bases it is written as
+    /// its two's-complement bits, all of the type's width. Throws
+    /// `ArgumentException` for any other base.
+    ///
+    /// - value: the number to write
+    /// - base: the base to write it in
+    to_base(value: int, base: int) -> string => Convert.to_string(value, base)
+
+    /// `value`'s digits in `base`, which is 2, 8, 10 or 16. In base 10 a
+    /// negative value has a minus sign; in the other bases it is written as
+    /// its two's-complement bits, all of the type's width. Throws
+    /// `ArgumentException` for any other base.
+    ///
+    /// - value: the number to write
+    /// - base: the base to write it in
+    to_base(value: long, base: int) -> string => Convert.to_string(value, base)
+
+    /// The number `text` holds in `base`, which is 2, 8, 10 or 16, or null
+    /// where `text` isn't a number in that base or doesn't fit a `long`.
+    /// In the bases other than 10, sixteen hexadecimal digits or 64 binary
+    /// digits with the top bit set read as a negative number, as `to_base`
+    /// writes one. Throws `ArgumentException` for any other base.
+    ///
+    /// - text: the digits to read
+    /// - base: the base they are in
+    from_base(text: string, base: int) -> long? is
+        if base != 2 /\ base != 8 /\ base != 10 /\ base != 16 then
+            throw Ghul.ArgumentException("invalid base")
+        fi
+
+        try
+            return Convert.to_int64(text, base)
+        catch e: Ghul.FormatException
+            return null
+        catch e: Ghul.OverflowException
+            return null
+        catch e: Ghul.ArgumentException
+            return null
+        yrt
+    si
+
+    /// `bytes` as hexadecimal, two upper-case digits a byte.
+    ///
+    /// - bytes: the bytes to write
+    to_hex(bytes: ARRAY[ubyte]) -> string => Convert.to_hex_string(bytes)
+
+    /// `bytes` as hexadecimal, two lower-case digits a byte.
+    ///
+    /// - bytes: the bytes to write
+    to_hex_lower(bytes: ARRAY[ubyte]) -> string => Convert.to_hex_string_lower(bytes)
+
+    /// The bytes hexadecimal `text` holds, two digits a byte in either case,
+    /// or null where `text` has an odd number of digits or anything other
+    /// than a hexadecimal digit.
+    ///
+    /// - text: the digits to read
+    from_hex(text: string) -> ARRAY[ubyte]? is
+        try
+            return Convert.from_hex_string(text)
+        catch e: Ghul.FormatException
+            return null
+        yrt
+    si
+
+    /// `bytes` as Base64 text, padded with `=` to a multiple of four
+    /// characters.
+    ///
+    /// - bytes: the bytes to write
+    to_base64(bytes: ARRAY[ubyte]) -> string => Convert.to_base64_string(bytes)
+
+    /// The bytes Base64 `text` holds, or null where it isn't valid Base64.
+    /// White space in the text is skipped.
+    ///
+    /// - text: the text to read
+    from_base64(text: string) -> ARRAY[ubyte]? is
+        try
+            return Convert.from_base64_string(text)
+        catch e: Ghul.FormatException
+            return null
+        yrt
+    si
+si

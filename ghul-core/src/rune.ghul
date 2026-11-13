@@ -1,11 +1,7 @@
-// .NET's name for this type is kept, so source written against .NET
-// builds here unchanged.
-@@suppress("non-upper-snake-case-name")
-
-namespace System.Text is
+namespace Text is
     /// A Unicode scalar value: any code point except a surrogate, as .NET's
     /// `System.Text.Rune` is. One rune is one or two UTF-16 code units.
-    struct Rune is
+    struct RUNE is
         _value: int
 
         /// The rune whose scalar value is `value`. Throws
@@ -45,7 +41,7 @@ namespace System.Text is
 
         /// U+FFFD, the replacement character, which stands for text that could
         /// not be decoded.
-        replacement_char: Rune static => Rune(0xFFFD)
+        replacement_char: RUNE static => RUNE(0xFFFD)
 
         /// Whether `value` is a scalar value: from 0 to U+10FFFF, and not a
         /// surrogate.
@@ -60,7 +56,7 @@ namespace System.Text is
         ///
         /// - input: the text
         /// - index: where the rune starts
-        get_rune_at(input: string, index: int) -> Rune static is
+        get_rune_at(input: string, index: int) -> RUNE static is
             if index < 0 \/ index >= input.length then
                 throw Ghul.ArgumentOutOfRangeException("index", "Index was out of range. Must be non-negative and less than the size of the collection.")
             fi
@@ -68,11 +64,11 @@ namespace System.Text is
             let c = input[index]
 
             if !c.is_surrogate then
-                return Rune(c)
+                return RUNE(c)
             fi
 
             if c.is_high_surrogate /\ index + 1 < input.length /\ input[index + 1].is_low_surrogate then
-                return Rune(c, input[index + 1])
+                return RUNE(c, input[index + 1])
             fi
 
             throw Ghul.ArgumentException("Cannot extract a Unicode scalar value from the specified index in the input.")
@@ -107,7 +103,7 @@ namespace System.Text is
         /// Whether `other` is the same scalar value.
         ///
         /// - other: the rune to compare with
-        =~(other: Rune) -> bool pure => _value == other._value
+        =~(other: RUNE) -> bool pure => _value == other._value
 
         /// The scalar value, which is equal for equal runes.
         get_hash_code() -> int pure => _value
@@ -116,6 +112,6 @@ namespace System.Text is
         /// equal to or above `other`'s.
         ///
         /// - other: the rune to compare with
-        compare_to(other: Rune) -> int pure => _value - other._value
+        compare_to(other: RUNE) -> int pure => _value - other._value
     si
 si

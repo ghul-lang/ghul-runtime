@@ -1,0 +1,7 @@
+{
+    "name": "text-conversions",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

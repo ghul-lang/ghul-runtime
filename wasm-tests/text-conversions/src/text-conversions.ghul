@@ -1,0 +1,36 @@
+// Numbers in a base, and bytes as hexadecimal and Base64, with the Text
+// functions. The from_ functions answer null for text they can't read.
+use IO.Std.write_line
+use Text.to_base
+use Text.from_base
+use Text.to_hex
+use Text.to_hex_lower
+use Text.from_hex
+use Text.to_base64
+use Text.from_base64
+
+write_line("{to_base(255, 2)} {to_base(-1, 16)} {to_base(255L, 16)} {to_base(10ub, 8)} {to_base(-42, 10)}")
+write_line("{from_base("ff", 16)} {from_base("1010", 2)} {from_base("ffffffffffffffff", 16)} {from_base("-42", 10)}")
+write_line("{from_base("zz", 16)?} {from_base("", 10)?} {from_base("12", 2)?}")
+
+let bytes = ARRAY[ubyte]([10ub, 255ub, 0ub])
+write_line("{to_hex(bytes)} {to_hex_lower(bytes)} {from_hex("0aFF00")!} {from_hex("abc")?} {from_hex("zz")?}")
+
+let hello = Text.Encoding.utf8.get_bytes("hello")
+let encoded = to_base64(hello)
+write_line("{encoded} {Text.Encoding.utf8.get_string(from_base64(encoded)!)} {from_base64("!!")?}")
+
+try
+    to_base(5, 3)
+catch e: Ghul.ArgumentException
+    write_line("base 3 is refused")
+yrt
+
+// The moved types still answer to their old names.
+let rune: System.Text.Rune = Text.RUNE(0x41)
+let culture: System.Globalization.CultureInfo = Text.CULTURE.invariant_culture
+let encoding: System.Text.Encoding = Text.Encoding.utf8
+let styles: System.Globalization.NumberStyles = Text.NumberStyles.HEX_NUMBER
+let comparison: Ghul.StringComparison = Text.StringComparison.ORDINAL
+let options: Ghul.StringSplitOptions = Text.StringSplitOptions.NONE
+write_line("{rune.value} '{culture.name}' {encoding.get_bytes("a").count} {styles == System.Globalization.NumberStyles.HEX_NUMBER} {comparison == System.StringComparison.ORDINAL} {options == System.StringSplitOptions.NONE}")

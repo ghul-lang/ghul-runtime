@@ -1,9 +1,13 @@
-// .NET's names for these types are kept, so source written against .NET
-// builds here unchanged.
+// The encodings keep .NET's names, so source written against .NET builds
+// here unchanged.
 @@suppress("non-upper-snake-case-name")
 
-namespace System.Text is
+namespace Text is
     use IO._UTF8
+    use System.Text.UTF8Encoding
+    use System.Text.ASCIIEncoding
+    use System.Text.UnicodeEncoding
+    use System.Text.UTF32Encoding
 
     /// Converts between text and bytes, as .NET's `System.Text.Encoding`
     /// does, for UTF-8, UTF-16, UTF-32 and ASCII.
@@ -65,6 +69,11 @@ namespace System.Text is
         /// The encoding's name as the IANA registers it, such as `utf-8`.
         web_name: string;
     si
+si
+
+namespace System.Text is
+    use IO._UTF8
+    use Text.Encoding
 
     /// UTF-8, as .NET's `System.Text.UTF8Encoding` is.
     class UTF8Encoding: Encoding is
