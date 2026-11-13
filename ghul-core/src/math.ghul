@@ -4,7 +4,7 @@ namespace Ghul.Math is
     // name; everything else is ghūl.
 
     /// The ratio of a circle's circumference to its diameter.
-    pi: double => 3.141592653589793
+    pi: double pure => 3.141592653589793
 
     /// The quotient of `left` by `right`, truncated towards zero, and the
     /// remainder, with the sign of `left`.
@@ -23,10 +23,10 @@ namespace Ghul.Math is
         (left / right, left % right)
 
     /// The ratio of a circle's circumference to its radius, two pi.
-    tau: double => 6.283185307179586
+    tau: double pure => 6.283185307179586
 
     /// The base of the natural logarithm.
-    e: double => 2.718281828459045
+    e: double pure => 2.718281828459045
 
     /// The magnitude of `value`. Throws `OverflowException` where `value` is
     /// the least `int`, whose magnitude does not fit.
