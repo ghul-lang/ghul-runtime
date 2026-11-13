@@ -1,0 +1,68 @@
+// contains on a mutable bag and index_of on a mutable list, reached through
+// the traits. LIST declares its own answers, a bag and a list that declare
+// none take the traits' scans, and every one answers as .NET's List does.
+use IO.Std.write_line
+use Collections
+
+// A bag that declares no contains of its own.
+class BAG_WITHOUT_CONTAINS: MutableBag[int] is
+    _items: LIST[int]
+
+    init() is
+        _items = LIST[int]()
+    si
+
+    count: int => _items.count
+
+    add(value: int) => _items.add(value)
+    clear() => _items.clear()
+
+    iterator: Iterator[int] => _items.iterator
+si
+
+// A list that declares no index_of of its own.
+class LIST_WITHOUT_INDEX_OF: MutableList[int] is
+    _items: LIST[int]
+
+    init() is
+        _items = LIST[int]()
+    si
+
+    count: int => _items.count
+
+    [index: int]: int => _items[index], = value is _items[index] = value si
+
+    add(value: int) => _items.add(value)
+    insert(index: int, value: int) => _items.insert(index, value)
+    remove_at(index: int) => _items.remove_at(index)
+    contains(value: int) -> bool => _items.contains(value)
+    remove(value: int) -> bool => _items.remove(value)
+    clear() => _items.clear()
+
+    iterator: Iterator[int] => _items.iterator
+si
+
+fill(bag: MutableBag[int]) is
+    bag.add(4)
+    bag.add(7)
+    bag.add(4)
+si
+
+as_bag(name: string, bag: MutableBag[int]) is
+    fill(bag)
+
+    write_line("{name}: contains 7 {bag.contains(7)}, contains 9 {bag.contains(9)}")
+si
+
+as_list(name: string, list: MutableList[int]) is
+    fill(list)
+
+    write_line("{name}: index_of 4 {list.index_of(4)}, index_of 7 {list.index_of(7)}, index_of 9 {list.index_of(9)}")
+si
+
+entry() is
+    as_bag("LIST as a bag", LIST[int]())
+    as_bag("a bag with the default contains", BAG_WITHOUT_CONTAINS())
+    as_list("LIST", LIST[int]())
+    as_list("a list with the default index_of", LIST_WITHOUT_INDEX_OF())
+si
