@@ -6,9 +6,9 @@ System.Threading.Thread.sleep(50)
 
 write_line("{System.Environment.tick_count64 - start >= 50L}")
 
-let watch = System.Diagnostics.Stopwatch.start_new()
+let watch = Time.STOPWATCH.start_new()
 
-System.Threading.Thread.sleep(System.TimeSpan.from_milliseconds(30.0))
+System.Threading.Thread.sleep(Time.TIME_SPAN.from_milliseconds(30.0))
 
 write_line("{watch.elapsed_milliseconds >= 30L}")
 

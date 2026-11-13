@@ -3,7 +3,7 @@
 // invariant culture, since the source-core targets have no other.
 @@suppress("non-upper-snake-case-name")
 
-namespace System is
+namespace Time is
     use Ghul.ArgumentOutOfRangeException
     use Ghul.FormatException
 
@@ -25,7 +25,7 @@ namespace System is
         SATURDAY
     si
 
-    partial DateTime is
+    partial DATE_TIME is
         /// The start of `day` `month` `year`.
         ///
         /// - year: the year, from 1 to 9999
@@ -62,13 +62,13 @@ namespace System is
         si
 
         /// The earliest moment, 0001-01-01T00:00:00.
-        min_value: DateTime static => DateTime(0L)
+        min_value: DATE_TIME static => DATE_TIME(0L)
 
         /// The latest moment, the last tick of 9999-12-31.
-        max_value: DateTime static => DateTime(_days_to_year(10000) * _TICKS_PER_DAY - 1L)
+        max_value: DATE_TIME static => DATE_TIME(_days_to_year(10000) * _TICKS_PER_DAY - 1L)
 
         /// The start of the current day, in local time.
-        today: DateTime static => now.date
+        today: DATE_TIME static => now.date
 
         /// Whether `year` is a leap year.
         ///
@@ -116,82 +116,82 @@ namespace System is
         day_of_week: DayOfWeek => cast DayOfWeek(cast int((ticks / _TICKS_PER_DAY + 1L) % 7L))
 
         /// The start of the day this moment is in, of the same kind.
-        date: DateTime => DateTime(ticks - ticks % _TICKS_PER_DAY, kind)
+        date: DATE_TIME => DATE_TIME(ticks - ticks % _TICKS_PER_DAY, kind)
 
         /// How far into its day this moment is.
-        time_of_day: TimeSpan => TimeSpan(ticks % _TICKS_PER_DAY)
+        time_of_day: TIME_SPAN => TIME_SPAN(ticks % _TICKS_PER_DAY)
 
         /// The moment `value` ticks later.
         ///
         /// - value: the number of ticks to move, which may be negative
-        add_ticks(value: long) -> DateTime => DateTime(ticks + value, kind)
+        add_ticks(value: long) -> DATE_TIME => DATE_TIME(ticks + value, kind)
 
         /// The moment `value` milliseconds later, to the nearest tick.
         ///
         /// - value: the number of milliseconds to move, which may be negative
-        add_milliseconds(value: double) -> DateTime => _add_units(value, 10_000L)
+        add_milliseconds(value: double) -> DATE_TIME => _add_units(value, 10_000L)
 
         /// The moment `value` seconds later, to the nearest tick.
         ///
         /// - value: the number of seconds to move, which may be negative
-        add_seconds(value: double) -> DateTime => _add_units(value, 10_000_000L)
+        add_seconds(value: double) -> DATE_TIME => _add_units(value, 10_000_000L)
 
         /// The moment `value` minutes later, to the nearest tick.
         ///
         /// - value: the number of minutes to move, which may be negative
-        add_minutes(value: double) -> DateTime => _add_units(value, 600_000_000L)
+        add_minutes(value: double) -> DATE_TIME => _add_units(value, 600_000_000L)
 
         /// The moment `value` hours later, to the nearest tick.
         ///
         /// - value: the number of hours to move, which may be negative
-        add_hours(value: double) -> DateTime => _add_units(value, 36_000_000_000L)
+        add_hours(value: double) -> DATE_TIME => _add_units(value, 36_000_000_000L)
 
         /// The moment `value` days later, to the nearest tick.
         ///
         /// - value: the number of days to move, which may be negative
-        add_days(value: double) -> DateTime => _add_units(value, _TICKS_PER_DAY)
+        add_days(value: double) -> DATE_TIME => _add_units(value, _TICKS_PER_DAY)
 
         /// The same time of day `months` months later, on the same day of the
         /// month or, where that month is shorter, its last day.
         ///
         /// - months: the number of months to move, which may be negative
-        add_months(months: int) -> DateTime is
+        add_months(months: int) -> DATE_TIME is
             let total = year * 12 + month - 1 + months
             let new_year = total / 12
             let new_month = total % 12 + 1
             let new_day = Ghul.Math.min(day, days_in_month(new_year, new_month))
 
-            return DateTime(_date_ticks(new_year, new_month, new_day) + ticks % _TICKS_PER_DAY, kind)
+            return DATE_TIME(_date_ticks(new_year, new_month, new_day) + ticks % _TICKS_PER_DAY, kind)
         si
 
         /// The same time of day `years` years later, on 28 February where this
         /// is 29 February and that year is not a leap year.
         ///
         /// - years: the number of years to move, which may be negative
-        add_years(years: int) -> DateTime => add_months(years * 12)
+        add_years(years: int) -> DATE_TIME => add_months(years * 12)
 
         /// The moment less `interval`.
         ///
         /// - interval: how far to move back
-        subtract(interval: TimeSpan) -> DateTime => DateTime(ticks - interval.ticks, kind)
+        subtract(interval: TIME_SPAN) -> DATE_TIME => DATE_TIME(ticks - interval.ticks, kind)
 
         /// The moment `interval` after `moment`.
         ///
         /// - moment: the moment to start from
         /// - interval: how far to move
-        +(moment: DateTime, interval: TimeSpan) -> DateTime static => moment.add(interval)
+        +(moment: DATE_TIME, interval: TIME_SPAN) -> DATE_TIME static => moment.add(interval)
 
         /// The moment `interval` before `moment`.
         ///
         /// - moment: the moment to start from
         /// - interval: how far to move back
-        -(moment: DateTime, interval: TimeSpan) -> DateTime static => moment.subtract(interval)
+        -(moment: DATE_TIME, interval: TIME_SPAN) -> DATE_TIME static => moment.subtract(interval)
 
         /// The interval from `earlier` to `later`.
         ///
         /// - later: the moment the interval ends
         /// - earlier: the moment it starts
-        -(later: DateTime, earlier: DateTime) -> TimeSpan static => later.subtract(earlier)
+        -(later: DATE_TIME, earlier: DATE_TIME) -> TIME_SPAN static => later.subtract(earlier)
 
         /// The moment as the invariant culture writes it by default,
         /// `MM/dd/yyyy HH:mm:ss`.
@@ -220,7 +220,7 @@ namespace System is
         /// which on the source-core targets is the same moment.
         ///
         /// - text: the text to read
-        parse(text: string) -> DateTime static pure =>
+        parse(text: string) -> DATE_TIME static pure =>
             Ghul.Internal.DATE_PARSE.parse(text.trim())
 
         // The custom format a standard format letter stands for.
@@ -245,8 +245,8 @@ namespace System is
 
         _TICKS_PER_DAY: long static => 864_000_000_000L
 
-        _add_units(value: double, scale: long) -> DateTime =>
-            DateTime(ticks + cast long(Ghul.Math.round(value * cast double(scale))), kind)
+        _add_units(value: double, scale: long) -> DATE_TIME =>
+            DATE_TIME(ticks + cast long(Ghul.Math.round(value * cast double(scale))), kind)
 
         // The year, month, day or day of the year, for `part` 0, 1, 2 or 3,
         // by the algorithm .NET's `DateTime` uses.
@@ -332,7 +332,7 @@ namespace System is
         si
     si
 
-    partial TimeSpan is
+    partial TIME_SPAN is
         /// An interval of `days` days, `hours` hours, `minutes` minutes and
         /// `seconds` seconds.
         ///
@@ -366,45 +366,45 @@ namespace System is
         /// An interval of `minutes` minutes, to the nearest tick.
         ///
         /// - minutes: the length of the interval
-        from_minutes(minutes: double) -> TimeSpan static pure =>
-            TimeSpan(cast long(Ghul.Math.round(minutes * 600_000_000.0)))
+        from_minutes(minutes: double) -> TIME_SPAN static pure =>
+            TIME_SPAN(cast long(Ghul.Math.round(minutes * 600_000_000.0)))
 
         /// An interval of `hours` hours, to the nearest tick.
         ///
         /// - hours: the length of the interval
-        from_hours(hours: double) -> TimeSpan static pure =>
-            TimeSpan(cast long(Ghul.Math.round(hours * 36_000_000_000.0)))
+        from_hours(hours: double) -> TIME_SPAN static pure =>
+            TIME_SPAN(cast long(Ghul.Math.round(hours * 36_000_000_000.0)))
 
         /// An interval of `days` days, to the nearest tick.
         ///
         /// - days: the length of the interval
-        from_days(days: double) -> TimeSpan static pure =>
-            TimeSpan(cast long(Ghul.Math.round(days * 864_000_000_000.0)))
+        from_days(days: double) -> TIME_SPAN static pure =>
+            TIME_SPAN(cast long(Ghul.Math.round(days * 864_000_000_000.0)))
 
         /// An interval of `value` ticks.
         ///
         /// - value: the length of the interval
-        from_ticks(value: long) -> TimeSpan static pure => TimeSpan(value)
+        from_ticks(value: long) -> TIME_SPAN static pure => TIME_SPAN(value)
 
         /// An interval of `days` days.
         ///
         /// - days: the length of the interval
-        from_days(days: int) -> TimeSpan static pure => TimeSpan(cast long(days) * 864_000_000_000L)
+        from_days(days: int) -> TIME_SPAN static pure => TIME_SPAN(cast long(days) * 864_000_000_000L)
 
         /// An interval of `hours` hours.
         ///
         /// - hours: the length of the interval
-        from_hours(hours: int) -> TimeSpan static pure => TimeSpan(cast long(hours) * 36_000_000_000L)
+        from_hours(hours: int) -> TIME_SPAN static pure => TIME_SPAN(cast long(hours) * 36_000_000_000L)
 
         /// An interval of `minutes` minutes.
         ///
         /// - minutes: the length of the interval
-        from_minutes(minutes: long) -> TimeSpan static pure => TimeSpan(minutes * 600_000_000L)
+        from_minutes(minutes: long) -> TIME_SPAN static pure => TIME_SPAN(minutes * 600_000_000L)
 
         /// An interval of `seconds` seconds.
         ///
         /// - seconds: the length of the interval
-        from_seconds(seconds: long) -> TimeSpan static pure => TimeSpan(seconds * 10_000_000L)
+        from_seconds(seconds: long) -> TIME_SPAN static pure => TIME_SPAN(seconds * 10_000_000L)
 
         /// The interval written in `format`: `c`, `g` or `G`, .NET's standard
         /// formats as the invariant culture spells them, or a custom format of
@@ -424,14 +424,14 @@ namespace System is
         /// a whole number of days, with white space around it.
         ///
         /// - text: the text to read
-        parse(text: string) -> TimeSpan static pure => Ghul.Internal.TIME_SPAN_TEXT.parse(text.trim())
+        parse(text: string) -> TIME_SPAN static pure => Ghul.Internal.TIME_SPAN_TEXT.parse(text.trim())
 
         /// The interval `text` writes in the custom format `format`.
         ///
         /// - text: the text to read
         /// - format: the custom format it is written in
         /// - format_provider: ignored; text follows the invariant culture
-        parse_exact(text: string, format: string, format_provider: Ghul.FormatProvider?) -> TimeSpan static pure =>
+        parse_exact(text: string, format: string, format_provider: Ghul.FormatProvider?) -> TIME_SPAN static pure =>
             Ghul.Internal.TIME_SPAN_TEXT.parse_exact(text, format)
 
         /// The whole days in the interval.
@@ -460,38 +460,38 @@ namespace System is
         total_days: double => cast double(ticks) / 864_000_000_000.0
 
         /// The interval of the same length, made positive.
-        duration() -> TimeSpan => TimeSpan(if ticks < 0L then -ticks else ticks fi)
+        duration() -> TIME_SPAN => TIME_SPAN(if ticks < 0L then -ticks else ticks fi)
 
         /// The interval of the same length in the other direction.
-        negate() -> TimeSpan => TimeSpan(-ticks)
+        negate() -> TIME_SPAN => TIME_SPAN(-ticks)
 
         /// The two intervals together.
         ///
         /// - left: the first interval
         /// - right: the second interval
-        +(left: TimeSpan, right: TimeSpan) -> TimeSpan static => left.add(right)
+        +(left: TIME_SPAN, right: TIME_SPAN) -> TIME_SPAN static => left.add(right)
 
         /// `left` less `right`.
         ///
         /// - left: the interval to take from
         /// - right: the interval to take away
-        -(left: TimeSpan, right: TimeSpan) -> TimeSpan static => left.subtract(right)
+        -(left: TIME_SPAN, right: TIME_SPAN) -> TIME_SPAN static => left.subtract(right)
     si
 si
 
 namespace Ghul.Internal is
-    use System.DateTime
-    use System.DateTimeKind
-    use System.TimeSpan
+    use Time.DATE_TIME
+    use Time.DateTimeKind
+    use Time.TIME_SPAN
     use Text.STRING_BUILDER
 
     // Writes a date in a custom format under the invariant culture.
     class DATE_FORMAT is
-        write(moment: DateTime, format: string) -> string static => write(moment, format, null)
+        write(moment: DATE_TIME, format: string) -> string static => write(moment, format, null)
 
         // `offset` is the offset from UTC that `z` and `K` write, where the
         // moment is a `DateTimeOffset`'s.
-        write(moment: DateTime, format: string, offset: TimeSpan?) -> string static is
+        write(moment: DATE_TIME, format: string, offset: TIME_SPAN?) -> string static is
             let result = STRING_BUILDER()
             let i mut = 0
 
@@ -580,7 +580,7 @@ namespace Ghul.Internal is
 
         // An offset from UTC as `z` (`+5`), `zz` (`+05`) or `zzz` and more
         // (`+05:30`) writes it.
-        _offset_text(offset: TimeSpan, run: int) -> string static is
+        _offset_text(offset: TIME_SPAN, run: int) -> string static is
             let negative = offset.ticks < 0L
             let minutes = cast int((if negative then -offset.ticks else offset.ticks fi) / 600_000_000L)
             let sign = if negative then "-" else "+" fi
@@ -608,7 +608,7 @@ namespace Ghul.Internal is
 
     // Reads a date in the forms the invariant culture writes most often.
     class DATE_PARSE is
-        parse(text: string) -> DateTime static pure is
+        parse(text: string) -> DATE_TIME static pure is
             let at mut = 0
             let year mut = 0
             let month mut = 0
@@ -709,7 +709,7 @@ namespace Ghul.Internal is
                 _fail(text)
             fi
 
-            return DateTime(DateTime(year, month, day).ticks + ticks, kind)
+            return DATE_TIME(DATE_TIME(year, month, day).ticks + ticks, kind)
         si
 
         _number(text: string, start: int) -> (value: int, digits: int, next: int) static is
@@ -731,7 +731,7 @@ namespace Ghul.Internal is
 
     // Writes and reads a TimeSpan as text under the invariant culture.
     class TIME_SPAN_TEXT is
-        write(span: System.TimeSpan, format: string) -> string static is
+        write(span: Time.TIME_SPAN, format: string) -> string static is
             if format.length == 0 \/ format =~ "c" \/ format =~ "t" \/ format =~ "T" then
                 return span.to_string()
             fi
@@ -806,7 +806,7 @@ namespace Ghul.Internal is
             return result.to_string()
         si
 
-        parse(text: string) -> System.TimeSpan static pure is
+        parse(text: string) -> Time.TIME_SPAN static pure is
             let negative = text.starts_with("-")
             let body = if negative then text.substring(1) else text fi
 
@@ -843,10 +843,10 @@ namespace Ghul.Internal is
                 ticks = (((cast long(days) * 24L + cast long(hours)) * 60L + cast long(minutes)) * 60L + cast long(seconds)) * 10_000_000L + fraction
             fi
 
-            return System.TimeSpan(if negative then -ticks else ticks fi)
+            return Time.TIME_SPAN(if negative then -ticks else ticks fi)
         si
 
-        parse_exact(text: string, format: string) -> System.TimeSpan static pure is
+        parse_exact(text: string, format: string) -> Time.TIME_SPAN static pure is
             let days mut = 0L
             let hours mut = 0L
             let minutes mut = 0L
@@ -927,7 +927,7 @@ namespace Ghul.Internal is
                 _fail(text)
             fi
 
-            return System.TimeSpan((((days * 24L + hours) * 60L + minutes) * 60L + seconds) * 10_000_000L + fraction)
+            return Time.TIME_SPAN((((days * 24L + hours) * 60L + minutes) * 60L + seconds) * 10_000_000L + fraction)
         si
 
         _whole(text: string, whole: string) -> int static is

@@ -3,19 +3,19 @@
 // targets: local time is UTC, so a moment's local offset is zero.
 @@suppress("non-upper-snake-case-name")
 
-namespace System is
+namespace Time is
     use Ghul.ArgumentException
     use Ghul.ArgumentOutOfRangeException
 
     /// A moment as a clock time and its offset from UTC, as .NET's
     /// `System.DateTimeOffset` is. Two values are the same moment, and equal,
     /// when their UTC times are, whatever their offsets.
-    struct DateTimeOffset: IFormattable, Ghul.Comparable[DateTimeOffset] is
+    struct DATE_TIME_OFFSET: System.IFormattable, Ghul.Comparable[DATE_TIME_OFFSET] is
         // The clock time, in ticks since 0001-01-01T00:00:00.
         _clock_ticks: long
 
         /// The offset of the clock time from UTC.
-        offset: TimeSpan
+        offset: TIME_SPAN
 
         /// The moment whose clock time is `ticks` ticks of 100 nanoseconds
         /// after 0001-01-01T00:00:00, `offset` from UTC.
@@ -23,7 +23,7 @@ namespace System is
         /// - ticks: the clock time
         /// - offset: its offset from UTC, a whole number of minutes no more
         ///   than 14 hours either way
-        init(ticks: long, offset: TimeSpan) is
+        init(ticks: long, offset: TIME_SPAN) is
             _clock_ticks = ticks
             self.offset = _checked_offset(offset)
             _check_utc(ticks - offset.ticks)
@@ -33,8 +33,8 @@ namespace System is
         /// time zone to give another.
         ///
         /// - date_time: the moment
-        init(date_time: DateTime) is
-            init(date_time.ticks, TimeSpan.zero)
+        init(date_time: DATE_TIME) is
+            init(date_time.ticks, TIME_SPAN.zero)
         si
 
         /// The moment whose clock time is `date_time`, `offset` from UTC.
@@ -43,7 +43,7 @@ namespace System is
         ///
         /// - date_time: the clock time
         /// - offset: its offset from UTC
-        init(date_time: DateTime, offset: TimeSpan) is
+        init(date_time: DATE_TIME, offset: TIME_SPAN) is
             if date_time.kind != DateTimeKind.UNSPECIFIED /\ offset.ticks != 0L then
                 throw ArgumentException("the offset of a UTC or local time must be zero")
             fi
@@ -61,58 +61,58 @@ namespace System is
         /// - minute: the minute, from 0 to 59
         /// - second: the second, from 0 to 59
         /// - offset: its offset from UTC
-        init(year: int, month: int, day: int, hour: int, minute: int, second: int, offset: TimeSpan) is
-            init(DateTime(year, month, day, hour, minute, second).ticks, offset)
+        init(year: int, month: int, day: int, hour: int, minute: int, second: int, offset: TIME_SPAN) is
+            init(DATE_TIME(year, month, day, hour, minute, second).ticks, offset)
         si
 
         /// The current time, in UTC.
-        utc_now: DateTimeOffset static => DateTimeOffset(DateTime.utc_now.ticks, TimeSpan.zero)
+        utc_now: DATE_TIME_OFFSET static => DATE_TIME_OFFSET(DATE_TIME.utc_now.ticks, TIME_SPAN.zero)
 
         /// The current time. With no time zone to convert to, this is
         /// `utc_now`.
-        now: DateTimeOffset static => utc_now
+        now: DATE_TIME_OFFSET static => utc_now
 
         /// 1970-01-01T00:00:00 at offset zero, where Unix time starts.
-        unix_epoch: DateTimeOffset static => DateTimeOffset(DateTime.unix_epoch.ticks, TimeSpan.zero)
+        unix_epoch: DATE_TIME_OFFSET static => DATE_TIME_OFFSET(DATE_TIME.unix_epoch.ticks, TIME_SPAN.zero)
 
         /// The earliest moment, 0001-01-01T00:00:00 at offset zero.
-        min_value: DateTimeOffset static => DateTimeOffset(0L, TimeSpan.zero)
+        min_value: DATE_TIME_OFFSET static => DATE_TIME_OFFSET(0L, TIME_SPAN.zero)
 
         /// The latest moment, the last tick of 9999 at offset zero.
-        max_value: DateTimeOffset static => DateTimeOffset(DateTime.max_value.ticks, TimeSpan.zero)
+        max_value: DATE_TIME_OFFSET static => DATE_TIME_OFFSET(DATE_TIME.max_value.ticks, TIME_SPAN.zero)
 
         /// The moment `seconds` seconds after 1970-01-01T00:00:00Z, at offset
         /// zero.
         ///
         /// - seconds: seconds of Unix time
-        from_unix_time_seconds(seconds: long) -> DateTimeOffset static pure is
+        from_unix_time_seconds(seconds: long) -> DATE_TIME_OFFSET static pure is
             if seconds < -62_135_596_800L \/ seconds > 253_402_300_799L then
                 throw ArgumentOutOfRangeException("seconds", "outside the range of a DateTimeOffset")
             fi
 
-            return DateTimeOffset(DateTime.unix_epoch.ticks + seconds * 10_000_000L, TimeSpan.zero)
+            return DATE_TIME_OFFSET(DATE_TIME.unix_epoch.ticks + seconds * 10_000_000L, TIME_SPAN.zero)
         si
 
         /// The moment `milliseconds` milliseconds after 1970-01-01T00:00:00Z,
         /// at offset zero.
         ///
         /// - milliseconds: milliseconds of Unix time
-        from_unix_time_milliseconds(milliseconds: long) -> DateTimeOffset static pure is
+        from_unix_time_milliseconds(milliseconds: long) -> DATE_TIME_OFFSET static pure is
             if milliseconds < -62_135_596_800_000L \/ milliseconds > 253_402_300_799_999L then
                 throw ArgumentOutOfRangeException("milliseconds", "outside the range of a DateTimeOffset")
             fi
 
-            return DateTimeOffset(DateTime.unix_epoch.ticks + milliseconds * 10_000L, TimeSpan.zero)
+            return DATE_TIME_OFFSET(DATE_TIME.unix_epoch.ticks + milliseconds * 10_000L, TIME_SPAN.zero)
         si
 
         /// The clock time, of no particular kind.
-        date_time: DateTime => DateTime(_clock_ticks)
+        date_time: DATE_TIME => DATE_TIME(_clock_ticks)
 
         /// The moment in UTC.
-        utc_date_time: DateTime => DateTime(utc_ticks, DateTimeKind.UTC)
+        utc_date_time: DATE_TIME => DATE_TIME(utc_ticks, DateTimeKind.UTC)
 
         /// The moment in local time, which is UTC.
-        local_date_time: DateTime => DateTime(utc_ticks, DateTimeKind.LOCAL)
+        local_date_time: DATE_TIME => DATE_TIME(utc_ticks, DateTimeKind.LOCAL)
 
         /// The clock time, in ticks since 0001-01-01T00:00:00.
         ticks: long => _clock_ticks
@@ -151,120 +151,120 @@ namespace System is
         millisecond: int => date_time.millisecond
 
         /// The clock time's date, at midnight.
-        date: DateTime => date_time.date
+        date: DATE_TIME => date_time.date
 
         /// The clock time's time of day.
-        time_of_day: TimeSpan => date_time.time_of_day
+        time_of_day: TIME_SPAN => date_time.time_of_day
 
         /// Seconds of Unix time: whole seconds since 1970-01-01T00:00:00Z,
         /// rounded toward the start of time.
-        to_unix_time_seconds() -> long => _floor_divide(utc_ticks - DateTime.unix_epoch.ticks, 10_000_000L)
+        to_unix_time_seconds() -> long => _floor_divide(utc_ticks - DATE_TIME.unix_epoch.ticks, 10_000_000L)
 
         /// Milliseconds of Unix time: whole milliseconds since
         /// 1970-01-01T00:00:00Z, rounded toward the start of time.
-        to_unix_time_milliseconds() -> long => _floor_divide(utc_ticks - DateTime.unix_epoch.ticks, 10_000L)
+        to_unix_time_milliseconds() -> long => _floor_divide(utc_ticks - DATE_TIME.unix_epoch.ticks, 10_000L)
 
         /// The same moment at `offset` from UTC.
         ///
         /// - offset: the offset to show it at
-        to_offset(offset: TimeSpan) -> DateTimeOffset => DateTimeOffset(utc_ticks + offset.ticks, offset)
+        to_offset(offset: TIME_SPAN) -> DATE_TIME_OFFSET => DATE_TIME_OFFSET(utc_ticks + offset.ticks, offset)
 
         /// The same moment at offset zero.
-        to_universal_time() -> DateTimeOffset => DateTimeOffset(utc_ticks, TimeSpan.zero)
+        to_universal_time() -> DATE_TIME_OFFSET => DATE_TIME_OFFSET(utc_ticks, TIME_SPAN.zero)
 
         /// The same moment in local time, which is offset zero.
-        to_local_time() -> DateTimeOffset => to_universal_time()
+        to_local_time() -> DATE_TIME_OFFSET => to_universal_time()
 
         /// The moment `interval` later, at the same offset.
         ///
         /// - interval: how far to move
-        add(interval: TimeSpan) -> DateTimeOffset => DateTimeOffset(_clock_ticks + interval.ticks, offset)
+        add(interval: TIME_SPAN) -> DATE_TIME_OFFSET => DATE_TIME_OFFSET(_clock_ticks + interval.ticks, offset)
 
         /// The moment `value` ticks later.
         ///
         /// - value: how many ticks to move
-        add_ticks(value: long) -> DateTimeOffset => DateTimeOffset(_clock_ticks + value, offset)
+        add_ticks(value: long) -> DATE_TIME_OFFSET => DATE_TIME_OFFSET(_clock_ticks + value, offset)
 
         /// The moment `value` milliseconds later.
         ///
         /// - value: how many milliseconds to move
-        add_milliseconds(value: double) -> DateTimeOffset => _moved(date_time.add_milliseconds(value))
+        add_milliseconds(value: double) -> DATE_TIME_OFFSET => _moved(date_time.add_milliseconds(value))
 
         /// The moment `value` seconds later.
         ///
         /// - value: how many seconds to move
-        add_seconds(value: double) -> DateTimeOffset => _moved(date_time.add_seconds(value))
+        add_seconds(value: double) -> DATE_TIME_OFFSET => _moved(date_time.add_seconds(value))
 
         /// The moment `value` minutes later.
         ///
         /// - value: how many minutes to move
-        add_minutes(value: double) -> DateTimeOffset => _moved(date_time.add_minutes(value))
+        add_minutes(value: double) -> DATE_TIME_OFFSET => _moved(date_time.add_minutes(value))
 
         /// The moment `value` hours later.
         ///
         /// - value: how many hours to move
-        add_hours(value: double) -> DateTimeOffset => _moved(date_time.add_hours(value))
+        add_hours(value: double) -> DATE_TIME_OFFSET => _moved(date_time.add_hours(value))
 
         /// The moment `value` days later.
         ///
         /// - value: how many days to move
-        add_days(value: double) -> DateTimeOffset => _moved(date_time.add_days(value))
+        add_days(value: double) -> DATE_TIME_OFFSET => _moved(date_time.add_days(value))
 
         /// The moment `months` months later on the clock, the day kept where
         /// the month has it and the month's last day otherwise.
         ///
         /// - months: how many months to move
-        add_months(months: int) -> DateTimeOffset => _moved(date_time.add_months(months))
+        add_months(months: int) -> DATE_TIME_OFFSET => _moved(date_time.add_months(months))
 
         /// The moment `years` years later on the clock.
         ///
         /// - years: how many years to move
-        add_years(years: int) -> DateTimeOffset => _moved(date_time.add_years(years))
+        add_years(years: int) -> DATE_TIME_OFFSET => _moved(date_time.add_years(years))
 
         /// The interval from `other` to this moment.
         ///
         /// - other: the earlier moment
-        subtract(other: DateTimeOffset) -> TimeSpan => TimeSpan(utc_ticks - other.utc_ticks)
+        subtract(other: DATE_TIME_OFFSET) -> TIME_SPAN => TIME_SPAN(utc_ticks - other.utc_ticks)
 
         /// The moment `interval` earlier, at the same offset.
         ///
         /// - interval: how far to move back
-        subtract(interval: TimeSpan) -> DateTimeOffset => DateTimeOffset(_clock_ticks - interval.ticks, offset)
+        subtract(interval: TIME_SPAN) -> DATE_TIME_OFFSET => DATE_TIME_OFFSET(_clock_ticks - interval.ticks, offset)
 
         /// The moment `interval` after `moment`.
         ///
         /// - moment: the moment
         /// - interval: how far to move
-        +(moment: DateTimeOffset, interval: TimeSpan) -> DateTimeOffset static => moment.add(interval)
+        +(moment: DATE_TIME_OFFSET, interval: TIME_SPAN) -> DATE_TIME_OFFSET static => moment.add(interval)
 
         /// The moment `interval` before `moment`.
         ///
         /// - moment: the moment
         /// - interval: how far to move back
-        -(moment: DateTimeOffset, interval: TimeSpan) -> DateTimeOffset static => moment.subtract(interval)
+        -(moment: DATE_TIME_OFFSET, interval: TIME_SPAN) -> DATE_TIME_OFFSET static => moment.subtract(interval)
 
         /// The interval from `earlier` to `later`.
         ///
         /// - later: the moment the interval ends
         /// - earlier: the moment it starts
-        -(later: DateTimeOffset, earlier: DateTimeOffset) -> TimeSpan static => later.subtract(earlier)
+        -(later: DATE_TIME_OFFSET, earlier: DATE_TIME_OFFSET) -> TIME_SPAN static => later.subtract(earlier)
 
         /// How this moment is ordered against `other` in UTC: negative when it
         /// is the earlier, zero when they are the same, positive otherwise.
         ///
         /// - other: the moment to compare with
-        <>(other: DateTimeOffset) -> int pure =>
+        <>(other: DATE_TIME_OFFSET) -> int pure =>
             if utc_ticks < other.utc_ticks then -1 elif utc_ticks > other.utc_ticks then 1 else 0 fi
 
         /// Whether `other` is the same moment in UTC, whatever its offset.
         ///
         /// - other: the moment to compare with
-        =~(other: DateTimeOffset) -> bool pure => utc_ticks == other.utc_ticks
+        =~(other: DATE_TIME_OFFSET) -> bool pure => utc_ticks == other.utc_ticks
 
         /// Whether `other` is the same moment at the same offset.
         ///
         /// - other: the moment to compare with
-        equals_exact(other: DateTimeOffset) -> bool => _clock_ticks == other._clock_ticks /\ offset.ticks == other.offset.ticks
+        equals_exact(other: DATE_TIME_OFFSET) -> bool => _clock_ticks == other._clock_ticks /\ offset.ticks == other.offset.ticks
 
         /// A hash of the moment in UTC.
         get_hash_code() -> int => cast int(utc_ticks ^ (utc_ticks >> 32))
@@ -291,7 +291,7 @@ namespace System is
         /// - format_provider: ignored; text follows the invariant culture
         to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string => to_string(format)
 
-        _moved(clock: DateTime) -> DateTimeOffset => DateTimeOffset(clock.ticks, offset)
+        _moved(clock: DATE_TIME) -> DATE_TIME_OFFSET => DATE_TIME_OFFSET(clock.ticks, offset)
 
         // The custom format a standard format letter stands for, where it
         // differs from a DateTime's.
@@ -320,7 +320,7 @@ namespace System is
         _floor_divide(value: long, by: long) -> long static =>
             if value >= 0L then value / by else -((-value + by - 1L) / by) fi
 
-        _checked_offset(offset: TimeSpan) -> TimeSpan static is
+        _checked_offset(offset: TIME_SPAN) -> TIME_SPAN static is
             if offset.ticks % 600_000_000L != 0L then
                 throw ArgumentException("the offset must be a whole number of minutes")
             fi
@@ -333,27 +333,27 @@ namespace System is
         si
 
         _check_utc(utc: long) static is
-            if utc < 0L \/ utc > DateTime.max_value.ticks then
+            if utc < 0L \/ utc > DATE_TIME.max_value.ticks then
                 throw ArgumentOutOfRangeException("offset", "the UTC time is outside the range of a DateTime")
             fi
         si
     si
 si
 
-namespace System.Globalization is
-    use System.DateTime
-    use System.DayOfWeek
+namespace Time is
+    use Time.DATE_TIME
+    use Time.DayOfWeek
 
     /// The ISO 8601 week-numbering calendar, as .NET's
     /// `System.Globalization.ISOWeek` gives it: weeks start on Monday, and
     /// week 1 of a year is the one holding its first Thursday.
-    class ISOWeek is
+    class ISO_WEEK is
         init() is si
 
         /// The ISO week of the year `date` falls in, from 1 to 53.
         ///
         /// - date: the date
-        get_week_of_year(date: DateTime) -> int static pure is
+        get_week_of_year(date: DATE_TIME) -> int static pure is
             let week = _week_number(date)
 
             if week < 1 then
@@ -371,7 +371,7 @@ namespace System.Globalization is
         /// calendar year for a few days around the new year.
         ///
         /// - date: the date
-        get_year(date: DateTime) -> int static pure is
+        get_year(date: DATE_TIME) -> int static pure is
             let week = _week_number(date)
 
             if week < 1 then
@@ -388,12 +388,12 @@ namespace System.Globalization is
         /// The Monday of week 1 of ISO year `year`.
         ///
         /// - year: the ISO year, from 1 to 9999
-        get_year_start(year: int) -> DateTime static pure => to_date_time(year, 1, DayOfWeek.MONDAY)
+        get_year_start(year: int) -> DATE_TIME static pure => to_date_time(year, 1, DayOfWeek.MONDAY)
 
         /// The Sunday of the last week of ISO year `year`.
         ///
         /// - year: the ISO year, from 1 to 9999
-        get_year_end(year: int) -> DateTime static pure => to_date_time(year, get_weeks_in_year(year), DayOfWeek.SUNDAY)
+        get_year_end(year: int) -> DATE_TIME static pure => to_date_time(year, get_weeks_in_year(year), DayOfWeek.SUNDAY)
 
         /// How many weeks ISO year `year` has: 52 or 53.
         ///
@@ -411,7 +411,7 @@ namespace System.Globalization is
         /// - year: the ISO year, from 1 to 9999
         /// - week: the week, from 1 to 53
         /// - day_of_week: the day of the week
-        to_date_time(year: int, week: int, day_of_week: DayOfWeek) -> DateTime static pure is
+        to_date_time(year: int, week: int, day_of_week: DayOfWeek) -> DATE_TIME static pure is
             if year < 1 \/ year > 9999 then
                 throw Ghul.ArgumentOutOfRangeException("year", "the year must be from 1 to 9999")
             fi
@@ -426,13 +426,13 @@ namespace System.Globalization is
                 throw Ghul.ArgumentOutOfRangeException("day_of_week", "not a day of the week")
             fi
 
-            let correction = _weekday(DateTime(year, 1, 4).day_of_week) + 3
+            let correction = _weekday(DATE_TIME(year, 1, 4).day_of_week) + 3
             let ordinal = week * 7 + _weekday(day_of_week) - correction
 
-            return DateTime(year, 1, 1).add_days(cast double(ordinal - 1))
+            return DATE_TIME(year, 1, 1).add_days(cast double(ordinal - 1))
         si
 
-        _week_number(date: DateTime) -> int static => (date.day_of_year - _weekday(date.day_of_week) + 10) / 7
+        _week_number(date: DATE_TIME) -> int static => (date.day_of_year - _weekday(date.day_of_week) + 10) / 7
 
         _weekday(day: DayOfWeek) -> int static => if day == DayOfWeek.SUNDAY then 7 else cast int(day) fi
 
