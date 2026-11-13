@@ -207,7 +207,7 @@ namespace Tests is
 
         @Test()
         Runes_ReadASurrogatePairAsOneRune() is
-            let rs = runes("a\uD83D\uDE00b") |> collect()
+            let rs = runes("a\uD83D\uDE00b") |> ARRAY()
 
             are_equal(3, rs.count)
             are_equal(0x61, rs[0].value)
@@ -253,7 +253,7 @@ namespace Tests is
 
         @Test()
         Graphemes_Collected_SliceByCharacter() is
-            let cs = graphemes("\uD835\uDD28\uD835\uDD2B\uD835\uDD26\uD835\uDD24\uD835\uDD25") |> collect()
+            let cs = graphemes("\uD835\uDD28\uD835\uDD2B\uD835\uDD26\uD835\uDD24\uD835\uDD25") |> ARRAY()
 
             are_equal("\uD835\uDD2B\uD835\uDD26\uD835\uDD24", cs[1..<1] |> string())
         si

@@ -141,7 +141,7 @@ namespace Ghul.Pipes is
             if isa List[T](row) then
                 indexed.add(row)
             else
-                indexed.add(row |> collect_mutable())
+                indexed.add(_list(row))
             fi
         od
 
@@ -172,7 +172,7 @@ namespace Ghul.Pipes is
     /// the order of the input's own positions, which is lexicographic when the
     /// input is sorted.
     permutations[T](source: Iterable[T]) -> Pipe[List[T]] is
-        let items = source |> collect_mutable()
+        let items = _list(source)
 
         if items.count == 0 then
             yield LIST[T]()
@@ -301,26 +301,31 @@ namespace Ghul.Pipes is
     scan[T..,TRunning](source: Iterable[T], seed: TRunning, accumulator: (TRunning,T..) -> TRunning pure) -> Iterable[TRunning] pure =>
         SCAN_PIPE[T,TRunning](source, seed, accumulator)
 
-    /// The elements of `source`, collected into an array.
+    /// The elements of `source`, collected into an array. Use the `ARRAY(source)`
+    /// constructor instead.
+    @System.Obsolete("use ARRAY() instead")
     collect[T](source: Iterable[T]) -> ARRAY[T] pure =>
-        collect_mutable(source).to_array()
+        _list(source).to_array()
 
-    // the same as collect, which is the name to use
-    /// The same as `collect`. Use `collect` instead.
+    /// The same as `collect`. Use the `ARRAY(source)` constructor instead.
     @IF.dotnet()
-    @System.Obsolete("use collect instead")
+    @System.Obsolete("use ARRAY() instead")
     collect_array[T](source: Iterable[T]) -> ARRAY[T] pure =>
-        collect(source)
+        _list(source).to_array()
 
-    // the same as collect_mutable, which is the name to use
-    /// The same as `collect_mutable`. Use `collect_mutable` instead.
+    /// The same as `collect_mutable`. Use the `LIST(source)` constructor instead.
     @IF.dotnet()
-    @System.Obsolete("use collect_mutable instead")
+    @System.Obsolete("use LIST() instead")
     collect_list[T](source: Iterable[T]) -> LIST[T] pure =>
-        collect_mutable(source)
+        _list(source)
 
-    /// The elements of `source`, collected into a mutable list.
-    collect_mutable[T](source: Iterable[T]) -> LIST[T] pure is
+    /// The elements of `source`, collected into a mutable list. Use the
+    /// `LIST(source)` constructor instead.
+    @System.Obsolete("use LIST() instead")
+    collect_mutable[T](source: Iterable[T]) -> LIST[T] pure =>
+        _list(source)
+
+    _list[T](source: Iterable[T]) -> LIST[T] pure is
         let result = LIST[T]()
 
         for element in source do
@@ -330,7 +335,9 @@ namespace Ghul.Pipes is
         return result
     si
 
-    /// The elements of `source`, collected into a set, with duplicates removed.
+    /// The elements of `source`, collected into a set, with duplicates removed. Use
+    /// the `SET(source)` constructor instead.
+    @System.Obsolete("use SET() instead")
     collect_set[T](source: Iterable[T]) -> SET[T] pure is
         let result = SET[T]()
 
@@ -367,11 +374,15 @@ namespace Ghul.Pipes is
     /// written: `[("a", 1), ("b", 2)] |> collect_map()`. Throws if the same key appears
     /// twice. `collect_mutable_map` gives back a mutable `MAP` instead.
     collect_map[K, V](source: Iterable[(K, V)]) -> Map[K, V] pure =>
-        collect_mutable_map(source)
+        _map(source)
 
     /// A mutable map built from a sequence of key and value pairs. Throws if the same
-    /// key appears twice.
-    collect_mutable_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure is
+    /// key appears twice. Use the `MAP(source)` constructor instead.
+    @System.Obsolete("use MAP() instead")
+    collect_mutable_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure =>
+        _map(source)
+
+    _map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure is
         let result = MAP[K, V]()
 
         for (key, value) in source do
@@ -670,7 +681,7 @@ namespace Ghul.Pipes is
             return LIST_REVERSE_PIPE(source)
         fi
 
-        let list = collect_mutable(source) in
+        let list = _list(source) in
         LIST_REVERSE_PIPE(list)
     si
 
@@ -680,7 +691,7 @@ namespace Ghul.Pipes is
 
     @IF.dotnet()
     _sort_ascending[T](source: Iterable[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
+        let list = _list(source)
 
         list.sort()
 
@@ -689,7 +700,7 @@ namespace Ghul.Pipes is
 
     @IF.source_core()
     _sort_ascending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
+        let list = _list(source)
 
         list.sort(COMPARABLE_COMPARER[T]())
 
@@ -698,7 +709,7 @@ namespace Ghul.Pipes is
 
     /// The elements of `source` sorted according to `comparer`.
     sort[T](source: Iterable[T], comparer: Comparer[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
+        let list = _list(source)
 
         list.sort(comparer)
 
@@ -715,7 +726,7 @@ namespace Ghul.Pipes is
 
     @IF.dotnet()
     _sort_descending[T](source: Iterable[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
+        let list = _list(source)
 
         list.sort()
 
@@ -724,7 +735,7 @@ namespace Ghul.Pipes is
 
     @IF.source_core()
     _sort_descending[T: Ghul.Comparable[T]](source: Iterable[T]) -> Iterable[T] pure is
-        let list = collect_mutable(source)
+        let list = _list(source)
 
         list.sort(COMPARABLE_COMPARER[T]())
 

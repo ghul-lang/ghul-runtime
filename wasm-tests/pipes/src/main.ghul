@@ -16,7 +16,7 @@ entry() is
 
     xs |> filter(x => x < 3) |> each(x => write_line("{x}"))
 
-    let incremented = xs |> map(x => x + 1) |> collect()
+    let incremented = xs |> map(x => x + 1) |> ARRAY()
 
     write_line("{incremented.count} {incremented[0]} {incremented[7]}")
 

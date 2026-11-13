@@ -13,7 +13,7 @@ let m = xs |> distinct() |> collect_map(x => x, x => x * x)
 write_line("{m[8]}")
 let g = xs |> group_by(x => x % 2)
 write_line("{g[1].count}")
-write_line("{xs |> collect_set() |> count()}")
+write_line("{xs |> Collections.SET() |> count()}")
 write_line("{xs |> sort_by(x => -x) |> join(", ")}")
 let words = ["pear", "fig", "kiwi", "apple", "date", "plum", "lime", "nut", "yam"]
 write_line("{words |> sort_by(w => w.length) |> join(" ")}")
