@@ -15,6 +15,7 @@ class BAG_WITHOUT_CONTAINS: MutableBag[int] is
     count: int => _items.count
 
     add(value: int) => _items.add(value)
+    remove(value: int) -> bool => _items.remove(value)
     clear() => _items.clear()
 
     iterator: Iterator[int] => _items.iterator
