@@ -1,8 +1,4 @@
-// .NET's names for these types are kept, so source written against .NET
-// builds here unchanged.
-@@suppress("non-upper-snake-case-name")
-
-namespace System.Globalization is
+namespace Text is
     /// What a number's text may hold besides its digits, as .NET's
     /// `System.Globalization.NumberStyles` says. The members combine as
     /// flags.

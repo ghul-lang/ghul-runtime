@@ -1,4 +1,4 @@
-namespace Ghul is
+namespace Text is
     /// How two strings are compared, as .NET names the choices. This
     /// library holds no linguistic data: the culture values compare as
     /// `ORDINAL` does, and the ones that ignore case as
@@ -17,6 +17,10 @@ namespace Ghul is
         /// By UTF-16 code unit, each letter taken as its upper case.
         ORDINAL_IGNORE_CASE = 5,
     si
+si
+
+namespace Ghul is
+    use Text.StringComparison
 
     partial string is
         /// Negative where `a` orders before `b` under `comparison`, zero

@@ -1,28 +1,29 @@
-// .NET's names for these types are kept, so source written against .NET
-// builds here unchanged.
+// TextInfo keeps .NET's name, so source written against .NET builds here
+// unchanged.
 @@suppress("non-upper-snake-case-name")
 
-namespace System.Globalization is
+namespace Text is
+    use System.Globalization.TextInfo
     /// A culture, as .NET's `System.Globalization.CultureInfo` is one. The
     /// source-core targets format, parse and change case under the invariant
     /// culture whatever culture is asked for, so the one culture there is
     /// the invariant culture, and passing it anywhere a format provider is
     /// taken changes nothing.
-    class CultureInfo: Ghul.FormatProvider is
-        _instance: CultureInfo static
+    class CULTURE: Ghul.FormatProvider is
+        _instance: CULTURE static
 
         init() static is
-            _instance = CultureInfo()
+            _instance = CULTURE()
         si
 
         init() is
         si
 
         /// The invariant culture.
-        invariant_culture: CultureInfo static => _instance
+        invariant_culture: CULTURE static => _instance
 
         /// The culture the program runs under, which is the invariant culture.
-        current_culture: CultureInfo static => _instance
+        current_culture: CULTURE static => _instance
 
         /// The culture's name, which is empty for the invariant culture.
         name: string => ""
@@ -37,6 +38,9 @@ namespace System.Globalization is
 
         to_string() -> string => ""
     si
+si
+
+namespace System.Globalization is
 
     /// How a culture changes the case of text, as .NET's
     /// `System.Globalization.TextInfo` does, here under the invariant culture.
