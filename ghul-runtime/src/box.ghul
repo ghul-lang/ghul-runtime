@@ -1,8 +1,9 @@
 namespace Ghul is
     /// A single mutable value of type `T`, held on the heap.
     class BOX[T] is
-        /// The value being held.
-        value: T public
+        /// The value being held. A public field, so it has an address: a
+        /// `ref` to a captured local names the value in its box.
+        value: T field public
 
         init() is
         si

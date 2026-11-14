@@ -14,6 +14,16 @@ namespace Ghul.Internal is
         si
     si
 
+    // Marker attribute emitted by the compiler on a field declared
+    // `field public`: code outside the declaring type can assign it.
+    // Read on cross-assembly import, since every field a ghūl assembly
+    // emits without a leading underscore is public. Compiler-emitted;
+    // user code never spells this name.
+    class ASSIGNABLE_ATTRIBUTE: Attribute is
+        init() is
+        si
+    si
+
     // Marker attribute emitted by the compiler on a ghūl function
     // declared `mut` (mutates the receiver only). Read on cross-
     // assembly import to set the function's purity to MUT, which
