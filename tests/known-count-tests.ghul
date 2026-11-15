@@ -1,0 +1,102 @@
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // known_count answers only where the count is settled, and asking never
+    // reads the source.
+    @TestClass()
+    class KNOWN_COUNTShould is
+        init() is
+        si
+
+        count_of(sequence: object) -> int? =>
+            if let known: KnownCount = sequence then known.known_count else null fi
+
+        @Test()
+        Memo_IsAbsentUntilTheSourceIsExhausted_AndNeverPulls() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = list(source)
+
+            is_false(count_of(p)?)
+            are_equal(0, source.handed_out)
+
+            let partly = p.iterator
+            is_true(partly.move_next())
+            is_false(count_of(p)?)
+            are_equal(1, source.handed_out)
+
+            assert_elements([1, 2, 3], drain(p))
+            are_equal(3, count_of(p)!)
+            are_equal(3, source.handed_out)
+        si
+
+        @Test()
+        Memo_OverAnUnboundedSource_StaysAbsentAndUnforced() is
+            let p = list(from(1))
+
+            are_equal(5, p[4])
+            is_false(count_of(p)?)
+            are_equal(5, p[4])
+        si
+
+        @Test()
+        Memo_FollowsChangesOnceComplete() is
+            let p = cast MEMO_PIPE[int](memo(COUNTING_SOURCE[int]([1, 2])))
+
+            drain(p)
+            are_equal(2, count_of(p)!)
+
+            p.add(3)
+            are_equal(3, count_of(p)!)
+        si
+
+        @Test()
+        Slice_AnswersWhereItFitsAKnownSource() is
+            let array: ARRAY[int] = [1, 2, 3, 4, 5]
+            let list_source = LIST[int]([1, 2, 3])
+
+            are_equal(3, count_of(LIST_SLICE[int](array, 1, 3))!)
+            are_equal(2, count_of(LIST_SLICE[int](list_source, 1, 2))!)
+            is_false(count_of(LIST_SLICE[int](list_source, 2, 5))?)
+        si
+
+        @Test()
+        Slice_OverAFillingMemo_IsAbsentAndDoesNotPull() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = list(source)
+
+            is_false(count_of(LIST_SLICE[int](p, 0, 2))?)
+            are_equal(0, source.handed_out)
+        si
+
+        @Test()
+        Repeat_AnswersItsCount_AndIsAbsentWithoutEnd() is
+            are_equal(4, count_of(repeat(7, 4))!)
+            are_equal(0, count_of(repeat(7, 0))!)
+            is_false(count_of(repeat(7))?)
+        si
+
+        @Test()
+        From_AnswersWhereTheCountFitsAnInt() is
+            are_equal(1, count_of(from(2147483647))!)
+            are_equal(2147483647, count_of(from(1))!)
+            is_false(count_of(from(0))?)
+            is_false(count_of(from(5, 0))?)
+            are_equal(3, count_of(from(-2147483646, -1))!)
+        si
+
+        @Test()
+        Take_IsTheSmallerOfItsCountAndAKnownSource() is
+            are_equal(5, count_of(TAKE_PIPE[int](from(1), 5))!)
+            are_equal(3, count_of(TAKE_PIPE[int](LIST[int]([1, 2, 3]), 5))!)
+            are_equal(0, count_of(TAKE_PIPE[int](LIST[int]([1, 2, 3]), -1))!)
+            is_false(count_of(TAKE_PIPE[int](COUNTING_SOURCE[int]([1, 2]), 1))?)
+        si
+    si
+si

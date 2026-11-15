@@ -1,15 +1,18 @@
 namespace Ghul.Pipes is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
     use Collections
 
     /// The first `take_count` elements of `source`.
-    class TAKE_PIPE[T]: FilterPipeBase[T] is
+    class TAKE_PIPE[T]: FilterPipeBase[T], KnownCount is
         _initial_take_count: int
         _take_count: int
+        _counted_source: Iterable[T]
 
         init(source: Iterable[T], take_count: int) is
             super.init(source)
             _initial_take_count = take_count
             _take_count = take_count
+            _counted_source = source
         si
 
         /// A new stage of this kind over `source`, not yet read.
@@ -25,5 +28,23 @@ namespace Ghul.Pipes is
 
         /// Always accepts.
         should_include() -> bool => true
+
+        /// The smaller of `take_count` and the source's count, where the source is an
+        /// array or a list or itself knows its count; absent otherwise. Never reads
+        /// the source.
+        known_count: int? is
+            let source_count: int? =
+                if let array: ARRAY[T] = _counted_source then array.count
+                elif let list: Collections.LIST[T] = _counted_source then list.count
+                elif let known: KnownCount = _counted_source then known.known_count
+                else null fi
+
+            if let available = source_count then
+                let wanted = if _initial_take_count < 0 then 0 else _initial_take_count fi
+                return if wanted < available then wanted else available fi
+            fi
+
+            return null
+        si
     si
 si

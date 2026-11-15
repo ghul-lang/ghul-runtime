@@ -1,0 +1,13 @@
+namespace Ghul.Pipes is
+    /// A sequence that can say how many elements a full read of it would yield,
+    /// where that is already settled, without reading anything to find out.
+    trait KnownCount is
+        /// How many elements a read of the sequence from its start would yield now,
+        /// or absent where that isn't known without reading. Never reads the
+        /// source, pulls an element or forces a lazy sequence, so asking costs
+        /// nothing and changes nothing. A sequence still being filled from its
+        /// source, such as a `memo` that hasn't reached the source's end, answers
+        /// absent rather than the number of elements it holds so far.
+        known_count: int?
+    si
+si

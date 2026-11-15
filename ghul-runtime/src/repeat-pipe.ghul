@@ -5,7 +5,7 @@ namespace Ghul.Pipes is
     // negative. A count of zero yields nothing.
     /// `value`, yielded `count` times, or without end when `count` is
     /// negative; a count of zero yields no elements.
-    class REPEAT_PIPE[T]: PipeStage[T] is
+    class REPEAT_PIPE[T]: PipeStage[T], KnownCount is
         _value: T
         _count: int
         _remaining: int
@@ -20,6 +20,9 @@ namespace Ghul.Pipes is
             _count = count
             _remaining = count
         si
+
+        /// `count`, or absent where the repetition never ends.
+        known_count: int? => if _count < 0 then null else _count fi
 
         /// A new repetition of `value`, not yet read.
         fresh() -> PipeStage[T] => REPEAT_PIPE[T](_value, _count)

@@ -1,4 +1,5 @@
 namespace Ghul.Pipes is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
     use Collections
 
     // A slice of part of an indexable source: a view onto the source rather
@@ -13,7 +14,7 @@ namespace Ghul.Pipes is
     // is therefore only found out when it is read there, or counted: the
     // source's own exception for the missing position is what propagates.
     /// A view onto `count` elements of `source` starting at `from`, produced by a range index. Not a copy.
-    class LIST_SLICE[T]: List[T] is
+    class LIST_SLICE[T]: List[T], KnownCount is
         _source: List[T]
         _from: int
         _count: int
@@ -51,6 +52,23 @@ namespace Ghul.Pipes is
             fi
 
             return _count
+        si
+
+        /// The number of elements in the slice, where the source is an array or
+        /// a list, or itself knows its count, and the slice fits within it; absent
+        /// otherwise. Never reads the source.
+        known_count: int? is
+            let source_count: int? =
+                if let array: ARRAY[T] = _source then array.count
+                elif let list: Collections.LIST[T] = _source then list.count
+                elif let known: KnownCount = _source then known.known_count
+                else null fi
+
+            if let available = source_count /\ _from + _count <= available then
+                return _count
+            fi
+
+            return null
         si
 
         /// Iterates the slice's elements in order.
