@@ -1,0 +1,7 @@
+{
+    "name": "interop-pins",
+    "targets": ["llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

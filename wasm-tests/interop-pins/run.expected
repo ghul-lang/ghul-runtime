@@ -1,0 +1,9 @@
+pinned: kept true, intact true; disposed: collected true
+kept function: kept true
+not pinned: collected true
+empty array address nonzero: true
+utf8: héllo
+pin after dispose throws
+handle: 99 released false
+disposed twice: released 1 time(s), is released true
+address after release throws
