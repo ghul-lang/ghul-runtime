@@ -59,7 +59,7 @@ namespace Ghul.Interop is
     /// - length: how many bytes the text is
     @IF.llvm()
     read_utf8(address: word, length: int) -> string =>
-        Text.Encoding.UTF8.get_string(copy_bytes(address, length))
+        Text.Encoding.utf8.get_string(copy_bytes(address, length))
 
     /// A copy of the `length` bytes at `address`. Unchecked, as `read` is.
     ///

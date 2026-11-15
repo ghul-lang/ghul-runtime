@@ -1,11 +1,11 @@
 use default
 use Ghul.Interop
 
-// Ghul.Interop's reads, writes and copies over memory from the C library's malloc,
+// Ghul.Interop's reads, writes and copies over memory from the C library's calloc,
 // laid out as a C struct would be.
 
-@extern("c", "malloc")
-malloc(size: word) -> word
+@extern("c", "calloc")
+calloc(count: word, size: word) -> word
 
 @extern("c", "free")
 free(address: word)
@@ -13,7 +13,7 @@ free(address: word)
 @extern("c", "strdup")
 strdup(text: string) -> word
 
-let p = malloc(64w)
+let p = calloc(1w, 64w)
 
 write[int](p, 0, 42)
 write[double](p, 8, -2.5)
