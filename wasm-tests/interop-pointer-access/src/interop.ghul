@@ -1,0 +1,35 @@
+use default
+use Ghul.Interop
+
+// Ghul.Interop's reads, writes and copies over memory from the C library's calloc,
+// laid out as a C struct would be.
+
+@extern("c", "calloc")
+calloc(count: word, size: word) -> word
+
+@extern("c", "free")
+free(address: word)
+
+@extern("c", "strdup")
+strdup(text: string) -> word
+
+let p = calloc(1w, 64w)
+
+write[int](p, 0, 42)
+write[double](p, 8, -2.5)
+write[word](p, 16, 7w)
+write[bool](p, 24, true)
+write[char](p, 26, 'z')
+write[ubyte](p, 28, 255`ub)
+write_line("{read[int](p, 0)} {read[double](p, 8)} {read[word](p, 16)} {read[bool](p, 24)} {read[char](p, 26)} {read[ubyte](p, 28)} {read[byte](p, 28)}")
+
+let text = strdup("héllo")
+write[word](p, 32, text)
+write_line("[{read_utf8(read[word](p, 32))}] [{read_utf8(0w) ?? "null"}] [{read_utf8(text, 3)}]")
+
+copy_bytes([1`ub, 2`ub, 0`ub, 4`ub], p)
+write_line("{copy_bytes(p, 4) |> join(",")} {read[int](p, 0)}")
+write_line("[{read_utf8(p, 4) |> map(c => int(c)) |> join(",")}]")
+
+free(text)
+free(p)

@@ -21,4 +21,82 @@ namespace Ghul.Interop is
     /// - code: the errno value
     @IF.dotnet()
     error_text(code: int) -> string => System.Runtime.InteropServices.Marshal.get_p_invoke_error_message(code)
+
+    /// The scalar of type `T` at `offset` bytes past `address`. `T` is one of the integer
+    /// types, `single`, `double`, `bool` (one byte, nonzero is true), `char` (one UTF-16 unit)
+    /// or `word`; any other type is a compile-time error. The read is unaligned and unchecked:
+    /// an address that isn't readable is undefined behaviour, as it is in C.
+    ///
+    /// - address: where the memory starts, as foreign code handed it over
+    /// - offset: how many bytes past `address` the value starts
+    @IF.llvm()
+    @intrinsic("interop.read")
+    read[T](address: word, offset: int) -> T
+
+    /// Writes `value`, a scalar of type `T`, at `offset` bytes past `address`. `T` is as for
+    /// `read`. The write is unaligned and unchecked: an address that isn't writable is
+    /// undefined behaviour, as it is in C.
+    ///
+    /// - address: where the memory starts, as foreign code handed it over
+    /// - offset: how many bytes past `address` the value starts
+    /// - value: what to write
+    @IF.llvm()
+    @intrinsic("interop.write")
+    write[T](address: word, offset: int, value: T)
+
+    /// A copy of the NUL-terminated UTF-8 text at `address`, or null where `address` is
+    /// zero. Reads up to the first NUL; unchecked, as `read` is.
+    ///
+    /// - address: the first byte of the text
+    @IF.llvm()
+    read_utf8(address: word) -> string? =>
+        if address == 0w then null else read_utf8(address, int(_strlen(address))) fi
+
+    /// A copy of the `length` bytes of UTF-8 text at `address`, NUL bytes included.
+    /// Unchecked, as `read` is.
+    ///
+    /// - address: the first byte of the text
+    /// - length: how many bytes the text is
+    @IF.llvm()
+    read_utf8(address: word, length: int) -> string =>
+        Text.Encoding.utf8.get_string(copy_bytes(address, length))
+
+    /// A copy of the `length` bytes at `address`. Unchecked, as `read` is.
+    ///
+    /// - address: the first byte
+    /// - length: how many bytes to copy
+    @IF.llvm()
+    copy_bytes(address: word, length: int) -> ARRAY[ubyte] is
+        let bytes = Ghul.Pipes.repeat(0ub, length) |> ARRAY()
+
+        if length > 0 then
+            _copy_out(bytes, address, word(length))
+        fi
+
+        return bytes
+    si
+
+    /// Copies every byte of `bytes` to `address`. Unchecked, as `write` is: the memory at
+    /// `address` must have room for them all.
+    ///
+    /// - bytes: what to copy
+    /// - address: where the first byte goes
+    @IF.llvm()
+    copy_bytes(bytes: ARRAY[ubyte], address: word) is
+        if bytes.count > 0 then
+            _copy_in(address, bytes, word(bytes.count))
+        fi
+    si
+
+    @IF.llvm()
+    @extern("", "strlen")
+    _strlen(address: word) -> word
+
+    @IF.llvm()
+    @extern("", "memcpy")
+    _copy_out(destination: ARRAY[ubyte], source: word, length: word) -> word
+
+    @IF.llvm()
+    @extern("", "memmove")
+    _copy_in(destination: word, source: ARRAY[ubyte], length: word) -> word
 si
