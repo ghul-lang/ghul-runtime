@@ -1,0 +1,104 @@
+use default
+use Ghul.Interop
+
+// What a PINNER keeps alive, measured by the collector's heap after full collections:
+// an array pinned, or a function value kept, survives while the pinner holds it and
+// is collected once it is disposed. And a HANDLE releases its resource exactly once.
+
+@extern("c", "calloc")
+calloc(count: word, size: word) -> word
+
+@extern("c", "free")
+free(address: word)
+
+let megabyte = 1 << 20
+
+heap() -> long => System.GC.get_total_memory(true)
+
+// A megabyte array, its address left only in C memory at `slot`, pinned when a
+// pinner is given.
+hand_over(slot: word, pins: PINNER?) is
+    let block = repeat(0xAB`ub, megabyte) |> ARRAY()
+    let address = if let p = pins then p.pin(block) else 0w fi
+    write[word](slot, 0, address)
+si
+
+// A function value holding a megabyte array, kept when a pinner is given.
+keep_closure(pins: PINNER) is
+    let block = repeat(1`ub, megabyte) |> ARRAY()
+    let f = () => block.count
+    pins.keep(f)
+si
+
+retained(before: long) -> bool => heap() - before > long(megabyte / 2)
+
+let slot = calloc(1w, 8w)
+
+let base = heap()
+let pins = PINNER()
+hand_over(slot, pins)
+let pinned_alive = retained(base)
+let pinned_intact = read[ubyte](read[word](slot, 0), megabyte - 1) == 0xAB`ub
+pins.dispose()
+let released = !retained(base)
+write_line("pinned: kept {pinned_alive}, intact {pinned_intact}; disposed: collected {released}")
+
+// Whether a function value is collected once its pinner is disposed depends on
+// whether a stale copy of it is left where the collector scans conservatively, so
+// only its being kept is checked.
+let base2 = heap()
+let kept = PINNER()
+keep_closure(kept)
+write_line("kept function: kept {retained(base2)}")
+kept.dispose()
+
+let unpinned = heap()
+hand_over(slot, null)
+let unpinned_released = !retained(unpinned)
+write_line("not pinned: collected {unpinned_released}")
+
+// An empty array still answers an address; a pinner disposed twice is fine, and
+// pinning after it is disposed throws.
+let more = PINNER()
+write_line("empty array address nonzero: {more.pin(repeat(0, 0) |> ARRAY()) != 0w}")
+write_line("utf8: {read_utf8(more.pin_utf8("héllo"))}")
+more.dispose()
+more.dispose()
+try
+    more.pin([1] |> ARRAY())
+    write_line("pinned after dispose")
+catch e: Ghul.ObjectDisposedException
+    write_line("pin after dispose throws")
+yrt
+
+class BUFFER: HANDLE is
+    released: int public
+
+    init(address: word) is
+        super.init(address)
+    si
+
+    init(size: int) is
+        super.init(calloc(1w, word(size)))
+    si
+
+    release(address: word) is
+        released = released + 1
+        free(address)
+    si
+si
+
+let buffer = BUFFER(16)
+write[int](buffer.address, 0, 99)
+write_line("handle: {read[int](buffer.address, 0)} released {buffer.is_released}")
+buffer.dispose()
+buffer.dispose()
+write_line("disposed twice: released {buffer.released} time(s), is released {buffer.is_released}")
+try
+    buffer.address
+    write_line("address after release")
+catch e: Ghul.ObjectDisposedException
+    write_line("address after release throws")
+yrt
+
+free(slot)

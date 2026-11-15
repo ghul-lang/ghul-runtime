@@ -99,4 +99,230 @@ namespace Ghul.Interop is
     @IF.llvm()
     @extern("", "memmove")
     _copy_in(destination: word, source: ARRAY[ubyte], length: word) -> word
+
+    /// Keeps the values foreign code holds alive until it is disposed, and gives the
+    /// addresses of the arrays it pins. A foreign argument is otherwise valid for the
+    /// call only: anything the C library keeps a pointer to after the call returns must
+    /// be pinned or kept here for as long as the library may use it. The collector
+    /// doesn't move objects, so an address stays good while its pin is held.
+    ///
+    /// Disposing releases every pin at once. Foreign code that still holds an address
+    /// after that is a use-after-free, which nothing checks. A facade that owns a C
+    /// resource disposes its pinner after it has released the resource, never before.
+    ///
+    /// The pins are held in a list that grows with each one. Code that pins on every
+    /// call, in a loop, makes a pinner for each call and disposes it there, rather
+    /// than one that lives as long as the loop.
+    @IF.llvm()
+    class PINNER: Ghul.Disposable is
+        _held: Collections.LIST[object]?
+
+        /// A pinner holding nothing.
+        init() is
+            _held = Collections.LIST[object]()
+        si
+
+        /// The address of `array`'s first element, valid until the pinner is disposed;
+        /// `array` is kept alive until then. There is an overload for each scalar type
+        /// and `word`, since foreign code can only read arrays of those. An empty array
+        /// still answers an address, which foreign code must not read through. Throws
+        /// once the pinner is disposed.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[bool]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[char]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[byte]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[ubyte]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[short]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[ushort]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[int]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[uint]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[long]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[ulong]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[word]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[uword]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[single]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin(array: ARRAY[double]) -> word is
+            _hold(array)
+            return _elements(array)
+        si
+
+        /// The address of a NUL-terminated UTF-8 copy of `text`, valid until the pinner
+        /// is disposed. The copy is the pinner's: foreign code's changes to it aren't
+        /// seen by `text`. Throws once the pinner is disposed.
+        ///
+        /// - text: the text to copy
+        pin_utf8(text: string) -> word is
+            let bytes = Collections.LIST[ubyte](Text.Encoding.utf8.get_bytes(text))
+
+            bytes.add(0ub)
+
+            return pin(bytes.to_array())
+        si
+
+        /// Keeps `value` alive until the pinner is disposed: a function value passed to
+        /// foreign code that stores it, or any object foreign code holds the address of.
+        /// Throws once the pinner is disposed.
+        ///
+        /// - value: what to keep alive
+        keep(value: object) is
+            _hold(value)
+        si
+
+        /// Releases every pin. Disposing again does nothing.
+        dispose() is
+            _held = null
+        si
+
+        _hold(value: object) is
+            if let held = _held then
+                held.add(value)
+            else
+                throw Ghul.ObjectDisposedException("PINNER", "the pinner has been disposed")
+            fi
+        si
+
+        @intrinsic("interop.elements")
+        _elements[T](array: ARRAY[T]) -> word static
+    si
+
+    /// A resource foreign code owns, held by its address, and released through the
+    /// library's own deallocator exactly once. A binding declares one subclass per kind
+    /// of resource, giving `release` the call that frees it; its `@extern` declarations
+    /// keep taking and answering `word`, and pass `address`.
+    ///
+    /// There is no finaliser: release is explicit, through `dispose` or `use`. A facade
+    /// that wants a backstop adds a finaliser of its own.
+    @IF.llvm()
+    class HANDLE: Ghul.Disposable abstract is
+        _address: word
+
+        /// The resource's address. Throws once the handle has been released, so a
+        /// released handle can't be passed to foreign code by mistake.
+        address: word is
+            if _address == 0w then
+                throw Ghul.ObjectDisposedException(null, "the handle has been released")
+            fi
+
+            return _address
+        si
+
+        /// Whether the handle has been released.
+        is_released: bool => _address == 0w
+
+        /// A handle to the resource at `address`.
+        ///
+        /// - address: the resource's address, as foreign code answered it
+        init(address: word) is
+            _address = address
+        si
+
+        /// Frees the resource at `address` with the library's deallocator. Called once,
+        /// by `dispose`, with a nonzero address.
+        ///
+        /// - address: the resource's address
+        release(address: word)
+
+        /// Releases the resource, if it hasn't been already; disposing again does
+        /// nothing.
+        dispose() is
+            let held = _address
+
+            if held != 0w then
+                _address = 0w
+                release(held)
+            fi
+        si
+    si
 si
