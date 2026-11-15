@@ -1,0 +1,7 @@
+{
+    "name": "interop-pointer-access",
+    "targets": ["llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
