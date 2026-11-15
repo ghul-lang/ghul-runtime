@@ -12,6 +12,35 @@ namespace System.Reflection is
         NON_PUBLIC = 32
     si
 
+    /// The compiled program, as far as reflection reaches it: the types
+    /// that hold its tests.
+    @suppress("non-upper-snake-case-name")
+    class Assembly is
+        _entry: Assembly? static
+
+        init() is si
+
+        /// The program being run.
+        get_entry_assembly() -> Assembly static is
+            if let entry = _entry then
+                return entry
+            fi
+
+            let entry = Assembly()
+
+            _entry = entry
+
+            return entry
+        si
+
+        /// The types reflection lists for the program: each class of its
+        /// own that declares a method marked `@test()`, and a `$globals`
+        /// type for each namespace whose global functions include one,
+        /// holding those as static methods. Throws `NotSupportedException`
+        /// where the program was built without descriptions of its types.
+        get_types() -> ARRAY[Type] => Ghul.Internal.TYPE_DESCRIPTIONS.roots()
+    si
+
     /// A field a type declares.
     @suppress("non-upper-snake-case-name")
     class FieldInfo is
@@ -125,10 +154,12 @@ namespace System.Reflection is
         invoke(arguments: ARRAY[object?]) -> object => _invoke(arguments)
     si
 
-    /// A method, as far as reflection reaches one: a property's accessor.
+    /// A method, as far as reflection reaches one: a property's accessor,
+    /// or a method or global function marked `@test()`.
     @suppress("non-upper-snake-case-name")
     class MethodInfo is
-        _invoke: (object, ARRAY[object?]) -> object?
+        _invoke: (object?, ARRAY[object?]) -> object?
+        _attributes: ARRAY[object]
 
         /// The method's name.
         name: string
@@ -153,15 +184,66 @@ namespace System.Reflection is
             self.is_public = is_public
             self.is_static = is_static
 
-            _invoke = invoke
+            _invoke = (receiver: object?, given: ARRAY[object?]) -> object? => invoke(receiver!, given)
+            _attributes = []
+        si
+
+        /// A method that takes no arguments and returns nothing.
+        ///
+        /// - name: the method's name
+        /// - is_public: whether it is public
+        /// - is_static: whether it belongs to the type rather than to an instance
+        /// - attributes: the attributes it carries
+        /// - call: calls it on an instance, or with null where it is static
+        init(name: string, is_public: bool, is_static: bool, attributes: ARRAY[object], call: (object?) -> void) is
+            self.name = name
+            self.return_type = Type("System.Void")
+            self.is_public = is_public
+            self.is_static = is_static
+
+            _invoke = (receiver: object?, given: ARRAY[object?]) -> object? is
+                call(receiver)
+                return null
+            si
+
+            _attributes = attributes
         si
 
         /// Calls the method on `instance` with `arguments`, and returns
         /// what it returns, or null for a method that returns nothing.
         ///
-        /// - instance: the receiver
+        /// - instance: the receiver, or null for a static method
         /// - arguments: the arguments, in order
-        invoke(instance: object?, arguments: ARRAY[object?]) -> object? => _invoke(instance!, arguments)
+        invoke(instance: object?, arguments: ARRAY[object?]) -> object? => _invoke(instance, arguments)
+
+        /// The attributes of `attribute_type` the method carries.
+        ///
+        /// - attribute_type: the attribute type to look for
+        /// - inherit: whether to look on the methods it overrides too; a
+        ///   described method carries its own attributes only
+        get_custom_attributes(attribute_type: Type, inherit: bool) -> ARRAY[object] is
+            let result = Collections.LIST[object]()
+
+            for attribute in _attributes do
+                if attribute.get_type() == attribute_type then
+                    result.add(attribute)
+                fi
+            od
+
+            return result.to_array()
+        si
+
+        /// Every attribute the method carries.
+        ///
+        /// - inherit: whether to look on the methods it overrides too
+        get_custom_attributes(inherit: bool) -> ARRAY[object] => _attributes
+
+        /// Whether the method carries an attribute of `attribute_type`.
+        ///
+        /// - attribute_type: the attribute type to look for
+        /// - inherit: whether to look on the methods it overrides too
+        is_defined(attribute_type: Type, inherit: bool) -> bool =>
+            get_custom_attributes(attribute_type, inherit).count > 0
     si
 
     /// A property a type declares.
@@ -457,6 +539,90 @@ namespace Ghul.Internal is
 
             return description
         si
+
+        _roots: ARRAY[Type]? static
+
+        /// The types `Assembly.get_types` lists: each class of the program's
+        /// own that declares a method marked `@test()`, and a type for each
+        /// namespace whose global functions include one, named as .NET names
+        /// that namespace's `$globals` class. A source library's tests are
+        /// not the program's, so none of its types is listed. Throws
+        /// `NotSupportedException` where the program was built without
+        /// descriptions of its types.
+        roots() -> ARRAY[Type] static is
+            if let found = _roots then
+                return found
+            fi
+
+            let roots = ROOT_TYPES()
+
+            _add_roots(roots)
+
+            let result = roots.types()
+
+            _roots = result
+
+            return result
+        si
+
+        // The compiler gives this its body where the program describes its
+        // types: a call on `roots` for each class and global function that
+        // the listing takes in.
+        _add_roots(roots: ROOT_TYPES) static is
+            throw Ghul.NotSupportedException("listing the program's types needs the program built with --rtti or --rtti-roots")
+        si
+    si
+
+    /// Collects the types `TYPE_DESCRIPTIONS.roots` lists, from the calls
+    /// the compiler makes on it.
+    class ROOT_TYPES is
+        _types: LIST[Type]
+        _namespaces: LIST[string]
+        _globals: MAP[string, LIST[(name: string, is_public: bool, call: () -> void)]]
+
+        init() is
+            _types = LIST[Type]()
+            _namespaces = LIST[string]()
+            _globals = MAP[string, LIST[(name: string, is_public: bool, call: () -> void)]]()
+        si
+
+        _type(type: Type) is
+            _types.add(type)
+        si
+
+        _global_test(`namespace: string, name: string, is_public: bool, call: () -> void) is
+            let tests: LIST[(name: string, is_public: bool, call: () -> void)] mut
+
+            if !_globals.try_get_value(`namespace, tests ref) then
+                tests = LIST[(name: string, is_public: bool, call: () -> void)]()
+                _globals[`namespace] = tests
+                _namespaces.add(`namespace)
+            fi
+
+            tests.add((name = name, is_public = is_public, call = call))
+        si
+
+        /// The types collected, followed by one for each namespace's global
+        /// tests, in the order they were first given.
+        types() -> ARRAY[Type] is
+            let result = LIST[Type](_types)
+
+            for `namespace in _namespaces do
+                let tests = _globals[`namespace]
+                let full_name = if `namespace.length > 0 then "{`namespace}.$globals" else "$globals" fi
+
+                result.add(Type(full_name, (description: TYPE_DESCRIPTION) is
+                    description.set_kind(TYPE_KIND.CLASS)
+
+                    for test in tests do
+                        let call = test.call
+                        description.add_test_method(test.name, test.is_public, true, (instance: object?) -> void => call())
+                    od
+                si))
+            od
+
+            return result.to_array()
+        si
     si
 
     /// What reflection knows about one type, filled in by the description
@@ -494,6 +660,9 @@ namespace Ghul.Internal is
         /// The constructors the type declares.
         constructors: LIST[ConstructorInfo]
 
+        /// The methods marked `@test()` the type declares.
+        methods: LIST[MethodInfo]
+
         _parameters: LIST[ParameterInfo]
         _attribute_types: LIST[Type]
 
@@ -523,6 +692,7 @@ namespace Ghul.Internal is
             properties = LIST[PropertyInfo]()
             attributes = LIST[object]()
             constructors = LIST[ConstructorInfo]()
+            methods = LIST[MethodInfo]()
             enum_names = LIST[string]()
             enum_values = LIST[object]()
             enum_numbers = LIST[long]()
@@ -584,6 +754,29 @@ namespace Ghul.Internal is
 
         _parameter[T](name: string) is
             _parameters.add(ParameterInfo(name, typeof T, _parameters.count))
+        si
+
+        _test_method(name: string, is_public: bool, is_static: bool, invoke: (object?) -> void) is
+            add_test_method(name, is_public, is_static, invoke)
+        si
+
+        /// Records the kind of a type described by the library rather than
+        /// the compiler.
+        ///
+        /// - kind: the kind, as `TYPE_KIND` flags
+        set_kind(kind: int) is
+            self.kind = kind
+        si
+
+        /// Records a method marked `@test()`, taking no arguments and
+        /// returning nothing.
+        ///
+        /// - name: the method's name
+        /// - is_public: whether it is public
+        /// - is_static: whether it belongs to the type rather than to an instance
+        /// - invoke: calls it on an instance, or with null where it is static
+        add_test_method(name: string, is_public: bool, is_static: bool, invoke: (object?) -> void) is
+            methods.add(MethodInfo(name, is_public, is_static, [cast object(Ghul.TEST_ATTRIBUTE())], invoke))
         si
 
         _constructor(make: (ARRAY[object?]) -> object, is_public: bool) is

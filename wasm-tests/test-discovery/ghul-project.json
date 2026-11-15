@@ -1,0 +1,10 @@
+{
+    "name": "test-discovery",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    },
+    "language": {
+        "reflection": "roots"
+    }
+}
