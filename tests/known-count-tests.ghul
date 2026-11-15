@@ -100,3 +100,73 @@ namespace Tests is
         si
     si
 si
+
+namespace Tests is
+    use Ghul
+    use Collections
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+
+    use Ghul.Pipes
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // count() and the array constructor use a known count where there is one, and
+    // read the source as before where there isn't.
+    @TestClass()
+    class KNOWN_COUNT_USESShould is
+        init() is
+        si
+
+        @Test()
+        Count_AnswersAKnownCountWithoutReading() is
+            are_equal(5, count(TAKE_PIPE[int](from(1), 5)))
+            are_equal(4, count(repeat(7, 4)))
+            are_equal(1, count(from(2147483647)))
+        si
+
+        @Test()
+        Count_OfACompleteMemo_PullsNothingMore() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = list(source)
+
+            drain(p)
+            are_equal(3, count(p))
+            are_equal(3, source.handed_out)
+        si
+
+        @Test()
+        Count_OfAFillingMemo_ReadsItToTheEnd() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = list(source)
+
+            are_equal(1, p[0])
+            are_equal(3, count(p))
+            are_equal(3, source.handed_out)
+        si
+
+        @Test()
+        Count_OverAnUnboundedMemo_ReadsOnlyWhatATakePulls() is
+            let source = from(1) |> list()
+
+            are_equal(5, count(TAKE_PIPE[int](source, 5)))
+            are_equal(5, source[4])
+        si
+
+        @Test()
+        Array_FromAKnownCount_HoldsTheElementsInOrder() is
+            assert_elements([1, 2, 3, 4], LIST[int](ARRAY[int](TAKE_PIPE[int](from(1), 4))))
+            assert_elements([7, 7, 7], LIST[int](ARRAY[int](repeat(7, 3))))
+        si
+
+        @Test()
+        Array_FromAFillingMemo_PullsTheRestInOrder() is
+            let source = COUNTING_SOURCE[int]([1, 2, 3])
+            let p = list(source)
+
+            are_equal(1, p[0])
+            assert_elements([1, 2, 3], LIST[int](ARRAY[int](p)))
+            are_equal(3, source.handed_out)
+        si
+    si
+si

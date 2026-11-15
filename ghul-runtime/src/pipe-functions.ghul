@@ -479,8 +479,13 @@ namespace Ghul.Pipes is
         return MAYBE[T]()
     si
 
-    /// The number of elements in `source`.
+    /// The number of elements in `source`. Answered without reading where `source` knows its
+    /// count; otherwise reads it to the end.
     count[T](source: Iterable[T]) -> int pure is
+        if let known: KnownCount = source, settled = known.known_count then
+            return settled
+        fi
+
         if isa Bag[T](source) then
             return source.count
         fi

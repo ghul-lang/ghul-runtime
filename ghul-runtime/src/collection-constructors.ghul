@@ -25,13 +25,34 @@ namespace Ghul.Internal is
         @IF.dotnet()
         @intrinsic("constructor.from_iterable")
         from_iterable[E](source: Iterable[E]) -> ARRAY[E] static pure =>
-            System.Linq.Enumerable.to_array(source)
+            if let known = _known_count_of(source) then
+                _sized_list(source, known).to_array()
+            else
+                System.Linq.Enumerable.to_array(source)
+            fi
 
-        /// An array holding `source`'s elements in order.
+        /// An array holding `source`'s elements in order, sized up front when `source` knows its count.
         @IF.source_core()
         @intrinsic("constructor.from_iterable")
         from_iterable[E](source: Iterable[E]) -> ARRAY[E] static pure =>
-            LIST[E](source).to_array()
+            if let known = _known_count_of(source) then
+                _sized_list(source, known).to_array()
+            else
+                LIST[E](source).to_array()
+            fi
+
+        _known_count_of[E](source: Iterable[E]) -> int? static pure =>
+            if let known: Ghul.Pipes.KnownCount = source then known.known_count else null fi
+
+        _sized_list[E](source: Iterable[E], count: int) -> LIST[E] static pure is
+            let result = LIST[E](count)
+
+            for element in source do
+                result.add(element)
+            od
+
+            return result
+        si
     si
 si
 
