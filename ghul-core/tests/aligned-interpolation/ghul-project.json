@@ -1,0 +1,8 @@
+{
+    "name": "aligned-interpolation",
+    "targets": ["wasm", "llvm"],
+    "sources": ["*.ghul"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../../.." }
+    }
+}
