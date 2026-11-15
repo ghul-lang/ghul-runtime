@@ -1,0 +1,11 @@
+namespace Ghul is
+    use System.Attribute
+
+    /// Marks a method or global function as a test, as the `@test()`
+    /// pragma does. A test takes no arguments and returns nothing; a test
+    /// runner finds it through reflection and calls it, on a new instance
+    /// of its class where it is an instance method.
+    class TEST_ATTRIBUTE: Attribute is
+        init() is si
+    si
+si
