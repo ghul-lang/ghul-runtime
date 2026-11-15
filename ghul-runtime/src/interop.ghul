@@ -309,10 +309,12 @@ namespace Ghul.Interop is
         si
 
         /// Frees the resource at `address` with the library's deallocator. Called once,
-        /// by `dispose`, with a nonzero address.
+        /// by `dispose`, with a nonzero address. Every subclass overrides it; the handle
+        /// itself frees nothing.
         ///
         /// - address: the resource's address
-        release(address: word)
+        release(address: word) is
+        si
 
         /// Releases the resource, if it hasn't been already; disposing again does
         /// nothing.
