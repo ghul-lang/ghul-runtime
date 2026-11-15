@@ -62,7 +62,7 @@ namespace Ghul.Pipes is
     /// appends at the end, so it pulls the rest of the source first,
     /// and `count` does the same; neither returns over an unbounded
     /// source. Clearing discards the source and the cache.
-    class MEMO_PIPE[T]: PipeStage[T], List[T], MutableList[T] is
+    class MEMO_PIPE[T]: PipeStage[T], List[T], MutableList[T], KnownCount is
         _cache: MEMO_CACHE[T]
         _at: int
 
@@ -191,6 +191,10 @@ namespace Ghul.Pipes is
 
         /// Whether the list is read-only. It never is.
         is_read_only: bool pure => false
+
+        /// The number of elements cached, once the source has been read to its
+        /// end; absent while it is still being read. Never pulls from the source.
+        known_count: int? => if _cache.iterator? then null else _cache.elements.count fi
 
         /// Copies every element into `array`, starting at `array_index`,
         /// pulling the rest of the source first. Never returns over an

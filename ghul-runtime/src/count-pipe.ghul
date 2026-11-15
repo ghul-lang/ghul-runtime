@@ -10,7 +10,7 @@ namespace Ghul.Pipes is
     /// An arithmetic sequence of `int`s starting at `start` and advancing
     /// by `step` each time, ending at the last value before it would pass
     /// `int`'s largest value (or its smallest, for a negative step).
-    class COUNT_PIPE: PipeStage[int] is
+    class COUNT_PIPE: PipeStage[int], KnownCount is
         _start: int
         _step: int
         _started: bool
@@ -59,6 +59,22 @@ namespace Ghul.Pipes is
         /// Renders the pipe's elements, in order, as text.
         @IF.source_core()
         to_string() -> string => Ghul.DISPLAY_STATE.elements_text(self)
+
+        /// How many values the sequence yields before it would overflow `int`,
+        /// where that fits in an `int`; absent for a step of 0, which never ends,
+        /// and where it doesn't fit.
+        known_count: int? is
+            let values: long =
+                if _step > 0 then (2147483647L - long(_start)) / long(_step) + 1L
+                elif _step < 0 then (long(_start) + 2147483648L) / -long(_step) + 1L
+                else -1L fi
+
+            if values < 0L \/ values > 2147483647L then
+                return null
+            fi
+
+            return int(values)
+        si
 
         /// Has no effect.
         dispose() is
