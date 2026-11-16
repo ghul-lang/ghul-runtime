@@ -128,6 +128,7 @@ write_line("struct written: {read[int](stream.address, 0)} {read[string](stream.
 let names = ["a", "bc"] |> ARRAY()
 let reals = [0.5, 1.5] |> ARRAY()
 write_line("arrays: {read[string](stream_pins.pin(names), 8)} {read[double](stream_pins.pin(reals), 8)} {read[double](elements(reals), 0)}")
+write_line("sizes: {size_of[STREAM]()} {size_of[double]()}")
 stream_pins.dispose()
 
 free(slot)

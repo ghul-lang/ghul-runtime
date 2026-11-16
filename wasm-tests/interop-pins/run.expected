@@ -10,3 +10,4 @@ address after release throws
 struct: 42 deflate true
 struct written: 7 inflate false
 arrays: bc 1.5 0.5
+sizes: 24 8
