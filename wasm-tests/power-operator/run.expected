@@ -1,0 +1,5 @@
+1024 -27 4611686018427387904 3486784401 12157665459056928801
+1048576 1048576 243 -32768
+1267650600228229401496703205376 3
+pow(2, 31) is too large for int: pass a bigint for an exact result
+pow(3, 40) is too large for long: pass a bigint for an exact result
