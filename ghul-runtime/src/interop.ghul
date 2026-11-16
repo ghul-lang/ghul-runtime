@@ -338,6 +338,11 @@ namespace Ghul.Interop is
         /// Assigning writes it in place, where foreign code reads it.
         value: T public => _array[0], = v is write[T](address, 0, v); si
 
+        /// A value held as the one element of `array`, which a pinner keeps at
+        /// `address`. `PINNER.pin_struct` makes these.
+        ///
+        /// - array: the one-element array holding the value
+        /// - address: the address the pinner gave for `array`
         init(array: ARRAY[T], address: word) is
             _array = array
             self.address = address
