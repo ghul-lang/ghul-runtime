@@ -7,3 +7,7 @@ pin after dispose throws
 handle: 99 released false
 disposed twice: released 1 time(s), is released true
 address after release throws
+struct: 42 deflate true
+struct written: 7 inflate false
+arrays: bc 1.5 0.5
+sizes: 24 8

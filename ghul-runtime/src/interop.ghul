@@ -22,10 +22,12 @@ namespace Ghul.Interop is
     @IF.dotnet()
     error_text(code: int) -> string => System.Runtime.InteropServices.Marshal.get_p_invoke_error_message(code)
 
-    /// The scalar of type `T` at `offset` bytes past `address`. `T` is one of the integer
-    /// types, `single`, `double`, `bool` (one byte, nonzero is true), `char` (one UTF-16 unit)
-    /// or `word`; any other type is a compile-time error. The read is unaligned and unchecked:
-    /// an address that isn't readable is undefined behaviour, as it is in C.
+    /// The value of type `T` at `offset` bytes past `address`: a scalar at its width, a
+    /// `bool` as one byte where nonzero is true, a `char` as one UTF-16 unit, a reference
+    /// as a pointer, and a struct as its fields in place, laid out as C lays them out
+    /// where it is marked `@layout("c")`. The read is unaligned and unchecked: an address
+    /// that isn't readable, or memory that doesn't hold a `T`, is undefined behaviour, as
+    /// it is in C.
     ///
     /// - address: where the memory starts, as foreign code handed it over
     /// - offset: how many bytes past `address` the value starts
@@ -33,8 +35,7 @@ namespace Ghul.Interop is
     @intrinsic("interop.read")
     read[T](address: word, offset: int) -> T
 
-    /// Writes `value`, a scalar of type `T`, at `offset` bytes past `address`. `T` is as for
-    /// `read`. The write is unaligned and unchecked: an address that isn't writable is
+    /// Writes `value` at `offset` bytes past `address`, laid out as for `read`. The write is unaligned and unchecked: an address that isn't writable is
     /// undefined behaviour, as it is in C.
     ///
     /// - address: where the memory starts, as foreign code handed it over
@@ -43,6 +44,22 @@ namespace Ghul.Interop is
     @IF.llvm()
     @intrinsic("interop.write")
     write[T](address: word, offset: int, value: T)
+
+    /// The address of `array`'s first element, valid for as long as `array` is kept
+    /// alive and only that long: for an address foreign code keeps, use `PINNER.pin`.
+    /// The elements are held one after another, laid out as for `read`.
+    ///
+    /// - array: the array whose elements foreign code is handed
+    @IF.llvm()
+    @intrinsic("interop.elements")
+    elements[T](array: ARRAY[T]) -> word
+
+    /// The number of bytes a value of `T` takes where it is stored, as one element of an
+    /// `ARRAY[T]`: C's `sizeof` for a struct marked `@layout("c")`, and the size of a pointer
+    /// for a reference.
+    @IF.llvm()
+    @intrinsic("type.size_of")
+    size_of[T]() -> int
 
     /// A copy of the NUL-terminated UTF-8 text at `address`, or null where `address` is
     /// zero. Reads up to the first NUL; unchecked, as `read` is.
@@ -123,119 +140,154 @@ namespace Ghul.Interop is
         si
 
         /// The address of `array`'s first element, valid until the pinner is disposed;
-        /// `array` is kept alive until then. There is an overload for each scalar type
-        /// and `word`, since foreign code can only read arrays of those. An empty array
-        /// still answers an address, which foreign code must not read through. Throws
-        /// once the pinner is disposed.
+        /// `array` is kept alive until then. The elements are held one after another:
+        /// a scalar at its width, a reference as a pointer, and a struct in place, laid
+        /// out as C lays it out where it is marked `@layout("c")`. An empty array still
+        /// answers an address, which foreign code must not read through. Throws once the
+        /// pinner is disposed.
+        ///
+        /// - array: the array foreign code is handed the address of
+        pin[T](array: ARRAY[T]) -> word is
+            _hold(array)
+            return elements(array)
+        si
+
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[bool]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[char]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[byte]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[ubyte]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[short]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[ushort]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[int]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[uint]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[long]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[ulong]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[word]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[uword]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[single]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
         si
 
-        /// The address of `array`'s first element, as for `pin(ARRAY[bool])`.
+        /// The address of `array`'s first element, as for `pin[T]`: an overload for each
+        /// scalar type and `word`, kept beside it.
         ///
         /// - array: the array foreign code is handed the address of
         pin(array: ARRAY[double]) -> word is
             _hold(array)
-            return _elements(array)
+            return elements(array)
+        si
+
+        /// `value` copied into memory that stays put until the pinner is disposed, for
+        /// a struct foreign code keeps the address of across calls, such as zlib's
+        /// `z_stream`. Foreign code reads and writes the copy, not `value`: read it back
+        /// through the answer's `value`. Throws once the pinner is disposed.
+        ///
+        /// - value: what to copy, usually a struct marked `@layout("c")`
+        pin_struct[T](value: T) -> PINNED[T] is
+            let array = Ghul.Pipes.repeat(value, 1) |> ARRAY()
+
+            return PINNED[T](array, pin(array))
         si
 
         /// The address of a NUL-terminated UTF-8 copy of `text`, valid until the pinner
@@ -272,9 +324,29 @@ namespace Ghul.Interop is
                 throw Ghul.ObjectDisposedException("PINNER", "the pinner has been disposed")
             fi
         si
+    si
 
-        @intrinsic("interop.elements")
-        _elements[T](array: ARRAY[T]) -> word static
+    /// A value held in place by a `PINNER`, as `PINNER.pin_struct` answers it.
+    @IF.llvm()
+    class PINNED[T] is
+        _array: ARRAY[T]
+
+        /// The address of the value, valid until the pinner that holds it is disposed.
+        address: word public
+
+        /// The value as it is now, with any changes foreign code has made to it.
+        /// Assigning writes it in place, where foreign code reads it.
+        value: T public => _array[0], = v is write[T](address, 0, v); si
+
+        /// A value held as the one element of `array`, which a pinner keeps at
+        /// `address`. `PINNER.pin_struct` makes these.
+        ///
+        /// - array: the one-element array holding the value
+        /// - address: the address the pinner gave for `array`
+        init(array: ARRAY[T], address: word) is
+            _array = array
+            self.address = address
+        si
     si
 
     /// A resource foreign code owns, held by its address, and released through the

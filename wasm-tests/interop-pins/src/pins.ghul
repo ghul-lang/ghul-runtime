@@ -101,4 +101,34 @@ catch e: Ghul.ObjectDisposedException
     write_line("address after release throws")
 yrt
 
+// A struct foreign code keeps the address of: what is written at the address is
+// what the pinned value holds, and the other way round.
+@layout("c")
+struct STREAM is
+    total: int field public
+    name: string field public
+    done: bool field public
+
+    init(total: int, name: string) is
+        self.total = total
+        self.name = name
+    si
+si
+
+let stream_pins = PINNER()
+let stream = stream_pins.pin_struct(STREAM(1, "deflate"))
+write[int](stream.address, 0, 42)
+write[bool](stream.address, 16, true)
+write_line("struct: {stream.value.total} {stream.value.name} {stream.value.done}")
+
+stream.value = STREAM(7, "inflate")
+write_line("struct written: {read[int](stream.address, 0)} {read[string](stream.address, 8)} {read[bool](stream.address, 16)}")
+
+// Arrays of any element type pin, laid out one element after another.
+let names = ["a", "bc"] |> ARRAY()
+let reals = [0.5, 1.5] |> ARRAY()
+write_line("arrays: {read[string](stream_pins.pin(names), 8)} {read[double](stream_pins.pin(reals), 8)} {read[double](elements(reals), 0)}")
+write_line("sizes: {size_of[STREAM]()} {size_of[double]()}")
+stream_pins.dispose()
+
 free(slot)
