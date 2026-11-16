@@ -435,6 +435,102 @@ namespace Ghul.Math is
     /// - exponent: the non-negative power
     pow(base: bigint, exponent: int) -> bigint => bigint.pow(base, exponent)
 
+    // The power operator: `pow` spelled as an operator, one overload for
+    // each `pow`, reached through `use default` as `pow` is.
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `byte`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: byte, exponent: int) -> byte pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `short`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: short, exponent: int) -> short pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `ubyte`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ubyte, exponent: int) -> ubyte pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `ushort`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ushort, exponent: int) -> ushort pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `int`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: int, exponent: int) -> int pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `long`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: long, exponent: int) -> long pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `word`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: word, exponent: int) -> word pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `uint`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: uint, exponent: int) -> uint pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `ulong`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: ulong, exponent: int) -> ulong pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `OverflowException` where the result does not fit in a `uword`, and
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: uword, exponent: int) -> uword pure => pow(base, exponent)
+
+    /// `base` raised to the power `exponent`, as `pow` gives it. Throws
+    /// `ArgumentOutOfRangeException` where `exponent` is negative.
+    ///
+    /// - base: the value raised
+    /// - exponent: the non-negative power
+    **(base: bigint, exponent: int) -> bigint => pow(base, exponent)
+
+    /// `x` raised to the power `y`, as `pow` gives it.
+    ///
+    /// - x: the value raised
+    /// - y: the power
+    **(x: double, y: double) -> double pure => pow(x, y)
+
     // Square and multiply, each step checked: a square is taken only while
     // a bit of the exponent remains, so a square that overflows means the
     // result would too.
