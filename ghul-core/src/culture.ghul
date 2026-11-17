@@ -9,7 +9,7 @@ namespace Text is
     /// culture whatever culture is asked for, so the one culture there is
     /// the invariant culture, and passing it anywhere a format provider is
     /// taken changes nothing.
-    class CULTURE: Ghul.FormatProvider open is
+    class CULTURE: Ghul.FormatProvider is
         _instance: CULTURE static
 
         init() static is

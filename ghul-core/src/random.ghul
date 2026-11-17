@@ -2,7 +2,7 @@ namespace Ghul is
     /// A source of pseudo-random numbers. A generator given a seed produces
     /// the same sequence .NET's `System.Random` does for that seed; one
     /// seeded from the host produces a sequence of its own.
-    class RANDOM open is
+    class RANDOM is
         // The state of a generator seeded from the host: xoshiro256**.
         _s0: ulong
         _s1: ulong

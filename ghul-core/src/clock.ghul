@@ -184,7 +184,7 @@ si
 namespace Time is
     /// Measures elapsed time from a clock that never goes back, as .NET's
     /// `System.Diagnostics.Stopwatch` does.
-    class STOPWATCH open is
+    class STOPWATCH is
         // The time accumulated while running, before the current run.
         _accumulated: double
 

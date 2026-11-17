@@ -32,7 +32,7 @@ namespace Text is
 
     /// One group of a match: the part of the input it captured, or a
     /// failed group that took no part.
-    class GROUP open is
+    class GROUP is
         _input: string
         _index: int
         _length: int
@@ -65,7 +65,7 @@ namespace Text is
     si
 
     /// The groups of a match, by number and by name.
-    class GROUP_COLLECTION: Iterable[GROUP] open is
+    class GROUP_COLLECTION: Iterable[GROUP] is
         _groups: LIST[GROUP]
         _program: Ghul.Internal.RX_PROGRAM
 
@@ -97,7 +97,7 @@ namespace Text is
 
     /// A match of a regular expression, or the failed match that says there
     /// was none: group 0 and the groups within it.
-    class MATCH: GROUP open is
+    class MATCH: GROUP is
         _regex: REGEX?
         _program: Ghul.Internal.RX_PROGRAM
         _text: string
@@ -158,7 +158,7 @@ namespace Text is
     si
 
     /// The successive matches of a regular expression in an input.
-    class MATCH_COLLECTION: Iterable[MATCH] open is
+    class MATCH_COLLECTION: Iterable[MATCH] is
         _matches: LIST[MATCH]
 
         init(first: MATCH) is
@@ -196,7 +196,7 @@ namespace Text is
     /// which happens for some lazy loops over groups that can match
     /// empty, this one gives the answer of .NET's compiled and
     /// non-backtracking engines rather than its interpreter's.
-    class REGEX open is
+    class REGEX is
         _pattern: string
         _options: RegexOptions
         _program: Ghul.Internal.RX_PROGRAM

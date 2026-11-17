@@ -6,7 +6,7 @@ namespace Crypto is
     /// Random numbers and bytes fit for cryptography, as .NET gives them:
     /// each comes from the operating system's source of randomness, through
     /// the host.
-    class RandomNumberGenerator: Ghul.Disposable open is
+    class RandomNumberGenerator: Ghul.Disposable is
         init() is si
 
         /// A generator whose `get_bytes` and `get_non_zero_bytes` fill arrays.

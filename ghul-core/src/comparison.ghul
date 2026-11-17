@@ -1,12 +1,12 @@
 namespace Ghul is
     /// Implemented by a type that says when two of its values are equal.
-    trait Equatable[T] open is
+    trait Equatable[T] is
         /// Whether this value and `other` are equal.
         =~(other: T) -> bool pure;
     si
 
     /// Implemented by a type whose values are ordered.
-    trait Comparable[T] open is
+    trait Comparable[T] is
         /// Negative when this value orders before `other`, zero when neither
         /// orders first, positive otherwise.
         <>(other: T) -> int pure;

@@ -14,7 +14,7 @@ namespace Ghul is
     /// has one, so two are the same object exactly when they stand for the
     /// same type.
     @suppress("non-upper-snake-case-name")
-    class Type open is
+    class Type is
         _full_name: string
 
         // What describes the type for reflection, where the program was built

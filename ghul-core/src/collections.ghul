@@ -3,13 +3,13 @@ namespace Collections is
     // current reads the element reached, and the iterator property of
     // an iterable hands one out. All three are covariant, as their
     // .NET counterparts are, so Iterable[CAT] is an Iterable[Animal].
-    trait Iterator[E: out]: Ghul.Disposable open is
+    trait Iterator[E: out]: Ghul.Disposable is
         move_next() -> bool;
         current: E;
         dispose();
     si
 
-    trait Iterable[E: out] open is
+    trait Iterable[E: out] is
         iterator: Iterator[E];
     si
 
@@ -62,19 +62,19 @@ namespace Collections is
     si
 
     /// A sequence that knows how many elements it holds.
-    trait Bag[E: out]: Iterable[E] open is
+    trait Bag[E: out]: Iterable[E] is
         /// The number of elements.
         count: int pure;
     si
 
     /// A read-only sequence whose elements can be read by position.
-    trait List[E: out]: Bag[E] open is
+    trait List[E: out]: Bag[E] is
         /// The element at `index`, counting from zero.
         [index: int]: E pure;
     si
 
     /// A collection elements can be added to and cleared from.
-    trait MutableBag[E]: Iterable[E] open is
+    trait MutableBag[E]: Iterable[E] is
         /// The number of elements.
         count: int;
 
@@ -109,7 +109,7 @@ namespace Collections is
 
     /// A collection whose elements can be read, replaced, inserted and
     /// removed by position.
-    trait MutableList[E]: MutableBag[E] open is
+    trait MutableList[E]: MutableBag[E] is
         /// The element at `index`, counting from zero.
         [index: int]: E, = value;
 
@@ -157,7 +157,7 @@ namespace Collections is
     si
 
     /// A read-only map from keys to values, iterated as key and value pairs.
-    trait Map[K, V]: Bag[KEY_VALUE_PAIR[K, V]] open is
+    trait Map[K, V]: Bag[KEY_VALUE_PAIR[K, V]] is
         /// The value `key` maps to; throws if the map has no such key.
         [key: K]: V pure;
 
@@ -182,7 +182,7 @@ namespace Collections is
     si
 
     /// A map whose entries can be added, replaced and removed.
-    trait MutableMap[K, V]: MutableBag[KEY_VALUE_PAIR[K, V]] open is
+    trait MutableMap[K, V]: MutableBag[KEY_VALUE_PAIR[K, V]] is
         /// The value `key` maps to; throws if the map has no such key.
         /// Assigning adds the key or replaces its value.
         [key: K]: V, = value;
@@ -220,7 +220,7 @@ namespace Collections is
     si
 
     /// A read-only set: a collection holding no element twice.
-    trait Set[E]: Bag[E] open is
+    trait Set[E]: Bag[E] is
         /// Whether the set holds `item`.
         ///
         /// - item: the element to look for
@@ -228,7 +228,7 @@ namespace Collections is
     si
 
     /// A set elements can be added to and removed from.
-    trait MutableSet[E]: Iterable[E] open is
+    trait MutableSet[E]: Iterable[E] is
         /// The number of elements.
         count: int;
 

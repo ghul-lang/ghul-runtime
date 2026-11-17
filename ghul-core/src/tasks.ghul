@@ -15,7 +15,7 @@ namespace Tasks is
 
     /// An operation that completes later, with no result.
     @AsyncMethodBuilder(typeof(TASK_BUILDER))
-    class TASK open is
+    class TASK is
         _state: TASK_STATE
 
         /// A task that has not completed.
@@ -228,7 +228,7 @@ namespace Tasks is
 
     /// An operation that completes later, with a result.
     @AsyncMethodBuilder(typeof(TASK_BUILDER[_]))
-    class TASK[T]: TASK open is
+    class TASK[T]: TASK is
         _result: T
 
         /// A task that has not completed.
