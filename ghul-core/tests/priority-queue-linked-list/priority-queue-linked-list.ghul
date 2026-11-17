@@ -1,0 +1,46 @@
+use IO.Std.write_line
+
+// A priority queue gives its elements back lowest priority first, however
+// they went in; peek leaves the front one in place.
+let queue = Collections.PRIORITY_QUEUE[string, int]()
+
+for (name, priority) in [("five", 5), ("one", 1), ("four", 4), ("two", 2), ("three", 3)] do
+    queue.enqueue(name, priority)
+od
+
+write_line("count {queue.count}, front {queue.peek()}")
+
+let order = Collections.LIST[string]()
+
+while queue.count > 0 do
+    order.add(queue.dequeue())
+od
+
+write_line("in priority order: {order |> Ghul.Pipes.join(", ")}")
+
+try
+    queue.dequeue()
+catch e: Ghul.InvalidOperationException
+    write_line("empty: {e.message}")
+yrt
+
+// A linked list adds and removes at either end, and removes an element
+// wherever it is.
+let list = Collections.LINKED_LIST[string]()
+
+list.add_last("c")
+list.add_first("b")
+list.add_first("a")
+list.add_last("d")
+
+write_line("list: {list |> Ghul.Pipes.join(", ")} ({list.count})")
+
+list.remove_first()
+list.remove_last()
+
+write_line("ends removed: {list |> Ghul.Pipes.join(", ")}")
+write_line("remove b: {list.remove("b")}, remove x: {list.remove("x")}, contains c: {list.contains("c")}")
+
+list.clear()
+
+write_line("cleared: {list.count}")
