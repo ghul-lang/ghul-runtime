@@ -81,7 +81,7 @@ namespace Collections is
         /// Adds `value`.
         ///
         /// - value: the element to add
-        add(value: E);
+        add(item: E);
 
         /// Whether any element is `=~` to `value`. A collection that can
         /// answer without reading every element overrides it.
@@ -235,7 +235,7 @@ namespace Collections is
         /// Adds `value`, answering whether the set did not already hold it.
         ///
         /// - value: the element to add
-        add(value: E) -> bool;
+        add(item: E) -> bool;
 
         /// Removes `value`, answering whether the set held it.
         ///
