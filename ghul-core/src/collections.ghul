@@ -6,7 +6,6 @@ namespace Collections is
     trait Iterator[E: out]: Ghul.Disposable open is
         move_next() -> bool;
         current: E;
-        dispose();
     si
 
     trait Iterable[E: out] open is
