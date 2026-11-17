@@ -3,6 +3,10 @@ namespace Ghul is
         /// The number of UTF-16 code units the string holds.
         length: int => _string_length(self)
 
+        /// The number of UTF-16 code units the string holds: the same as
+        /// `length`.
+        count: int => _string_length(self)
+
         /// The UTF-16 code unit at `index`.
         ///
         /// - index: the position of the code unit, from 0

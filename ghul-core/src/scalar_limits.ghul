@@ -91,6 +91,11 @@ namespace Ghul is
         /// - value: the value to test
         is_na_n(value: single) -> bool static pure => Math.is_nan(value)
 
+        /// Whether `value` is not a number, as `Math.is_nan` answers.
+        ///
+        /// - value: the value to test
+        is_nan(value: single) -> bool static pure => Math.is_nan(value)
+
         /// Whether `value` is positive or negative infinity.
         ///
         /// - value: the value to test
@@ -135,6 +140,11 @@ namespace Ghul is
         ///
         /// - value: the value to test
         is_na_n(value: double) -> bool static pure => Math.is_nan(value)
+
+        /// Whether `value` is not a number, as `Math.is_nan` answers.
+        ///
+        /// - value: the value to test
+        is_nan(value: double) -> bool static pure => Math.is_nan(value)
 
         /// Whether `value` is positive or negative infinity.
         ///
