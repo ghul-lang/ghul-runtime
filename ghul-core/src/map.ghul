@@ -1,6 +1,6 @@
 namespace Collections is
     /// Thrown on reading a key a map does not have.
-    class KeyNotFoundException: Ghul.Exception is
+    class KeyNotFoundException: Ghul.Exception open is
         /// - message: what was not found
         init(message: string) is
             super.init(message);
@@ -10,7 +10,7 @@ namespace Collections is
     /// A map from keys to values, held in a hash table over the keys' `=~`
     /// and `get_hash_code`. Iterates its entries in the order they were
     /// added while none has been removed.
-    class MAP[K, V]: Map[K, V], MutableMap[K, V] is
+    class MAP[K, V]: Map[K, V], MutableMap[K, V] open is
         // Each bucket holds one more than the index of the first entry in
         // its chain, or zero when empty; `_next` links a chain the same way.
         // A removed entry's hash is -1, and it heads the free list. A map

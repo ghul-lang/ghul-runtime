@@ -1,7 +1,7 @@
 namespace Collections is
     /// A set held in a hash table over its elements' `=~` and
     /// `get_hash_code`.
-    class SET[T]: Set[T], MutableSet[T] is
+    class SET[T]: Set[T], MutableSet[T] open is
         _map: MAP[T, bool];
 
         /// An empty set.

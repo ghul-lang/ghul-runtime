@@ -41,7 +41,7 @@ namespace System is
 
     /// The percent-encoding of URIs, as .NET's `System.Uri` gives it. Only the
     /// static escaping members are here; a `Uri` cannot be constructed.
-    class Uri is
+    class Uri open is
         init() is si
 
         /// `text` with every character except the unreserved ones (letters,

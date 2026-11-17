@@ -11,7 +11,7 @@ namespace Text is
 
     /// Converts between text and bytes, as .NET's `System.Text.Encoding`
     /// does, for UTF-8, UTF-16, UTF-32 and ASCII.
-    class Encoding abstract is
+    class Encoding abstract open is
         init() is si
 
         /// UTF-8, writing no byte-order mark.
@@ -76,7 +76,7 @@ namespace System.Text is
     use Text.Encoding
 
     /// UTF-8, as .NET's `System.Text.UTF8Encoding` is.
-    class UTF8Encoding: Encoding is
+    class UTF8Encoding: Encoding open is
         _emits_identifier: bool
 
         /// UTF-8 that writes no byte-order mark.
@@ -104,7 +104,7 @@ namespace System.Text is
     /// Seven-bit ASCII, as .NET's `System.Text.ASCIIEncoding` is. A
     /// code unit outside it is written as `?`, and a byte outside it reads
     /// as `?`.
-    class ASCIIEncoding: Encoding is
+    class ASCIIEncoding: Encoding open is
         init() is
             super.init()
         si
@@ -149,7 +149,7 @@ namespace System.Text is
     /// UTF-16 with the low byte of each code unit first, as .NET's
     /// `System.Text.UnicodeEncoding` is by default. No byte-order mark is
     /// written.
-    class UnicodeEncoding: Encoding is
+    class UnicodeEncoding: Encoding open is
         init() is
             super.init()
         si
@@ -269,7 +269,7 @@ si
 
 namespace IO is
     /// Writes text into a string, as .NET's `System.IO.StringWriter` does.
-    class StringWriter: TextWriter is
+    class StringWriter: TextWriter open is
         _text: Text.STRING_BUILDER
 
         /// A writer over an empty string.

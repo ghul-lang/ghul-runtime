@@ -10,7 +10,7 @@ namespace IO is
     // where a path is missing. Path works on strings alone.
 
     /// Thrown when reading or writing a file or directory fails.
-    class IOException: Ghul.Exception is
+    class IOException: Ghul.Exception open is
         /// - message: what went wrong
         init(message: string) is
             super.init(message)
@@ -18,7 +18,7 @@ namespace IO is
     si
 
     /// Thrown when a file that is read does not exist.
-    class FileNotFoundException: IOException is
+    class FileNotFoundException: IOException open is
         /// - message: what went wrong
         init(message: string) is
             super.init(message)
@@ -26,7 +26,7 @@ namespace IO is
     si
 
     /// Thrown when a directory that is used does not exist.
-    class DirectoryNotFoundException: IOException is
+    class DirectoryNotFoundException: IOException open is
         /// - message: what went wrong
         init(message: string) is
             super.init(message)
@@ -1666,7 +1666,7 @@ namespace IO is
 
     /// Reads text held in a string, a line or a character at a time.
     @suppress("non-upper-snake-case-name")
-    class StringReader: TextReader is
+    class StringReader: TextReader open is
         _text: string
         _index: int
 
@@ -1730,7 +1730,7 @@ namespace IO is
     /// Writes text to a file as UTF-8. The file holds what was written once
     /// the writer is flushed or closed.
     @suppress("non-upper-snake-case-name")
-    class StreamWriter: TextWriter is
+    class StreamWriter: TextWriter open is
         // What the writer holds is its state, which the core keeps until the
         // writer is disposed, so text a program never disposed is written as
         // the program ends.
