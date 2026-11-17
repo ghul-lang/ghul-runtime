@@ -94,9 +94,17 @@ namespace Ghul is
         return end
     si
 
-    // Writes the code units of `text` into `chars` from `at` on. Answers the
-    // position after them.
-    _write_text(chars: ARRAY[char], at: int, text: string) -> int is
+    // The number of code units `text` writes: none where it is null, which
+    // an interpolation writes as nothing.
+    _text_length(text: string?) -> int pure => if text? then _string_length(text) else 0 fi
+
+    // Writes the code units of `text` into `chars` from `at` on, or nothing
+    // where it is null. Answers the position after them.
+    _write_text(chars: ARRAY[char], at: int, text: string?) -> int is
+        if !text? then
+            return at
+        fi
+
         let length = _string_length(text)
 
         _string_copy_to(text, 0, chars, at, length)
