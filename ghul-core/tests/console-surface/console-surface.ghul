@@ -1,0 +1,17 @@
+use IO.Std.write_line
+use IO.Std.write
+
+// write_line and write take a string that may be absent, as on .NET: an
+// absent one writes nothing before the line break.
+absent() -> string? => null
+
+write("[")
+write(absent())
+write_line("]")
+write_line(absent())
+write_line("after the empty line")
+
+// string.count is the same as length; double.is_nan and single.is_nan answer
+// as the global is_nan does.
+write_line("count {"hello".count} length {"hello".length}")
+write_line("nan {double.is_nan(0.0 / 0.0)} {double.is_nan(1.0)} {single.is_nan(0.0s / 0.0s)}")

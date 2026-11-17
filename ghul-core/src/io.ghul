@@ -88,11 +88,12 @@ namespace IO is
         write_line() static pure =>
             _write("\n", 1)
 
-        /// Writes `text` and then a line break to standard output.
+        /// Writes `text` and then a line break to standard output. A null
+        /// `text` writes only the line break, as on .NET.
         ///
-        /// - text: the text to write
-        write_line(text: string) static pure is
-            _write(text, 1)
+        /// - text: the text to write, or null
+        write_line(text: string?) static pure is
+            _write(text ?? "", 1)
             _write("\n", 1)
         si
 
@@ -103,11 +104,12 @@ namespace IO is
         write_line(value: object) static pure =>
             write_line(value.to_string())
 
-        /// Writes `text` to standard output.
+        /// Writes `text` to standard output. A null `text` writes nothing, as
+        /// on .NET.
         ///
-        /// - text: the text to write
-        write(text: string) static pure =>
-            _write(text, 1)
+        /// - text: the text to write, or null
+        write(text: string?) static pure =>
+            _write(text ?? "", 1)
 
         /// Writes `value` as its `to_string` text to standard output.
         ///
