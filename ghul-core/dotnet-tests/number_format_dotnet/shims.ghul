@@ -6,7 +6,7 @@ namespace Ghul is
     _double_bits(value: double) -> ulong => cast ulong(System.BitConverter.double_to_int64_bits(value))
     _single_bits(value: single) -> uint => cast uint(System.BitConverter.single_to_int32_bits(value))
     _string_length(text: string) -> int => text.length
-    _array_new[E](count: int) -> ARRAY[E] => cast ARRAY[E](System.Array.create_instance(typeof E, count))
+    _array_new[E](count: int) -> ARRAY[E] => (cast ARRAY[E]?(System.Array.create_instance(typeof E, count)))!
     _array_set[E](array: ARRAY[E], index: int, value: E) => cast System.Array(array).set_value(value, index)
     _string_from_chars(chars: ARRAY[char], start: int, count: int) -> string => string(chars, start, count)
 
