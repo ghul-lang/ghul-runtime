@@ -1,10 +1,10 @@
 // File.open_read on a native executable reads the file as it is read, so a
 // file with no end can be read in part, and a file read to its end answers
 // what it holds.
-use IO.Std.write_line
+use default
 
 let random = IO.File.open_read("/dev/urandom")
-let buffer = Ghul._array_new[ubyte](4)
+let buffer = repeat(0ub, 4) |> ARRAY()
 
 for _ in 1::4 do
     write_line("{random.read(buffer, 0, 4)}")
@@ -15,7 +15,7 @@ random.dispose()
 IO.File.write_all_text("stream-test.txt", "hello, world")
 
 let file = IO.File.open_read("stream-test.txt")
-let chunk = Ghul._array_new[ubyte](5)
+let chunk = repeat(0ub, 5) |> ARRAY()
 let got mut = file.read(chunk, 0, 5)
 let total mut = 0
 
