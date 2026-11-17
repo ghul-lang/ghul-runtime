@@ -19,6 +19,16 @@ namespace Ghul is
         /// - other: the object to compare with
         equals(other: object?) -> bool => reference_equals(self, other);
 
+        /// Whether `a` and `b` are equal: the same object, both absent, or
+        /// equal by `a`'s own `equals`.
+        ///
+        /// - a: the first object
+        /// - b: the second object
+        equals(a: object?, b: object?) -> bool static =>
+            if a == b then true
+            elif let x = a, y = b then x.equals(y)
+            else false fi;
+
         /// Whether `a` and `b` are the same object, or both absent.
         ///
         /// - a: the first object

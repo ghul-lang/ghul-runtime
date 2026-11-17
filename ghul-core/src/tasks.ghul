@@ -120,6 +120,18 @@ namespace Tasks is
             return task
         si
 
+        /// A task with a result of type `T` that has already thrown
+        /// `exception`.
+        ///
+        /// - exception: what the task threw
+        from_exception[T](exception: Ghul.Exception) -> TASK[T] static is
+            let task = TASK[T]()
+
+            task.state.fail(exception)
+
+            return task
+        si
+
         /// A task that completes once `milliseconds` have passed, measured
         /// on the host's monotonic clock while something waits.
         ///
