@@ -4,15 +4,15 @@ namespace Ghul is
     /// `Parsable[T]` bound as they are; the source-core targets declare the
     /// member `parse` needs, with the same signature.
     @IF.source_core()
-    trait Parsable[T] open is
-        /// Whether `text` holds a `T`, writing it to `result` where it does.
+    trait Parsable[TSelf: Parsable[TSelf]] open is
+        /// Whether `text` holds a `TSelf`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null, which holds no value
         /// - provider: ignored on the source-core targets, which read under
         ///   the invariant culture
         /// - result: set to the value read, or to the default where `text`
         ///   holds none
-        try_parse(text: string?, provider: FormatProvider?, result: T ref) -> bool static
+        try_parse(text: string?, provider: FormatProvider?, result: TSelf ref) -> bool static
     si
 
     /// The `T` that `text` holds, or null where it holds none: `parse[int]("42")`
