@@ -9,6 +9,9 @@
   <ItemGroup>
     <GhulSources Include="**/*.ghul" />
     <GhulSources Include="../../src/float_text.ghul" />
+    <GhulSources Include="../../src/ryu.ghul" />
+    <GhulSources Include="../../src/ryu_tables.ghul" />
+    <GhulSources Include="../../src/string_draft.ghul" />
     <GhulSources Include="../../src/number_format.ghul" />
   </ItemGroup>
 </Project>
