@@ -357,7 +357,7 @@ namespace Ghul.Interop is
     /// There is no finaliser: release is explicit, through `dispose` or `use`. A facade
     /// that wants a backstop adds a finaliser of its own.
     @IF.llvm()
-    class HANDLE: Ghul.Disposable abstract is
+    class HANDLE: Ghul.Disposable abstract open is
         _address: word
 
         /// The resource's address. Throws once the handle has been released, so a
