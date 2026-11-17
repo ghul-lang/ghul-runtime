@@ -46,4 +46,15 @@ namespace Ghul.Internal is
         init() is
         si
     si
+
+    // Marker attribute emitted by the compiler on a member whose own body
+    // its effect solve proved store-free, where the source declared no
+    // contract. Read on cross-assembly import the way
+    // TRUSTED_STORE_FREE_ATTRIBUTE is: the member's own body is trusted,
+    // and an override is judged by the importing assembly's solve.
+    // Compiler-emitted; not user-facing.
+    class INFERRED_STORE_FREE_ATTRIBUTE: Attribute is
+        init() is
+        si
+    si
 si
