@@ -11,7 +11,7 @@ namespace Text is
 
     /// Converts between text and bytes, as .NET's `System.Text.Encoding`
     /// does, for UTF-8, UTF-16, UTF-32 and ASCII.
-    class Encoding abstract is
+    class Encoding abstract open is
         init() is si
 
         /// UTF-8, writing no byte-order mark.
