@@ -1,48 +1,91 @@
 namespace Ghul is
     // The text .NET gives a double or a single: the shortest digits that
     // parse back to the same value, in plain or E notation as .NET chooses.
-    //
-    // The digits come from the free-format algorithm of Burger and Dybvig,
-    // which works on exact integers: the value and the halfway points to its
-    // neighbours are scaled by a power of ten and read off one digit at a
-    // time until the digits so far identify the value.
+    // The digits come from Ryū (ryu.ghul), and are written straight into a
+    // string of exactly the length they take.
 
     _format_double(value: double) -> string is
+        let length = _double_length(value)
+        let chars = _array_new[char](length)
+
+        _write_double(chars, 0, value)
+
+        return _string_from_chars(chars, 0, length)
+    si
+
+    _format_single(value: single) -> string is
+        let length = _single_length(value)
+        let chars = _array_new[char](length)
+
+        _write_single(chars, 0, value)
+
+        return _string_from_chars(chars, 0, length)
+    si
+
+    // The number of code units `value` takes as text.
+    _double_length(value: double) -> int is
         let bits = _double_bits(value)
         let negative = (bits >> 63) != 0ul
         let biased = cast int((bits >> 52) & 2047ul)
         let fraction = bits & ((1ul << 52) - 1ul)
 
         if biased == 2047 then
-            return _non_finite_text(fraction != 0ul, negative)
+            return _non_finite_text(fraction != 0ul, negative).length
+        elif biased == 0 /\ fraction == 0ul then
+            return if negative then 2 else 1 fi
         fi
 
-        if biased == 0 /\ fraction == 0ul then
-            return if negative then "-0" else "0" fi
-        fi
-
-        let digits = _shortest_digits(fraction, biased, 52, 1075)
-
-        return _float_layout(digits.text, digits.exponent, 17, negative)
+        return _layout_length(_double_shortest(biased, fraction), 17, negative)
     si
 
-    _format_single(value: single) -> string is
+    // Writes `value` as text into `chars` from `at` on, taking exactly
+    // `_double_length(value)` code units. Answers the position after it.
+    _write_double(chars: ARRAY[char], at: int, value: double) -> int is
+        let bits = _double_bits(value)
+        let negative = (bits >> 63) != 0ul
+        let biased = cast int((bits >> 52) & 2047ul)
+        let fraction = bits & ((1ul << 52) - 1ul)
+
+        if biased == 2047 then
+            return _write_text(chars, at, _non_finite_text(fraction != 0ul, negative))
+        elif biased == 0 /\ fraction == 0ul then
+            return _write_text(chars, at, if negative then "-0" else "0" fi)
+        fi
+
+        return _write_layout(chars, at, _double_shortest(biased, fraction), 17, negative)
+    si
+
+    // The number of code units `value` takes as text.
+    _single_length(value: single) -> int is
         let bits = _single_bits(value)
         let negative = (bits >> 31) != 0u
         let biased = cast int((bits >> 23) & 255u)
         let fraction = cast ulong(bits & ((1u << 23) - 1u))
 
         if biased == 255 then
-            return _non_finite_text(fraction != 0ul, negative)
+            return _non_finite_text(fraction != 0ul, negative).length
+        elif biased == 0 /\ fraction == 0ul then
+            return if negative then 2 else 1 fi
         fi
 
-        if biased == 0 /\ fraction == 0ul then
-            return if negative then "-0" else "0" fi
+        return _layout_length(_single_shortest(biased, fraction), 9, negative)
+    si
+
+    // Writes `value` as text into `chars` from `at` on, taking exactly
+    // `_single_length(value)` code units. Answers the position after it.
+    _write_single(chars: ARRAY[char], at: int, value: single) -> int is
+        let bits = _single_bits(value)
+        let negative = (bits >> 31) != 0u
+        let biased = cast int((bits >> 23) & 255u)
+        let fraction = cast ulong(bits & ((1u << 23) - 1u))
+
+        if biased == 255 then
+            return _write_text(chars, at, _non_finite_text(fraction != 0ul, negative))
+        elif biased == 0 /\ fraction == 0ul then
+            return _write_text(chars, at, if negative then "-0" else "0" fi)
         fi
 
-        let digits = _shortest_digits(fraction, biased, 23, 150)
-
-        return _float_layout(digits.text, digits.exponent, 9, negative)
+        return _write_layout(chars, at, _single_shortest(biased, fraction), 9, negative)
     si
 
     _non_finite_text(is_nan: bool, negative: bool) -> string =>
@@ -54,179 +97,110 @@ namespace Ghul is
             "Infinity"
         fi
 
-    // The shortest digits of the finite, non-zero value whose fraction field,
-    // biased exponent and format are given, as the digit text and the
-    // exponent `k` with the value equal to 0.digits times ten to the `k`.
-    _shortest_digits(fraction: ulong, biased: int, fraction_bits: int, bias: int) -> (text: string, exponent: int) is
-        let hidden = 1ul << fraction_bits
-        let mantissa = if biased == 0 then fraction else fraction | hidden fi
-        let binary_exponent = if biased == 0 then 1 - bias else biased - bias fi
+    // .NET's layout of `decimal`, whose value is 0.d1d2...dn times ten to
+    // the `point`, where `point` is the decimal exponent plus the digit
+    // count n: plain while the decimal point falls from three places before
+    // the first digit to `widest` places after it, E notation otherwise,
+    // with at least two exponent digits.
+    _layout_length(decimal: SHORTEST_DECIMAL, widest: int, negative: bool) -> int is
+        let count = _decimal_length(decimal.digits)
+        let point = decimal.exponent + count
+        let sign = if negative then 1 else 0 fi
 
-        // Round-half-even parsing accepts a halfway point when the mantissa
-        // is even, so the bounds are then inclusive.
-        let even = (mantissa & 1ul) == 0ul
-
-        // The gap below a power of two is half the gap above it, except at
-        // the smallest normal exponent.
-        let unequal_gaps = fraction == 0ul /\ biased > 1
-
-        let r: Collections.LIST[uint] mut
-        let s: Collections.LIST[uint] mut
-        let high: Collections.LIST[uint] mut
-        let low: Collections.LIST[uint] mut
-
-        if binary_exponent >= 0 then
-            let scale = _big_shifted(_big_of(1ul), binary_exponent)
-
-            if !unequal_gaps then
-                r = _big_shifted(_big_of(mantissa), binary_exponent + 1)
-                s = _big_of(2ul)
-                high = scale
-                low = scale
-            else
-                r = _big_shifted(_big_of(mantissa), binary_exponent + 2)
-                s = _big_of(4ul)
-                high = _big_shifted(scale, 1)
-                low = scale
+        if point >= -3 /\ point <= widest then
+            if point <= 0 then
+                return sign + 2 - point + count
+            elif point >= count then
+                return sign + point
             fi
-        else
-            if !unequal_gaps then
-                r = _big_of(mantissa * 2ul)
-                s = _big_shifted(_big_of(1ul), 1 - binary_exponent)
-                high = _big_of(1ul)
-                low = _big_of(1ul)
-            else
-                r = _big_of(mantissa * 4ul)
-                s = _big_shifted(_big_of(1ul), 2 - binary_exponent)
-                high = _big_of(2ul)
-                low = _big_of(1ul)
+
+            return sign + count + 1
+        fi
+
+        let magnitude = if point - 1 < 0 then 1 - point else point - 1 fi
+        let exponent_digits = if magnitude < 10 then 2 else _decimal_length(cast long(magnitude)) fi
+        let fraction = if count > 1 then count + 1 else 1 fi
+
+        return sign + fraction + 2 + exponent_digits
+    si
+
+    _write_layout(chars: ARRAY[char], at: int, decimal: SHORTEST_DECIMAL, widest: int, negative: bool) -> int is
+        let count = _decimal_length(decimal.digits)
+        let point = decimal.exponent + count
+        let position mut = at
+
+        if negative then
+            position = _write_char(chars, position, '-')
+        fi
+
+        if point >= -3 /\ point <= widest then
+            if point <= 0 then
+                position = _write_char(chars, position, '0')
+                position = _write_char(chars, position, '.')
+                position = _write_repeated(chars, position, '0', -point)
+
+                return _write_decimal(chars, position, count, decimal.digits)
+            elif point >= count then
+                position = _write_decimal(chars, position, count, decimal.digits)
+
+                return _write_repeated(chars, position, '0', point - count)
             fi
-        fi
 
-        // An estimate of the decimal exponent from the binary one; it is
-        // either right or one too small, and the test below corrects it.
-        let estimate = cast double(binary_exponent + _bit_length(mantissa) - 1) * 0.30102999566398119521
-        let k mut = _ceiling(estimate)
+            // the digits with the point inserted after the first `point`
+            _write_decimal(chars, position + 1, count, decimal.digits)
 
-        if k >= 0 then
-            s = _big_multiplied_by_power_of_ten(s, k)
-        else
-            r = _big_multiplied_by_power_of_ten(r, -k)
-            high = _big_multiplied_by_power_of_ten(high, -k)
-            low = _big_multiplied_by_power_of_ten(low, -k)
-        fi
+            let i mut = 0
 
-        if _reaches(_big_sum(r, high), s, even) then
-            s = _big_multiplied(s, 10ul)
-            k = k + 1
-        fi
-
-        let text mut = ""
-
-        while true do
-            r = _big_multiplied(r, 10ul)
-            high = _big_multiplied(high, 10ul)
-            low = _big_multiplied(low, 10ul)
-
-            let digit mut = 0
-
-            while _big_compare(r, s) >= 0 do
-                r = _big_difference(r, s)
-                digit = digit + 1
+            while i < point do
+                _array_set(chars, position + i, chars[position + i + 1])
+                i = i + 1
             od
 
-            let within_low = if even then _big_compare(r, low) <= 0 else _big_compare(r, low) < 0 fi
-            let within_high = _reaches(_big_sum(r, high), s, even)
+            _array_set(chars, position + point, '.')
 
-            if !within_low /\ !within_high then
-                text = _string_concat(text, _digit_text(digit))
-            else
-                if within_low /\ within_high then
-                    // Either last digit identifies the value; take the nearer,
-                    // and the even one at an exact tie, as .NET does.
-                    let twice = _big_compare(_big_shifted(r, 1), s)
-
-                    if twice > 0 \/ (twice == 0 /\ digit % 2 == 1) then
-                        digit = digit + 1
-                    fi
-                elif within_high then
-                    digit = digit + 1
-                fi
-
-                text = _string_concat(text, _digit_text(digit))
-
-                return (text = text, exponent = k)
-            fi
-        od
-
-        return (text = text, exponent = k)
-    si
-
-    // Whether `sum` reaches `limit`: at or past it when the bound is
-    // inclusive, past it otherwise.
-    _reaches(sum: Collections.LIST[uint], limit: Collections.LIST[uint], inclusive: bool) -> bool =>
-        if inclusive then _big_compare(sum, limit) >= 0 else _big_compare(sum, limit) > 0 fi
-
-    // .NET's layout of `digits`, which stand for 0.digits times ten to the
-    // `exponent`: plain while the decimal point falls from three places
-    // before the first digit to `widest` places after it, E notation
-    // otherwise.
-    _float_layout(digits: string, exponent: int, widest: int, negative: bool) -> string is
-        let scientific = exponent - 1
-        let count = digits.length
-        let text mut = ""
-
-        if exponent >= -3 /\ exponent <= widest then
-            if exponent <= 0 then
-                text = _string_concat(_string_concat("0.", _zeros(-exponent)), digits)
-            elif exponent >= count then
-                text = _string_concat(digits, _zeros(exponent - count))
-            else
-                text = _string_concat(_string_concat(_digits_from(digits, 0, exponent), "."), _digits_from(digits, exponent, count))
-            fi
-        else
-            text = _digits_from(digits, 0, 1)
-
-            if count > 1 then
-                text = _string_concat(_string_concat(text, "."), _digits_from(digits, 1, count))
-            fi
-
-            let magnitude = if scientific < 0 then -scientific else scientific fi
-
-            text = _string_concat(text, if scientific < 0 then "E-" else "E+" fi)
-
-            if magnitude < 10 then
-                text = _string_concat(text, "0")
-            fi
-
-            text = _string_concat(text, _decimal_text(magnitude))
+            return position + count + 1
         fi
 
-        return if negative then _string_concat("-", text) else text fi
+        // E notation: d.ddd, then E, a sign and the exponent
+        if count > 1 then
+            _write_decimal(chars, position + 1, count, decimal.digits)
+            _array_set(chars, position, chars[position + 1])
+            _array_set(chars, position + 1, '.')
+            position = position + count + 1
+        else
+            position = _write_decimal(chars, position, 1, decimal.digits)
+        fi
+
+        let scientific = point - 1
+        let magnitude = if scientific < 0 then -scientific else scientific fi
+
+        position = _write_char(chars, position, 'E')
+        position = _write_char(chars, position, if scientific < 0 then '-' else '+' fi)
+
+        if magnitude < 10 then
+            position = _write_char(chars, position, '0')
+        fi
+
+        return _write_decimal(chars, position, _decimal_length(cast long(magnitude)), cast long(magnitude))
     si
 
-    _digits_from(digits: string, start: int, end: int) -> string is
-        let text mut = ""
-        let i mut = start
-
-        while i < end do
-            text = _string_concat(text, _string_from_char(digits[i]))
-            i = i + 1
-        od
-
-        return text
-    si
-
-    _zeros(count: int) -> string is
-        let text mut = ""
+    _write_repeated(chars: ARRAY[char], at: int, unit: char, count: int) -> int is
         let i mut = 0
 
         while i < count do
-            text = _string_concat(text, "0")
+            _array_set(chars, at + i, unit)
             i = i + 1
         od
 
-        return text
+        return at + count
+    si
+
+    _zeros(count: int) -> string is
+        let chars = _array_new[char](if count > 0 then count else 0 fi)
+
+        _write_repeated(chars, 0, '0', count)
+
+        return _string_from_chars(chars, 0, chars.count)
     si
 
     _digit_text(digit: int) -> string => _string_from_char(cast char(48 + digit))
@@ -294,23 +268,6 @@ namespace Ghul is
         return result
     si
 
-    _big_multiplied_by_power_of_ten(value: Collections.LIST[uint], power: int) -> Collections.LIST[uint] is
-        let result mut = value
-        let remaining mut = power
-
-        while remaining >= 9 do
-            result = _big_multiplied(result, 1000000000ul)
-            remaining = remaining - 9
-        od
-
-        while remaining > 0 do
-            result = _big_multiplied(result, 10ul)
-            remaining = remaining - 1
-        od
-
-        return result
-    si
-
     _big_shifted(value: Collections.LIST[uint], places: int) -> Collections.LIST[uint] is
         let result = Collections.LIST[uint]()
         let whole = places / 32
@@ -338,71 +295,6 @@ namespace Ghul is
         fi
 
         return _big_trimmed(result)
-    si
-
-    _big_sum(a: Collections.LIST[uint], b: Collections.LIST[uint]) -> Collections.LIST[uint] is
-        let result = Collections.LIST[uint]()
-        let longest = if a.count > b.count then a.count else b.count fi
-        let carry mut = 0ul
-        let i mut = 0
-
-        while i < longest do
-            let left = if i < a.count then cast ulong(a[i]) else 0ul fi
-            let right = if i < b.count then cast ulong(b[i]) else 0ul fi
-            let total = left + right + carry
-
-            result.add(cast uint(total & 4294967295ul))
-            carry = total >> 32
-            i = i + 1
-        od
-
-        if carry != 0ul then
-            result.add(cast uint(carry))
-        fi
-
-        return result
-    si
-
-    // `a` less `b`, where `a` is at least `b`.
-    _big_difference(a: Collections.LIST[uint], b: Collections.LIST[uint]) -> Collections.LIST[uint] is
-        let result = Collections.LIST[uint]()
-        let borrow mut = 0l
-        let i mut = 0
-
-        while i < a.count do
-            let right = if i < b.count then cast long(b[i]) else 0l fi
-            let difference mut = cast long(a[i]) - right - borrow
-
-            if difference < 0l then
-                difference = difference + 4294967296l
-                borrow = 1l
-            else
-                borrow = 0l
-            fi
-
-            result.add(cast uint(difference))
-            i = i + 1
-        od
-
-        return _big_trimmed(result)
-    si
-
-    _big_compare(a: Collections.LIST[uint], b: Collections.LIST[uint]) -> int is
-        if a.count != b.count then
-            return if a.count < b.count then -1 else 1 fi
-        fi
-
-        let i mut = a.count - 1
-
-        while i >= 0 do
-            if a[i] != b[i] then
-                return if a[i] < b[i] then -1 else 1 fi
-            fi
-
-            i = i - 1
-        od
-
-        return 0
     si
 
     _big_trimmed(value: Collections.LIST[uint]) -> Collections.LIST[uint] is
