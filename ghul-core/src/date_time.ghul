@@ -175,23 +175,23 @@ namespace Time is
         /// - interval: how far to move back
         subtract(interval: TIME_SPAN) -> DATE_TIME => DATE_TIME(ticks - interval.ticks, kind)
 
-        /// The moment `interval` after `moment`.
+        /// The moment `t` after `d`.
         ///
-        /// - moment: the moment to start from
-        /// - interval: how far to move
-        +(moment: DATE_TIME, interval: TIME_SPAN) -> DATE_TIME static => moment.add(interval)
+        /// - d: the moment to start from
+        /// - t: how far to move
+        +(d: DATE_TIME, t: TIME_SPAN) -> DATE_TIME static => d.add(t)
 
-        /// The moment `interval` before `moment`.
+        /// The moment `t` before `d`.
         ///
-        /// - moment: the moment to start from
-        /// - interval: how far to move back
-        -(moment: DATE_TIME, interval: TIME_SPAN) -> DATE_TIME static => moment.subtract(interval)
+        /// - d: the moment to start from
+        /// - t: how far to move back
+        -(d: DATE_TIME, t: TIME_SPAN) -> DATE_TIME static => d.subtract(t)
 
-        /// The interval from `earlier` to `later`.
+        /// The interval from `d2` to `d1`.
         ///
-        /// - later: the moment the interval ends
-        /// - earlier: the moment it starts
-        -(later: DATE_TIME, earlier: DATE_TIME) -> TIME_SPAN static => later.subtract(earlier)
+        /// - d1: the moment the interval ends
+        /// - d2: the moment it starts
+        -(d1: DATE_TIME, d2: DATE_TIME) -> TIME_SPAN static => d1.subtract(d2)
 
         /// The moment as the invariant culture writes it by default,
         /// `MM/dd/yyyy HH:mm:ss`.
@@ -467,15 +467,15 @@ namespace Time is
 
         /// The two intervals together.
         ///
-        /// - left: the first interval
-        /// - right: the second interval
-        +(left: TIME_SPAN, right: TIME_SPAN) -> TIME_SPAN static => left.add(right)
+        /// - t1: the first interval
+        /// - t2: the second interval
+        +(t1: TIME_SPAN, t2: TIME_SPAN) -> TIME_SPAN static => t1.add(t2)
 
-        /// `left` less `right`.
+        /// `t1` less `t2`.
         ///
-        /// - left: the interval to take from
-        /// - right: the interval to take away
-        -(left: TIME_SPAN, right: TIME_SPAN) -> TIME_SPAN static => left.subtract(right)
+        /// - t1: the interval to take from
+        /// - t2: the interval to take away
+        -(t1: TIME_SPAN, t2: TIME_SPAN) -> TIME_SPAN static => t1.subtract(t2)
     si
 si
 

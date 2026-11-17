@@ -78,18 +78,18 @@ namespace Collections is
         /// The number of elements.
         count: int;
 
-        /// Adds `value`.
+        /// Adds `item`.
         ///
-        /// - value: the element to add
-        add(value: E);
+        /// - item: the element to add
+        add(item: E);
 
-        /// Whether any element is `=~` to `value`. A collection that can
+        /// Whether any element is `=~` to `item`. A collection that can
         /// answer without reading every element overrides it.
         ///
-        /// - value: the element to look for
-        contains(value: E) -> bool is
+        /// - item: the element to look for
+        contains(item: E) -> bool is
             for element in self do
-                if element =~ value then
+                if element =~ item then
                     return true
                 fi
             od
@@ -97,11 +97,11 @@ namespace Collections is
             return false
         si
 
-        /// Removes the first element `=~` to `value`, answering whether
+        /// Removes the first element `=~` to `item`, answering whether
         /// there was one.
         ///
-        /// - value: the element to remove
-        remove(value: E) -> bool;
+        /// - item: the element to remove
+        remove(item: E) -> bool;
 
         /// Removes every element.
         clear();
@@ -113,12 +113,12 @@ namespace Collections is
         /// The element at `index`, counting from zero.
         [index: int]: E, = value;
 
-        /// Inserts `value` at `index`, moving the elements from there on up
+        /// Inserts `item` at `index`, moving the elements from there on up
         /// by one.
         ///
         /// - index: where the element goes, from zero to `count`
-        /// - value: the element to insert
-        insert(index: int, value: E);
+        /// - item: the element to insert
+        insert(index: int, item: E);
 
         /// Removes the element at `index`, moving the elements after it
         /// down by one.
@@ -126,26 +126,26 @@ namespace Collections is
         /// - index: the position of the element to remove
         remove_at(index: int);
 
-        /// Whether the list holds `value`.
+        /// Whether the list holds `item`.
         ///
-        /// - value: the element to look for
-        contains(value: E) -> bool;
+        /// - item: the element to look for
+        contains(item: E) -> bool;
 
-        /// Removes the first element equal to `value`, answering whether there
+        /// Removes the first element equal to `item`, answering whether there
         /// was one.
         ///
-        /// - value: the element to remove
-        remove(value: E) -> bool;
+        /// - item: the element to remove
+        remove(item: E) -> bool;
 
-        /// The position of the first element `=~` to `value`, or -1 where
+        /// The position of the first element `=~` to `item`, or -1 where
         /// none is.
         ///
-        /// - value: the element to look for
-        index_of(value: E) -> int is
+        /// - item: the element to look for
+        index_of(item: E) -> int is
             let index mut = 0
 
             for element in self do
-                if element =~ value then
+                if element =~ item then
                     return index
                 fi
 
@@ -221,10 +221,10 @@ namespace Collections is
 
     /// A read-only set: a collection holding no element twice.
     trait Set[E]: Bag[E] is
-        /// Whether the set holds `value`.
+        /// Whether the set holds `item`.
         ///
-        /// - value: the element to look for
-        contains(value: E) -> bool;
+        /// - item: the element to look for
+        contains(item: E) -> bool;
     si
 
     /// A set elements can be added to and removed from.
@@ -232,20 +232,20 @@ namespace Collections is
         /// The number of elements.
         count: int;
 
-        /// Adds `value`, answering whether the set did not already hold it.
+        /// Adds `item`, answering whether the set did not already hold it.
         ///
-        /// - value: the element to add
-        add(value: E) -> bool;
+        /// - item: the element to add
+        add(item: E) -> bool;
 
-        /// Removes `value`, answering whether the set held it.
+        /// Removes `item`, answering whether the set held it.
         ///
-        /// - value: the element to remove
-        remove(value: E) -> bool;
+        /// - item: the element to remove
+        remove(item: E) -> bool;
 
-        /// Whether the set holds `value`.
+        /// Whether the set holds `item`.
         ///
-        /// - value: the element to look for
-        contains(value: E) -> bool;
+        /// - item: the element to look for
+        contains(item: E) -> bool;
 
         /// Removes every element.
         clear();

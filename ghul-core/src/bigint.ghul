@@ -317,10 +317,10 @@ namespace Ghul is
         // the result fits, and ask the host otherwise.
 
         /// The sum.
-        +(a: bigint, b: bigint) -> bigint static pure is
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                let x = _bigint_small(a)
-                let y = _bigint_small(b)
+        +(left: bigint, right: bigint) -> bigint static pure is
+            if _bigint_is_small(left) /\ _bigint_is_small(right) then
+                let x = _bigint_small(left)
+                let y = _bigint_small(right)
                 let sum = x + y
 
                 // The sum overflowed exactly when its sign differs from both
@@ -330,14 +330,14 @@ namespace Ghul is
                 fi
             fi
 
-            return bigint._add(a, b)
+            return bigint._add(left, right)
         si
 
         /// The difference.
-        -(a: bigint, b: bigint) -> bigint static pure is
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                let x = _bigint_small(a)
-                let y = _bigint_small(b)
+        -(left: bigint, right: bigint) -> bigint static pure is
+            if _bigint_is_small(left) /\ _bigint_is_small(right) then
+                let x = _bigint_small(left)
+                let y = _bigint_small(right)
                 let difference = x - y
 
                 if ((x ^ y) & (x ^ difference)) >= 0L then
@@ -345,17 +345,17 @@ namespace Ghul is
                 fi
             fi
 
-            return bigint._subtract(a, b)
+            return bigint._subtract(left, right)
         si
 
         /// The product.
-        *(a: bigint, b: bigint) -> bigint static pure is
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                let x = _bigint_small(a)
-                let y = _bigint_small(b)
+        *(left: bigint, right: bigint) -> bigint static pure is
+            if _bigint_is_small(left) /\ _bigint_is_small(right) then
+                let x = _bigint_small(left)
+                let y = _bigint_small(right)
 
                 if x == 0L then
-                    return a
+                    return left
                 fi
 
                 // The product fits exactly when dividing it by one operand gives
@@ -370,110 +370,110 @@ namespace Ghul is
                 fi
             fi
 
-            return bigint._multiply(a, b)
+            return bigint._multiply(left, right)
         si
 
         /// The negation.
-        -(a: bigint) -> bigint static pure is
-            if _bigint_is_small(a) /\ _bigint_small(a) != bigint._lowest then
-                return bigint(-_bigint_small(a))
+        -(value: bigint) -> bigint static pure is
+            if _bigint_is_small(value) /\ _bigint_small(value) != bigint._lowest then
+                return bigint(-_bigint_small(value))
             fi
 
-            return bigint._negate(a)
+            return bigint._negate(value)
         si
 
         /// The bitwise complement.
-        \(a: bigint) -> bigint static pure =>
-            if _bigint_is_small(a) then bigint(\_bigint_small(a)) else bigint._not(a) fi
+        \(value: bigint) -> bigint static pure =>
+            if _bigint_is_small(value) then bigint(\_bigint_small(value)) else bigint._not(value) fi
 
         /// The bitwise and.
-        &(a: bigint, b: bigint) -> bigint static pure =>
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                bigint(_bigint_small(a) & _bigint_small(b))
+        &(left: bigint, right: bigint) -> bigint static pure =>
+            if _bigint_is_small(left) /\ _bigint_is_small(right) then
+                bigint(_bigint_small(left) & _bigint_small(right))
             else
-                bigint._and(a, b)
+                bigint._and(left, right)
             fi
 
         /// The bitwise or.
-        |(a: bigint, b: bigint) -> bigint static pure =>
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                bigint(_bigint_small(a) | _bigint_small(b))
+        |(left: bigint, right: bigint) -> bigint static pure =>
+            if _bigint_is_small(left) /\ _bigint_is_small(right) then
+                bigint(_bigint_small(left) | _bigint_small(right))
             else
-                bigint._or(a, b)
+                bigint._or(left, right)
             fi
 
         /// The bitwise exclusive or.
-        ^(a: bigint, b: bigint) -> bigint static pure =>
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                bigint(_bigint_small(a) ^ _bigint_small(b))
+        ^(left: bigint, right: bigint) -> bigint static pure =>
+            if _bigint_is_small(left) /\ _bigint_is_small(right) then
+                bigint(_bigint_small(left) ^ _bigint_small(right))
             else
-                bigint._xor(a, b)
+                bigint._xor(left, right)
             fi
 
-        /// `a` shifted left by `places` bits; a negative count shifts right.
-        <<(a: bigint, places: int) -> bigint static pure is
-            if _bigint_is_small(a) then
-                let x = _bigint_small(a)
+        /// `value` shifted left by `shift` bits; a negative count shifts right.
+        <<(value: bigint, shift: int) -> bigint static pure is
+            if _bigint_is_small(value) then
+                let x = _bigint_small(value)
 
                 if x == 0L then
-                    return a
+                    return value
                 fi
 
-                if places < 0 /\ places > -2147483647 - 1 then
-                    return a >> -places
+                if shift < 0 /\ shift > -2147483647 - 1 then
+                    return value >> -shift
                 fi
 
                 // The shift kept every bit exactly when shifting back gives the
                 // value again.
-                if places >= 0 /\ places < 63 then
-                    let shifted = x << places
+                if shift >= 0 /\ shift < 63 then
+                    let shifted = x << shift
 
-                    if shifted >> places == x then
+                    if shifted >> shift == x then
                         return bigint(shifted)
                     fi
                 fi
             fi
 
-            return bigint._shift_left(a, places)
+            return bigint._shift_left(value, shift)
         si
 
-        /// `a` shifted right by `places` bits, the sign bit copied in; a
+        /// `value` shifted right by `shift` bits, the sign bit copied in; a
         /// negative count shifts left.
-        >>(a: bigint, places: int) -> bigint static pure is
-            if _bigint_is_small(a) /\ places >= 0 then
-                let x = _bigint_small(a)
+        >>(value: bigint, shift: int) -> bigint static pure is
+            if _bigint_is_small(value) /\ shift >= 0 then
+                let x = _bigint_small(value)
 
-                return bigint(if places >= 63 then (if x < 0L then -1L else 0L fi) else x >> places fi)
+                return bigint(if shift >= 63 then (if x < 0L then -1L else 0L fi) else x >> shift fi)
             fi
 
-            return bigint._shift_right(a, places)
+            return bigint._shift_right(value, shift)
         si
 
         /// The quotient, truncated towards zero.
-        /(a: bigint, b: bigint) -> bigint static pure is
-            if b.is_zero then
+        /(dividend: bigint, divisor: bigint) -> bigint static pure is
+            if divisor.is_zero then
                 throw DivideByZeroException()
             fi
 
             // Only the lowest long divided by minus one leaves the range.
-            if _bigint_is_small(a) /\ _bigint_is_small(b) /\ !(_bigint_small(a) == _lowest /\ _bigint_small(b) == -1L) then
-                return bigint(_bigint_small(a) / _bigint_small(b))
+            if _bigint_is_small(dividend) /\ _bigint_is_small(divisor) /\ !(_bigint_small(dividend) == _lowest /\ _bigint_small(divisor) == -1L) then
+                return bigint(_bigint_small(dividend) / _bigint_small(divisor))
             fi
 
-            return _divide(a, b)
+            return _divide(dividend, divisor)
         si
 
-        /// The remainder, with the sign of `a`.
-        %(a: bigint, b: bigint) -> bigint static pure is
-            if b.is_zero then
+        /// The remainder, with the sign of `dividend`.
+        %(dividend: bigint, divisor: bigint) -> bigint static pure is
+            if divisor.is_zero then
                 throw DivideByZeroException()
             fi
 
-            if _bigint_is_small(a) /\ _bigint_is_small(b) then
-                return if _bigint_small(b) == -1L then zero else bigint(_bigint_small(a) % _bigint_small(b)) fi
+            if _bigint_is_small(dividend) /\ _bigint_is_small(divisor) then
+                return if _bigint_small(divisor) == -1L then zero else bigint(_bigint_small(dividend) % _bigint_small(divisor)) fi
             fi
 
-            return _remainder(a, b)
+            return _remainder(dividend, divisor)
         si
 
         // The lowest long, which has no negation in a long.

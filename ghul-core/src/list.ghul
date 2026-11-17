@@ -81,13 +81,13 @@ namespace Collections is
                 Ghul._array_set(_items, index, value);
             si
 
-        /// Adds `value` at the end.
+        /// Adds `item` at the end.
         ///
-        /// - value: the element to add
-        add(value: T) is
+        /// - item: the element to add
+        add(item: T) is
             _ensure_room(_count + 1);
 
-            Ghul._array_set(_items, _count, value);
+            Ghul._array_set(_items, _count, item);
             _count = _count + 1;
         si
 
@@ -100,12 +100,12 @@ namespace Collections is
             od
         si
 
-        /// Inserts `value` at `index`, moving the elements from there on up
+        /// Inserts `item` at `index`, moving the elements from there on up
         /// by one.
         ///
         /// - index: where the element goes, from zero to `count`
-        /// - value: the element to insert
-        insert(index: int, value: T) is
+        /// - item: the element to insert
+        insert(index: int, item: T) is
             if index < 0 \/ index > _count then
                 throw Ghul.ArgumentOutOfRangeException("index");
             fi
@@ -119,7 +119,7 @@ namespace Collections is
                 i = i - 1;
             od
 
-            Ghul._array_set(_items, index, value);
+            Ghul._array_set(_items, index, item);
             _count = _count + 1;
         si
 
@@ -143,15 +143,15 @@ namespace Collections is
             Ghul._array_set(_items, _count, _[T]);
         si
 
-        /// The position of the first element `=~` to `value`, or -1 where
+        /// The position of the first element `=~` to `item`, or -1 where
         /// none is.
         ///
-        /// - value: the element to look for
-        index_of(value: T) -> int pure is
+        /// - item: the element to look for
+        index_of(item: T) -> int pure is
             let i mut = 0;
 
             while i < _count do
-                if _items[i] =~ value then
+                if _items[i] =~ item then
                     return i;
                 fi
 
@@ -161,10 +161,10 @@ namespace Collections is
             return -1;
         si
 
-        /// Whether any element is `=~` to `value`.
+        /// Whether any element is `=~` to `item`.
         ///
-        /// - value: the element to look for
-        contains(value: T) -> bool pure => index_of(value) >= 0;
+        /// - item: the element to look for
+        contains(item: T) -> bool pure => index_of(item) >= 0;
 
         /// Sorts the elements in place in the order `comparer` gives,
         /// leaving elements it calls equal where .NET's sort leaves them.
@@ -318,12 +318,12 @@ namespace Collections is
             fi
         si
 
-        /// Removes the first element `=~` to `value`, answering whether
+        /// Removes the first element `=~` to `item`, answering whether
         /// there was one.
         ///
-        /// - value: the element to remove
-        remove(value: T) -> bool is
-            let index = index_of(value);
+        /// - item: the element to remove
+        remove(item: T) -> bool is
+            let index = index_of(item);
 
             if index < 0 then
                 return false;
