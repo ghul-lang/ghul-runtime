@@ -1,0 +1,5 @@
+wrapped; inner root cause; base root cause
+plain: inner false, own base true
+aggregate of one: One or more errors occurred. (wrapped); base wrapped
+nested aggregates: base root cause
+aggregate of two: own base true; inner root cause

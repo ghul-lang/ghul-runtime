@@ -5,6 +5,11 @@ namespace Ghul is
         /// What went wrong, for a person to read.
         message: string;
 
+        _inner_exception: Exception?
+
+        /// The exception this one was thrown because of, or null.
+        inner_exception: Exception? => _inner_exception
+
         /// An exception whose message names its type and says only that it
         /// was thrown.
         init() is
@@ -14,6 +19,25 @@ namespace Ghul is
         /// - message: what went wrong
         init(message: string) is
             self.message = message;
+        si
+
+        /// - message: what went wrong
+        /// - inner_exception: the exception this one is thrown because of, or null
+        init(message: string, inner_exception: Exception?) is
+            self.message = message;
+            _inner_exception = inner_exception;
+        si
+
+        /// The exception at the end of the chain of inner exceptions: the one
+        /// that was thrown first. This exception where it has no inner one.
+        get_base_exception() -> Exception is
+            let result: Exception mut = self
+
+            while let inner = result.inner_exception do
+                result = inner
+            od
+
+            return result
         si
     si
 
@@ -54,8 +78,7 @@ namespace Ghul is
 
     /// Thrown by waiting for a task that threw, holding what it threw.
     class AggregateException: Exception is
-        /// What was thrown, where one exception is held.
-        inner_exception: Exception?
+        _inner_exception_count: int
 
         /// An exception that says only that errors occurred.
         init() is
@@ -69,25 +92,44 @@ namespace Ghul is
 
         /// - inner_exception: what the task threw
         init(inner_exception: Exception) is
-            super.init("One or more errors occurred. ({inner_exception.message})")
-            self.inner_exception = inner_exception
+            super.init("One or more errors occurred. ({inner_exception.message})", inner_exception)
+            _inner_exception_count = 1
         si
 
         /// - inner_exceptions: what was thrown; the first is `inner_exception`
         init(inner_exceptions: Collections.Iterable[Exception]) is
-            super.init(_message("One or more errors occurred.", inner_exceptions))
-
-            for e in inner_exceptions do
-                self.inner_exception = e
-                break
-            od
+            super.init(_message("One or more errors occurred.", inner_exceptions), _first(inner_exceptions))
+            _inner_exception_count = inner_exceptions |> Ghul.Pipes.count()
         si
 
         /// - message: what went wrong
         /// - inner_exception: what was thrown
         init(message: string, inner_exception: Exception) is
-            super.init("{message} ({inner_exception.message})")
-            self.inner_exception = inner_exception
+            super.init("{message} ({inner_exception.message})", inner_exception)
+            _inner_exception_count = 1
+        si
+
+        /// The exception at the end of the chain, going through each
+        /// aggregate that holds exactly one exception, as on .NET: an
+        /// aggregate of several is its own base.
+        get_base_exception() -> Exception is
+            let result: Exception mut = self
+            let aggregate: AggregateException? mut = self
+
+            while let a = aggregate /\ a._inner_exception_count == 1 do
+                result = a.inner_exception!
+                aggregate = cast AggregateException?(result)
+            od
+
+            return result
+        si
+
+        _first(inner_exceptions: Collections.Iterable[Exception]) -> Exception? static is
+            for e in inner_exceptions do
+                return e
+            od
+
+            return null
         si
 
         _message(message: string, inner_exceptions: Collections.Iterable[Exception]) -> string static is

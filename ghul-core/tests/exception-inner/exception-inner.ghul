@@ -1,0 +1,25 @@
+use IO.Std.write_line
+
+// An exception thrown because of another holds it, and the base exception is
+// the one at the end of that chain. An aggregate of exactly one exception is
+// passed through on the way; an aggregate of several is its own base.
+let root = Ghul.InvalidOperationException("root cause")
+let wrapped = Ghul.Exception("wrapped", root)
+
+write_line("{wrapped.message}; inner {wrapped.inner_exception?.message ?? "none"}; base {wrapped.get_base_exception().message}")
+
+let plain = Ghul.Exception("plain")
+
+write_line("plain: inner {plain.inner_exception?}, own base {plain.get_base_exception() == plain}")
+
+let one = Ghul.AggregateException([wrapped])
+
+write_line("aggregate of one: {one.message}; base {one.get_base_exception().message}")
+
+let nested = Ghul.AggregateException([Ghul.AggregateException([root])])
+
+write_line("nested aggregates: base {nested.get_base_exception().message}")
+
+let several = Ghul.AggregateException([root, plain])
+
+write_line("aggregate of two: own base {several.get_base_exception() == several}; inner {several.inner_exception?.message ?? "none"}")
