@@ -9,7 +9,7 @@ namespace IO is
     /// A sequence of bytes that can be read, written, or both, from a
     /// current position. A member a particular stream does not support
     /// throws `Ghul.NotSupportedException`.
-    class Stream: Ghul.Disposable abstract is
+    class Stream: Ghul.Disposable abstract open is
         init() is si
 
         /// Whether the stream can be read.
