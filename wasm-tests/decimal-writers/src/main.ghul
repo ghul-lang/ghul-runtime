@@ -1,0 +1,13 @@
+use IO.Std.write_line
+
+// Each integer type's text at the edges of its range, through the digit
+// writers an interpolation also uses.
+for value in [0L, 7L, -7L, 10L, -10L, 99L, 100L, long.max_value, long.min_value] do
+    write_line("[{value.to_string()}]")
+od
+
+for value in [0UL, 9UL, 10UL, ulong.max_value] do
+    write_line("[{value.to_string()}]")
+od
+
+write_line("{int.min_value} {int.max_value} {uint.max_value} {byte.min_value} {ushort.max_value}")
