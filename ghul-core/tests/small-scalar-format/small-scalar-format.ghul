@@ -1,0 +1,29 @@
+// byte, ubyte, short and ushort written with a format, directly and through
+// string.format; the expected text is what .NET writes for the same calls. A
+// hexadecimal format writes the value's own bits, so a negative byte is two
+// digits, not eight.
+use IO.Std.write_line
+
+let bytes: byte[] = [0b, 107b, -1b, byte.min_value, 127b]
+
+for b in bytes do
+    write_line("{b.to_string("X")} {b.to_string("x2")} {b.to_string("D4")} {string.format("{{0:X}}", b)}")
+od
+
+let ubytes: ubyte[] = [0ub, 107ub, 255ub]
+
+for b in ubytes do
+    write_line("{b.to_string("X")} {b.to_string("D4")} {string.format("{{0:X2}}", b)}")
+od
+
+let shorts: short[] = [0s, 1234s, -1s, short.min_value]
+
+for s in shorts do
+    write_line("{s.to_string("X")} {s.to_string("D6")} {string.format("{{0:X}}", s)}")
+od
+
+let ushorts: ushort[] = [0us, 1234us, 65535us]
+
+for s in ushorts do
+    write_line("{s.to_string("X")} {s.to_string("D6")} {string.format("{{0:x}}", s)}")
+od

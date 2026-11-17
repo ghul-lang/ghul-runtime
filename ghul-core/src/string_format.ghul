@@ -123,6 +123,14 @@ namespace Ghul is
                     return n.to_string(f)
                 elif let n: ulong = value then
                     return n.to_string(f)
+                elif let n: short = value then
+                    return n.to_string(f)
+                elif let n: ushort = value then
+                    return n.to_string(f)
+                elif let n: byte = value then
+                    return n.to_string(f)
+                elif let n: ubyte = value then
+                    return n.to_string(f)
                 elif let n: double = value then
                     return n.to_string(f)
                 elif let n: single = value then
