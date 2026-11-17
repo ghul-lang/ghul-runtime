@@ -1,0 +1,121 @@
+namespace Collections is
+    /// A collection whose elements are removed lowest priority first. Elements
+    /// of equal priority come out in no particular order. This is .NET's
+    /// `PriorityQueue<TElement, TPriority>`, which ghūl names `PRIORITY_QUEUE`
+    /// on .NET as well. Like .NET's, it is not a sequence: it is read one
+    /// element at a time.
+    class PRIORITY_QUEUE[E, P] is
+        // A binary min-heap on the priorities, in one list of pairs.
+        _heap: LIST[(element: E, priority: P)]
+        _comparer: Comparer[P]
+
+        /// An empty queue, ordering the priorities by their own `<>`.
+        init() is
+            _heap = LIST[(element: E, priority: P)]()
+            _comparer = Ghul._DEFAULT_COMPARER[P]()
+        si
+
+        /// An empty queue, ordering the priorities with `comparer`.
+        ///
+        /// - comparer: orders two priorities
+        init(comparer: Comparer[P]) is
+            _heap = LIST[(element: E, priority: P)]()
+            _comparer = comparer
+        si
+
+        /// The number of elements.
+        count: int pure => _heap.count
+
+        /// Adds `element` with `priority`.
+        ///
+        /// - element: the element to add
+        /// - priority: where it comes out: the lowest first
+        enqueue(element: E, priority: P) is
+            _heap.add((element, priority))
+            _sift_up(_heap.count - 1)
+        si
+
+        /// Removes and returns the element of lowest priority. Throws
+        /// `Ghul.InvalidOperationException` when the queue is empty.
+        dequeue() -> E is
+            if _heap.count == 0 then
+                throw Ghul.InvalidOperationException("Queue empty.")
+            fi
+
+            let first = _heap[0]
+            let last = _heap.count - 1
+
+            _heap[0] = _heap[last]
+            _heap.remove_at(last)
+
+            if _heap.count > 0 then
+                _sift_down(0)
+            fi
+
+            return first.element
+        si
+
+        /// The element of lowest priority, left in place. Throws
+        /// `Ghul.InvalidOperationException` when the queue is empty.
+        peek() -> E is
+            if _heap.count == 0 then
+                throw Ghul.InvalidOperationException("Queue empty.")
+            fi
+
+            return _heap[0].element
+        si
+
+        /// Removes every element.
+        clear() is
+            _heap.clear()
+        si
+
+        _less(i: int, j: int) -> bool => _comparer.compare(_heap[i].priority, _heap[j].priority) < 0
+
+        _swap(i: int, j: int) is
+            let held = _heap[i]
+            _heap[i] = _heap[j]
+            _heap[j] = held
+        si
+
+        _sift_up(start: int) is
+            let i mut = start
+
+            while i > 0 do
+                let parent = (i - 1) / 2
+
+                if !_less(i, parent) then
+                    return
+                fi
+
+                _swap(i, parent)
+                i = parent
+            od
+        si
+
+        _sift_down(start: int) is
+            let i mut = start
+
+            while true do
+                let left = 2 * i + 1
+                let right = left + 1
+                let smallest mut = i
+
+                if left < _heap.count /\ _less(left, smallest) then
+                    smallest = left
+                fi
+
+                if right < _heap.count /\ _less(right, smallest) then
+                    smallest = right
+                fi
+
+                if smallest == i then
+                    return
+                fi
+
+                _swap(i, smallest)
+                i = smallest
+            od
+        si
+    si
+si

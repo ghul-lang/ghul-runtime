@@ -1,0 +1,7 @@
+count 5, front one
+in priority order: one, two, three, four, five
+empty: Queue empty.
+list: a, b, c, d (4)
+ends removed: b, c
+remove b: true, remove x: false, contains c: true
+cleared: 0

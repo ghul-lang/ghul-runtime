@@ -1,0 +1,166 @@
+namespace Collections is
+    /// A doubly linked list: elements are added and removed at either end
+    /// without moving the others. This is .NET's `LinkedList<T>`, which ghūl
+    /// names `LINKED_LIST` on .NET as well. On wasm and llvm it has the
+    /// list's own members but not .NET's nodes: `add_first` and `add_last`
+    /// answer nothing, and there is no `first`, `last` or `find`.
+    class LINKED_LIST[T]: Bag[T] is
+        _first: _LINKED_NODE[T]?
+        _last: _LINKED_NODE[T]?
+        _count: int
+
+        /// An empty list.
+        init() is
+        si
+
+        /// A list holding the elements of `source`, in order.
+        ///
+        /// - source: the elements to add
+        init(source: Iterable[T]) is
+            for value in source do
+                add_last(value)
+            od
+        si
+
+        /// The number of elements.
+        count: int pure => _count
+
+        /// Adds `value` at the front.
+        ///
+        /// - value: the element to add
+        add_first(value: T) is
+            let node = _LINKED_NODE[T](value)
+
+            node.next = _first
+
+            if let old = _first then
+                old.previous = node
+            else
+                _last = node
+            fi
+
+            _first = node
+            _count = _count + 1
+        si
+
+        /// Adds `value` at the back.
+        ///
+        /// - value: the element to add
+        add_last(value: T) is
+            let node = _LINKED_NODE[T](value)
+
+            node.previous = _last
+
+            if let old = _last then
+                old.next = node
+            else
+                _first = node
+            fi
+
+            _last = node
+            _count = _count + 1
+        si
+
+        /// Removes the element at the front. Throws
+        /// `Ghul.InvalidOperationException` when the list is empty.
+        remove_first() is
+            if let node = _first then
+                _unlink(node)
+            else
+                throw Ghul.InvalidOperationException("The LinkedList is empty.")
+            fi
+        si
+
+        /// Removes the element at the back. Throws
+        /// `Ghul.InvalidOperationException` when the list is empty.
+        remove_last() is
+            if let node = _last then
+                _unlink(node)
+            else
+                throw Ghul.InvalidOperationException("The LinkedList is empty.")
+            fi
+        si
+
+        /// Removes the first element `=~` to `value`, and answers whether
+        /// there was one.
+        ///
+        /// - value: the element to remove
+        remove(value: T) -> bool is
+            if let node = _find(value) then
+                _unlink(node)
+                return true
+            fi
+
+            return false
+        si
+
+        /// Whether any element is `=~` to `value`.
+        ///
+        /// - value: the element to look for
+        contains(value: T) -> bool => _find(value)?
+
+        /// Removes every element.
+        clear() is
+            _first = null
+            _last = null
+            _count = 0
+        si
+
+        /// An iterator over the elements from front to back.
+        iterator: Iterator[T] is
+            let values = Ghul._array_new[T](_count)
+            let node mut = _first
+            let i mut = 0
+
+            while let n = node do
+                Ghul._array_set(values, i, n.value)
+                node = n.next
+                i = i + 1
+            od
+
+            return LIST_ITERATOR[T](values, _count)
+        si
+
+        _find(value: T) -> _LINKED_NODE[T]? is
+            let node mut = _first
+
+            while let n = node do
+                if n.value =~ value then
+                    return n
+                fi
+
+                node = n.next
+            od
+
+            return null
+        si
+
+        _unlink(node: _LINKED_NODE[T]) is
+            if let previous = node.previous then
+                previous.next = node.next
+            else
+                _first = node.next
+            fi
+
+            if let next = node.next then
+                next.previous = node.previous
+            else
+                _last = node.previous
+            fi
+
+            _count = _count - 1
+        si
+    si
+
+    // One element of a LINKED_LIST and its neighbours. Only the list reaches
+    // these, so the links are plain fields it sets itself.
+    class _LINKED_NODE[T] is
+        value: T field public
+        next: _LINKED_NODE[T]? field public
+        previous: _LINKED_NODE[T]? field public
+
+        init(value: T) is
+            self.value = value
+        si
+    si
+si
