@@ -1,0 +1,7 @@
+{
+    "name": "user-pipe",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

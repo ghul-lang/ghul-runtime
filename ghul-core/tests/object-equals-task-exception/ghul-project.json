@@ -1,0 +1,8 @@
+{
+    "name": "object-equals-task-exception",
+    "targets": ["wasm", "llvm"],
+    "sources": ["*.ghul"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../../.." }
+    }
+}
