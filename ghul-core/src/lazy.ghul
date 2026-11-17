@@ -2,7 +2,7 @@ namespace Ghul is
     /// A value computed the first time it is read, by the function the
     /// `LAZY` was constructed with, and kept from then on.
     @suppress("field-definite-assignment")
-    class LAZY[T] open is
+    class LAZY[T] is
         _factory: (() -> T)?
         _value: T
 

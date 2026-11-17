@@ -9,7 +9,7 @@ namespace IO is
     /// A sequence of bytes that can be read, written, or both, from a
     /// current position. A member a particular stream does not support
     /// throws `Ghul.NotSupportedException`.
-    class Stream: Ghul.Disposable abstract open is
+    class Stream: Ghul.Disposable abstract is
         init() is si
 
         /// Whether the stream can be read.
@@ -108,7 +108,7 @@ namespace IO is
     /// it is written; one made over an array reads and writes that array in
     /// place and cannot grow past it.
     @suppress("non-upper-snake-case-name")
-    class MemoryStream: Stream open is
+    class MemoryStream: Stream is
         _buffer: ARRAY[ubyte]
         _origin: int
         _length: int

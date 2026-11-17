@@ -6,7 +6,7 @@ namespace System.Runtime.CompilerServices is
     // that offer them, such as ghul-runtime's coroutines.
 
     /// The state machine an asynchronous function compiles to.
-    trait IAsyncStateMachine open is
+    trait IAsyncStateMachine is
         /// Runs the machine until it next suspends or finishes.
         move_next();
 
@@ -18,7 +18,7 @@ namespace System.Runtime.CompilerServices is
     si
 
     /// An awaiter that runs a continuation once what was awaited completes.
-    trait INotifyCompletion open is
+    trait INotifyCompletion is
         /// Runs `continuation` once what was awaited completes.
         ///
         /// - continuation: what to run
@@ -27,7 +27,7 @@ namespace System.Runtime.CompilerServices is
 
     /// An awaiter that can run a continuation without flowing an execution
     /// context to it.
-    trait ICriticalNotifyCompletion: INotifyCompletion open is
+    trait ICriticalNotifyCompletion: INotifyCompletion is
         /// Runs `continuation` once what was awaited completes.
         ///
         /// - continuation: what to run

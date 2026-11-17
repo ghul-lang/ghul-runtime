@@ -4,7 +4,7 @@ namespace Collections is
     /// `PriorityQueue<TElement, TPriority>`, which ghūl names `PRIORITY_QUEUE`
     /// on .NET as well. Like .NET's, it is not a sequence: it is read one
     /// element at a time.
-    class PRIORITY_QUEUE[E, P] open is
+    class PRIORITY_QUEUE[E, P] is
         // A binary min-heap on the priorities, in one list of pairs.
         _heap: LIST[(element: E, priority: P)]
         _comparer: Comparer[P]

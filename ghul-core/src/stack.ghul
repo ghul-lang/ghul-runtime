@@ -2,7 +2,7 @@ namespace Collections is
     /// A last-in, first-out collection: the element added most recently is
     /// the first one removed. This is .NET's `Stack<T>`, which ghūl names
     /// `STACK` on .NET as well.
-    class STACK[T]: Bag[T] open is
+    class STACK[T]: Bag[T] is
         _items: ARRAY[T];
         _count: int;
 

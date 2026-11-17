@@ -3,7 +3,7 @@ namespace Ghul is
     /// `System.IFormatProvider` does; on .NET this is that interface. The
     /// source-core targets format under the invariant culture whatever
     /// provider is given.
-    trait FormatProvider open is
+    trait FormatProvider is
         /// An object that formats values of `format_type`, or null where this
         /// provider has none.
         ///
@@ -18,7 +18,7 @@ namespace System is
     /// A value that can be written in a format, as .NET's
     /// `System.IFormattable` is. An interpolation that names a format, as in
     /// `{value:yyyy-MM-dd}`, writes a value of such a type through this.
-    trait IFormattable open is
+    trait IFormattable is
         /// The value written in `format`, or in its default format where
         /// `format` is null.
         ///

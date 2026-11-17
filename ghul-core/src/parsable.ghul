@@ -4,7 +4,7 @@ namespace Ghul is
     /// `Parsable[T]` bound as they are; the source-core targets declare the
     /// member `parse` needs, with the same signature.
     @IF.source_core()
-    trait Parsable[T] open is
+    trait Parsable[T] is
         /// Whether `text` holds a `T`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null, which holds no value

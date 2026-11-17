@@ -1,7 +1,7 @@
 namespace Collections is
     /// A list that grows as elements are added, read and written by
     /// position.
-    class LIST[T]: List[T], MutableList[T], Ghul.Internal.UntypedList open is
+    class LIST[T]: List[T], MutableList[T], Ghul.Internal.UntypedList is
         _items: ARRAY[T];
         _count: int;
 

@@ -15,7 +15,7 @@ namespace System.Reflection is
     /// The compiled program, as far as reflection reaches it: the types
     /// that hold its tests.
     @suppress("non-upper-snake-case-name")
-    class Assembly open is
+    class Assembly is
         _entry: Assembly? static
 
         init() is si
@@ -43,7 +43,7 @@ namespace System.Reflection is
 
     /// A field a type declares.
     @suppress("non-upper-snake-case-name")
-    class FieldInfo open is
+    class FieldInfo is
         _get: (object) -> object?
         _set: (object, object?) -> void
 
@@ -98,7 +98,7 @@ namespace System.Reflection is
 
     /// A parameter of a constructor.
     @suppress("non-upper-snake-case-name")
-    class ParameterInfo open is
+    class ParameterInfo is
         /// The parameter's name, which .NET allows to be absent.
         name: string?
 
@@ -120,7 +120,7 @@ namespace System.Reflection is
 
     /// A constructor a type declares.
     @suppress("non-upper-snake-case-name")
-    class ConstructorInfo open is
+    class ConstructorInfo is
         _parameters: ARRAY[ParameterInfo]
         _invoke: (ARRAY[object?]) -> object
 
@@ -157,7 +157,7 @@ namespace System.Reflection is
     /// A method, as far as reflection reaches one: a property's accessor,
     /// or a method or global function marked `@test()`.
     @suppress("non-upper-snake-case-name")
-    class MethodInfo open is
+    class MethodInfo is
         _invoke: (object?, ARRAY[object?]) -> object?
         _attributes: ARRAY[object]
 
@@ -248,7 +248,7 @@ namespace System.Reflection is
 
     /// A property a type declares.
     @suppress("non-upper-snake-case-name")
-    class PropertyInfo open is
+    class PropertyInfo is
         _getter: MethodInfo?
         _setter: MethodInfo?
 
