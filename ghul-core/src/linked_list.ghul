@@ -4,7 +4,7 @@ namespace Collections is
     /// names `LINKED_LIST` on .NET as well. On wasm and llvm it has the
     /// list's own members but not .NET's nodes: `add_first` and `add_last`
     /// answer nothing, and there is no `first`, `last` or `find`.
-    class LINKED_LIST[T]: Bag[T] is
+    class LINKED_LIST[T]: Bag[T] open is
         _first: _LINKED_NODE[T]?
         _last: _LINKED_NODE[T]?
         _count: int

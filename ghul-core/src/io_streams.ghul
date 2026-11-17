@@ -6,7 +6,7 @@ namespace IO is
     /// start skipped, and each byte sequence that is not UTF-8 read as
     /// U+FFFD. Bytes are read from the stream as the text is asked for.
     @suppress("non-upper-snake-case-name")
-    class StreamReader: TextReader is
+    class StreamReader: TextReader open is
         _stream: Stream
         _buffer: ARRAY[ubyte]
         _count: int

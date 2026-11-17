@@ -9,7 +9,7 @@ namespace System.Globalization is
     /// `System.Globalization.StringInfo` reads it: each element is what a
     /// reader sees as one character, a grapheme cluster, which may be several
     /// code points, such as a letter and the accents written over it.
-    class StringInfo is
+    class StringInfo open is
         _value: string
         _starts: ARRAY[int]?
 

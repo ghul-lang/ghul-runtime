@@ -9,7 +9,7 @@ namespace Crypto is
 
     /// The MD5 digest, as .NET gives it.
     /// MD5 is broken as a cryptographic hash and is here for checksums.
-    class MD5 is
+    class MD5 open is
         /// The 16-byte MD5 digest of `source`.
         ///
         /// - source: the bytes to digest
@@ -84,7 +84,7 @@ namespace Crypto is
 
     /// The SHA-1 digest, as .NET gives it.
     /// SHA-1 is broken as a cryptographic hash and is here for checksums.
-    class SHA1 is
+    class SHA1 open is
         /// The 20-byte SHA-1 digest of `source`.
         ///
         /// - source: the bytes to digest
@@ -153,7 +153,7 @@ namespace Crypto is
     si
 
     /// The SHA-256 digest, as .NET gives it.
-    class SHA256 is
+    class SHA256 open is
         /// The 32-byte SHA-256 digest of `source`.
         ///
         /// - source: the bytes to digest

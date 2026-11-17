@@ -1,7 +1,7 @@
 namespace Ghul is
     /// The base of every exception: what `throw` raises and `catch` handles.
     @suppress("non-upper-snake-case-name")
-    class Exception is
+    class Exception open is
         /// What went wrong, for a person to read.
         message: string;
 
@@ -42,7 +42,7 @@ namespace Ghul is
     si
 
     /// Thrown by a member that has no body to run: a body-less override.
-    class NotImplementedException: Exception is
+    class NotImplementedException: Exception open is
         /// An exception saying the operation is not implemented.
         init() is
             super.init("The method or operation is not implemented.");
@@ -56,7 +56,7 @@ namespace Ghul is
 
     /// Thrown by a member this type does not support, such as the `reset`
     /// synthesised for an iterator that cannot start again.
-    class NotSupportedException: Exception is
+    class NotSupportedException: Exception open is
         init() is
             super.init("the operation is not supported");
         si
@@ -69,7 +69,7 @@ namespace Ghul is
 
     /// Thrown when an object is not in a state where the requested operation
     /// can run, such as reading the value of an absent `MAYBE`.
-    class InvalidOperationException: Exception is
+    class InvalidOperationException: Exception open is
         /// - message: why the operation cannot run
         init(message: string) is
             super.init(message);
@@ -77,7 +77,7 @@ namespace Ghul is
     si
 
     /// Thrown by waiting for a task that threw, holding what it threw.
-    class AggregateException: Exception is
+    class AggregateException: Exception open is
         _inner_exception_count: int
 
         /// An exception that says only that errors occurred.
@@ -149,7 +149,7 @@ namespace Ghul is
 
     /// Thrown when an object that has been closed or disposed is used. As on
     /// .NET, the message names the object where an object name is given.
-    class ObjectDisposedException: InvalidOperationException is
+    class ObjectDisposedException: InvalidOperationException open is
         /// The name of the object that was used, or empty.
         object_name: string
 
@@ -178,7 +178,7 @@ namespace Ghul is
 
     /// Thrown when the operation is not allowed on what it names, such as
     /// reading a directory as a file.
-    class UnauthorizedAccessException: Exception is
+    class UnauthorizedAccessException: Exception open is
         /// - message: what was refused
         init(message: string) is
             super.init(message);
@@ -195,7 +195,7 @@ namespace Ghul is
     si
 
     /// Thrown by a cast that cannot convert its value to the target type.
-    class InvalidCastException: Exception is
+    class InvalidCastException: Exception open is
         init() is
             super.init("the cast is not valid");
         si
@@ -207,7 +207,7 @@ namespace Ghul is
     si
 
     /// Thrown where a member is reached through a null reference.
-    class NullReferenceException: Exception is
+    class NullReferenceException: Exception open is
         init() is
             super.init("Object reference not set to an instance of an object.");
         si
@@ -231,7 +231,7 @@ namespace Ghul is
     si
 
     /// The base of the exceptions arithmetic raises.
-    class ArithmeticException: Exception is
+    class ArithmeticException: Exception open is
         init() is
             super.init("the arithmetic operation failed");
         si
@@ -244,7 +244,7 @@ namespace Ghul is
 
     /// Thrown by arithmetic or a conversion whose result does not fit its
     /// type.
-    class OverflowException: ArithmeticException is
+    class OverflowException: ArithmeticException open is
         init() is
             super.init("Arithmetic operation resulted in an overflow.");
         si
@@ -256,7 +256,7 @@ namespace Ghul is
     si
 
     /// Thrown by an integer division or remainder whose divisor is zero.
-    class DivideByZeroException: ArithmeticException is
+    class DivideByZeroException: ArithmeticException open is
         init() is
             super.init("Attempted to divide by zero.");
         si
@@ -269,7 +269,7 @@ namespace Ghul is
 
     /// Thrown when a format string is not one the formatting member
     /// understands, or text is not in the format a parse expects.
-    class FormatException: Exception is
+    class FormatException: Exception open is
         init() is
             super.init("the input string was not in a correct format");
         si
@@ -281,7 +281,7 @@ namespace Ghul is
     si
 
     /// Thrown when an argument is not one a member accepts.
-    class ArgumentException: Exception is
+    class ArgumentException: Exception open is
         /// - message: which argument was not accepted
         init(message: string) is
             super.init(message);
@@ -289,7 +289,7 @@ namespace Ghul is
     si
 
     /// Thrown when an index or a count is outside the range a member accepts.
-    class ArgumentOutOfRangeException: ArgumentException is
+    class ArgumentOutOfRangeException: ArgumentException open is
         /// - message: which argument was out of range
         init(message: string) is
             super.init(message);
