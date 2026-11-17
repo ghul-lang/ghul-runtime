@@ -17,7 +17,7 @@ out.write_byte(8ub)
 write_line(out.to_array() |> join(","))
 
 out.position = 0L
-let buffer = Ghul._array_new[ubyte](4)
+let buffer = repeat(0ub, 4) |> ARRAY()
 let got = out.read(buffer, 0, 4)
 write_line("{got} {buffer |> join(",")} {out.read_byte()}")
 
