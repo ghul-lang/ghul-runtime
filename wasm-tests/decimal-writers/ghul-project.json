@@ -1,0 +1,7 @@
+{
+    "name": "decimal-writers",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

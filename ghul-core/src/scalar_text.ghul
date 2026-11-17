@@ -84,60 +84,24 @@ namespace Ghul is
     partial ulong is
         /// The value in decimal.
         to_string() -> string pure is
-            if self == 0UL then
-                return "0"
-            fi
+            let length = _decimal_length(self)
+            let digits = Ghul._array_new[char](length)
 
-            // The digits come out lowest first, so they fill a buffer from its
-            // end and the text is copied out of it once.
-            let digits = Ghul._array_new[char](20)
-            let at mut = 20
-            let rest mut = self
+            _write_decimal(digits, 0, length, self)
 
-            while !(rest == 0UL) do
-                at = at - 1
-                Ghul._array_set(digits, at, cast char(48 + cast int(rest % 10UL)))
-                rest = rest / 10UL
-            od
-
-            return _string_from_chars(digits, at, 20 - at)
+            return _string_from_chars(digits, 0, length)
         si
     si
 
     partial long is
         /// The value in decimal, with a leading `-` when it is negative.
         to_string() -> string pure is
-            if self == 0L then
-                return "0"
-            fi
+            let length = _decimal_length(self)
+            let digits = Ghul._array_new[char](length)
 
-            let digits = Ghul._array_new[char](20)
-            let at mut = 20
-            let rest mut = self
+            _write_decimal(digits, 0, length, self)
 
-            // The digits come out lowest first, so they fill a buffer from
-            // its end and the text is copied out of it once. A negative
-            // value's remainders are negative too, so each is turned to its
-            // magnitude rather than the value as a whole, which has no
-            // positive counterpart at its minimum.
-            while !(rest == 0L) do
-                let digit mut = cast int(rest % 10L)
-
-                if digit < 0 then
-                    digit = -digit
-                fi
-
-                at = at - 1
-                Ghul._array_set(digits, at, cast char(48 + digit))
-                rest = rest / 10L
-            od
-
-            if self < 0L then
-                at = at - 1
-                Ghul._array_set(digits, at, '-')
-            fi
-
-            return _string_from_chars(digits, at, 20 - at)
+            return _string_from_chars(digits, 0, length)
         si
     si
 

@@ -1,0 +1,121 @@
+namespace Ghul is
+    // An interpolation on wasm and llvm is built without a builder: the
+    // compiler evaluates every hole first, sums the lengths of their text,
+    // allocates a draft of exactly that many code units, writes each piece
+    // into it in order, and only then makes the string. Until that last step
+    // the text exists only as the draft, which nothing but the code writing
+    // it ever sees, so no string is observable half built.
+
+    // The string holding the code units of `draft`, which the caller has
+    // finished writing and never touches again. The draft's storage becomes
+    // the string's where the target allows, so no code unit is copied.
+    @intrinsic("string.from_draft")
+    _string_from_draft(draft: ARRAY[char]) -> string pure
+
+    // The number of code units `value` takes in decimal, its `-` included.
+    _decimal_length(value: long) -> int pure is
+        let length mut = if value < 0L then 2 else 1 fi
+        let rest mut = value / 10L
+
+        while !(rest == 0L) do
+            length = length + 1
+            rest = rest / 10L
+        od
+
+        return length
+    si
+
+    // The number of code units `value` takes in decimal.
+    _decimal_length(value: ulong) -> int pure is
+        let length mut = 1
+        let rest mut = value / 10UL
+
+        while !(rest == 0UL) do
+            length = length + 1
+            rest = rest / 10UL
+        od
+
+        return length
+    si
+
+    // Writes `value` in decimal into `chars` from `at` on, taking exactly
+    // `length` code units, which `_decimal_length(value)` gives. Answers
+    // the position after it.
+    _write_decimal(chars: ARRAY[char], at: int, length: int, value: long) -> int is
+        let end = at + length
+        let position mut = end
+        let rest mut = value
+
+        // The digits come out lowest first, so they fill the space from its
+        // end. A negative value's remainders are negative too, so each is
+        // turned to its magnitude rather than the value as a whole, which has
+        // no positive counterpart at its minimum.
+        do
+            let digit mut = cast int(rest % 10L)
+
+            if digit < 0 then
+                digit = -digit
+            fi
+
+            position = position - 1
+            _array_set(chars, position, cast char(48 + digit))
+            rest = rest / 10L
+
+            if rest == 0L then
+                break
+            fi
+        od
+
+        if value < 0L then
+            _array_set(chars, position - 1, '-')
+        fi
+
+        return end
+    si
+
+    // Writes `value` in decimal into `chars` from `at` on, taking exactly
+    // `length` code units, which `_decimal_length(value)` gives. Answers
+    // the position after it.
+    _write_decimal(chars: ARRAY[char], at: int, length: int, value: ulong) -> int is
+        let end = at + length
+        let position mut = end
+        let rest mut = value
+
+        do
+            position = position - 1
+            _array_set(chars, position, cast char(48 + cast int(rest % 10UL)))
+            rest = rest / 10UL
+
+            if rest == 0UL then
+                break
+            fi
+        od
+
+        return end
+    si
+
+    // The number of code units `text` writes: none where it is null, which
+    // an interpolation writes as nothing.
+    _text_length(text: string?) -> int pure => if text? then _string_length(text) else 0 fi
+
+    // Writes the code units of `text` into `chars` from `at` on, or nothing
+    // where it is null. Answers the position after them.
+    _write_text(chars: ARRAY[char], at: int, text: string?) -> int is
+        if !text? then
+            return at
+        fi
+
+        let length = _string_length(text)
+
+        _string_copy_to(text, 0, chars, at, length)
+
+        return at + length
+    si
+
+    // Writes `unit` into `chars` at `at`. Answers the position after it.
+    _write_char(chars: ARRAY[char], at: int, unit: char) -> int is
+        _array_set(chars, at, unit)
+
+        return at + 1
+    si
+si
