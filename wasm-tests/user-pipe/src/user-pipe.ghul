@@ -1,0 +1,31 @@
+// A class of the program's own can implement Pipe, and displays as its
+// elements.
+use IO.Std.write_line
+use Ghul.Pipes
+
+class Countdown: Ghul.Pipes.Pipe[int] is
+    _next: int
+    _current: int
+
+    init(from: int) is
+        _next = from
+    si
+
+    current: int => _current
+
+    move_next() -> bool is
+        if _next <= 0 then
+            return false
+        fi
+
+        _current = _next
+        _next = _next - 1
+
+        return true
+    si
+
+    reset() is si
+si
+
+write_line("{Countdown(3)}")
+write_line("{Countdown(4) |> map(n => n * 10) |> list()}")
