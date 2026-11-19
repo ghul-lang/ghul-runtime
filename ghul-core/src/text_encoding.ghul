@@ -19,7 +19,7 @@ namespace Text is
 
         /// UTF-16 with the low byte of each code unit first, writing no
         /// byte-order mark.
-        unicode: Encoding static => UTF16_ENCODING()
+        utf16: Encoding static => UTF16_ENCODING()
 
         /// UTF-32 with the low byte of each code point first, writing no
         /// byte-order mark.
