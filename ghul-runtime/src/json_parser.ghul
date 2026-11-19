@@ -233,12 +233,8 @@ namespace Json is
         si
 
         _hex_digit(c: char, start: int) -> int is
-            if c >= '0' /\ c <= '9' then
-                return cast int(c) - cast int('0')
-            elif c >= 'a' /\ c <= 'f' then
-                return cast int(c) - cast int('a') + 10
-            elif c >= 'A' /\ c <= 'F' then
-                return cast int(c) - cast int('A') + 10
+            if let digit = c.to_digit(16) then
+                return digit
             fi
 
             throw ParseException("invalid hex digit in \\u escape", start)

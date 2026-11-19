@@ -65,5 +65,18 @@ namespace Tests is
             are_equal(true, '\uDFFF'.is_surrogate)
             are_equal(false, ''.is_surrogate)
         si
+
+        @Test()
+        to_digit__reads_digits_in_bases_2_to_36_and_answers_null_otherwise() is
+            are_equal(7, '7'.to_digit(10)!)
+            are_equal(15, 'f'.to_digit(16)!)
+            are_equal(15, 'F'.to_digit(16)!)
+            are_equal(35, 'z'.to_digit(36)!)
+            is_false('9'.to_digit(8)?)
+            is_false('g'.to_digit(16)?)
+            is_false('1'.to_digit(1)?)
+            is_false('1'.to_digit(37)?)
+            is_false('\uFF17'.to_digit(10)?)
+        si
     si
 si
