@@ -5,16 +5,16 @@ namespace Text is
     /// `System.Globalization.StringInfo` reads it: each element is what a
     /// reader sees as one character, a grapheme cluster, which may be several
     /// code points, such as a letter and the accents written over it.
-    class STRING_INFO is
+    class StringInfo is
         _value: string
         _starts: ARRAY[int]?
 
-        /// A `STRING_INFO` over the empty string.
+        /// A `StringInfo` over the empty string.
         init() is
             _value = ""
         si
 
-        /// A `STRING_INFO` over `value`.
+        /// A `StringInfo` over `value`.
         ///
         /// - value: the text to read
         init(value: string) is
