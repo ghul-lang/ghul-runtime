@@ -21,10 +21,6 @@ namespace Text is
         /// byte-order mark.
         unicode: Encoding static => UTF16_ENCODING()
 
-        /// UTF-16 with the low byte of each code unit first, writing no
-        /// byte-order mark; the same encoding as `unicode`.
-        utf16: Encoding static => UTF16_ENCODING()
-
         /// UTF-32 with the low byte of each code point first, writing no
         /// byte-order mark.
         utf32: Encoding static => UTF32_ENCODING()
