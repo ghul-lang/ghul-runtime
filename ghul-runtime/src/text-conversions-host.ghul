@@ -1,0 +1,26 @@
+@@IF.dotnet()
+namespace Ghul.Internal is
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
+
+    class CONVERT is
+        to_string(value: ubyte, to_base: int) -> string static => System.Convert.to_string(value, to_base)
+
+        to_string(value: short, to_base: int) -> string static => System.Convert.to_string(value, to_base)
+
+        to_string(value: int, to_base: int) -> string static => System.Convert.to_string(value, to_base)
+
+        to_string(value: long, to_base: int) -> string static => System.Convert.to_string(value, to_base)
+
+        to_int64(value: string?, from_base: int) -> long static => System.Convert.to_int64(value, from_base)
+
+        to_hex_string(bytes: ARRAY[ubyte]) -> string static => System.Convert.to_hex_string(bytes)
+
+        to_hex_string_lower(bytes: ARRAY[ubyte]) -> string static => System.Convert.to_hex_string_lower(bytes)
+
+        from_hex_string(text: string) -> ARRAY[ubyte] static => System.Convert.from_hex_string(text)
+
+        to_base64_string(bytes: ARRAY[ubyte]) -> string static => System.Convert.to_base64_string(bytes)
+
+        from_base64_string(text: string) -> ARRAY[ubyte] static => System.Convert.from_base64_string(text)
+    si
+si

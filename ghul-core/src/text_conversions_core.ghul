@@ -1,4 +1,4 @@
-namespace System is
+namespace Ghul.Internal is
     use Ghul.ArgumentException
     use Ghul.ArgumentOutOfRangeException
     use Ghul.FormatException
@@ -7,7 +7,7 @@ namespace System is
     /// .NET's conversions between integers and their text in a base, and
     /// between bytes and hexadecimal or base64 text, under the name .NET
     /// gives them.
-    class Convert is
+    class CONVERT is
         /// `value` written in `to_base`, which is 2, 8, 10 or 16. In any base
         /// but 10 a negative value is written as its bits, so -1 in base 16
         /// is `ff`.
