@@ -28,7 +28,7 @@ yrt
 
 // The moved types still answer to their old names.
 let rune: System.Text.Rune = Text.RUNE(0x41)
-let culture: System.Globalization.CultureInfo = Text.CULTURE.invariant_culture
+let culture: System.Globalization.CultureInfo = System.Globalization.CultureInfo.invariant_culture
 let encoding: System.Text.Encoding = Text.Encoding.utf8
 let styles: System.Globalization.NumberStyles = Text.NumberStyles.HEX_NUMBER
 let comparison: Ghul.StringComparison = Text.StringComparison.ORDINAL
