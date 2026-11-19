@@ -1,7 +1,7 @@
 use default
 use System.BitConverter
 use System.Version
-use System.Uri
+use IO.Uri
 use System.Security.Cryptography.RandomNumberGenerator
 
 @System.Obsolete("superseded")

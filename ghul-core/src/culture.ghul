@@ -4,27 +4,27 @@ namespace Text is
     /// culture whatever culture is asked for, so the one culture there is
     /// the invariant culture, and passing it anywhere a format provider is
     /// taken changes nothing.
-    class CULTURE: Ghul.FormatProvider is
-        _instance: CULTURE static
+    class Locale: Ghul.FormatProvider is
+        _instance: Locale static
 
         init() static is
-            _instance = CULTURE()
+            _instance = Locale()
         si
 
         init() is
         si
 
         /// The invariant culture.
-        invariant_culture: CULTURE static => _instance
+        invariant_culture: Locale static => _instance
 
         /// The culture the program runs under, which is the invariant culture.
-        current_culture: CULTURE static => _instance
+        current_culture: Locale static => _instance
 
         /// The culture's name, which is empty for the invariant culture.
         name: string => ""
 
         /// How the culture changes the case of text.
-        text_info: TEXT_INFO => TEXT_INFO()
+        text_info: TextInfo => TextInfo()
 
         /// No formatting object: formatting here is always invariant.
         ///
@@ -39,7 +39,7 @@ namespace Text is
 
     /// How a culture changes the case of text, as .NET's
     /// `System.Globalization.TextInfo` does, here under the invariant culture.
-    class TEXT_INFO is
+    class TextInfo is
         init() is
         si
 
