@@ -1,5 +1,5 @@
 namespace Text is
-    use System.Convert
+    use Convert = Ghul.Internal.CONVERT
     use ARRAY = Ghul.Intrinsics.Staging.ARRAY
 
     /// `value`'s digits in `base`, which is 2, 8, 10 or 16. In base 10 a

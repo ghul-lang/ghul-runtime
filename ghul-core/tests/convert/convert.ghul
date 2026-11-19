@@ -1,8 +1,8 @@
-// System.Convert's conversions between numbers and text in a base, and
+// Ghul.Internal.CONVERT, the conversions between numbers and text in a base, and
 // between bytes and hexadecimal or base64 text, answering as .NET does.
 use IO.Std.write_line
 use Ghul.Pipes
-use System.Convert
+use Convert = Ghul.Internal.CONVERT
 
 failure(action: () -> object) -> string is
     try
