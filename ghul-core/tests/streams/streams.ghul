@@ -35,7 +35,7 @@ try
 catch e: IO.FileNotFoundException
     write_line("missing file: not found")
 yrt
-write_line("encoding {IO.Std.output_encoding.web_name} {IO.Std.input_encoding.web_name} {System.Text.Encoding.ascii.web_name} {System.Text.Encoding.unicode.web_name} {System.Text.Encoding.utf32.web_name}")
+write_line("encoding {IO.Std.output_encoding.web_name} {IO.Std.input_encoding.web_name} {System.Text.Encoding.ascii.web_name} {System.Text.Encoding.utf16.web_name} {System.Text.Encoding.utf32.web_name}")
 write_line("width {IO.Std.window_width} height {IO.Std.window_height}")
 let input = IO.Std.open_standard_input()
 write_line("stdin stream {input.can_read} {input.can_seek} {input.can_write}")
