@@ -65,6 +65,26 @@ namespace Ghul.Internal is
         /// Whether the character is an ASCII digit, `0` to `9`.
         is_ascii_digit: bool pure => self >= '0' /\ self <= '9'
 
+        /// The value of the character as a digit in `base`, or null where it is
+        /// not one: `0` to `9` are 0 to 9, and `a` to `z`, in either case, are 10
+        /// to 35. Null as well where `base` is not from 2 to 36.
+        ///
+        /// - base: the base to read the digit in
+        to_digit(base: int) -> int? pure is
+            if base < 2 \/ base > 36 then
+                return null
+            fi
+
+            let value =
+                if self >= '0' /\ self <= '9' then cast int(self) - cast int('0')
+                elif self >= 'a' /\ self <= 'z' then cast int(self) - cast int('a') + 10
+                elif self >= 'A' /\ self <= 'Z' then cast int(self) - cast int('A') + 10
+                else 36
+                fi
+
+            return if value < base then value else null fi
+        si
+
         /// Whether the character is an ASCII hexadecimal digit: `0` to `9`,
         /// `a` to `f` or `A` to `F`.
         is_ascii_hex_digit: bool pure => is_ascii_digit \/ is_ascii_hex_digit_lower \/ is_ascii_hex_digit_upper

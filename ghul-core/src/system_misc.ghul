@@ -148,22 +148,15 @@ namespace System is
                 return -1
             fi
 
-            let high = _hex(text[i + 1])
-            let low = _hex(text[i + 2])
+            let high = text[i + 1].to_digit(16)
+            let low = text[i + 2].to_digit(16)
 
-            if high < 0 \/ low < 0 then
+            if !high? \/ !low? then
                 return -1
             fi
 
-            return high * 16 + low
+            return high! * 16 + low!
         si
-
-        _hex(c: char) -> int static =>
-            if c >= '0' /\ c <= '9' then cast int(c) - cast int('0')
-            elif c >= 'a' /\ c <= 'f' then cast int(c) - cast int('a') + 10
-            elif c >= 'A' /\ c <= 'F' then cast int(c) - cast int('A') + 10
-            else -1
-            fi
 
         // The length of the valid UTF-8 sequence starting at `k`, or 0 where
         // the bytes there do not start one.

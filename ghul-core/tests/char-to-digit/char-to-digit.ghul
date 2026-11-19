@@ -1,0 +1,20 @@
+// char.to_digit reads a character as a digit in a base from 2 to 36, in
+// either case, and answers null for anything else.
+use IO.Std.write_line
+
+show(c: char, base: int) -> string => "{c}/{base}={c.to_digit(base)}"
+
+write_line(show('7', 10))
+write_line(show('0', 2))
+write_line(show('f', 16))
+write_line(show('F', 16))
+write_line(show('z', 36))
+write_line(show('Z', 36))
+write_line(show('9', 8))
+write_line(show('2', 2))
+write_line(show('g', 16))
+write_line(show(' ', 10))
+write_line(show('é', 36))
+write_line(show('７', 10))
+write_line(show('1', 1))
+write_line(show('1', 37))
