@@ -3,7 +3,7 @@
 // what each throws, against what the same program prints on .NET.
 use IO.Std.write_line
 use System.Text.Rune
-use Text.STRING_INFO
+use System.Globalization.StringInfo
 
 // The code points of `text`, in hexadecimal, so the output is plain ASCII.
 codes(text: string) -> string is
@@ -34,7 +34,7 @@ elements(text: string) -> string is
     let at mut = 0
 
     while at < text.length do
-        let element = STRING_INFO.get_next_text_element(text, at)
+        let element = StringInfo.get_next_text_element(text, at)
 
         result.append("[{codes(element)}]")
         at = at + element.length
@@ -74,26 +74,26 @@ let samples = [
 ]
 
 for text in samples do
-    let info = STRING_INFO(text)
+    let info = StringInfo(text)
     write_line("{codes(text)} => {info.length_in_text_elements}: {elements(text)}")
-    write_line("    starts {STRING_INFO.parse_combining_characters(text) |> string(",")}")
+    write_line("    starts {StringInfo.parse_combining_characters(text) |> string(",")}")
 od
 
-let fraktur = STRING_INFO(samples[1])
+let fraktur = StringInfo(samples[1])
 attempt("no first", () => codes(fraktur.substring_by_text_elements(1)))
 attempt("no last", () => codes(fraktur.substring_by_text_elements(0, fraktur.length_in_text_elements - 1)))
 attempt("no ends", () => codes(fraktur.substring_by_text_elements(1, fraktur.length_in_text_elements - 2)))
 attempt("none taken", () => codes(fraktur.substring_by_text_elements(2, 0)))
-attempt("start below", () => STRING_INFO("abc").substring_by_text_elements(-1))
-attempt("start past", () => STRING_INFO("abc").substring_by_text_elements(3))
-attempt("start in empty", () => STRING_INFO().substring_by_text_elements(0))
-attempt("too long", () => STRING_INFO("abc").substring_by_text_elements(1, 3))
-attempt("negative length", () => STRING_INFO("abc").substring_by_text_elements(1, -1))
-attempt("length at end", () => "{STRING_INFO.get_next_text_element_length("abc", 3)}")
-attempt("length below", () => "{STRING_INFO.get_next_text_element_length("abc", -1)}")
-attempt("length past", () => "{STRING_INFO.get_next_text_element_length("abc", 4)}")
-attempt("first element", () => codes(STRING_INFO.get_next_text_element(samples[2])))
-attempt("first length", () => "{STRING_INFO.get_next_text_element_length(samples[4])}")
+attempt("start below", () => StringInfo("abc").substring_by_text_elements(-1))
+attempt("start past", () => StringInfo("abc").substring_by_text_elements(3))
+attempt("start in empty", () => StringInfo().substring_by_text_elements(0))
+attempt("too long", () => StringInfo("abc").substring_by_text_elements(1, 3))
+attempt("negative length", () => StringInfo("abc").substring_by_text_elements(1, -1))
+attempt("length at end", () => "{StringInfo.get_next_text_element_length("abc", 3)}")
+attempt("length below", () => "{StringInfo.get_next_text_element_length("abc", -1)}")
+attempt("length past", () => "{StringInfo.get_next_text_element_length("abc", 4)}")
+attempt("first element", () => codes(StringInfo.get_next_text_element(samples[2])))
+attempt("first length", () => "{StringInfo.get_next_text_element_length(samples[4])}")
 
 let face = Rune.get_rune_at("a\uD83D\uDE00", 1)
 write_line("{face.value:X} {face.utf16_sequence_length} {face.utf8_sequence_length} {face.is_ascii} {face.is_bmp} {face.plane}")
