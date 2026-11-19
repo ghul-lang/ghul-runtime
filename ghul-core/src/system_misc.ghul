@@ -51,7 +51,7 @@ namespace System is
         /// - text: the text to escape
         escape_data_string(text: string) -> string static is
             let digits = "0123456789ABCDEF"
-            let bytes = System.Text.Encoding.utf8.get_bytes(text)
+            let bytes = Text.Encoding.utf8.get_bytes(text)
             let builder = Ghul.Internal.SYSTEM_TEXT.builder()
             let i mut = 0
 

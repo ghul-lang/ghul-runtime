@@ -1,9 +1,4 @@
-// TextInfo keeps .NET's name, so source written against .NET builds here
-// unchanged.
-@@suppress("non-upper-snake-case-name")
-
 namespace Text is
-    use System.Globalization.TextInfo
     /// A culture, as .NET's `System.Globalization.CultureInfo` is one. The
     /// source-core targets format, parse and change case under the invariant
     /// culture whatever culture is asked for, so the one culture there is
@@ -29,7 +24,7 @@ namespace Text is
         name: string => ""
 
         /// How the culture changes the case of text.
-        text_info: TextInfo => TextInfo()
+        text_info: TEXT_INFO => TEXT_INFO()
 
         /// No formatting object: formatting here is always invariant.
         ///
@@ -40,11 +35,11 @@ namespace Text is
     si
 si
 
-namespace System.Globalization is
+namespace Text is
 
     /// How a culture changes the case of text, as .NET's
     /// `System.Globalization.TextInfo` does, here under the invariant culture.
-    class TextInfo is
+    class TEXT_INFO is
         init() is
         si
 

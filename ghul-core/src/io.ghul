@@ -55,10 +55,10 @@ namespace IO is
         open_standard_input() -> Stream static => _STANDARD_INPUT_STREAM()
 
         /// The encoding standard output is written in: UTF-8.
-        output_encoding: System.Text.Encoding static => System.Text.Encoding.utf8
+        output_encoding: Text.Encoding static => Text.Encoding.utf8
 
         /// The encoding standard input is read in: UTF-8.
-        input_encoding: System.Text.Encoding static => System.Text.Encoding.utf8
+        input_encoding: Text.Encoding static => Text.Encoding.utf8
 
         /// The width of the terminal in columns. The source-core hosts give
         /// no terminal size, so this is 0, as .NET answers where it cannot
