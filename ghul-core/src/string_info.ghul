@@ -1,24 +1,20 @@
-// .NET's name for this type is kept, so source written against .NET
-// builds here unchanged.
-@@suppress("non-upper-snake-case-name")
-
-namespace System.Globalization is
+namespace Text is
     use Ghul._TEXT_ELEMENTS
 
     /// A string read as text elements, as .NET's
     /// `System.Globalization.StringInfo` reads it: each element is what a
     /// reader sees as one character, a grapheme cluster, which may be several
     /// code points, such as a letter and the accents written over it.
-    class StringInfo is
+    class STRING_INFO is
         _value: string
         _starts: ARRAY[int]?
 
-        /// A `StringInfo` over the empty string.
+        /// A `STRING_INFO` over the empty string.
         init() is
             _value = ""
         si
 
-        /// A `StringInfo` over `value`.
+        /// A `STRING_INFO` over `value`.
         ///
         /// - value: the text to read
         init(value: string) is

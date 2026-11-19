@@ -5,7 +5,7 @@ use IO.Std.write_line
 entry() is
     let bytes = System.Text.Encoding.utf8.get_bytes("héllo ☃")
 
-    write_line("{bytes.count} {System.Text.UTF8Encoding().get_string(bytes)}")
+    write_line("{bytes.count} {Text.UTF8_ENCODING().get_string(bytes)}")
 
     let text = IO.StringWriter()
 

@@ -1,13 +1,9 @@
-// The encodings keep .NET's names, so source written against .NET builds
-// here unchanged.
+// The encodings are under their Text names; the compiler keeps their System.Text
+// names as second spellings. StringWriter keeps .NET's name.
 @@suppress("non-upper-snake-case-name")
 
 namespace Text is
     use IO._UTF8
-    use System.Text.UTF8Encoding
-    use System.Text.ASCIIEncoding
-    use System.Text.UnicodeEncoding
-    use System.Text.UTF32Encoding
 
     /// Converts between text and bytes, as .NET's `System.Text.Encoding`
     /// does, for UTF-8, UTF-16, UTF-32 and ASCII.
@@ -15,19 +11,23 @@ namespace Text is
         init() is si
 
         /// UTF-8, writing no byte-order mark.
-        utf8: Encoding static => UTF8Encoding(false)
+        utf8: Encoding static => UTF8_ENCODING(false)
 
         /// Seven-bit ASCII. A character outside it is written as `?`, and a
         /// byte outside it reads as `?`.
-        ascii: Encoding static => ASCIIEncoding()
+        ascii: Encoding static => ASCII_ENCODING()
 
         /// UTF-16 with the low byte of each code unit first, writing no
         /// byte-order mark.
-        unicode: Encoding static => UnicodeEncoding()
+        unicode: Encoding static => UTF16_ENCODING()
+
+        /// UTF-16 with the low byte of each code unit first, writing no
+        /// byte-order mark; the same encoding as `unicode`.
+        utf16: Encoding static => UTF16_ENCODING()
 
         /// UTF-32 with the low byte of each code point first, writing no
         /// byte-order mark.
-        utf32: Encoding static => UTF32Encoding()
+        utf32: Encoding static => UTF32_ENCODING()
 
         /// The bytes that stand for `text`.
         ///
@@ -71,12 +71,11 @@ namespace Text is
     si
 si
 
-namespace System.Text is
+namespace Text is
     use IO._UTF8
-    use Text.Encoding
 
     /// UTF-8, as .NET's `System.Text.UTF8Encoding` is.
-    class UTF8Encoding: Encoding is
+    class UTF8_ENCODING: Encoding is
         _emits_identifier: bool
 
         /// UTF-8 that writes no byte-order mark.
@@ -104,7 +103,7 @@ namespace System.Text is
     /// Seven-bit ASCII, as .NET's `System.Text.ASCIIEncoding` is. A
     /// code unit outside it is written as `?`, and a byte outside it reads
     /// as `?`.
-    class ASCIIEncoding: Encoding is
+    class ASCII_ENCODING: Encoding is
         init() is
             super.init()
         si
@@ -149,7 +148,7 @@ namespace System.Text is
     /// UTF-16 with the low byte of each code unit first, as .NET's
     /// `System.Text.UnicodeEncoding` is by default. No byte-order mark is
     /// written.
-    class UnicodeEncoding: Encoding is
+    class UTF16_ENCODING: Encoding is
         init() is
             super.init()
         si
@@ -197,7 +196,7 @@ namespace System.Text is
     /// written. A lone
     /// surrogate is written as U+FFFD, and a value that is not a code point
     /// reads as U+FFFD.
-    class UTF32Encoding: Encoding is
+    class UTF32_ENCODING: Encoding is
         init() is
             super.init()
         si

@@ -43,7 +43,7 @@ namespace IO is
         base_stream: Stream => _stream
 
         /// The encoding the text is read in: UTF-8.
-        current_encoding: System.Text.Encoding => System.Text.Encoding.utf8
+        current_encoding: Text.Encoding => Text.Encoding.utf8
 
         /// Whether everything has been read.
         end_of_stream: bool => peek() < 0
