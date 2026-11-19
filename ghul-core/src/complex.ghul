@@ -1,13 +1,13 @@
-// The type keeps .NET's name, in Ghul.Math; the compiler keeps
-// System.Numerics.Complex as a second spelling.
-@@suppress("non-upper-snake-case-name")
-
-namespace Ghul.Math is
+namespace Ghul is
+    use Ghul.Math
 
     /// A complex number with `double` parts, as .NET's
-    /// `System.Numerics.Complex` is, computed the way .NET computes it. A real
-    /// number `x` is the complex number `Complex(x, 0.0)`.
-    struct Complex is
+    /// `System.Numerics.Complex` is, computed the way .NET computes it.
+    /// `2.5r` is the complex number with real part 2.5 and `2.5j` the one
+    /// with imaginary part 2.5. Its arithmetic operators take two complex
+    /// numbers, never a complex number and a `double`: a real `x` is
+    /// written `complex(x, 0.0)` or `cast complex(x)`.
+    partial complex is
         /// The real part.
         real: double
 
@@ -24,13 +24,13 @@ namespace Ghul.Math is
         si
 
         /// 0 + 0i.
-        zero: Complex static => Complex(0.0, 0.0)
+        zero: complex static => complex(0.0, 0.0)
 
         /// 1 + 0i.
-        one: Complex static => Complex(1.0, 0.0)
+        one: complex static => complex(1.0, 0.0)
 
         /// 0 + 1i.
-        imaginary_one: Complex static => Complex(0.0, 1.0)
+        imaginary_one: complex static => complex(0.0, 1.0)
 
         /// The distance from zero.
         magnitude: double => _hypot(real, imaginary)
@@ -43,116 +43,116 @@ namespace Ghul.Math is
         ///
         /// - magnitude: the distance from zero
         /// - phase: the angle, in radians
-        from_polar_coordinates(magnitude: double, phase: double) -> Complex static =>
-            Complex(magnitude * Ghul.Math.cos(phase), magnitude * Ghul.Math.sin(phase))
+        from_polar_coordinates(magnitude: double, phase: double) -> complex static =>
+            complex(magnitude * Ghul.Math.cos(phase), magnitude * Ghul.Math.sin(phase))
 
         /// The distance of `value` from zero.
         ///
         /// - value: the complex number
-        abs(value: Complex) -> double static => value.magnitude
+        abs(value: complex) -> double static => value.magnitude
 
         /// `value` with its imaginary part negated.
         ///
         /// - value: the complex number
-        conjugate(value: Complex) -> Complex static => Complex(value.real, -value.imaginary)
+        conjugate(value: complex) -> complex static => complex(value.real, -value.imaginary)
 
         /// 1 divided by `value`, or zero where `value` is zero.
         ///
         /// - value: the complex number
-        reciprocal(value: Complex) -> Complex static =>
+        reciprocal(value: complex) -> complex static =>
             if value.real == 0.0 /\ value.imaginary == 0.0 then zero else one / value fi
 
         /// `value` with both parts negated.
         ///
         /// - value: the complex number
-        negate(value: Complex) -> Complex static => -value
+        negate(value: complex) -> complex static => -value
 
         /// e raised to `value`.
         ///
         /// - value: the power
-        exp(value: Complex) -> Complex static is
+        exp(value: complex) -> complex static is
             let scale = Ghul.Math.exp(value.real)
 
-            return Complex(scale * Ghul.Math.cos(value.imaginary), scale * Ghul.Math.sin(value.imaginary))
+            return complex(scale * Ghul.Math.cos(value.imaginary), scale * Ghul.Math.sin(value.imaginary))
         si
 
         /// The natural logarithm of `value`.
         ///
         /// - value: the complex number
-        log(value: Complex) -> Complex static =>
-            Complex(Ghul.Math.log(value.magnitude), Ghul.Math.atan2(value.imaginary, value.real))
+        log(value: complex) -> complex static =>
+            complex(Ghul.Math.log(value.magnitude), Ghul.Math.atan2(value.imaginary, value.real))
 
         /// The base-10 logarithm of `value`.
         ///
         /// - value: the complex number
-        log10(value: Complex) -> Complex static => log(value) / Ghul.Math.log(10.0)
+        log10(value: complex) -> complex static => _scale(log(value), 1.0 / Ghul.Math.log(10.0))
 
         /// The logarithm of `value` in `base_value`.
         ///
         /// - value: the complex number
         /// - base_value: the base
-        log(value: Complex, base_value: double) -> Complex static => log(value) / Ghul.Math.log(base_value)
+        log(value: complex, base_value: double) -> complex static => _scale(log(value), 1.0 / Ghul.Math.log(base_value))
 
         /// The sine of `value`.
         ///
         /// - value: the angle, in radians
-        sin(value: Complex) -> Complex static =>
-            Complex(Ghul.Math.sin(value.real) * Ghul.Math.cosh(value.imaginary), Ghul.Math.cos(value.real) * Ghul.Math.sinh(value.imaginary))
+        sin(value: complex) -> complex static =>
+            complex(Ghul.Math.sin(value.real) * Ghul.Math.cosh(value.imaginary), Ghul.Math.cos(value.real) * Ghul.Math.sinh(value.imaginary))
 
         /// The cosine of `value`.
         ///
         /// - value: the angle, in radians
-        cos(value: Complex) -> Complex static =>
-            Complex(Ghul.Math.cos(value.real) * Ghul.Math.cosh(value.imaginary), -Ghul.Math.sin(value.real) * Ghul.Math.sinh(value.imaginary))
+        cos(value: complex) -> complex static =>
+            complex(Ghul.Math.cos(value.real) * Ghul.Math.cosh(value.imaginary), -Ghul.Math.sin(value.real) * Ghul.Math.sinh(value.imaginary))
 
         /// The tangent of `value`.
         ///
         /// - value: the angle, in radians
-        tan(value: Complex) -> Complex static => sin(value) / cos(value)
+        tan(value: complex) -> complex static => sin(value) / cos(value)
 
         /// The hyperbolic sine of `value`.
         ///
         /// - value: the complex number
-        sinh(value: Complex) -> Complex static =>
-            Complex(Ghul.Math.sinh(value.real) * Ghul.Math.cos(value.imaginary), Ghul.Math.cosh(value.real) * Ghul.Math.sin(value.imaginary))
+        sinh(value: complex) -> complex static =>
+            complex(Ghul.Math.sinh(value.real) * Ghul.Math.cos(value.imaginary), Ghul.Math.cosh(value.real) * Ghul.Math.sin(value.imaginary))
 
         /// The hyperbolic cosine of `value`.
         ///
         /// - value: the complex number
-        cosh(value: Complex) -> Complex static =>
-            Complex(Ghul.Math.cosh(value.real) * Ghul.Math.cos(value.imaginary), Ghul.Math.sinh(value.real) * Ghul.Math.sin(value.imaginary))
+        cosh(value: complex) -> complex static =>
+            complex(Ghul.Math.cosh(value.real) * Ghul.Math.cos(value.imaginary), Ghul.Math.sinh(value.real) * Ghul.Math.sin(value.imaginary))
 
         /// The hyperbolic tangent of `value`.
         ///
         /// - value: the complex number
-        tanh(value: Complex) -> Complex static => sinh(value) / cosh(value)
+        tanh(value: complex) -> complex static => sinh(value) / cosh(value)
 
         /// The angle whose sine is `value`.
         ///
         /// - value: the sine
-        asin(value: Complex) -> Complex static =>
+        asin(value: complex) -> complex static =>
             -imaginary_one * log(imaginary_one * value + sqrt(one - value * value))
 
         /// The angle whose cosine is `value`.
         ///
         /// - value: the cosine
-        acos(value: Complex) -> Complex static =>
+        acos(value: complex) -> complex static =>
             -imaginary_one * log(value + imaginary_one * sqrt(one - value * value))
 
         /// The angle whose tangent is `value`.
         ///
         /// - value: the tangent
-        atan(value: Complex) -> Complex static =>
-            Complex(0.0, 0.5) * (log(one - imaginary_one * value) - log(one + imaginary_one * value))
+        atan(value: complex) -> complex static =>
+            complex(0.0, 0.5) * (log(one - imaginary_one * value) - log(one + imaginary_one * value))
 
         /// The principal square root of `value`.
         ///
         /// - value: the complex number
-        sqrt(value: Complex) -> Complex static is
+        sqrt(value: complex) -> complex static is
             if value.imaginary == 0.0 then
                 return
-                    if value.real < 0.0 then Complex(0.0, Ghul.Math.sqrt(-value.real))
-                    else Complex(Ghul.Math.sqrt(value.real), value.imaginary)
+                    if value.real < 0.0 then complex(0.0, Ghul.Math.sqrt(-value.real))
+                    else complex(Ghul.Math.sqrt(value.real), value.imaginary)
                     fi
             fi
 
@@ -160,14 +160,14 @@ namespace Ghul.Math is
             let real_part = Ghul.Math.sqrt((size + value.real) / 2.0)
             let imaginary_part = Ghul.Math.sqrt((size - value.real) / 2.0)
 
-            return Complex(real_part, if value.imaginary < 0.0 then -imaginary_part else imaginary_part fi)
+            return complex(real_part, if value.imaginary < 0.0 then -imaginary_part else imaginary_part fi)
         si
 
         /// `value` raised to `power`.
         ///
         /// - value: the base
         /// - power: the exponent
-        pow(value: Complex, power: Complex) -> Complex static is
+        pow(value: complex, power: complex) -> complex static is
             if power.real == 0.0 /\ power.imaginary == 0.0 then
                 return one
             fi
@@ -181,114 +181,72 @@ namespace Ghul.Math is
             let new_rho = power.real * theta + power.imaginary * Ghul.Math.log(rho)
             let t = Ghul.Math.pow(rho, power.real) * Ghul.Math.pow(Ghul.Math.e, -power.imaginary * theta)
 
-            return Complex(t * Ghul.Math.cos(new_rho), t * Ghul.Math.sin(new_rho))
+            return complex(t * Ghul.Math.cos(new_rho), t * Ghul.Math.sin(new_rho))
         si
 
         /// `value` raised to the real `power`.
         ///
         /// - value: the base
         /// - power: the exponent
-        pow(value: Complex, power: double) -> Complex static => pow(value, Complex(power, 0.0))
+        pow(value: complex, power: double) -> complex static => pow(value, complex(power, 0.0))
 
         /// The sum of `left` and `right`.
         ///
         /// - left: the first operand
         /// - right: the second operand
-        add(left: Complex, right: Complex) -> Complex static => left + right
+        add(left: complex, right: complex) -> complex static => left + right
 
         /// `left` less `right`.
         ///
         /// - left: the first operand
         /// - right: the second operand
-        subtract(left: Complex, right: Complex) -> Complex static => left - right
+        subtract(left: complex, right: complex) -> complex static => left - right
 
         /// The product of `left` and `right`.
         ///
         /// - left: the first operand
         /// - right: the second operand
-        multiply(left: Complex, right: Complex) -> Complex static => left * right
+        multiply(left: complex, right: complex) -> complex static => left * right
 
         /// `dividend` divided by `divisor`.
         ///
         /// - dividend: the number divided
         /// - divisor: the number to divide by
-        divide(dividend: Complex, divisor: Complex) -> Complex static => dividend / divisor
+        divide(dividend: complex, divisor: complex) -> complex static => dividend / divisor
 
         /// The sum of `left` and `right`.
         ///
         /// - left: the first operand
         /// - right: the second operand
-        +(left: Complex, right: Complex) -> Complex static pure =>
-            Complex(left.real + right.real, left.imaginary + right.imaginary)
-
-        /// The sum of `left` and the real `right`.
-        ///
-        /// - left: the first operand
-        /// - right: the second operand
-        +(left: Complex, right: double) -> Complex static pure =>
-            Complex(left.real + right, left.imaginary)
-
-        /// The sum of the real `left` and `right`.
-        ///
-        /// - left: the first operand
-        /// - right: the second operand
-        +(left: double, right: Complex) -> Complex static pure =>
-            Complex(left + right.real, right.imaginary)
+        +(left: complex, right: complex) -> complex static pure =>
+            complex(left.real + right.real, left.imaginary + right.imaginary)
 
         /// `left` less `right`.
         ///
         /// - left: the first operand
         /// - right: the second operand
-        -(left: Complex, right: Complex) -> Complex static pure =>
-            Complex(left.real - right.real, left.imaginary - right.imaginary)
-
-        /// `left` less the real `right`.
-        ///
-        /// - left: the first operand
-        /// - right: the second operand
-        -(left: Complex, right: double) -> Complex static pure =>
-            Complex(left.real - right, left.imaginary)
-
-        /// The real `left` less `right`.
-        ///
-        /// - left: the first operand
-        /// - right: the second operand
-        -(left: double, right: Complex) -> Complex static pure =>
-            Complex(left - right.real, -right.imaginary)
+        -(left: complex, right: complex) -> complex static pure =>
+            complex(left.real - right.real, left.imaginary - right.imaginary)
 
         /// `value` with both parts negated.
         ///
         /// - value: the complex number
-        -(value: Complex) -> Complex static pure => Complex(-value.real, -value.imaginary)
+        -(value: complex) -> complex static pure => complex(-value.real, -value.imaginary)
 
         /// The product of `left` and `right`.
         ///
         /// - left: the first operand
         /// - right: the second operand
-        *(left: Complex, right: Complex) -> Complex static pure =>
-            Complex(
+        *(left: complex, right: complex) -> complex static pure =>
+            complex(
                 left.real * right.real - left.imaginary * right.imaginary,
                 left.imaginary * right.real + left.real * right.imaginary)
-
-        /// The product of `left` and the real `right`.
-        ///
-        /// - left: the first operand
-        /// - right: the second operand
-        *(left: Complex, right: double) -> Complex static pure =>
-            Complex(left.real * right, left.imaginary * right)
-
-        /// The product of the real `left` and `right`.
-        ///
-        /// - left: the first operand
-        /// - right: the second operand
-        *(left: double, right: Complex) -> Complex static pure =>
-            Complex(left * right.real, left * right.imaginary)
 
         /// `left` divided by `right`, by Smith's method as .NET divides.
         ///
         /// - left: the dividend
         /// - right: the divisor
-        /(left: Complex, right: Complex) -> Complex static pure is
+        /(left: complex, right: complex) -> complex static pure is
             let a = left.real
             let b = left.imaginary
             let c = right.real
@@ -297,23 +255,50 @@ namespace Ghul.Math is
             if Ghul.Math.abs(d) < Ghul.Math.abs(c) then
                 let doc = d / c
 
-                return Complex((a + b * doc) / (c + d * doc), (b - a * doc) / (c + d * doc))
+                return complex((a + b * doc) / (c + d * doc), (b - a * doc) / (c + d * doc))
             fi
 
             let cod = c / d
 
-            return Complex((b + a * cod) / (d + c * cod), (-a + b * cod) / (d + c * cod))
+            return complex((b + a * cod) / (d + c * cod), (-a + b * cod) / (d + c * cod))
         si
 
-        /// `left` divided by the real `right`.
+        /// Whether `other` has the same parts, compared as `double.=~`
+        /// compares them.
         ///
-        /// - left: the dividend
-        /// - right: the divisor
-        /(left: Complex, right: double) -> Complex static pure =>
-            Complex(left.real / right, left.imaginary / right)
+        /// - other: the complex number to compare with
+        =~(other: complex) -> bool pure => real =~ other.real /\ imaginary =~ other.imaginary
+
+        /// A hash of both parts, equal for complex numbers `=~` finds equal.
+        get_hash_code() -> int pure => real.get_hash_code() ^ (imaginary.get_hash_code() * 31)
+
+        /// `value` as the complex number with that real part.
+        ///
+        /// - value: the real part
+        op_implicit(value: double) -> complex static pure => complex(value, 0.0)
+
+        /// `value` as the complex number with that real part.
+        ///
+        /// - value: the real part
+        op_implicit(value: single) -> complex static pure => complex(cast double(value), 0.0)
+
+        /// `value` as the complex number with that real part.
+        ///
+        /// - value: the real part
+        op_implicit(value: int) -> complex static pure => complex(cast double(value), 0.0)
+
+        /// `value` as the complex number with that real part.
+        ///
+        /// - value: the real part
+        op_implicit(value: long) -> complex static pure => complex(cast double(value), 0.0)
 
         /// The complex number as .NET writes it, `<real; imaginary>`.
         to_string() -> string => "<{real}; {imaginary}>"
+
+        // Both parts of `value` multiplied by `factor`, as .NET scales a
+        // complex number by a real one.
+        _scale(value: complex, factor: double) -> complex static pure =>
+            complex(value.real * factor, value.imaginary * factor)
 
         // The length of the hypotenuse, scaled so that neither square
         // overflows, as .NET computes a complex number's magnitude.
