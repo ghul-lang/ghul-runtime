@@ -1,0 +1,188 @@
+namespace Ghul.Math is
+    // The generic-math traits, under the names .NET's interfaces have in
+    // ghūl: on .NET each of these is the System.Numerics interface of the
+    // same name with a leading `I`. Each declares the members of that
+    // interface the targets built from source supply, and implements a
+    // subset of its ancestors, so code bounded on one of them builds on
+    // every target.
+
+    /// A type with a `+` operator. On .NET this is
+    /// `System.Numerics.IAdditionOperators<TSelf, TOther, TResult>`.
+    trait AdditionOperators[TSelf: AdditionOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// The sum of `left` and `right`.
+        ///
+        /// - left: the value added to
+        /// - right: the value added
+        +(left: TSelf, right: TOther) -> TResult static pure
+    si
+
+    /// A type with a `-` operator taking two values. On .NET this is
+    /// `System.Numerics.ISubtractionOperators<TSelf, TOther, TResult>`.
+    trait SubtractionOperators[TSelf: SubtractionOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// `right` taken from `left`.
+        ///
+        /// - left: the value subtracted from
+        /// - right: the value subtracted
+        -(left: TSelf, right: TOther) -> TResult static pure
+    si
+
+    /// A type with a `*` operator. On .NET this is
+    /// `System.Numerics.IMultiplyOperators<TSelf, TOther, TResult>`.
+    trait MultiplyOperators[TSelf: MultiplyOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// The product of `left` and `right`.
+        ///
+        /// - left: one value
+        /// - right: the other
+        *(left: TSelf, right: TOther) -> TResult static pure
+    si
+
+    /// A type with a `/` operator. On .NET this is
+    /// `System.Numerics.IDivisionOperators<TSelf, TOther, TResult>`.
+    trait DivisionOperators[TSelf: DivisionOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// `left` divided by `right`; an integer quotient is truncated
+        /// towards zero.
+        ///
+        /// - left: the dividend
+        /// - right: the divisor
+        /(left: TSelf, right: TOther) -> TResult static pure
+    si
+
+    /// A type with a `%` operator. On .NET this is
+    /// `System.Numerics.IModulusOperators<TSelf, TOther, TResult>`.
+    trait ModulusOperators[TSelf: ModulusOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// The remainder of `left` divided by `right`, with the sign of
+        /// `left`.
+        ///
+        /// - left: the dividend
+        /// - right: the divisor
+        %(left: TSelf, right: TOther) -> TResult static pure
+    si
+
+    /// A type with a `-` operator taking one value. On .NET this is
+    /// `System.Numerics.IUnaryNegationOperators<TSelf, TResult>`.
+    trait UnaryNegationOperators[TSelf: UnaryNegationOperators[TSelf, TResult], TResult] open is
+        /// `value` negated.
+        ///
+        /// - value: the value
+        -(value: TSelf) -> TResult static pure
+    si
+
+    /// A type with the bitwise operators `&`, `|`, `^` and `\`. On .NET
+    /// this is `System.Numerics.IBitwiseOperators<TSelf, TOther, TResult>`.
+    trait BitwiseOperators[TSelf: BitwiseOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// The bits set in both `left` and `right`.
+        ///
+        /// - left: one value
+        /// - right: the other
+        &(left: TSelf, right: TOther) -> TResult static pure
+
+        /// The bits set in either `left` or `right`.
+        ///
+        /// - left: one value
+        /// - right: the other
+        |(left: TSelf, right: TOther) -> TResult static pure
+
+        /// The bits set in one of `left` and `right` but not both.
+        ///
+        /// - left: one value
+        /// - right: the other
+        ^(left: TSelf, right: TOther) -> TResult static pure
+
+        /// `value` with each of its bits flipped.
+        ///
+        /// - value: the value
+        \(value: TSelf) -> TResult static pure
+    si
+
+    /// A type with the shift operators `<<`, `>>` and `>>>`. On .NET this
+    /// is `System.Numerics.IShiftOperators<TSelf, TOther, TResult>`.
+    trait ShiftOperators[TSelf: ShiftOperators[TSelf, TOther, TResult], TOther, TResult] open is
+        /// `value` shifted left by `shift_amount` bits.
+        ///
+        /// - value: the value
+        /// - shift_amount: how many bits to shift by
+        <<(value: TSelf, shift_amount: TOther) -> TResult static pure
+
+        /// `value` shifted right by `shift_amount` bits, keeping its sign.
+        ///
+        /// - value: the value
+        /// - shift_amount: how many bits to shift by
+        >>(value: TSelf, shift_amount: TOther) -> TResult static pure
+
+        /// `value` shifted right by `shift_amount` bits, filling with zeros.
+        ///
+        /// - value: the value
+        /// - shift_amount: how many bits to shift by
+        >>>(value: TSelf, shift_amount: TOther) -> TResult static pure
+    si
+
+    /// A type with a value that leaves another unchanged when added. On
+    /// .NET this is `System.Numerics.IAdditiveIdentity<TSelf, TResult>`.
+    trait AdditiveIdentity[TSelf: AdditiveIdentity[TSelf, TResult], TResult] open is
+        /// The value that leaves another unchanged when added: zero.
+        additive_identity: TResult static
+    si
+
+    /// A type with a value that leaves another unchanged when multiplied.
+    /// On .NET this is `System.Numerics.IMultiplicativeIdentity<TSelf, TResult>`.
+    trait MultiplicativeIdentity[TSelf: MultiplicativeIdentity[TSelf, TResult], TResult] open is
+        /// The value that leaves another unchanged when multiplied: one.
+        multiplicative_identity: TResult static
+    si
+
+    /// A type with a least and a greatest value. On .NET this is
+    /// `System.Numerics.IMinMaxValue<TSelf>`.
+    trait MinMaxValue[TSelf: MinMaxValue[TSelf]] open is
+        /// The least value of the type.
+        min_value: TSelf static
+
+        /// The greatest value of the type.
+        max_value: TSelf static
+    si
+
+    /// A number: zero and one, and the four arithmetic operators. On .NET
+    /// this is `System.Numerics.INumberBase<TSelf>`. Of its .NET members,
+    /// `zero` and `one` are declared on the targets built from source.
+    trait NumberBase[TSelf: NumberBase[TSelf]]:
+        AdditionOperators[TSelf, TSelf, TSelf],
+        SubtractionOperators[TSelf, TSelf, TSelf],
+        MultiplyOperators[TSelf, TSelf, TSelf],
+        DivisionOperators[TSelf, TSelf, TSelf],
+        AdditiveIdentity[TSelf, TSelf],
+        MultiplicativeIdentity[TSelf, TSelf] open
+    is
+        /// Zero.
+        zero: TSelf static
+
+        /// One.
+        one: TSelf static
+    si
+
+    /// A number with an order. On .NET this is `System.Numerics.INumber<TSelf>`.
+    /// The targets built from source give it no members beyond those of
+    /// `NumberBase`, and its `%` comes with `BinaryInteger`.
+    trait Number[TSelf: Number[TSelf]]: NumberBase[TSelf] open is si
+
+    /// A number made of bits, with the bitwise operators. On .NET this is
+    /// `System.Numerics.IBinaryNumber<TSelf>`.
+    trait BinaryNumber[TSelf: BinaryNumber[TSelf]]: Number[TSelf], BitwiseOperators[TSelf, TSelf, TSelf] open is si
+
+    /// An integer: a binary number with `%` and the shift operators. On
+    /// .NET this is `System.Numerics.IBinaryInteger<TSelf>`.
+    trait BinaryInteger[TSelf: BinaryInteger[TSelf]]:
+        BinaryNumber[TSelf],
+        ModulusOperators[TSelf, TSelf, TSelf],
+        ShiftOperators[TSelf, int, TSelf] open
+    is si
+
+    /// A number that can be negative, with unary `-`. On .NET this is
+    /// `System.Numerics.ISignedNumber<TSelf>`.
+    trait SignedNumber[TSelf: SignedNumber[TSelf]]: NumberBase[TSelf], UnaryNegationOperators[TSelf, TSelf] open is
+        /// Minus one.
+        negative_one: TSelf static
+    si
+
+    /// A number that cannot be negative. On .NET this is
+    /// `System.Numerics.IUnsignedNumber<TSelf>`.
+    trait UnsignedNumber[TSelf: UnsignedNumber[TSelf]]: NumberBase[TSelf] open is si
+si

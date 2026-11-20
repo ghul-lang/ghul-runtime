@@ -1,0 +1,52 @@
+use default
+use Ghul.Math.AdditionOperators.`+
+use Ghul.Math.MultiplyOperators.`*
+use Ghul.Math.ModulusOperators.`%
+use Ghul.Math.ShiftOperators.`<<
+use Ghul.Math.BitwiseOperators.`&
+use Ghul.Math.UnaryNegationOperators.`-
+use System.Numerics.ISubtractionOperators.`-
+
+// Generic arithmetic through the generic-math traits, on the scalar types
+// and bigint: the operators are each type's own, and the identities are
+// read through the type parameter.
+total[T: Number[T]](values: T[]) -> T is
+    let result mut = T.zero
+
+    for value in values do
+        result = result + value
+    od
+
+    return result
+si
+
+product[T: NumberBase[T]](values: T[]) -> T is
+    let result mut = T.multiplicative_identity
+
+    for value in values do
+        result = result * value
+    od
+
+    return result
+si
+
+difference[T: System.Numerics.INumber[T]](a: T, b: T) -> T => a - b
+
+negated[T: SignedNumber[T]](value: T) -> T => -value
+
+low_bits[T: BinaryInteger[T]](value: T, bits: int) -> T => value & ((T.one << bits) - T.one)
+
+remainder[T: BinaryInteger[T]](a: T, b: T) -> T => a % b
+
+range_of[T: MinMaxValue[T]]() -> (T, T) => (T.min_value, T.max_value)
+
+minus_one[T: SignedNumber[T]]() -> T => T.negative_one
+
+zero_of[T: AdditiveIdentity[T, T]]() -> T => T.additive_identity
+
+write_line("{total([1, 2, 3])} {total([1L, 2L, 3L])} {total([1.5, 2.5])} {total([1n, 2n, 3n])}")
+write_line("{product([2, 3, 4])} {product([2ub, 3ub])} {product([2n, 3n, 4n])}")
+write_line("{difference(10, 3)} {difference(10.5, 0.5)} {negated(5)} {negated(2.5)} {negated(7n)}")
+write_line("{low_bits(0xFF, 4)} {low_bits(0xFFul, 3)} {low_bits(255n, 2)} {remainder(17, 5)} {remainder(17n, 5n)}")
+write_line("{range_of[byte]()} {range_of[ushort]()} {range_of[int]()}")
+write_line("{minus_one[int]()} {minus_one[bigint]()} {zero_of[double]()}")
