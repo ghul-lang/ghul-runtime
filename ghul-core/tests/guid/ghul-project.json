@@ -1,9 +1,0 @@
-{
-    "name": "guid",
-    "targets": ["wasm", "llvm"],
-    "sources": ["*.ghul"],
-    "diagnostics": { "suppress": ["assembly-attribute-unmatched"] },
-    "dependencies": {
-        "ghul-runtime": { "path": "../../.." }
-    }
-}

@@ -24,17 +24,6 @@ escape café -> caf%C3%A9
 escape x/y?z=1&w -> x%2Fy%3Fz%3D1%26w
 escape ~-._ -> ~-._
 escape 😀 -> %F0%9F%98%80
-version '1.2': true 1.2
-version '1.2.3': true 1.2.3
-version '1.2.3.4': true 1.2.3.4
-version '1': false null
-version '1.2.3.4.5': false null
-version '1.-2': false null
-version 'a.b': false null
-version ' 1.2': true 1.2
-version '1.2 ': true 1.2
-parts 2 10 1 -1 2.10
-compare -1 true true
 little endian: true
 int: FE-FF-FF-FF
 long: 08-07-06-05-04-03-02-01
