@@ -1,0 +1,253 @@
+namespace Benchmarks is
+    use Collections.LIST
+    use Collections.MAP
+    use Collections.SET
+
+    register_collections(registry: Registry) is
+        let f = "collections"
+
+        registry.add(f, "list_add_index", 2_000_000, list_add_index)
+        registry.add(f, "list_iterate", 2_000_000, list_iterate)
+        registry.add(f, "list_sort", 500_000, list_sort)
+        registry.add(f, "list_index_of", 2_000, list_index_of)
+        registry.add(f, "list_insert_remove", 20_000, list_insert_remove)
+        registry.add(f, "map_int_insert_lookup", 500_000, map_int_insert_lookup)
+        registry.add(f, "map_string_insert_lookup", 200_000, map_string_insert_lookup)
+        registry.add(f, "map_iterate", 500_000, map_iterate)
+        registry.add(f, "map_remove", 500_000, map_remove)
+        registry.add(f, "set_add_contains", 500_000, set_add_contains)
+        registry.add(f, "stack_queue", 1_000_000, stack_queue)
+    si
+
+    // Appends n ints, then reads them back by index.
+    list_add_index(n: int) -> long is
+        let list = LIST[int]()
+
+        for i in 0..n do
+            list.add(i * 3)
+        od
+
+        let total mut = 0L
+
+        for i in 0..list.count do
+            total = total + long(list[i])
+        od
+
+        return total
+    si
+
+    // Reads a list of n ints with for.
+    list_iterate(n: int) -> long is
+        let list = LIST[int]()
+
+        for i in 0..n do
+            list.add(i)
+        od
+
+        let total mut = 0L
+
+        for round in 0..5 do
+            for x in list do
+                total = total + long(x ^ round)
+            od
+        od
+
+        return total
+    si
+
+    // Sorts n pseudo-random ints.
+    list_sort(n: int) -> long is
+        let random = Lcg(42L)
+        let list = LIST[int]()
+
+        for _ in 0..n do
+            list.add(random.next())
+        od
+
+        list.sort()
+
+        return long(list[0]) + long(list[n / 2]) + long(list[n - 1])
+    si
+
+    // index_of over a list of n ints, for n targets spread across it.
+    list_index_of(n: int) -> long is
+        let list = LIST[int]()
+
+        for i in 0..n do
+            list.add(i * 7)
+        od
+
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(list.index_of((i * 13 % n) * 7))
+        od
+
+        return total
+    si
+
+    // Inserts at and removes from the front and middle of a list of n ints.
+    list_insert_remove(n: int) -> long is
+        let list = LIST[int]()
+
+        for i in 0..n do
+            list.insert(list.count / 2, i)
+        od
+
+        let total mut = 0L
+
+        while list.count > 0 do
+            total = total + long(list[0])
+            list.remove_at(0)
+        od
+
+        return total
+    si
+
+    // Inserts n int keys in pseudo-random order, then looks up each, and n
+    // more that are absent.
+    map_int_insert_lookup(n: int) -> long is
+        let random = Lcg(7L)
+        let map = MAP[int, int]()
+        let keys = LIST[int]()
+
+        for i in 0..n do
+            let key = random.next()
+            keys.add(key)
+            map[key] = i
+        od
+
+        let total mut = 0L
+
+        for key in keys do
+            total = total + long(map[key])
+        od
+
+        for i in 0..n do
+            if map.contains_key(-1 - i) then
+                total = total + 1L
+            fi
+        od
+
+        return total + long(map.count)
+    si
+
+    // The same with string keys built from ints, so each lookup hashes and
+    // compares a string.
+    map_string_insert_lookup(n: int) -> long is
+        let map = MAP[string, int]()
+        let keys = LIST[string]()
+
+        for i in 0..n do
+            keys.add("key-{i * 31}")
+        od
+
+        for i in 0..n do
+            map[keys[i]] = i
+        od
+
+        let total mut = 0L
+
+        for i in 0..n do
+            let probe = "key-{i * 31}"
+            total = total + long(map[probe])
+        od
+
+        return total + long(map.count)
+    si
+
+    // Reads every entry, every key and every value of a map of n entries.
+    map_iterate(n: int) -> long is
+        let map = MAP[int, int]()
+
+        for i in 0..n do
+            map[i * 5] = i
+        od
+
+        let total mut = 0L
+
+        for round in 0..3 do
+            for pair in map do
+                total = total + long(pair.key) + long(pair.value)
+            od
+
+            for k in map.keys do
+                total = total + long(k)
+            od
+
+            for v in map.values do
+                total = total + long(v)
+            od
+        od
+
+        return total
+    si
+
+    // Fills a map of n entries, then removes every other one and refills.
+    map_remove(n: int) -> long is
+        let map = MAP[int, int]()
+
+        for i in 0..n do
+            map[i] = i
+        od
+
+        for i in 0..n do
+            if i % 2 == 0 then
+                map.remove(i)
+            fi
+        od
+
+        for i in 0..n do
+            if i % 4 == 0 then
+                map[i] = -i
+            fi
+        od
+
+        let total mut = 0L
+
+        for pair in map do
+            total = total + long(pair.value)
+        od
+
+        return total + long(map.count)
+    si
+
+    // Adds n pseudo-random ints to a set, duplicates among them, then tests
+    // membership of n more.
+    set_add_contains(n: int) -> long is
+        let random = Lcg(11L)
+        let set = SET[int]()
+
+        for _ in 0..n do
+            set.add(random.below(n))
+        od
+
+        let hits mut = 0L
+
+        for i in 0..n do
+            if set.contains(i) then
+                hits = hits + 1L
+            fi
+        od
+
+        return hits * 1000L + long(set.count)
+    si
+
+    // Pushes and pops through a stack and a queue.
+    stack_queue(n: int) -> long is
+        let stack = Collections.STACK[int]()
+        let queue = Collections.QUEUE[int]()
+        let total mut = 0L
+
+        for i in 0..n do
+            stack.push(i)
+            queue.enqueue(i)
+
+            if i % 3 == 2 then
+                total = total + long(stack.pop()) - long(queue.dequeue())
+            fi
+        od
+
+        return total + long(stack.count) + long(queue.count)
+    si
+si

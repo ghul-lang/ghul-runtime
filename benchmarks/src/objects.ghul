@@ -1,0 +1,287 @@
+namespace Benchmarks is
+    use Collections.LIST
+
+    register_objects(registry: Registry) is
+        let f = "objects"
+
+        registry.add(f, "allocate_small_objects", 5_000_000, allocate_small_objects)
+        registry.add(f, "linked_list_build_walk", 1_000_000, linked_list_build_walk)
+        registry.add(f, "binary_trees", 2_000, binary_trees)
+        registry.add(f, "struct_list", 2_000_000, struct_list)
+        registry.add(f, "virtual_dispatch", 20_000_000, virtual_dispatch)
+        registry.add(f, "trait_dispatch", 20_000_000, trait_dispatch)
+        registry.add(f, "generic_calls", 20_000_000, generic_calls)
+        registry.add(f, "closure_calls", 20_000_000, closure_calls)
+        registry.add(f, "closure_creation", 5_000_000, closure_creation)
+        registry.add(f, "union_case", 10_000_000, union_case)
+        registry.add(f, "optional_chain", 10_000_000, optional_chain)
+        registry.add(f, "exceptions", 50_000, exceptions)
+        registry.add(f, "type_tests", 20_000_000, type_tests)
+    si
+
+    class Cell(value: int public, next: Cell? public);
+
+    allocate_small_objects(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            let cell = Cell(i, null)
+            total = total + long(cell.value)
+        od
+
+        return total
+    si
+
+    linked_list_build_walk(n: int) -> long is
+        let head: Cell? mut = null
+
+        for i in 0..n do
+            head = Cell(i, head)
+        od
+
+        let total mut = 0L
+        let cursor mut = head
+
+        while let c = cursor do
+            total = total + long(c.value)
+            cursor = c.next
+        od
+
+        return total
+    si
+
+    class TreeNode(left: TreeNode? public, right: TreeNode? public);
+
+    _make_tree(depth: int) -> TreeNode =>
+        if depth == 0 then TreeNode(null, null)
+        else TreeNode(_make_tree(depth - 1), _make_tree(depth - 1)) fi
+
+    _check_tree(node: TreeNode) -> int is
+        let l = node.left
+        let r = node.right
+
+        if l? /\ r? then
+            return 1 + _check_tree(l) + _check_tree(r)
+        fi
+
+        return 1
+    si
+
+    // The allocation-heavy shape of the benchmarks game's binary-trees: one
+    // long-lived tree, and n short-lived trees of 2047 nodes each.
+    binary_trees(n: int) -> long is
+        let long_lived = _make_tree(14)
+        let total mut = 0L
+
+        for _ in 0..n do
+            total = total + long(_check_tree(_make_tree(10)))
+        od
+
+        return total + long(_check_tree(long_lived))
+    si
+
+    struct Vec(x: double public, y: double public);
+
+    struct_list(n: int) -> long is
+        let points = LIST[Vec]()
+
+        for i in 0..n do
+            points.add(Vec(double(i), double(i % 7)))
+        od
+
+        let sx mut = 0.0
+        let sy mut = 0.0
+
+        for p in points do
+            sx = sx + p.x
+            sy = sy + p.y
+        od
+
+        return long(sx) + long(sy)
+    si
+
+    class Shape abstract is
+        area() -> int;
+    si
+
+    class Square(side: int): Shape is
+        area() -> int => side * side;
+    si
+
+    class Rect(w: int, h: int): Shape is
+        area() -> int => w * h;
+    si
+
+    class Tri(b: int, h: int): Shape is
+        area() -> int => b * h / 2;
+    si
+
+    virtual_dispatch(n: int) -> long is
+        let shapes = LIST[Shape]()
+
+        shapes.add(Square(3))
+        shapes.add(Rect(2, 5))
+        shapes.add(Tri(4, 6))
+
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(shapes[i % 3].area())
+        od
+
+        return total
+    si
+
+    trait Scorer is
+        score(x: int) -> int;
+    si
+
+    class Doubler: Scorer is
+        init() is si
+        score(x: int) -> int => x * 2;
+    si
+
+    class Adder: Scorer is
+        init() is si
+        score(x: int) -> int => x + 7;
+    si
+
+    trait_dispatch(n: int) -> long is
+        let scorers = LIST[Scorer]()
+
+        scorers.add(Doubler())
+        scorers.add(Adder())
+
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(scorers[i % 2].score(i % 1000))
+        od
+
+        return total
+    si
+
+    _pick[T](a: T, b: T, first: bool) -> T => if first then a else b fi
+
+    generic_calls(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(_pick(i, i + 1, i % 2 == 0))
+            total = total + _pick(1L, 2L, i % 3 == 0)
+        od
+
+        return total
+    si
+
+    closure_calls(n: int) -> long is
+        let offset = 3
+        let f = (x: int) -> int => x * 2 + offset
+        let g = (x: int) -> int => x - 1
+        let fs = [f, g]
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(fs[i % 2](i % 1000))
+        od
+
+        return total
+    si
+
+    closure_creation(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            let f = (x: int) -> int => x + i
+            total = total + long(f(1))
+        od
+
+        return total
+    si
+
+    union Expr is
+        NUM(value: int);
+        NEG(inner: int);
+        ADD(left: int, right: int);
+    si
+
+    _eval(e: Expr) -> int =>
+        case e
+        when n: Expr.NUM then n.value
+        when g: Expr.NEG then -g.inner
+        when a: Expr.ADD then a.left + a.right
+        esac
+
+    union_case(n: int) -> long is
+        let exprs = LIST[Expr]()
+
+        exprs.add(Expr.NUM(5))
+        exprs.add(Expr.NEG(3))
+        exprs.add(Expr.ADD(2, 9))
+
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(_eval(exprs[i % 3]))
+        od
+
+        return total
+    si
+
+    class Holder(inner: Cell? public);
+
+    optional_chain(n: int) -> long is
+        let holders = LIST[Holder]()
+
+        holders.add(Holder(Cell(4, null)))
+        holders.add(Holder(null))
+
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(holders[i % 2].inner?.value ?? -1)
+        od
+
+        return total
+    si
+
+    _fail(i: int) -> int => throw Ghul.InvalidOperationException("failure {i}")
+
+    exceptions(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            try
+                total = total + long(_fail(i))
+            catch e: Ghul.InvalidOperationException
+                total = total + long(e.message.length)
+            yrt
+        od
+
+        return total
+    si
+
+    type_tests(n: int) -> long is
+        let values = LIST[object]()
+
+        values.add("a string")
+        values.add(Cell(1, null))
+        values.add(Square(2))
+
+        let total mut = 0L
+
+        for i in 0..n do
+            let v = values[i % 3]
+
+            if let s: string = v then
+                total = total + long(s.length)
+            elif let c: Cell = v then
+                total = total + long(c.value)
+            elif let sh: Shape = v then
+                total = total + long(sh.area())
+            fi
+        od
+
+        return total
+    si
+si
