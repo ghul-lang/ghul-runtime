@@ -1,9 +1,8 @@
-// .NET's name for this type is kept, so source written against .NET builds
-// here unchanged.
+// The type keeps .NET's name, in Ghul.Math; the compiler keeps
+// System.Numerics.Complex as a second spelling.
 @@suppress("non-upper-snake-case-name")
 
-namespace System.Numerics is
-    use Ghul.Math
+namespace Ghul.Math is
 
     /// A complex number with `double` parts, as .NET's
     /// `System.Numerics.Complex` is, computed the way .NET computes it. A real

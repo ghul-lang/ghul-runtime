@@ -5,7 +5,7 @@
 @@suppress("non-upper-snake-case-name")
 
 namespace Crypto is
-    use System.Numerics.BitOperations
+    use Ghul.Math.BitOperations
 
     /// The MD5 digest, as .NET gives it.
     /// MD5 is broken as a cryptographic hash and is here for checksums.

@@ -1,6 +1,6 @@
-namespace System.Numerics is
-    /// .NET's bit-twiddling operations on unsigned integers, under the name
-    /// .NET gives them.
+namespace Ghul.Math is
+    /// .NET's bit-twiddling operations on unsigned integers, as
+    /// `System.Numerics.BitOperations` gives them.
     class BitOperations is
         /// The number of bits set in `value`.
         ///

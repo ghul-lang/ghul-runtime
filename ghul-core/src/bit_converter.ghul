@@ -1,8 +1,8 @@
-// .NET's name for this type is kept, so source written against .NET
-// builds here unchanged.
+// The type keeps .NET's name, in Ghul.Math; the compiler keeps
+// System.BitConverter as a second spelling.
 @@suppress("non-upper-snake-case-name")
 
-namespace System is
+namespace Ghul.Math is
 
     /// Converts between the scalar types and their bytes, as .NET's
     /// `System.BitConverter` does: least significant byte first, which is
