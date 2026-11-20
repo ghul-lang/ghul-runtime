@@ -1,0 +1,41 @@
+// Arithmetic and ordering mixing int, long, single and double widen the
+// narrower operand through the core's widenings. Where an operand is still
+// being inferred, the same-kind operator settles it.
+use IO.Std.write_line
+use Ghul.Pipes
+
+let n = 3
+let d = 0.5
+let big = 3_000_000_000L
+
+// both operand orders, each operator
+write_line("{n * d} {d * n} {n + 2.5} {n - 0.5} {7 / 2.0} {7 % 4L}")
+write_line("{big + n} {n * big} {big / n} {n - big}")
+write_line("{n * 1.5s} {1.5s * d}")
+
+// literals
+write_line("{1 + 2.0} {2L * n} {10 / 4.0}")
+
+// an unannotated parameter settles on the same-kind operator
+let half = x => x * 0.5
+let twice = x => x * 2
+write_line("{half(3.0)} {twice(21)}")
+
+// pipes with a mixed seed, and a mixed selector
+write_line("{[1, 2, 3] |> reduce(0.5, (acc, x) => acc + x)}")
+write_line("{[1, 2, 3] |> map(x => x * 0.5) |> sum()}")
+
+// partial application settles on the same-kind operator too
+write_line("{[1.0, 3.0] |> map(* * 0.5) |> sum()}")
+
+// ordering
+write_line("{n < 3.5} {big > n} {n >= 3.0} {2.5 <= n}")
+
+// the widened result formats as its kind does
+write_line("[{n * d:F3}] [{n * d,8}]")
+
+// the result is the narrower of the reachable operators: long * single is
+// single, int * single is single
+let ls = big * 2.0s
+let isg = n * 2.0s
+write_line("{ls} {isg}")

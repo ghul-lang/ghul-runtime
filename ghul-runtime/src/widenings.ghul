@@ -1,0 +1,16 @@
+@@IF.dotnet()
+
+namespace Ghul.Internal is
+    // The widenings an operand may take to reach an operator declared
+    // @widen_operands(): each converts its parameter's type to its return
+    // type. The compiler finds them by their mark and their types, not by
+    // their names, and code outside the library cannot reach them.
+    class WIDENINGS is
+        @widening() int_to_long(value: int) -> long static pure => long(value)
+        @widening() int_to_single(value: int) -> single static pure => single(value)
+        @widening() int_to_double(value: int) -> double static pure => double(value)
+        @widening() long_to_single(value: long) -> single static pure => single(value)
+        @widening() long_to_double(value: long) -> double static pure => double(value)
+        @widening() single_to_double(value: single) -> double static pure => double(value)
+    si
+si

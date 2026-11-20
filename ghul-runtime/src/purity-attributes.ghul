@@ -47,6 +47,23 @@ namespace Ghul.Internal is
         si
     si
 
+    // Marker attribute emitted by the compiler on a library function
+    // declared @widening(): a conversion an operand may take to reach an
+    // operator declared @widen_operands(). Compiler-emitted; not
+    // user-facing.
+    class WIDENING_ATTRIBUTE: Attribute is
+        init() is
+        si
+    si
+
+    // Marker attribute emitted by the compiler on a library operator
+    // declared @widen_operands(): an operator an operand may be widened to
+    // reach. Compiler-emitted; not user-facing.
+    class WIDEN_OPERANDS_ATTRIBUTE: Attribute is
+        init() is
+        si
+    si
+
     // Marker attribute emitted by the compiler on a member whose own body
     // its effect solve proved store-free, where the source declared no
     // contract. Read on cross-assembly import the way

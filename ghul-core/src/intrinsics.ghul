@@ -170,17 +170,17 @@ namespace Ghul.Intrinsics.Staging is
     /// Bitwise complement.
     @intrinsic("arithmetic.not") \(a: int) -> int pure
     /// Adds two `int` values.
-    @intrinsic("arithmetic.add") +(a: int, b: int) -> int pure
+    @widen_operands() @intrinsic("arithmetic.add") +(a: int, b: int) -> int pure
     /// Subtracts `b` from `a`.
-    @intrinsic("arithmetic.sub") -(a: int, b: int) -> int pure
+    @widen_operands() @intrinsic("arithmetic.sub") -(a: int, b: int) -> int pure
     /// Multiplies two `int` values.
-    @intrinsic("arithmetic.mul") *(a: int, b: int) -> int pure
+    @widen_operands() @intrinsic("arithmetic.mul") *(a: int, b: int) -> int pure
     /// Divides `a` by `b`.
-    @intrinsic("arithmetic.div") /(a: int, b: int) -> int pure
+    @widen_operands() @intrinsic("arithmetic.div") /(a: int, b: int) -> int pure
     /// The remainder of dividing `a` by `b`.
-    @intrinsic("arithmetic.rem") %(a: int, b: int) -> int pure
+    @widen_operands() @intrinsic("arithmetic.rem") %(a: int, b: int) -> int pure
     /// Orders `a` against `b`: negative, zero or positive as `a` is less than, equal to or greater than `b`.
-    @intrinsic("compare.order") <>(a: int, b: int) -> int pure
+    @widen_operands() @intrinsic("compare.order") <>(a: int, b: int) -> int pure
     /// Shifts `a` left by `b` bits.
     @intrinsic("arithmetic.shl") <<(a: int, b: int) -> int pure
     /// Shifts `a` right by `b` bits, keeping its sign.
@@ -226,17 +226,17 @@ namespace Ghul.Intrinsics.Staging is
     /// Bitwise complement.
     @intrinsic("arithmetic.not") \(a: long) -> long pure
     /// Adds two `long` values.
-    @intrinsic("arithmetic.add") +(a: long, b: long) -> long pure
+    @widen_operands() @intrinsic("arithmetic.add") +(a: long, b: long) -> long pure
     /// Subtracts `b` from `a`.
-    @intrinsic("arithmetic.sub") -(a: long, b: long) -> long pure
+    @widen_operands() @intrinsic("arithmetic.sub") -(a: long, b: long) -> long pure
     /// Multiplies two `long` values.
-    @intrinsic("arithmetic.mul") *(a: long, b: long) -> long pure
+    @widen_operands() @intrinsic("arithmetic.mul") *(a: long, b: long) -> long pure
     /// Divides `a` by `b`.
-    @intrinsic("arithmetic.div") /(a: long, b: long) -> long pure
+    @widen_operands() @intrinsic("arithmetic.div") /(a: long, b: long) -> long pure
     /// The remainder of dividing `a` by `b`.
-    @intrinsic("arithmetic.rem") %(a: long, b: long) -> long pure
+    @widen_operands() @intrinsic("arithmetic.rem") %(a: long, b: long) -> long pure
     /// Orders `a` against `b`: negative, zero or positive as `a` is less than, equal to or greater than `b`.
-    @intrinsic("compare.order") <>(a: long, b: long) -> int pure
+    @widen_operands() @intrinsic("compare.order") <>(a: long, b: long) -> int pure
     /// Shifts `a` left by `b` bits.
     @intrinsic("arithmetic.shl") <<(a: long, b: int) -> long pure
     /// Shifts `a` right by `b` bits, keeping its sign.
@@ -336,28 +336,28 @@ namespace Ghul.Intrinsics.Staging is
     /// Negates `a`.
     @intrinsic("arithmetic.neg") -(a: single) -> single pure
     /// Adds two `single` values.
-    @intrinsic("arithmetic.add") +(a: single, b: single) -> single pure
+    @widen_operands() @intrinsic("arithmetic.add") +(a: single, b: single) -> single pure
     /// Subtracts `b` from `a`.
-    @intrinsic("arithmetic.sub") -(a: single, b: single) -> single pure
+    @widen_operands() @intrinsic("arithmetic.sub") -(a: single, b: single) -> single pure
     /// Multiplies two `single` values.
-    @intrinsic("arithmetic.mul") *(a: single, b: single) -> single pure
+    @widen_operands() @intrinsic("arithmetic.mul") *(a: single, b: single) -> single pure
     /// Divides `a` by `b`.
-    @intrinsic("arithmetic.div") /(a: single, b: single) -> single pure
+    @widen_operands() @intrinsic("arithmetic.div") /(a: single, b: single) -> single pure
     /// Orders `a` against `b`: negative, zero or positive as `a` is less than, equal to or greater than `b`.
-    @intrinsic("compare.order") <>(a: single, b: single) -> int pure
+    @widen_operands() @intrinsic("compare.order") <>(a: single, b: single) -> int pure
 
     /// Negates `a`.
     @intrinsic("arithmetic.neg") -(a: double) -> double pure
     /// Adds two `double` values.
-    @intrinsic("arithmetic.add") +(a: double, b: double) -> double pure
+    @widen_operands() @intrinsic("arithmetic.add") +(a: double, b: double) -> double pure
     /// Subtracts `b` from `a`.
-    @intrinsic("arithmetic.sub") -(a: double, b: double) -> double pure
+    @widen_operands() @intrinsic("arithmetic.sub") -(a: double, b: double) -> double pure
     /// Multiplies two `double` values.
-    @intrinsic("arithmetic.mul") *(a: double, b: double) -> double pure
+    @widen_operands() @intrinsic("arithmetic.mul") *(a: double, b: double) -> double pure
     /// Divides `a` by `b`.
-    @intrinsic("arithmetic.div") /(a: double, b: double) -> double pure
+    @widen_operands() @intrinsic("arithmetic.div") /(a: double, b: double) -> double pure
     /// Orders `a` against `b`: negative, zero or positive as `a` is less than, equal to or greater than `b`.
-    @intrinsic("compare.order") <>(a: double, b: double) -> int pure
+    @widen_operands() @intrinsic("compare.order") <>(a: double, b: double) -> int pure
 
     // System.Decimal is a 128-bit value type with no IL arithmetic
     // or compare opcodes. Each operator below routes to the matching
