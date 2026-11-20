@@ -1,4 +1,4 @@
-namespace System.Threading is
+namespace Tasks is
     /// The members of .NET's `System.Threading.Thread` the source-core
     /// targets have: pausing the program. The program is single threaded, so
     /// the wait holds the whole program.

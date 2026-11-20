@@ -286,7 +286,7 @@ namespace Ghul.Coroutines is
     // Blocks the scheduler's thread until `milliseconds` have passed.
     @IF.dotnet()
     _pause_thread(milliseconds: int) is
-        System.Threading.Thread.sleep(milliseconds)
+        Tasks.Thread.sleep(milliseconds)
     si
 
     // A program on a target with a source core library has one thread,

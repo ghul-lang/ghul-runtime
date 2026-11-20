@@ -79,7 +79,7 @@ namespace Collections is
         // Where the element in `row` at `column` is in `_cells`. Inlined, so
         // that `m[i, j]` costs no call on .NET: an indexer can't carry the
         // attribute itself.
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _view_index(row: int, column: int) -> int is
             if uint(row) >= uint(_rows) \/ uint(column) >= uint(_columns) then
                 _MATRIX_EXTENTS.throw_out_of_range(row, column, _rows, _columns)
@@ -183,7 +183,7 @@ namespace Collections is
 
         // Where the element in `row` at `column` is in `_array`, inlined as
         // `_view_index` is.
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _array_index(row: int, column: int) -> int is
             if uint(row) >= uint(_height) \/ uint(column) >= uint(_width) then
                 _MATRIX_EXTENTS.throw_out_of_range(row, column, _height, _width)
@@ -251,18 +251,18 @@ namespace Collections is
         [row: int, column: int]: T => _store[_position(row, column)], = value is _set(_position(row, column), value); si
 
         @IF.dotnet()
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _set(index: int, value: T) is
             _store[index] = value
         si
 
         @IF.not.dotnet()
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _set(index: int, value: T) is
             Ghul._array_set(_store, index, value)
         si
 
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _position(row: int, column: int) -> int is
             if uint(row) >= uint(_height) \/ uint(column) >= uint(_width) then
                 _MATRIX_EXTENTS.throw_out_of_range(row, column, _height, _width)
@@ -319,7 +319,7 @@ namespace Collections is
 
         // Where the element in `plane` at `row` and `column` is in `_cells`,
         // inlined as `MATRIX_2_VIEW._view_index` is.
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _view_index(plane: int, row: int, column: int) -> int is
             if uint(plane) >= uint(_planes) \/ uint(row) >= uint(_rows) \/ uint(column) >= uint(_columns) then
                 _MATRIX_EXTENTS.throw_out_of_range(plane, row, column, _planes, _rows, _columns)
@@ -431,7 +431,7 @@ namespace Collections is
 
         // Where the element in `plane` at `row` and `column` is in `_array`,
         // inlined as `MATRIX_2_VIEW._view_index` is.
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _array_index(plane: int, row: int, column: int) -> int is
             if uint(plane) >= uint(_depth) \/ uint(row) >= uint(_height) \/ uint(column) >= uint(_width) then
                 _MATRIX_EXTENTS.throw_out_of_range(plane, row, column, _depth, _height, _width)
@@ -504,18 +504,18 @@ namespace Collections is
         [plane: int, row: int, column: int]: T => _store[_position(plane, row, column)], = value is _set(_position(plane, row, column), value); si
 
         @IF.dotnet()
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _set(index: int, value: T) is
             _store[index] = value
         si
 
         @IF.not.dotnet()
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _set(index: int, value: T) is
             Ghul._array_set(_store, index, value)
         si
 
-        @System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+        @Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
         _position(plane: int, row: int, column: int) -> int is
             if uint(plane) >= uint(_depth) \/ uint(row) >= uint(_height) \/ uint(column) >= uint(_width) then
                 _MATRIX_EXTENTS.throw_out_of_range(plane, row, column, _depth, _height, _width)

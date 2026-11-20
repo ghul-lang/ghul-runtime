@@ -1,13 +1,13 @@
-// .NET's names for these types are kept, so source written against .NET
-// builds here unchanged.
+// The type keeps .NET's name, in Ghul; the compiler keeps System.ObsoleteAttribute
+// as a second spelling.
 @@suppress("non-upper-snake-case-name")
 
-namespace System is
+namespace Ghul is
 
     /// Marks a declaration that should no longer be used, as .NET's
-    /// `System.ObsoleteAttribute` does. Written `@System.Obsolete()` or
-    /// `@System.Obsolete("use something else")`.
-    class ObsoleteAttribute: Attribute is
+    /// `System.ObsoleteAttribute` does. Written `@Ghul.Obsolete()` or
+    /// `@Ghul.Obsolete("use something else")`.
+    class ObsoleteAttribute: System.Attribute is
         /// What to use instead, or null.
         message: string?
 

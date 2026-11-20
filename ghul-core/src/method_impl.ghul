@@ -1,8 +1,8 @@
-// .NET's names for these types are kept, so source written against .NET
-// builds here unchanged.
+// The types keep .NET's names, in Ghul; the compiler keeps their
+// System.Runtime.CompilerServices names as second spellings.
 @@suppress("non-upper-snake-case-name")
 
-namespace System.Runtime.CompilerServices is
+namespace Ghul is
     /// How a method is to be compiled, as .NET's
     /// `System.Runtime.CompilerServices.MethodImplOptions` says. The members
     /// combine as flags. On llvm, `NO_INLINING` and `AGGRESSIVE_INLINING`
