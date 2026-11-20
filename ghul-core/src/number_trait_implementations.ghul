@@ -1,0 +1,252 @@
+namespace Ghul.Math is
+    // The scalar types and bigint implement the generic-math traits as
+    // the .NET types do. Their operators are the built-in ones, and
+    // `min_value` and `max_value` are the static properties each type
+    // already declares.
+
+    impl BinaryInteger[byte] for byte is
+        /// Zero.
+        zero: byte static => cast byte(0)
+
+        /// One.
+        one: byte static => cast byte(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: byte static => cast byte(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: byte static => cast byte(1)
+    si
+
+    impl SignedNumber[byte] for byte is
+        /// Minus one.
+        negative_one: byte static => cast byte(-1)
+    si
+
+    impl MinMaxValue[byte] for byte is si
+
+    impl BinaryInteger[short] for short is
+        /// Zero.
+        zero: short static => cast short(0)
+
+        /// One.
+        one: short static => cast short(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: short static => cast short(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: short static => cast short(1)
+    si
+
+    impl SignedNumber[short] for short is
+        /// Minus one.
+        negative_one: short static => cast short(-1)
+    si
+
+    impl MinMaxValue[short] for short is si
+
+    impl BinaryInteger[int] for int is
+        /// Zero.
+        zero: int static => cast int(0)
+
+        /// One.
+        one: int static => cast int(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: int static => cast int(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: int static => cast int(1)
+    si
+
+    impl SignedNumber[int] for int is
+        /// Minus one.
+        negative_one: int static => cast int(-1)
+    si
+
+    impl MinMaxValue[int] for int is si
+
+    impl BinaryInteger[long] for long is
+        /// Zero.
+        zero: long static => cast long(0)
+
+        /// One.
+        one: long static => cast long(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: long static => cast long(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: long static => cast long(1)
+    si
+
+    impl SignedNumber[long] for long is
+        /// Minus one.
+        negative_one: long static => cast long(-1)
+    si
+
+    impl MinMaxValue[long] for long is si
+
+    impl BinaryInteger[word] for word is
+        /// Zero.
+        zero: word static => cast word(0)
+
+        /// One.
+        one: word static => cast word(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: word static => cast word(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: word static => cast word(1)
+    si
+
+    impl SignedNumber[word] for word is
+        /// Minus one.
+        negative_one: word static => cast word(-1)
+    si
+
+    impl BinaryInteger[ubyte] for ubyte is
+        /// Zero.
+        zero: ubyte static => cast ubyte(0)
+
+        /// One.
+        one: ubyte static => cast ubyte(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: ubyte static => cast ubyte(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: ubyte static => cast ubyte(1)
+    si
+
+    impl UnsignedNumber[ubyte] for ubyte is si
+
+    impl MinMaxValue[ubyte] for ubyte is si
+
+    impl BinaryInteger[ushort] for ushort is
+        /// Zero.
+        zero: ushort static => cast ushort(0)
+
+        /// One.
+        one: ushort static => cast ushort(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: ushort static => cast ushort(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: ushort static => cast ushort(1)
+    si
+
+    impl UnsignedNumber[ushort] for ushort is si
+
+    impl MinMaxValue[ushort] for ushort is si
+
+    impl BinaryInteger[uint] for uint is
+        /// Zero.
+        zero: uint static => cast uint(0)
+
+        /// One.
+        one: uint static => cast uint(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: uint static => cast uint(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: uint static => cast uint(1)
+    si
+
+    impl UnsignedNumber[uint] for uint is si
+
+    impl MinMaxValue[uint] for uint is si
+
+    impl BinaryInteger[ulong] for ulong is
+        /// Zero.
+        zero: ulong static => cast ulong(0)
+
+        /// One.
+        one: ulong static => cast ulong(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: ulong static => cast ulong(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: ulong static => cast ulong(1)
+    si
+
+    impl UnsignedNumber[ulong] for ulong is si
+
+    impl MinMaxValue[ulong] for ulong is si
+
+    impl BinaryInteger[uword] for uword is
+        /// Zero.
+        zero: uword static => cast uword(0)
+
+        /// One.
+        one: uword static => cast uword(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: uword static => cast uword(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: uword static => cast uword(1)
+    si
+
+    impl UnsignedNumber[uword] for uword is si
+
+    impl Number[single] for single is
+        /// Zero.
+        zero: single static => cast single(0)
+
+        /// One.
+        one: single static => cast single(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: single static => cast single(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: single static => cast single(1)
+    si
+
+    impl SignedNumber[single] for single is
+        /// Minus one.
+        negative_one: single static => cast single(-1)
+    si
+
+    impl MinMaxValue[single] for single is si
+
+    impl Number[double] for double is
+        /// Zero.
+        zero: double static => cast double(0)
+
+        /// One.
+        one: double static => cast double(1)
+
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: double static => cast double(0)
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: double static => cast double(1)
+    si
+
+    impl SignedNumber[double] for double is
+        /// Minus one.
+        negative_one: double static => cast double(-1)
+    si
+
+    impl MinMaxValue[double] for double is si
+
+    impl BinaryInteger[bigint] for bigint is
+        /// Zero, which leaves a value unchanged when added.
+        additive_identity: bigint static => zero
+
+        /// One, which leaves a value unchanged when multiplied.
+        multiplicative_identity: bigint static => one
+    si
+
+    impl SignedNumber[bigint] for bigint is
+        /// Minus one.
+        negative_one: bigint static => minus_one
+    si
+si
