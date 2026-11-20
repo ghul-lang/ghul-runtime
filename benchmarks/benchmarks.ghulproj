@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>benchmarks</AssemblyName>
+    <IsPackable>false</IsPackable>
+
+    <GhulCompiler>dotnet ghul-compiler</GhulCompiler>
+
+    <!-- As the native build behaves: string order and number formats do not
+         depend on the machine's culture. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ghul-runtime/ghul-runtime.ghulproj" />
+
+    <GhulSources Include="src/**/*.ghul" />
+  </ItemGroup>
+
+  <Import Project="../ghul-runtime/build/ghul.runtime.targets" />
+</Project>

@@ -1,0 +1,102 @@
+namespace Benchmarks is
+    use Collections.LIST
+
+    use Ghul.Pipes
+
+    register_pipes(registry: Registry) is
+        let f = "pipes"
+
+        registry.add(f, "pipe_range_filter_map_sum", 5_000_000, pipe_range_filter_map_sum)
+        registry.add(f, "pipe_list_map_reduce", 2_000_000, pipe_list_map_reduce)
+        registry.add(f, "pipe_to_list", 1_000_000, pipe_to_list)
+        registry.add(f, "pipe_take_skip", 2_000_000, pipe_take_skip)
+        registry.add(f, "pipe_zip", 1_000_000, pipe_zip)
+        registry.add(f, "pipe_sort", 300_000, pipe_sort)
+        registry.add(f, "pipe_join", 300_000, pipe_join)
+        registry.add(f, "pipe_short_chains", 300_000, pipe_short_chains)
+        registry.add(f, "comprehension_array", 1_000_000, comprehension_array)
+        registry.add(f, "generator", 2_000_000, generator)
+    si
+
+    pipe_range_filter_map_sum(n: int) -> long =>
+        0..n |> filter(x => x % 3 != 0) |> map(x => long(x) * 2L) |> sum()
+
+    pipe_list_map_reduce(n: int) -> long is
+        let list = 0..n |> LIST()
+
+        return list |> map(x => x ^ 0x55) |> reduce(0L, (acc, x) => acc + long(x))
+    si
+
+    pipe_to_list(n: int) -> long is
+        let list = 0..n |> map(x => x * 2) |> filter(x => x % 6 != 0) |> LIST()
+
+        return long(list.count) + long(list[list.count - 1])
+    si
+
+    pipe_take_skip(n: int) -> long =>
+        from(0) |> skip(10) |> take(n) |> map(x => long(x)) |> sum()
+
+    pipe_zip(n: int) -> long is
+        let a = 0..n |> LIST()
+        let b = 0..n |> map(x => x * 3) |> LIST()
+
+        return a |> zip(b) |> map(((x, y): (int, int)) => long(x) * long(y % 7)) |> sum()
+    si
+
+    pipe_sort(n: int) -> long is
+        let random = Lcg(5L)
+        let values = LIST[int]()
+
+        for _ in 0..n do
+            values.add(random.next())
+        od
+
+        let sorted = values |> sort() |> LIST()
+
+        return long(sorted[0]) + long(sorted[n / 2]) + long(sorted[n - 1])
+    si
+
+    pipe_join(n: int) -> long =>
+        long((0..n |> map(x => x % 100) |> join(",")).length)
+
+    // A whole chain over a three-element list, many times: the per-chain
+    // cost, not the per-element one.
+    pipe_short_chains(n: int) -> long is
+        let small = [1, 2, 3] |> LIST()
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(small |> map(x => x + i) |> filter(x => x % 2 == 0) |> sum())
+            if small |> any(x => x == i % 5) then
+                total = total + 1L
+            fi
+        od
+
+        return total
+    si
+
+    comprehension_array(n: int) -> long is
+        let squares = [long(x) * long(x) for x in 0..n if x % 2 == 0]
+
+        return long(squares.count) + squares[squares.count - 1] % 1_000_007L
+    si
+
+    _counting(limit: int) -> int{} is
+        let i mut = 0
+
+        while i < limit do
+            yield i
+            i = i + 1
+        od
+    si
+
+    generator(n: int) -> long is
+        let total mut = 0L
+
+        for x in _counting(n) do
+            total = total + long(x)
+        od
+
+        return total
+    si
+si

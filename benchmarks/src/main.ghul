@@ -1,0 +1,63 @@
+use IO.Std.write_line
+
+use Benchmarks
+
+// benchmarks list                         the family and name of each benchmark
+// benchmarks run <name> [scale] [repeats] times one benchmark (scale 1, 5 repeats)
+// benchmarks check [scale]                runs every benchmark once, untimed,
+//                                         and writes each checksum
+entry(args: string[]) -> int is
+    let registry = Registry()
+
+    register_collections(registry)
+    register_strings(registry)
+    register_pipes(registry)
+    register_numeric(registry)
+    register_objects(registry)
+
+    if args.count == 0 then
+        write_line("usage: benchmarks list | run <name> [scale] [repeats] | check [scale]")
+        return 2
+    fi
+
+    let command = args[0]
+
+    if command =~ "list" then
+        for b in registry.all do
+            write_line("{b.family}\t{b.name}")
+        od
+
+        return 0
+    fi
+
+    if command =~ "check" then
+        let scale = if args.count > 1 then double.parse(args[1]) else 1.0 fi
+
+        for b in registry.all do
+            let size mut = int(double(b.size) * scale)
+            if size < 1 then size = 1 fi
+            write_line("{b.family}\t{b.name}\t{size}\t{b.run(size)}")
+        od
+
+        return 0
+    fi
+
+    if command =~ "run" /\ args.count > 1 then
+        let benchmark = registry.find(args[1])
+
+        if !benchmark? then
+            write_line("no benchmark named {args[1]}")
+            return 2
+        fi
+
+        let scale = if args.count > 2 then double.parse(args[2]) else 1.0 fi
+        let repeats = if args.count > 3 then int.parse(args[3]) else 5 fi
+
+        measure(benchmark, scale, repeats)
+
+        return 0
+    fi
+
+    write_line("usage: benchmarks list | run <name> [scale] [repeats] | check [scale]")
+    return 2
+si

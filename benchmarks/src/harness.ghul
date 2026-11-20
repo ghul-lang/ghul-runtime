@@ -1,0 +1,80 @@
+namespace Benchmarks is
+    use IO.Std.write_line
+    use Collections.LIST
+
+    /// One benchmark: a name, the work as a function of a size that returns
+    /// a checksum of what it computed, and the size one run uses at scale 1.
+    class Benchmark(name: string public, family: string public, size: int public, run: (int) -> long public);
+
+    /// The benchmarks, in the order `list` prints them.
+    class Registry is
+        all: LIST[Benchmark] public
+
+        init() is
+            all = LIST[Benchmark]()
+        si
+
+        add(family: string, name: string, size: int, run: (int) -> long) is
+            all.add(Benchmark(name, family, size, run))
+        si
+
+        find(name: string) -> Benchmark? =>
+            for b in all do
+                if b.name =~ name then break b fi
+            od
+    si
+
+    /// A deterministic pseudo-random sequence, the same on every target, so
+    /// the checksums agree.
+    class Lcg is
+        _state: long
+
+        init(seed: long) is
+            _state = seed
+        si
+
+        next() -> int is
+            _state = _state * 6364136223846793005L + 1442695040888963407L
+            return int((_state >>> 33) & 0x3FFF_FFFFL)
+        si
+
+        below(limit: int) -> int => next() % limit
+    si
+
+    /// Times `benchmark` at `scale`: one untimed warm-up run, then `repeats`
+    /// timed runs, each at the same size. Writes the name, the fastest and
+    /// the median run in milliseconds, and the checksum, tab separated. The
+    /// checksum must be the same on every run, or the benchmark is not
+    /// deterministic and the line says so.
+    measure(benchmark: Benchmark, scale: double, repeats: int) is
+        let size mut = int(double(benchmark.size) * scale)
+
+        if size < 1 then
+            size = 1
+        fi
+
+        let expected = benchmark.run(size)
+        let times = LIST[double]()
+        let consistent mut = true
+
+        for _ in 0..repeats do
+            let watch = Time.Stopwatch.start_new()
+            let checksum = benchmark.run(size)
+            watch.stop()
+
+            times.add(watch.elapsed.total_milliseconds)
+
+            if checksum != expected then
+                consistent = false
+            fi
+        od
+
+        times.sort()
+
+        let fastest = times[0]
+        let median = times[times.count / 2]
+        let note = if consistent then "" else "\tinconsistent" fi
+
+        write_line("{benchmark.family}\t{benchmark.name}\t{size}\t{fastest:F3}\t{median:F3}\t{expected}{note}")
+    si
+si

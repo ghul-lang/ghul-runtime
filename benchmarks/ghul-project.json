@@ -1,0 +1,8 @@
+{
+    "name": "benchmarks",
+    "targets": ["llvm"],
+    "sources": ["src/*.ghul"],
+    "dependencies": {
+        "ghul-runtime": { "path": ".." }
+    }
+}

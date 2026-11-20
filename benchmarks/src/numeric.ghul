@@ -1,0 +1,126 @@
+namespace Benchmarks is
+    use Collections.LIST
+    use Ghul.Math
+    use Ghul.Pipes
+
+    register_numeric(registry: Registry) is
+        let f = "numeric"
+
+        registry.add(f, "int_arithmetic", 50_000_000, int_arithmetic)
+        registry.add(f, "long_arithmetic", 50_000_000, long_arithmetic)
+        registry.add(f, "double_arithmetic", 20_000_000, double_arithmetic)
+        registry.add(f, "math_functions", 2_000_000, math_functions)
+        registry.add(f, "array_sieve", 5_000_000, array_sieve)
+        registry.add(f, "matrix_multiply", 120, matrix_multiply)
+        registry.add(f, "bigint_factorial", 1_500, bigint_factorial)
+    si
+
+    int_arithmetic(n: int) -> long is
+        let x mut = 1
+        let total mut = 0L
+
+        for i in 0..n do
+            x = (x * 31 + i) ^ (x >> 3)
+            total = total + long(x % 1000)
+        od
+
+        return total
+    si
+
+    long_arithmetic(n: int) -> long is
+        let x mut = 1L
+
+        for i in 0..n do
+            x = x * 6364136223846793005L + long(i)
+            x = x ^ (x >>> 17)
+        od
+
+        return x
+    si
+
+    double_arithmetic(n: int) -> long is
+        let x mut = 0.5
+        let total mut = 0.0
+
+        for i in 0..n do
+            x = x * 1.0000001 + 0.25 / (double(i) + 1.0)
+            total = total + x
+        od
+
+        return long(total)
+    si
+
+    // The results of sqrt, sin and log can differ in the last bit between
+    // targets, so the checksum is coarse.
+    math_functions(n: int) -> long is
+        let total mut = 0.0
+
+        for i in 0..n do
+            let d = double(i) + 1.0
+            total = total + sqrt(d) + sin(d) + log(d)
+        od
+
+        return long(total / 1000.0)
+    si
+
+    array_sieve(n: int) -> long is
+        let composite = repeat(false, n + 1) |> LIST()
+        let count mut = 0L
+        let p mut = 2
+
+        while p <= n do
+            if !composite[p] then
+                count = count + 1L
+                let m mut = long(p) * long(p)
+
+                while m <= long(n) do
+                    composite[int(m)] = true
+                    m = m + long(p)
+                od
+            fi
+
+            p = p + 1
+        od
+
+        return count
+    si
+
+    matrix_multiply(n: int) -> long is
+        let a = LIST[double]()
+        let b = LIST[double]()
+        let c = repeat(0.0, n * n) |> LIST()
+
+        for i in 0..n * n do
+            a.add(double(i % 17) * 0.5)
+            b.add(double(i % 13) * 0.25)
+        od
+
+        for i in 0..n do
+            for k in 0..n do
+                let aik = a[i * n + k]
+
+                for j in 0..n do
+                    c[i * n + j] = c[i * n + j] + aik * b[k * n + j]
+                od
+            od
+        od
+
+        let total mut = 0.0
+
+        for x in c do
+            total = total + x
+        od
+
+        return long(total)
+    si
+
+    bigint_factorial(n: int) -> long is
+        let product mut = 1n
+
+        for i in 1..n + 1 do
+            product = product * bigint(i)
+        od
+
+        return long(product.to_string().length)
+    si
+si

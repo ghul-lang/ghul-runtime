@@ -1,0 +1,306 @@
+namespace Benchmarks is
+    use Collections.LIST
+    use Text.StringBuilder
+
+    register_strings(registry: Registry) is
+        let f = "strings"
+
+        registry.add(f, "string_index_of", 20_000, string_index_of)
+        registry.add(f, "string_index_of_char", 200_000, string_index_of_char)
+        registry.add(f, "string_substring", 1_000_000, string_substring)
+        registry.add(f, "string_equality", 1_000_000, string_equality)
+        registry.add(f, "string_compare", 500_000, string_compare)
+        registry.add(f, "string_hash", 1_000_000, string_hash)
+        registry.add(f, "string_interpolation", 500_000, string_interpolation)
+        registry.add(f, "string_concat", 500_000, string_concat)
+        registry.add(f, "string_split_join", 100_000, string_split_join)
+        registry.add(f, "string_replace", 100_000, string_replace)
+        registry.add(f, "string_case", 200_000, string_case)
+        registry.add(f, "string_chars", 200, string_chars)
+        registry.add(f, "builder_append", 2_000_000, builder_append)
+        registry.add(f, "builder_append_char", 5_000_000, builder_append_char)
+        registry.add(f, "int_to_string", 1_000_000, int_to_string)
+        registry.add(f, "int_parse", 1_000_000, int_parse)
+        registry.add(f, "double_to_string", 300_000, double_to_string)
+        registry.add(f, "double_parse", 300_000, double_parse)
+    si
+
+    // A text of about 4000 characters of words, the same every call.
+    _text() -> string is
+        let builder = StringBuilder()
+
+        for i in 0..500 do
+            builder.append("word")
+            builder.append(i)
+            builder.append(' ')
+        od
+
+        builder.append("needle")
+
+        return builder.to_string()
+    si
+
+    // Searches the text for substrings near its end and for one absent.
+    string_index_of(n: int) -> long is
+        let text = _text()
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(text.index_of("needle"))
+            total = total + long(text.index_of("word49{i % 10} "))
+            total = total + long(text.index_of("absent"))
+        od
+
+        return total
+    si
+
+    string_index_of_char(n: int) -> long is
+        let text = _text()
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(text.index_of('n'))
+            total = total + long(text.index_of('9', i % 100))
+        od
+
+        return total
+    si
+
+    string_substring(n: int) -> long is
+        let text = _text()
+        let total mut = 0L
+
+        for i in 0..n do
+            let start = i % (text.length - 20)
+            let part = text.substring(start, 12)
+            total = total + long(part.length) + long(int(part[3]))
+        od
+
+        return total
+    si
+
+    // =~ between strings equal in text and distinct as objects, and between
+    // strings that differ only in their last character.
+    string_equality(n: int) -> long is
+        let a = LIST[string]()
+        let b = LIST[string]()
+
+        for i in 0..100 do
+            a.add("a fairly long string to compare {i}")
+            b.add("a fairly long string to compare {i}")
+        od
+
+        let other = "a fairly long string to compare x"
+        let hits mut = 0L
+
+        for i in 0..n do
+            let x = a[i % 100]
+
+            if x =~ b[i % 100] then
+                hits = hits + 1L
+            fi
+
+            if x =~ other then
+                hits = hits + 1000L
+            fi
+        od
+
+        return hits
+    si
+
+    // Ordinal ordering of strings that share a long prefix.
+    string_compare(n: int) -> long is
+        let words = LIST[string]()
+
+        for i in 0..100 do
+            words.add("shared prefix of some length {i * 37 % 100}")
+        od
+
+        let total mut = 0L
+
+        for i in 0..n do
+            let c = string.compare_ordinal(words[i % 100], words[(i * 7) % 100])
+            total = total + long(if c < 0 then -1 elif c > 0 then 1 else 0 fi)
+        od
+
+        return total
+    si
+
+    // The hash isn't the same on every target, so the checksum counts
+    // only whether equal strings hash alike.
+    string_hash(n: int) -> long is
+        let words = LIST[string]()
+        let copies = LIST[string]()
+
+        for i in 0..100 do
+            words.add("hashed string number {i}")
+            copies.add("hashed string number {i}")
+        od
+
+        let same mut = 0L
+
+        for i in 0..n do
+            if words[i % 100].get_hash_code() == copies[i % 100].get_hash_code() then
+                same = same + 1L
+            fi
+        od
+
+        return same
+    si
+
+    string_interpolation(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            let s = "item {i}: {i * 2} of {n}, {"name"}"
+            total = total + long(s.length)
+        od
+
+        return total
+    si
+
+    // Joins strings pairwise with string.concat, as `a + b` does in C#.
+    string_concat(n: int) -> long is
+        let parts = ["alpha", "beta", "gamma", "delta"]
+        let total mut = 0L
+
+        for i in 0..n do
+            let s = string.concat(parts[i % 4], parts[(i + 1) % 4], parts[(i + 2) % 4])
+            total = total + long(s.length)
+        od
+
+        return total
+    si
+
+    string_split_join(n: int) -> long is
+        let line = "one,two,three,four,five,six,seven,eight"
+        let total mut = 0L
+
+        for i in 0..n do
+            let fields = line.split([','])
+            total = total + long(fields.count)
+            total = total + long(string.join("|", fields).length)
+        od
+
+        return total
+    si
+
+    string_replace(n: int) -> long is
+        let line = "the quick brown fox jumps over the lazy dog"
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(line.replace("the", "a").length)
+            total = total + long(line.replace('o', '0').index_of('0'))
+        od
+
+        return total
+    si
+
+    string_case(n: int) -> long is
+        let line = "Mixed Case Text With Some Words 123"
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(int(line.to_upper_invariant()[i % 10]))
+            total = total + long(int(line.to_lower_invariant()[i % 10]))
+            total = total + long(line.trim().length)
+        od
+
+        return total
+    si
+
+    // Reads every character of the text, by index and with for.
+    string_chars(n: int) -> long is
+        let text = _text()
+        let total mut = 0L
+
+        for _ in 0..n do
+            for i in 0..text.length do
+                total = total + long(int(text[i]))
+            od
+
+            for c in text do
+                if c == ' ' then
+                    total = total + 1L
+                fi
+            od
+        od
+
+        return total
+    si
+
+    builder_append(n: int) -> long is
+        let builder = StringBuilder()
+
+        for i in 0..n do
+            builder.append("ab")
+            builder.append(i % 1000)
+        od
+
+        return long(builder.to_string().length)
+    si
+
+    builder_append_char(n: int) -> long is
+        let builder = StringBuilder()
+
+        for i in 0..n do
+            builder.append(char(97 + i % 26))
+        od
+
+        return long(builder.length) + long(int(builder.to_string()[n / 2]))
+    si
+
+    int_to_string(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long((i * 7919).to_string().length)
+        od
+
+        return total
+    si
+
+    int_parse(n: int) -> long is
+        let texts = LIST[string]()
+
+        for i in 0..1000 do
+            texts.add("{i * 104729}")
+        od
+
+        let total mut = 0L
+
+        for i in 0..n do
+            total = total + long(int.parse(texts[i % 1000]))
+        od
+
+        return total
+    si
+
+    double_to_string(n: int) -> long is
+        let total mut = 0L
+
+        for i in 0..n do
+            let d = double(i) * 1.37 + 0.001
+            total = total + long(d.to_string().length)
+        od
+
+        return total
+    si
+
+    double_parse(n: int) -> long is
+        let texts = LIST[string]()
+
+        for i in 0..1000 do
+            texts.add("{double(i) * 1.37 + 0.25}")
+        od
+
+        let total mut = 0.0
+
+        for i in 0..n do
+            total = total + double.parse(texts[i % 1000])
+        od
+
+        return long(total)
+    si
+si
