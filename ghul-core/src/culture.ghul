@@ -155,11 +155,11 @@ namespace Ghul is
 si
 
 namespace Time is
-    partial DATE_TIME is
+    partial DateTime is
         /// `text` read as a moment, as `parse(text)` reads it.
         ///
         /// - text: the text to read
         /// - provider: ignored; parsing is invariant
-        parse(text: string, provider: Ghul.FormatProvider?) -> DATE_TIME static => parse(text)
+        parse(text: string, provider: Ghul.FormatProvider?) -> DateTime static => parse(text)
     si
 si
