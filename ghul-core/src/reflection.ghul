@@ -1,4 +1,4 @@
-namespace System.Reflection is
+namespace Ghul.Reflection is
     use Ghul.Type
 
     /// Which members `Type.get_fields` and `Type.get_properties` report.
@@ -341,14 +341,9 @@ namespace System.Reflection is
     si
 si
 
-namespace System is
+namespace Ghul.Reflection is
     use Ghul.Type
     use Ghul.Internal.TYPE_DESCRIPTIONS
-
-    /// The base of the classes a declaration carries as attributes.
-    class Attribute abstract open is
-        init() is si
-    si
 
     /// Makes objects of a type known only at run time.
     class Activator is
@@ -371,6 +366,16 @@ namespace System is
 
             throw Ghul.InvalidOperationException("{type.full_name} has no constructor taking {arguments.count} arguments")
         si
+    si
+si
+
+namespace System is
+    use Ghul.Type
+    use Ghul.Internal.TYPE_DESCRIPTIONS
+
+    /// The base of the classes a declaration carries as attributes.
+    class Attribute abstract open is
+        init() is si
     si
 
     /// Reflection over enums.
@@ -486,11 +491,11 @@ namespace Ghul.Internal is
 
     use Ghul.Type
 
-    use System.Reflection.FieldInfo
-    use System.Reflection.MethodInfo
-    use System.Reflection.ConstructorInfo
-    use System.Reflection.ParameterInfo
-    use System.Reflection.PropertyInfo
+    use Ghul.Reflection.FieldInfo
+    use Ghul.Reflection.MethodInfo
+    use Ghul.Reflection.ConstructorInfo
+    use Ghul.Reflection.ParameterInfo
+    use Ghul.Reflection.PropertyInfo
 
     /// The description of each type the program reflects on, kept apart from
     /// the type object so that nothing public reaches it.

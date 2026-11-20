@@ -3,10 +3,10 @@ namespace Json is
     use Collections.MAP
     use Collections.SET
     use Collections.KEY_VALUE_PAIR
-    use System.Reflection.BindingFlags
-    use System.Reflection.ConstructorInfo
-    use System.Reflection.FieldInfo
-    use System.Reflection.PropertyInfo
+    use Ghul.Reflection.BindingFlags
+    use Ghul.Reflection.ConstructorInfo
+    use Ghul.Reflection.FieldInfo
+    use Ghul.Reflection.PropertyInfo
 
     // The field a union variant's name is written under.
     _KIND: string static => "kind"
@@ -177,7 +177,7 @@ namespace Json is
         let maybe_underlying = Ghul.MAYBE[object].underlying_type(type)
 
         if let underlying = maybe_underlying then
-            return System.Activator.create_instance(type, [from_json(json, underlying)])
+            return Ghul.Reflection.Activator.create_instance(type, [from_json(json, underlying)])
         fi
 
         let target = System.Nullable.get_underlying_type(type) ?? type
@@ -259,7 +259,7 @@ namespace Json is
     @IF.dotnet()
     _filled(type: System.Type, values: LIST[object?]) -> object? static is
         let sized = type.get_constructor([typeof int])?
-        let made = if sized then System.Activator.create_instance(type, [cast object(values.count)]) else System.Activator.create_instance(type) fi
+        let made = if sized then Ghul.Reflection.Activator.create_instance(type, [cast object(values.count)]) else Ghul.Reflection.Activator.create_instance(type) fi
 
         if let list: DotNet.NonGeneric.Collections.IList = made then
             for value in values do
@@ -276,7 +276,7 @@ namespace Json is
     // filled in one step, or null where `type` is not a list.
     @IF.not.dotnet()
     _filled(type: System.Type, values: LIST[object?]) -> object? static is
-        if let list: Ghul.Internal.UntypedList = System.Activator.create_instance(type) then
+        if let list: Ghul.Internal.UntypedList = Ghul.Reflection.Activator.create_instance(type) then
             list.fill_untyped(values.to_array())
 
             return list
@@ -387,7 +387,7 @@ namespace Json is
             arguments.add(from_json(found ?? Value.NULL, parameter.parameter_type))
         od
 
-        let result = System.Activator.create_instance(type, arguments.to_array())!
+        let result = Ghul.Reflection.Activator.create_instance(type, arguments.to_array())!
 
         let members = _members(type)
 

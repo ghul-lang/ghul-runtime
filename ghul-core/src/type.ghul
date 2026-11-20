@@ -1,11 +1,11 @@
 namespace Ghul is
     use Collections.LIST
 
-    use System.Reflection.BindingFlags
-    use System.Reflection.FieldInfo
-    use System.Reflection.PropertyInfo
-    use System.Reflection.ConstructorInfo
-    use System.Reflection.MethodInfo
+    use Ghul.Reflection.BindingFlags
+    use Ghul.Reflection.FieldInfo
+    use Ghul.Reflection.PropertyInfo
+    use Ghul.Reflection.ConstructorInfo
+    use Ghul.Reflection.MethodInfo
 
     use Ghul.Internal.TYPE_DESCRIPTION
     use Ghul.Internal.TYPE_DESCRIPTIONS

@@ -344,7 +344,7 @@ namespace Ghul is
         // every assembly ghūl compiles. Native AOT cannot list an
         // assembly's references, and there the marker the compiler puts on
         // every assembly it builds answers instead.
-        _is_compiled_by_ghul(assembly: System.Reflection.Assembly) -> bool static is
+        _is_compiled_by_ghul(assembly: Ghul.Reflection.Assembly) -> bool static is
             let runtime = (typeof DISPLAY_STATE).assembly
 
             if assembly == runtime then
@@ -560,10 +560,10 @@ namespace Ghul is
         // a `$`, which no name a program declares can.
         _is_user_name(name: string) -> bool static => name.length > 0 /\ !name.contains('$')
 
-        _instance_flags() -> System.Reflection.BindingFlags static =>
-            cast System.Reflection.BindingFlags(
-                cast int(System.Reflection.BindingFlags.PUBLIC) |
-                cast int(System.Reflection.BindingFlags.INSTANCE))
+        _instance_flags() -> Ghul.Reflection.BindingFlags static =>
+            cast Ghul.Reflection.BindingFlags(
+                cast int(Ghul.Reflection.BindingFlags.PUBLIC) |
+                cast int(Ghul.Reflection.BindingFlags.INSTANCE))
 
         // A type as a ghūl program names it: the built-in names for the
         // types that have one, type arguments in square brackets, a union
