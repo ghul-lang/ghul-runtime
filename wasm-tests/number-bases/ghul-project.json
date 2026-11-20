@@ -1,0 +1,7 @@
+{
+    "name": "number-bases",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

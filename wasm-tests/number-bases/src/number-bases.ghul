@@ -1,0 +1,31 @@
+use default
+use Text.from_base
+use Text.to_base
+
+// Numbers in bases 2, 8, 10 and 16 for every integer type, as .NET's
+// Convert reads and writes them, and the generic totals over each.
+show[T: Ghul.Math.BinaryInteger[T] /\ Ghul.Math.MinMaxValue[T]](value: T) =>
+    write_line("{to_base(value, 2)} {to_base(value, 8)} {to_base(value, 10)} {to_base(value, 16)}")
+
+show(255ub)
+show(-1b)
+show(cast short(-2))
+show(1000us)
+show(-123)
+show(4000000000u)
+show(cast long(-9223372036854775807L - 1L))
+show(18446744073709551615ul)
+
+write_line("{from_base[int]("ff", 16)} {from_base[byte]("ff", 16)} {from_base[ubyte]("ff", 16)} {from_base[short]("-32768", 10)}")
+write_line("{from_base[int]("0x7fffffff", 16)} {from_base[int]("ffffffff", 16)} {from_base[int]("1ffffffff", 16)}")
+write_line("{from_base[long]("-9223372036854775808", 10)} {from_base[long]("9223372036854775808", 10)} {from_base[ulong]("18446744073709551615", 10)}")
+write_line("{from_base[uint]("-1", 10)} {from_base[uint]("-0", 10)} {from_base[int]("+42", 10)} {from_base[int]("", 10)} {from_base[int]("12z", 10)} {from_base[int]("-", 10)}")
+write_line("{from_base[int]("37777777777", 8)} {from_base[int]("40000000000", 8)} {from_base[ushort]("1111111111111111", 2)} {from_base[ushort]("10000000000000000", 2)}")
+write_line("{from_base("ff", 16)} {from_base("-10", 10)}")
+
+let n: ushort? = from_base("ffff", 16)
+write_line("{n}")
+
+write_line("{[1, 2, 3] |> sum()} {[1ub, 2ub] |> sum()} {[2.5, 0.5] |> sum()} {[1n, 2n] |> sum()}")
+write_line("{[2, 3, 4] |> product()} {[2us, 3us] |> product()} {[2n, 30n] |> product()}")
+write_line("{["a", "bb"] |> sum_by(s => s.length)} {["a", "bb"] |> sum_by(s => ulong(s.length))}")
