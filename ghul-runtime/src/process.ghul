@@ -1,9 +1,9 @@
 namespace IO is
     use Collections.Iterable
 
-    /// What running a program with `PROCESS.run` gave: its exit status and
+    /// What running a program with `Process.run` gave: its exit status and
     /// everything it wrote to standard output and standard error.
-    class PROCESS_RESULT(exit_code: int, output: string, error: string) is
+    class ProcessResult(exit_code: int, output: string, error: string) is
         /// The program's exit status. A program killed by a signal has 128
         /// plus the signal's number, as .NET reports it.
         exit_code: int
@@ -18,7 +18,7 @@ namespace IO is
     /// Runs other programs. The same calls work on .NET, on the llvm target,
     /// and on the wasm target run by Node; a wasm program run anywhere
     /// else, such as a browser, cannot start a program, and is told so.
-    class PROCESS is
+    class Process is
         /// Runs `file_name` with `arguments` to completion, sharing this
         /// process's standard input and capturing its standard output and
         /// standard error. Throws `IO.FileNotFoundException` where there is
@@ -28,7 +28,7 @@ namespace IO is
         ///   looked for on the `PATH`
         /// - arguments: the arguments to pass, each as one argument
         @IF.dotnet()
-        run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static is
+        run(file_name: string, arguments: Iterable[string]) -> ProcessResult static is
             let start_info = System.Diagnostics.ProcessStartInfo(file_name)
 
             for argument in arguments do
@@ -56,7 +56,7 @@ namespace IO is
 
                 started.wait_for_exit()
 
-                return PROCESS_RESULT(started.exit_code, output, error.result)
+                return ProcessResult(started.exit_code, output, error.result)
             fi
 
             throw Ghul.InvalidOperationException("Could not run {file_name}")
@@ -71,7 +71,7 @@ namespace IO is
         ///   looked for on the `PATH`
         /// - arguments: the arguments to pass, each as one argument
         @IF.source_core()
-        run(file_name: string, arguments: Iterable[string]) -> PROCESS_RESULT static is
+        run(file_name: string, arguments: Iterable[string]) -> ProcessResult static is
             _begin(file_name)
 
             for argument in arguments do
@@ -88,7 +88,7 @@ namespace IO is
                 throw Ghul.InvalidOperationException("Could not run {file_name}")
             fi
 
-            return PROCESS_RESULT(exit_code, _output() ?? "", _error() ?? "")
+            return ProcessResult(exit_code, _output() ?? "", _error() ?? "")
         si
 
         @IF.source_core()

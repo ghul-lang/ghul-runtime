@@ -32,7 +32,7 @@ namespace Ghul.Coroutines is
     si
 
     // Drives coroutines on one thread. A coroutine is an ordinary
-    // asynchronous function returning `COROUTINE[T]` or `COROUTINE` -
+    // asynchronous function returning `Coroutine[T]` or `Coroutine` -
     // the task-likes whose builders below run the body to its first
     // suspension and hand resumption to whatever the awaited value
     // does with its continuation.
@@ -137,7 +137,7 @@ namespace Ghul.Coroutines is
         // The body has already run to its first suspension when this
         // returns.
         /// Starts a coroutine on this scheduler and returns its handle. The body has already run to its first suspension by the time this returns.
-        spawn[T](body: SCHEDULER -> COROUTINE[T]) -> COROUTINE[T] is
+        spawn[T](body: SCHEDULER -> Coroutine[T]) -> Coroutine[T] is
             let previous = current
             current = self
 
@@ -149,7 +149,7 @@ namespace Ghul.Coroutines is
         si
 
         /// Starts a value-less coroutine on this scheduler and returns its handle, with the body already run to its first suspension.
-        spawn(body: SCHEDULER -> COROUTINE) -> COROUTINE is
+        spawn(body: SCHEDULER -> Coroutine) -> Coroutine is
             let previous = current
             current = self
 
@@ -463,7 +463,7 @@ namespace Ghul.Coroutines is
     // either route rethrows a failed coroutine's own exception.
     /// The handle to a coroutine producing a value of type `T`. Completed when the body returns or throws; awaiting it parks the caller until then and yields the result. Reading `value` before completion is an error, and either route rethrows a failed coroutine's own exception.
     @System.Runtime.CompilerServices.AsyncMethodBuilder(typeof(COROUTINE_BUILDER[_]))
-    class COROUTINE[T]: ICriticalNotifyCompletion, SchedulerAwaiter is
+    class Coroutine[T]: ICriticalNotifyCompletion, SchedulerAwaiter is
         /// The coroutine's failure, if it failed.
         exception: Ghul.Exception?
 
@@ -488,7 +488,7 @@ namespace Ghul.Coroutines is
         si
 
         /// Returns itself as its own awaiter, as the awaiter pattern requires.
-        get_awaiter() -> COROUTINE[T] => self
+        get_awaiter() -> Coroutine[T] => self
 
         /// Whether the coroutine has completed.
         is_completed: bool => completed
@@ -547,7 +547,7 @@ namespace Ghul.Coroutines is
     // the caller until the coroutine completes.
     /// The handle to a coroutine producing no value. Awaiting it parks the caller until the coroutine completes.
     @System.Runtime.CompilerServices.AsyncMethodBuilder(typeof(COROUTINE_BUILDER))
-    class COROUTINE: ICriticalNotifyCompletion, SchedulerAwaiter is
+    class Coroutine: ICriticalNotifyCompletion, SchedulerAwaiter is
         /// The coroutine's failure, if it failed.
         exception: Ghul.Exception?
 
@@ -561,7 +561,7 @@ namespace Ghul.Coroutines is
         si
 
         /// Returns itself as its own awaiter, as the awaiter pattern requires.
-        get_awaiter() -> COROUTINE => self
+        get_awaiter() -> Coroutine => self
 
         /// Whether the coroutine has completed.
         is_completed: bool => completed
@@ -620,22 +620,22 @@ namespace Ghul.Coroutines is
         si
     si
 
-    // The builder async functions returning COROUTINE[T] drive,
+    // The builder async functions returning Coroutine[T] drive,
     // named by the attribute on the type above. Runs the body inline
     // from `start`, records the outcome, and materialises the handle
     // lazily - `task` is read once, after `start` returns, whichever
     // order the body completed in.
-    /// The builder the compiler drives for a function that returns `COROUTINE[T]`.
+    /// The builder the compiler drives for a function that returns `Coroutine[T]`.
     class COROUTINE_BUILDER[T] is
         _result: Ghul.MAYBE[T]
         _exception: Ghul.Exception?
         _done: bool
-        _coroutine: COROUTINE[T]?
+        _coroutine: Coroutine[T]?
 
         init() is
         si
 
-        /// Creates a fresh builder. Called by the compiler's async lowering to start a `COROUTINE[T]`-returning function.
+        /// Creates a fresh builder. Called by the compiler's async lowering to start a `Coroutine[T]`-returning function.
         create() -> COROUTINE_BUILDER[T] static => COROUTINE_BUILDER[T]()
 
         /// Runs the state machine's first step. Called by the compiler's async lowering to start the coroutine's body.
@@ -644,9 +644,9 @@ namespace Ghul.Coroutines is
         si
 
         /// The coroutine handle, created and filled in on first read. Read by the compiler's async lowering once the body has run to its first suspension.
-        task: COROUTINE[T] is
+        task: Coroutine[T] is
             if !_coroutine? then
-                let handle = COROUTINE[T]()
+                let handle = Coroutine[T]()
                 _fill(handle)
                 _coroutine = handle
                 return handle
@@ -672,7 +672,7 @@ namespace Ghul.Coroutines is
             fi
         si
 
-        _fill(handle: COROUTINE[T]) is
+        _fill(handle: Coroutine[T]) is
             if _done then
                 if _exception? then
                     handle.fail(_exception)
@@ -705,17 +705,17 @@ namespace Ghul.Coroutines is
     si
 
     // The builder async functions returning the value-less
-    // COROUTINE drive.
-    /// The builder the compiler drives for a function that returns `COROUTINE`.
+    // Coroutine drive.
+    /// The builder the compiler drives for a function that returns `Coroutine`.
     class COROUTINE_BUILDER is
         _exception: Ghul.Exception?
         _done: bool
-        _coroutine: COROUTINE?
+        _coroutine: Coroutine?
 
         init() is
         si
 
-        /// Creates a fresh builder. Called by the compiler's async lowering to start a `COROUTINE`-returning function.
+        /// Creates a fresh builder. Called by the compiler's async lowering to start a `Coroutine`-returning function.
         create() -> COROUTINE_BUILDER static => COROUTINE_BUILDER()
 
         /// Runs the state machine's first step. Called by the compiler's async lowering to start the coroutine's body.
@@ -724,9 +724,9 @@ namespace Ghul.Coroutines is
         si
 
         /// The coroutine handle, created and filled in on first read. Read by the compiler's async lowering once the body has run to its first suspension.
-        task: COROUTINE is
+        task: Coroutine is
             if !_coroutine? then
-                let handle = COROUTINE()
+                let handle = Coroutine()
                 _fill(handle)
                 _coroutine = handle
                 return handle
@@ -751,7 +751,7 @@ namespace Ghul.Coroutines is
             fi
         si
 
-        _fill(handle: COROUTINE) is
+        _fill(handle: Coroutine) is
             if _done then
                 if _exception? then
                     handle.fail(_exception)
@@ -788,7 +788,7 @@ namespace Ghul.Coroutines is
     // channel parks the calling coroutine until a send arrives, and
     // is the usual way coroutines hand work to one another.
     /// A message channel between coroutines. Sending never parks; receiving from an empty channel parks the caller until a value arrives.
-    class CHANNEL[T] is
+    class Channel[T] is
         _values: Collections.QUEUE[T]
         _waiters: Collections.QUEUE[WAITER[TICKET[T]]]
 
@@ -869,10 +869,10 @@ namespace Ghul.Coroutines is
     // send arrives, and the value comes back through the ticket.
     /// The awaitable `channel.receive()` returns. Completed when a value is already buffered; otherwise registering a continuation parks it on the channel until a send arrives.
     struct RECEIVE[T]: ICriticalNotifyCompletion, SchedulerAwaiter is
-        _channel: CHANNEL[T]
+        _channel: Channel[T]
         _ticket: TICKET[T]
 
-        init(channel: CHANNEL[T], ticket: TICKET[T]) is
+        init(channel: Channel[T], ticket: TICKET[T]) is
             _channel = channel
             _ticket = ticket
         si
@@ -904,7 +904,7 @@ namespace Ghul.Coroutines is
     // permit goes straight to the first of them rather than back into
     // the pool, so a later caller cannot overtake it.
     /// A counting lock between coroutines. `acquire` takes a permit, parking the caller until one is free; `release` returns one.
-    class SEMAPHORE is
+    class Semaphore is
         _permits: int
         _waiters: Collections.QUEUE[WAITER[GRANT]]
 
@@ -950,7 +950,7 @@ namespace Ghul.Coroutines is
 
     // A lock one coroutine holds at a time.
     /// A lock one coroutine holds at a time.
-    class MUTEX: SEMAPHORE is
+    class MUTEX: Semaphore is
         init() is
             super.init(1)
         si
@@ -973,10 +973,10 @@ namespace Ghul.Coroutines is
     // one.
     /// The awaitable `semaphore.acquire()` returns. Completed when a permit is already free, taking it; otherwise registering a continuation parks it until a release grants one.
     struct ACQUIRE: ICriticalNotifyCompletion, SchedulerAwaiter is
-        _semaphore: SEMAPHORE
+        _semaphore: Semaphore
         _grant: GRANT
 
-        init(semaphore: SEMAPHORE, grant: GRANT) is
+        init(semaphore: Semaphore, grant: GRANT) is
             _semaphore = semaphore
             _grant = grant
         si

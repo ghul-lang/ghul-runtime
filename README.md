@@ -67,17 +67,17 @@ let shout = ((s: string) => s.to_upper()) >> (s => "{s}!")
 
 ### Coroutines - `Ghul.Coroutines`
 
-Cooperative coroutines on one thread. A function that returns `COROUTINE[T]` or `COROUTINE` is a coroutine; one coroutine `await`s another as it would call a function, `pause()` and `sleep(ms)` give up the turn, and `run()` resumes parked coroutines until none remain. `CHANNEL[T]` hands values between coroutines, and `MUTEX` and `SEMAPHORE` guard what they share.
+Cooperative coroutines on one thread. A function that returns `Coroutine[T]` or `Coroutine` is a coroutine; one coroutine `await`s another as it would call a function, `pause()` and `sleep(ms)` give up the turn, and `run()` resumes parked coroutines until none remain. `Channel[T]` hands values between coroutines, and `MUTEX` and `Semaphore` guard what they share.
 
 ```ghul
 use Ghul.Coroutines
 
-square_later(n: int) -> COROUTINE[int] is
+square_later(n: int) -> Coroutine[int] is
     await pause()
     return n * n
 si
 
-report() -> COROUTINE is
+report() -> Coroutine is
     write_line("{await square_later(4)}")
 si
 
@@ -116,12 +116,12 @@ let doc = Json.parse("[1, 2, 3]")
 let text = Json.write(doc)
 ```
 
-### Processes and the environment - `IO.PROCESS`, `Ghul.Environment`
+### Processes and the environment - `IO.Process`, `Ghul.Environment`
 
-`IO.PROCESS.run` runs a program and returns its exit code and everything it wrote. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
+`IO.Process.run` runs a program and returns its exit code and everything it wrote. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
 
 ```ghul
-let result = IO.PROCESS.run("git", ["--version"])
+let result = IO.Process.run("git", ["--version"])
 write_line("{result.exit_code} {result.output}")
 ```
 

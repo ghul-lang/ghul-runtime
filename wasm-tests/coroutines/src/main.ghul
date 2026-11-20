@@ -6,27 +6,27 @@
 use IO.Std.write_line
 use Ghul.Coroutines
 
-worker(name: string, turns: int) -> COROUTINE is
+worker(name: string, turns: int) -> Coroutine is
     for i in 0..turns do
         write_line("{name} {i}")
         await pause()
     od
 si
 
-square_later(n: int) -> COROUTINE[int] is
+square_later(n: int) -> Coroutine[int] is
     await pause()
 
     return n * n
 si
 
-sum_of_squares() -> COROUTINE is
+sum_of_squares() -> Coroutine is
     let a = await square_later(3)
     let b = await square_later(4)
 
     write_line("sum of squares {a + b}")
 si
 
-producer(channel: CHANNEL[int]) -> COROUTINE is
+producer(channel: Channel[int]) -> Coroutine is
     for i in 1::3 do
         write_line("send {i}")
         channel.send(i)
@@ -36,7 +36,7 @@ producer(channel: CHANNEL[int]) -> COROUTINE is
     channel.send(0)
 si
 
-consumer(channel: CHANNEL[int]) -> COROUTINE is
+consumer(channel: Channel[int]) -> Coroutine is
     let value mut = await channel.receive()
 
     while value != 0 do
@@ -47,7 +47,7 @@ consumer(channel: CHANNEL[int]) -> COROUTINE is
     write_line("consumer done")
 si
 
-guarded(name: string, lock: SEMAPHORE) -> COROUTINE is
+guarded(name: string, lock: Semaphore) -> Coroutine is
     await lock.acquire()
 
     write_line("{name} in")
@@ -60,19 +60,19 @@ si
 // Sleeps until `deadline`, a time from `SCHEDULER.now`. The deadline is
 // taken by the caller rather than here, so two sleepers wake in the order of
 // their deadlines however long the scheduler takes to start each of them.
-sleeper(name: string, deadline: long) -> COROUTINE is
+sleeper(name: string, deadline: long) -> Coroutine is
     await SLEEP(SCHEDULER.current, deadline)
 
     write_line("{name} woke")
 si
 
-fails() -> COROUTINE is
+fails() -> Coroutine is
     await pause()
 
     throw Ghul.InvalidOperationException("failed inside")
 si
 
-catches() -> COROUTINE is
+catches() -> Coroutine is
     try
         await fails()
     catch e: Ghul.InvalidOperationException
@@ -88,13 +88,13 @@ entry() is
     sum_of_squares()
     run()
 
-    let channel = CHANNEL[int]()
+    let channel = Channel[int]()
 
     consumer(channel)
     producer(channel)
     run()
 
-    let semaphore = SEMAPHORE(1)
+    let semaphore = Semaphore(1)
 
     guarded("first", semaphore)
     guarded("second", semaphore)

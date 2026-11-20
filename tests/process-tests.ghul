@@ -10,7 +10,7 @@ namespace Tests is
 
         @Test()
         Run_Command_CapturesOutputErrorAndStatus() is
-            let result = IO.PROCESS.run("/bin/sh", ["-c", "printf out; printf err >&2; exit 4"])
+            let result = IO.Process.run("/bin/sh", ["-c", "printf out; printf err >&2; exit 4"])
 
             are_equal("out", result.output)
             are_equal("err", result.error)
@@ -19,7 +19,7 @@ namespace Tests is
 
         @Test()
         Run_EachArgument_ReachesTheProgramWhole() is
-            let result = IO.PROCESS.run("printf", ["%s|", "two words", ""])
+            let result = IO.Process.run("printf", ["%s|", "two words", ""])
 
             are_equal("two words||", result.output)
             are_equal(0, result.exit_code)
@@ -28,7 +28,7 @@ namespace Tests is
         @Test()
         Run_MissingProgram_ThrowsFileNotFound() is
             try
-                IO.PROCESS.run("ghul-no-such-program", [])
+                IO.Process.run("ghul-no-such-program", [])
                 fail("expected IO.FileNotFoundException")
             catch e: IO.FileNotFoundException
                 is_true(e.message.contains("ghul-no-such-program"))
