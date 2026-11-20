@@ -1,5 +1,5 @@
 namespace Ghul is
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     /// Implemented by a type that controls how `$` and `inspect` render it.
     trait Displayable open is
@@ -19,7 +19,7 @@ namespace Ghul is
     /// Holds the text, the element budget and the values being rendered that
     /// `$`, `inspect` and an implementation of `Displayable` write through.
     class DISPLAY_STATE is
-        _text: STRING_BUILDER
+        _text: StringBuilder
         _path: _DISPLAY_LINK?
         _counts: _DISPLAY_COUNT
         _depth: int
@@ -53,7 +53,7 @@ namespace Ghul is
             self.mode = mode
             self.max_elements = max_elements
 
-            _text = STRING_BUILDER()
+            _text = StringBuilder()
             _counts = _DISPLAY_COUNT(null)
         si
 

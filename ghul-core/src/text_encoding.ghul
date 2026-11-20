@@ -265,13 +265,13 @@ si
 namespace IO is
     /// Writes text into a string, as .NET's `System.IO.StringWriter` does.
     class StringWriter: TextWriter is
-        _text: Text.STRING_BUILDER
+        _text: Text.StringBuilder
 
         /// A writer over an empty string.
         init() is
             super.init()
 
-            _text = Text.STRING_BUILDER()
+            _text = Text.StringBuilder()
         si
 
         write(text: string) pure =>

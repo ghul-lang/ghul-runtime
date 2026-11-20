@@ -1,14 +1,14 @@
 namespace Json is
     use Collections.LIST
     use Collections.KEY_VALUE_PAIR
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     /// `value` as compact JSON text - no whitespace beyond what a string
     /// it holds needs escaped, which is what a line of NDJSON wants.
     ///
     /// - value: the value to write
     write(value: Value) -> string is
-        let builder = STRING_BUILDER()
+        let builder = StringBuilder()
         write(value, builder)
         return builder.to_string()
     si
@@ -17,7 +17,7 @@ namespace Json is
     ///
     /// - value: the value to write
     /// - builder: where the text is appended
-    write(value: Value, builder: STRING_BUILDER) is
+    write(value: Value, builder: StringBuilder) is
         case value
         when Value.NULL then builder.append("null")
         when b: Value.BOOLEAN then builder.append(if b.value then "true" else "false" fi)
@@ -31,7 +31,7 @@ namespace Json is
     // An integral double is written without a decimal point, so a value
     // built from an int round-trips to the same text a JSON number usually
     // takes; anything else is written in double's own round-trip format.
-    _write_number(value: double, builder: STRING_BUILDER) is
+    _write_number(value: double, builder: StringBuilder) is
         if !double.is_finite(value) then
             throw Ghul.ArgumentException("JSON has no representation for NaN or an infinity")
         fi
@@ -43,7 +43,7 @@ namespace Json is
         fi
     si
 
-    _write_string(value: string, builder: STRING_BUILDER) is
+    _write_string(value: string, builder: StringBuilder) is
         builder.append('"')
 
         for c in value do
@@ -77,7 +77,7 @@ namespace Json is
         return "{digits[(code >> 12) & 15]}{digits[(code >> 8) & 15]}{digits[(code >> 4) & 15]}{digits[code & 15]}"
     si
 
-    _write_array(items: LIST[Value], builder: STRING_BUILDER) is
+    _write_array(items: LIST[Value], builder: StringBuilder) is
         builder.append('[')
 
         for i in 0..items.count do
@@ -91,7 +91,7 @@ namespace Json is
         builder.append(']')
     si
 
-    _write_object(fields: LIST[KEY_VALUE_PAIR[string, Value]], builder: STRING_BUILDER) is
+    _write_object(fields: LIST[KEY_VALUE_PAIR[string, Value]], builder: StringBuilder) is
         builder.append('{')
 
         for i in 0..fields.count do

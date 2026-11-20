@@ -1,6 +1,6 @@
 namespace Text is
     /// Accumulates text a piece at a time, as an interpolated string does.
-    class STRING_BUILDER is
+    class StringBuilder is
         // What has been built is the first `_length` code units of `_chars`,
         // which doubles when it fills, so appending costs the same however
         // much has been built and `to_string` copies the text once.
@@ -31,7 +31,7 @@ namespace Text is
         /// A null appends nothing, as .NET's builder does.
         ///
         /// - text: the text to append
-        append(text: string?) -> STRING_BUILDER is
+        append(text: string?) -> StringBuilder is
             if !text? then
                 return self
             fi
@@ -50,7 +50,7 @@ namespace Text is
         /// Appends `value`, and returns this builder.
         ///
         /// - value: the code unit to append
-        append(value: char) -> STRING_BUILDER is
+        append(value: char) -> StringBuilder is
             _ensure(_length + 1)
             Ghul._array_set(_chars, _length, value)
             _length = _length + 1
@@ -62,7 +62,7 @@ namespace Text is
         ///
         /// - value: the code unit to append
         /// - count: how many copies to append
-        append(value: char, count: int) -> STRING_BUILDER is
+        append(value: char, count: int) -> StringBuilder is
             if count <= 0 then
                 return self
             fi
@@ -84,38 +84,38 @@ namespace Text is
         /// Appends the text of `value`, and returns this builder.
         ///
         /// - value: the value to append
-        append(value: int) -> STRING_BUILDER => append(value.to_string())
+        append(value: int) -> StringBuilder => append(value.to_string())
 
         /// Appends the text of `value`, and returns this builder.
         ///
         /// - value: the value to append
-        append(value: long) -> STRING_BUILDER => append(value.to_string())
+        append(value: long) -> StringBuilder => append(value.to_string())
 
         /// Appends the text of `value`, and returns this builder.
         ///
         /// - value: the value to append
-        append(value: double) -> STRING_BUILDER => append(value.to_string())
+        append(value: double) -> StringBuilder => append(value.to_string())
 
         /// Appends `True` or `False`, as .NET writes a `bool`, and returns this
         /// builder.
         ///
         /// - value: the value to append
-        append(value: bool) -> STRING_BUILDER => append(if value then "True" else "False" fi)
+        append(value: bool) -> StringBuilder => append(if value then "True" else "False" fi)
 
         /// Appends the text of `value`, nothing where it is absent, and
         /// returns this builder.
         ///
         /// - value: the value to append
-        append(value: object?) -> STRING_BUILDER =>
+        append(value: object?) -> StringBuilder =>
             if value? then append(value.to_string()) else self fi
 
         /// Appends a line break, and returns this builder.
-        append_line() -> STRING_BUILDER => append("\n")
+        append_line() -> StringBuilder => append("\n")
 
         /// Appends `text` and a line break, and returns this builder.
         ///
         /// - text: the text to append
-        append_line(text: string) -> STRING_BUILDER => append(text).append("\n")
+        append_line(text: string) -> StringBuilder => append(text).append("\n")
 
         /// The number of code units built so far.
         length: int pure => _length
@@ -132,7 +132,7 @@ namespace Text is
 
         /// Removes everything built so far, keeping the room it took so the
         /// builder can be reused, and returns this builder.
-        clear() -> STRING_BUILDER is
+        clear() -> StringBuilder is
             _length = 0
             return self
         si
@@ -141,7 +141,7 @@ namespace Text is
         ///
         /// - index: where to insert, from 0 to `length`
         /// - value: the text to insert
-        insert(index: int, value: string) -> STRING_BUILDER is
+        insert(index: int, value: string) -> StringBuilder is
             if index < 0 \/ index > _length then
                 throw Ghul.ArgumentOutOfRangeException("index")
             fi
@@ -173,13 +173,13 @@ namespace Text is
         ///
         /// - index: where to insert, from 0 to `length`
         /// - value: the code unit to insert
-        insert(index: int, value: char) -> STRING_BUILDER => insert(index, _string_from_char(value))
+        insert(index: int, value: char) -> StringBuilder => insert(index, _string_from_char(value))
 
         /// Removes `count` code units from `start`, and returns this builder.
         ///
         /// - start: where to start removing
         /// - count: how many code units to remove
-        remove(start: int, count: int) -> STRING_BUILDER is
+        remove(start: int, count: int) -> StringBuilder is
             if start < 0 \/ count < 0 \/ start + count > _length then
                 throw Ghul.ArgumentOutOfRangeException("start")
             fi

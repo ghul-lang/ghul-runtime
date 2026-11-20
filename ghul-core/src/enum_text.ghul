@@ -1,6 +1,6 @@
 namespace Ghul.Internal is
     use Collections.LIST
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     /// The text of an enum value, as .NET's `Enum.ToString` gives it. The
     /// compiler calls this with the enum's members, since a value of an enum
@@ -44,7 +44,7 @@ namespace Ghul.Internal is
                 return value.to_string()
             fi
 
-            let text = STRING_BUILDER()
+            let text = StringBuilder()
 
             let j mut = taken.count - 1
 

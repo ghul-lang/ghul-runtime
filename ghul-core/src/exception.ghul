@@ -133,7 +133,7 @@ namespace Ghul is
         si
 
         _message(message: string, inner_exceptions: Collections.Iterable[Exception]) -> string static is
-            let result = Text.STRING_BUILDER()
+            let result = Text.StringBuilder()
 
             result.append(message)
 

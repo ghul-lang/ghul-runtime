@@ -5,7 +5,7 @@ use IO.Std.write_line
 
 try_pattern(pattern: string, options: Text.RegexOptions) is
     try
-        Text.REGEX(pattern, options)
+        Text.Regex(pattern, options)
         write_line("accepted /{pattern}/")
     catch e: Ghul.ArgumentException
         write_line(e.message)

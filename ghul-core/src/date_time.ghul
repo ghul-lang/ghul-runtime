@@ -483,7 +483,7 @@ namespace Ghul.Internal is
     use Time.DATE_TIME
     use Time.DateTimeKind
     use Time.TIME_SPAN
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     // Writes a date in a custom format under the invariant culture.
     class DATE_FORMAT is
@@ -492,7 +492,7 @@ namespace Ghul.Internal is
         // `offset` is the offset from UTC that `z` and `K` write, where the
         // moment is a `DateTimeOffset`'s.
         write(moment: DATE_TIME, format: string, offset: TIME_SPAN?) -> string static is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let i mut = 0
 
             while i < format.length do
@@ -757,7 +757,7 @@ namespace Ghul.Internal is
                 return "{sign}{days}:{_padded(hours, 2)}:{_padded(minutes, 2)}:{_padded(seconds, 2)}.{fraction}"
             fi
 
-            let result = Text.STRING_BUILDER()
+            let result = Text.StringBuilder()
             let i mut = 0
 
             while i < format.length do

@@ -1182,7 +1182,7 @@ namespace IO is
             _FILE_STORE.append(path, bytes)
 
         _lines(contents: Collections.Iterable[string]) -> string static is
-            let text = Text.STRING_BUILDER()
+            let text = Text.StringBuilder()
 
             for line in contents do
                 text.append(line)
@@ -1800,14 +1800,14 @@ namespace IO is
         _start: ARRAY[ubyte]
         _is_written: bool
 
-        text: Text.STRING_BUILDER
+        text: Text.StringBuilder
 
         description: string => _path
 
         init(path: string, start: ARRAY[ubyte]) is
             _path = path
             _start = start
-            text = Text.STRING_BUILDER()
+            text = Text.StringBuilder()
         si
 
         flush() is

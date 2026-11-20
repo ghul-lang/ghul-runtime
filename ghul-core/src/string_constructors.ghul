@@ -18,7 +18,7 @@ namespace Ghul.Internal is
                 throw Ghul.ArgumentOutOfRangeException("count", "the count must not be negative")
             fi
 
-            return Text.STRING_BUILDER().append(unit, count).to_string()
+            return Text.StringBuilder().append(unit, count).to_string()
         si
     si
 

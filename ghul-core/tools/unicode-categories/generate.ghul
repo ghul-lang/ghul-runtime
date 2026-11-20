@@ -40,7 +40,7 @@ namespace Generate is
         write_line("    // UnicodeCategory value in two.")
         write_line("    _unicode_category_ranges() -> string =>")
 
-        let line = Text.STRING_BUILDER()
+        let line = Text.StringBuilder()
         let i mut = 0
 
         while i < ranges.count do

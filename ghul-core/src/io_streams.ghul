@@ -58,7 +58,7 @@ namespace IO is
                 return null
             fi
 
-            let line = Text.STRING_BUILDER()
+            let line = Text.StringBuilder()
             let c mut = first
 
             while c >= 0 do
@@ -105,7 +105,7 @@ namespace IO is
 
         /// Reads everything left, which is empty at the end of the text.
         read_to_end() -> string is
-            let text = Text.STRING_BUILDER()
+            let text = Text.StringBuilder()
             let c mut = read()
 
             while c >= 0 do

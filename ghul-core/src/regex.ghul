@@ -32,7 +32,7 @@ namespace Text is
 
     /// One group of a match: the part of the input it captured, or a
     /// failed group that took no part.
-    class GROUP is
+    class Group is
         _input: string
         _index: int
         _length: int
@@ -65,11 +65,11 @@ namespace Text is
     si
 
     /// The groups of a match, by number and by name.
-    class GROUP_COLLECTION: Iterable[GROUP] is
-        _groups: LIST[GROUP]
+    class GroupCollection: Iterable[Group] is
+        _groups: LIST[Group]
         _program: Ghul.Internal.RX_PROGRAM
 
-        init(groups: LIST[GROUP], program: Ghul.Internal.RX_PROGRAM) is
+        init(groups: LIST[Group], program: Ghul.Internal.RX_PROGRAM) is
             _groups = groups
             _program = program
         si
@@ -80,33 +80,33 @@ namespace Text is
         /// Group `number`, or a failed group where the pattern has none of that number.
         ///
         /// - number: the group's number; 0 is the whole match
-        [number: int]: GROUP =>
-            if number >= 0 /\ number < _groups.count then _groups[number] else GROUP("", 0, 0, false, "") fi
+        [number: int]: Group =>
+            if number >= 0 /\ number < _groups.count then _groups[number] else Group("", 0, 0, false, "") fi
 
         /// The group named `name`, or a failed group where the pattern has none of that name.
         ///
         /// - name: the group's name, or its number written out
-        [name: string]: GROUP is
+        [name: string]: Group is
             let number = _program.number_of(name)
-            return if number >= 0 then _groups[number] else GROUP("", 0, 0, false, "") fi
+            return if number >= 0 then _groups[number] else Group("", 0, 0, false, "") fi
         si
 
         /// The groups in order of their numbers.
-        iterator: Iterator[GROUP] => _groups.iterator
+        iterator: Iterator[Group] => _groups.iterator
     si
 
     /// A match of a regular expression, or the failed match that says there
     /// was none: group 0 and the groups within it.
-    class MATCH: GROUP is
-        _regex: REGEX?
+    class Match: Group is
+        _regex: Regex?
         _program: Ghul.Internal.RX_PROGRAM
         _text: string
-        _groups: GROUP_COLLECTION
+        _groups: GroupCollection
 
         /// The groups of the match, group 0 first.
-        groups: GROUP_COLLECTION => _groups
+        groups: GroupCollection => _groups
 
-        init(input: string, spans: LIST[int]?, regex: REGEX?, program: Ghul.Internal.RX_PROGRAM) is
+        init(input: string, spans: LIST[int]?, regex: Regex?, program: Ghul.Internal.RX_PROGRAM) is
             super.init(
                 input,
                 if spans? then spans[0] else 0 fi,
@@ -118,7 +118,7 @@ namespace Text is
             _program = program
             _text = input
 
-            let groups = LIST[GROUP]()
+            let groups = LIST[Group]()
             groups.add(self)
 
             let n mut = 1
@@ -129,20 +129,20 @@ namespace Text is
 
                 groups.add(
                     if start >= 0 /\ end >= start then
-                        GROUP(input, start, end - start, true, program.names[n])
+                        Group(input, start, end - start, true, program.names[n])
                     else
-                        GROUP(input, 0, 0, false, program.names[n])
+                        Group(input, 0, 0, false, program.names[n])
                     fi)
 
                 n = n + 1
             od
 
-            _groups = GROUP_COLLECTION(groups, program)
+            _groups = GroupCollection(groups, program)
         si
 
         /// The next match after this one, or a failed match where there is
         /// none. After an empty match the search starts one place on.
-        next_match() -> MATCH is
+        next_match() -> Match is
             if !success \/ !_regex? then
                 return self
             fi
@@ -150,7 +150,7 @@ namespace Text is
             let start = if length == 0 then index + 1 else index + length fi
 
             if start > _text.length then
-                return MATCH(_text, null, _regex, _program)
+                return Match(_text, null, _regex, _program)
             fi
 
             return _regex!.match(_text, start)
@@ -158,11 +158,11 @@ namespace Text is
     si
 
     /// The successive matches of a regular expression in an input.
-    class MATCH_COLLECTION: Iterable[MATCH] is
-        _matches: LIST[MATCH]
+    class MatchCollection: Iterable[Match] is
+        _matches: LIST[Match]
 
-        init(first: MATCH) is
-            _matches = LIST[MATCH]()
+        init(first: Match) is
+            _matches = LIST[Match]()
 
             let m mut = first
 
@@ -178,10 +178,10 @@ namespace Text is
         /// Match `index`, counting from 0.
         ///
         /// - index: the match's position among the matches
-        [index: int]: MATCH => _matches[index]
+        [index: int]: Match => _matches[index]
 
         /// The matches in order.
-        iterator: Iterator[MATCH] => _matches.iterator
+        iterator: Iterator[Match] => _matches.iterator
     si
 
     /// A regular expression, in the subset of .NET's syntax this target
@@ -196,7 +196,7 @@ namespace Text is
     /// which happens for some lazy loops over groups that can match
     /// empty, this one gives the answer of .NET's compiled and
     /// non-backtracking engines rather than its interpreter's.
-    class REGEX is
+    class Regex is
         _pattern: string
         _options: RegexOptions
         _program: Ghul.Internal.RX_PROGRAM
@@ -231,25 +231,25 @@ namespace Text is
         /// The first match in `input`, or a failed match.
         ///
         /// - input: the text to search
-        match(input: string) -> MATCH => match(input, 0)
+        match(input: string) -> Match => match(input, 0)
 
         /// The first match in `input` at or after `start`, or a failed match.
         ///
         /// - input: the text to search
         /// - start: where to start searching
-        match(input: string, start: int) -> MATCH is
+        match(input: string, start: int) -> Match is
             if start < 0 \/ start > input.length then
                 throw Ghul.ArgumentOutOfRangeException("startat")
             fi
 
             let spans = Ghul.Internal.RX_MATCHER(_program, input).find(start)
-            return MATCH(input, spans, self, _program)
+            return Match(input, spans, self, _program)
         si
 
         /// Every match in `input`, in order.
         ///
         /// - input: the text to search
-        matches(input: string) -> MATCH_COLLECTION => MATCH_COLLECTION(match(input))
+        matches(input: string) -> MatchCollection => MatchCollection(match(input))
 
         /// `input` with each match replaced by `replacement`, in which `$n`,
         /// `${name}`, `$&`, `` $` ``, `$'`, `$+`, `$_` and `$$` stand for what
@@ -258,14 +258,14 @@ namespace Text is
         /// - input: the text to search
         /// - replacement: the text to put in place of each match
         replace(input: string, replacement: string) -> string =>
-            replace(input, (m: MATCH) => _substitute(m, input, replacement))
+            replace(input, (m: Match) => _substitute(m, input, replacement))
 
         /// `input` with each match replaced by what `evaluator` gives for it.
         ///
         /// - input: the text to search
         /// - evaluator: the replacement for a match
-        replace(input: string, evaluator: MATCH -> string) -> string is
-            let result = STRING_BUILDER()
+        replace(input: string, evaluator: Match -> string) -> string is
+            let result = StringBuilder()
             let last mut = 0
 
             for m in matches(input) do
@@ -313,8 +313,8 @@ namespace Text is
         /// The pattern.
         to_string() -> string => _pattern
 
-        _substitute(m: MATCH, input: string, replacement: string) -> string is
-            let result = STRING_BUILDER()
+        _substitute(m: Match, input: string, replacement: string) -> string is
+            let result = StringBuilder()
             let i mut = 0
 
             while i < replacement.length do
@@ -399,47 +399,47 @@ namespace Text is
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
-        is_match(input: string, pattern: string) -> bool static => REGEX(pattern).is_match(input)
+        is_match(input: string, pattern: string) -> bool static => Regex(pattern).is_match(input)
 
         /// Whether `pattern` matches anywhere in `input` under `options`.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
         /// - options: how it matches
-        is_match(input: string, pattern: string, options: RegexOptions) -> bool static => REGEX(pattern, options).is_match(input)
+        is_match(input: string, pattern: string, options: RegexOptions) -> bool static => Regex(pattern, options).is_match(input)
 
         /// The first match of `pattern` in `input`, or a failed match.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
-        match(input: string, pattern: string) -> MATCH static => REGEX(pattern).match(input)
+        match(input: string, pattern: string) -> Match static => Regex(pattern).match(input)
 
         /// The first match of `pattern` in `input` under `options`, or a failed match.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
         /// - options: how it matches
-        match(input: string, pattern: string, options: RegexOptions) -> MATCH static => REGEX(pattern, options).match(input)
+        match(input: string, pattern: string, options: RegexOptions) -> Match static => Regex(pattern, options).match(input)
 
         /// Every match of `pattern` in `input`.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
-        matches(input: string, pattern: string) -> MATCH_COLLECTION static => REGEX(pattern).matches(input)
+        matches(input: string, pattern: string) -> MatchCollection static => Regex(pattern).matches(input)
 
         /// Every match of `pattern` in `input` under `options`.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
         /// - options: how it matches
-        matches(input: string, pattern: string, options: RegexOptions) -> MATCH_COLLECTION static => REGEX(pattern, options).matches(input)
+        matches(input: string, pattern: string, options: RegexOptions) -> MatchCollection static => Regex(pattern, options).matches(input)
 
         /// `input` with each match of `pattern` replaced by `replacement`.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
         /// - replacement: the text to put in place of each match
-        replace(input: string, pattern: string, replacement: string) -> string static => REGEX(pattern).replace(input, replacement)
+        replace(input: string, pattern: string, replacement: string) -> string static => Regex(pattern).replace(input, replacement)
 
         /// `input` with each match of `pattern` under `options` replaced by `replacement`.
         ///
@@ -447,26 +447,26 @@ namespace Text is
         /// - pattern: the regular expression
         /// - replacement: the text to put in place of each match
         /// - options: how it matches
-        replace(input: string, pattern: string, replacement: string, options: RegexOptions) -> string static => REGEX(pattern, options).replace(input, replacement)
+        replace(input: string, pattern: string, replacement: string, options: RegexOptions) -> string static => Regex(pattern, options).replace(input, replacement)
 
         /// `input` with each match of `pattern` replaced by what `evaluator` gives for it.
         ///
         /// - input: the text to search
         /// - pattern: the regular expression
         /// - evaluator: the replacement for a match
-        replace(input: string, pattern: string, evaluator: MATCH -> string) -> string static => REGEX(pattern).replace(input, evaluator)
+        replace(input: string, pattern: string, evaluator: Match -> string) -> string static => Regex(pattern).replace(input, evaluator)
 
         /// The pieces of `input` between matches of `pattern`.
         ///
         /// - input: the text to split
         /// - pattern: the regular expression
-        split(input: string, pattern: string) -> ARRAY[string] static => REGEX(pattern).split(input)
+        split(input: string, pattern: string) -> ARRAY[string] static => Regex(pattern).split(input)
 
         /// `text` with every character that has a meaning in a pattern escaped.
         ///
         /// - text: the text to escape
         escape(text: string) -> string static is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
 
             for c in text do
                 if c == '\\' \/ c == '*' \/ c == '+' \/ c == '?' \/ c == '|' \/ c == '{' \/ c == '[' \/ c == '(' \/ c == ')' \/ c == '^' \/ c == '$' \/ c == '.' \/ c == '#' \/ c == ' ' then

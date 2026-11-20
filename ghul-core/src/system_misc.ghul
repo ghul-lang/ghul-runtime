@@ -225,11 +225,11 @@ namespace System is
 si
 
 namespace Ghul.Internal is
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     // A builder for the System types, whose namespace hides `Text` behind
     // `System.Text`.
     class SYSTEM_TEXT is
-        builder() -> STRING_BUILDER static => STRING_BUILDER()
+        builder() -> StringBuilder static => StringBuilder()
     si
 si

@@ -3,7 +3,7 @@
 // of the text built: 2, 10 and 1 characters, then 4 for True and one for
 // each of the eight numbers.
 f(count: int, wide: long, letter: char) -> string is
-    let builder = Text.STRING_BUILDER()
+    let builder = Text.StringBuilder()
 
     builder.append(count.to_string())
     builder.append(wide.to_string())
@@ -13,7 +13,7 @@ f(count: int, wide: long, letter: char) -> string is
 si
 
 g(flag: bool, small: byte, half: short, native: word, unsigned_small: ubyte, unsigned_half: ushort, unsigned: uint, unsigned_wide: ulong, unsigned_native: uword) -> string is
-    let builder = Text.STRING_BUILDER()
+    let builder = Text.StringBuilder()
 
     builder.append(flag.to_string())
     builder.append(small.to_string())

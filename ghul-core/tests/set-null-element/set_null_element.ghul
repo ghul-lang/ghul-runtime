@@ -27,7 +27,7 @@ entry() is
     ordered.add(null)
     ordered.add("last")
 
-    let text = Text.STRING_BUILDER()
+    let text = Text.StringBuilder()
 
     for name in ordered do
         text.append(if let n = name then n else "null" fi)

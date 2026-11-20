@@ -64,7 +64,7 @@ namespace Tests is
 
         @Test()
         Answer_to_the_old_names_of_the_moved_types() is
-            let rune: System.Text.Rune = Text.RUNE(0x41)
+            let rune: System.Text.Rune = Text.Rune(0x41)
             let encoding: System.Text.Encoding = Text.Encoding.utf8
             let comparison: Ghul.StringComparison = Text.StringComparison.ORDINAL
 

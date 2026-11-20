@@ -16,7 +16,7 @@ class HOLDER is
             IO.Std.out.write("c")
             IO.Std.out.write_line("d")
 
-            let builder = Text.STRING_BUILDER()
+            let builder = Text.StringBuilder()
             builder.append("xyz")
 
             return "{_name.length} {builder.to_string()} {builder.length}"

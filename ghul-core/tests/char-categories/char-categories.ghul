@@ -4,7 +4,7 @@
 use IO.Std.write_line
 
 flags(c: char) -> string is
-    let result = Text.STRING_BUILDER()
+    let result = Text.StringBuilder()
 
     result.append("U+{cast int(c):X4} category {cast int(char.get_unicode_category(c))}:")
 

@@ -1,5 +1,5 @@
 namespace Ghul is
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     partial string is
         /// The strings of `values` joined end to end, in order.
@@ -193,7 +193,7 @@ namespace Ghul is
         /// The string with each letter made upper case, as `(x => x.to_upper())`
         /// maps it.
         to_upper() -> string pure is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let i mut = 0
 
             while i < length do
@@ -207,7 +207,7 @@ namespace Ghul is
         /// The string with each letter made lower case, as `(x => x.to_lower())`
         /// maps it.
         to_lower() -> string pure is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let i mut = 0
 
             while i < length do
@@ -265,7 +265,7 @@ namespace Ghul is
                 throw ArgumentException("old_value")
             fi
 
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let start mut = 0
             let found mut = index_of(old_value, 0)
 
@@ -324,7 +324,7 @@ namespace Ghul is
         /// - separator: the text to put between values
         /// - values: the strings to join, in order
         join(separator: string, values: Collections.Iterable[string]) -> string static is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let first mut = true
 
             for value in values do
@@ -428,7 +428,7 @@ namespace Ghul is
 
     // `count` copies of `unit`; empty when `count` is not positive.
     _repeat(unit: char, count: int) -> string is
-        let result = STRING_BUILDER()
+        let result = StringBuilder()
         let text = _string_from_char(unit)
         let i mut = 0
 

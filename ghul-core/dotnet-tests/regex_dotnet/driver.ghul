@@ -91,7 +91,7 @@ namespace Harness is
                 return "refused"
             fi
 
-            let result = Text.STRING_BUILDER()
+            let result = Text.StringBuilder()
             let at mut = 0
             let count mut = 0
 
@@ -211,7 +211,7 @@ namespace Harness is
         si
 
         _all(regex: Regex, input: string) -> string is
-            let result = Text.STRING_BUILDER()
+            let result = Text.StringBuilder()
             let m mut = regex.match(input)
             let count mut = 0
 
@@ -336,7 +336,7 @@ namespace Harness is
 
         while n < 20000 do
             let pattern = _pattern(random, pieces, quantifiers, 3, false)
-            let input = Text.STRING_BUILDER()
+            let input = Text.StringBuilder()
             let length = random.next(12)
             let k mut = 0
 
@@ -358,7 +358,7 @@ namespace Harness is
     // without bound, nothing repeats without bound again, so no pattern
     // needs exponential backtracking to fail.
     _pattern(random: Ghul.RANDOM, pieces: string[], quantifiers: string[], depth: int, in_loop: bool) -> string is
-        let result = Text.STRING_BUILDER()
+        let result = Text.StringBuilder()
         let parts = 1 + random.next(4)
         let i mut = 0
 
