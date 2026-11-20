@@ -1,4 +1,4 @@
-namespace System is
+namespace Ghul is
     /// The collector, as far as a program can observe it.
     class GC is
         /// The bytes the program holds on the managed heap.

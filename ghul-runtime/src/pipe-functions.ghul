@@ -229,7 +229,7 @@ namespace Ghul.Pipes is
 
     /// The elements of `source` and `right` combined, with duplicates
     /// removed: `source | right`.
-    @System.Obsolete("use source | right instead")
+    @Ghul.Obsolete("use source | right instead")
     union_with[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         distinct(cat(source, right))
 
@@ -240,7 +240,7 @@ namespace Ghul.Pipes is
 
     /// The elements of `source` that also appear in `right`, with duplicates
     /// removed.
-    @System.Obsolete("use intersect, or source & right, instead")
+    @Ghul.Obsolete("use intersect, or source & right, instead")
     intersect_with[T](source: Iterable[T], right: Iterable[T]) -> Iterable[T] pure =>
         INTERSECT_PIPE[T](source, right)
 
@@ -303,25 +303,25 @@ namespace Ghul.Pipes is
 
     /// The elements of `source`, collected into an array. Use the `ARRAY(source)`
     /// constructor instead.
-    @System.Obsolete("use ARRAY() instead")
+    @Ghul.Obsolete("use ARRAY() instead")
     collect[T](source: Iterable[T]) -> ARRAY[T] pure =>
         _list(source).to_array()
 
     /// The same as `collect`. Use the `ARRAY(source)` constructor instead.
     @IF.dotnet()
-    @System.Obsolete("use ARRAY() instead")
+    @Ghul.Obsolete("use ARRAY() instead")
     collect_array[T](source: Iterable[T]) -> ARRAY[T] pure =>
         _list(source).to_array()
 
     /// The same as `collect_mutable`. Use the `LIST(source)` constructor instead.
     @IF.dotnet()
-    @System.Obsolete("use LIST() instead")
+    @Ghul.Obsolete("use LIST() instead")
     collect_list[T](source: Iterable[T]) -> LIST[T] pure =>
         _list(source)
 
     /// The elements of `source`, collected into a mutable list. Use the
     /// `LIST(source)` constructor instead.
-    @System.Obsolete("use LIST() instead")
+    @Ghul.Obsolete("use LIST() instead")
     collect_mutable[T](source: Iterable[T]) -> LIST[T] pure =>
         _list(source)
 
@@ -337,7 +337,7 @@ namespace Ghul.Pipes is
 
     /// The elements of `source`, collected into a set, with duplicates removed. Use
     /// the `SET(source)` constructor instead.
-    @System.Obsolete("use SET() instead")
+    @Ghul.Obsolete("use SET() instead")
     collect_set[T](source: Iterable[T]) -> SET[T] pure is
         let result = SET[T]()
 
@@ -378,7 +378,7 @@ namespace Ghul.Pipes is
 
     /// A mutable map built from a sequence of key and value pairs. Throws if the same
     /// key appears twice. Use the `MAP(source)` constructor instead.
-    @System.Obsolete("use MAP() instead")
+    @Ghul.Obsolete("use MAP() instead")
     collect_mutable_map[K, V](source: Iterable[(K, V)]) -> MAP[K, V] pure =>
         _map(source)
 

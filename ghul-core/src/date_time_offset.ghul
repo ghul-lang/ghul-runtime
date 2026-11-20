@@ -10,7 +10,7 @@ namespace Time is
     /// A moment as a clock time and its offset from UTC, as .NET's
     /// `System.DateTimeOffset` is. Two values are the same moment, and equal,
     /// when their UTC times are, whatever their offsets.
-    struct DateTimeOffset: System.IFormattable, Ghul.Comparable[DateTimeOffset] is
+    struct DateTimeOffset: Ghul.Formattable, Ghul.Comparable[DateTimeOffset] is
         // The clock time, in ticks since 0001-01-01T00:00:00.
         _clock_ticks: long
 

@@ -5,7 +5,7 @@
 namespace Time is
     /// An interval of time, counted in ticks of 100 nanoseconds, as .NET's
     /// `System.TimeSpan` counts it.
-    struct TimeSpan: System.IFormattable, Ghul.Comparable[TimeSpan] is
+    struct TimeSpan: Ghul.Formattable, Ghul.Comparable[TimeSpan] is
         /// The interval in ticks of 100 nanoseconds.
         ticks: long
 
@@ -91,7 +91,7 @@ namespace Time is
     /// A moment in time, counted in ticks of 100 nanoseconds since
     /// 0001-01-01T00:00:00, as .NET's `System.DateTime` counts it. The
     /// source-core targets know no time zone, so the time is always UTC.
-    struct DateTime: System.IFormattable, Ghul.Comparable[DateTime] is
+    struct DateTime: Ghul.Formattable, Ghul.Comparable[DateTime] is
         /// The moment in ticks of 100 nanoseconds since 0001-01-01T00:00:00.
         ticks: long
 

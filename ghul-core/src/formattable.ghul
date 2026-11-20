@@ -12,13 +12,12 @@ namespace Ghul is
     si
 si
 
-// .NET's name for this trait is kept, so source written against .NET
-// builds here unchanged.
-namespace System is
+namespace Ghul is
     /// A value that can be written in a format, as .NET's
-    /// `System.IFormattable` is. An interpolation that names a format, as in
+    /// `System.IFormattable` is; the compiler keeps that name as a second
+    /// spelling. An interpolation that names a format, as in
     /// `{value:yyyy-MM-dd}`, writes a value of such a type through this.
-    trait IFormattable open is
+    trait Formattable open is
         /// The value written in `format`, or in its default format where
         /// `format` is null.
         ///
