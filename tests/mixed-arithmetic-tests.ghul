@@ -1,0 +1,87 @@
+namespace Tests is
+    use Ghul.Pipes
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Arithmetic and ordering that mix int, long, single and double widen the
+    // narrower operand, on .NET as in the source core.
+    @TestClass()
+    class MIXED_ARITHMETIC_TESTS is
+        init() is si
+
+        @Test()
+        An_int_beside_a_double__should_be_widened_to_double_on_either_side() is
+            let n = 3
+            let d = 0.5
+
+            are_equal(1.5, n * d)
+            are_equal(1.5, d * n)
+            are_equal(5.5, n + 2.5)
+            are_equal(2.5, n - 0.5)
+            are_equal(3.5, 7 / 2.0)
+        si
+
+        @Test()
+        An_int_beside_a_long__should_be_widened_to_long_past_the_int_range() is
+            let n = 3
+            let big = 3_000_000_000L
+
+            are_equal(3_000_000_003L, big + n)
+            are_equal(9_000_000_000L, n * big)
+            are_equal(1_000_000_000L, big / n)
+            are_equal(3L, 7 % 4L)
+        si
+
+        @Test()
+        A_single_beside_an_int_or_a_double__should_be_widened_to_the_wider() is
+            are_equal(4.5s, 3 * 1.5s)
+            are_equal(0.75, 1.5s * 0.5)
+        si
+
+        @Test()
+        An_unannotated_parameter__should_settle_on_the_same_kind_operator() is
+            let half = x => x * 0.5
+            let twice = x => x * 2
+
+            are_equal(1.5, half(3.0))
+            are_equal(42, twice(21))
+        si
+
+        @Test()
+        A_mixed_seed_or_selector__should_be_widened_in_a_pipe() is
+            are_equal(6.5, [1, 2, 3] |> reduce(0.5, (acc, x) => acc + x))
+            are_equal(3.0, [1, 2, 3] |> map(x => x * 0.5) |> sum())
+            are_equal(2.0, [1.0, 3.0] |> map(* * 0.5) |> sum())
+        si
+
+        @Test()
+        An_ordering_across_kinds__should_compare_in_the_wider() is
+            let n = 3
+
+            is_true(n < 3.5)
+            is_true(3_000_000_000L > n)
+            is_true(n >= 3.0)
+            is_false(n > 3.0)
+        si
+
+        @Test()
+        A_typeless_cast_operand__should_take_the_same_kind_operators_type() is
+            let values = [1, 2, 3, 4]
+
+            are_equal(2, values |> sum() / cast(values.count))
+        si
+
+        @Test()
+        Two_reachable_operators__should_choose_the_narrower_result() is
+            let big = 3_000_000_000L
+            let n = 3
+
+            are_equal(typeof single, (big * 2.0s).get_type())
+            are_equal(typeof single, (n * 2.0s).get_type())
+            are_equal(typeof long, (n * big).get_type())
+            are_equal(typeof double, (n * 2.0).get_type())
+        si
+    si
+si
