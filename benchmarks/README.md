@@ -21,7 +21,9 @@ Timings are only worth anything on a quiet machine.
 benchmark run earlier can't change what a later one measures, for example by
 leaving a .NET call site polymorphic. Within that process, the benchmark runs
 once untimed as a warm-up, then `--repeats` times on the clock, all at the same
-size. The table gives the fastest and the median time on each target, the
+size. The default of 15 repeats is enough for .NET's tiered compilation to
+settle, so the median is a steady-state time; with fewer repeats .NET medians
+can include runs from before the JIT optimised the code. The table gives the fastest and the median time on each target, the
 ratio of llvm's median to .NET's (below 1 means llvm is faster), and whether
 both targets computed the same checksum.
 
@@ -31,6 +33,11 @@ disagree on a checksum are not running the same program. A benchmark whose
 answer can legitimately differ between targets uses a coarse checksum. These
 are `math_functions` (the last bit of `sin` and `log`) and `string_hash` (the
 hash function itself).
+
+A checksum alone doesn't stop the llvm optimiser removing an allocation it can
+prove unused and reducing the loop around it to arithmetic. A benchmark that
+measures allocation hands each object it allocates to `Sink.keep`
+(`src/harness.ghul`), which keeps it reachable.
 
 ## Families
 

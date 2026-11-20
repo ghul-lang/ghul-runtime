@@ -26,6 +26,7 @@ namespace Benchmarks is
 
         for i in 0..n do
             let cell = Cell(i, null)
+            Sink.keep(cell, i)
             total = total + long(cell.value)
         od
 
@@ -193,6 +194,7 @@ namespace Benchmarks is
 
         for i in 0..n do
             let f = (x: int) -> int => x + i
+            Sink.keep(f, i)
             total = total + long(f(1))
         od
 

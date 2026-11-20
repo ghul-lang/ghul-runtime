@@ -8,7 +8,7 @@
 #   benchmarks/run.sh [options] [benchmark ...]
 #
 #   --scale <x>      multiplies every benchmark's size (default 1)
-#   --repeats <n>    timed runs per benchmark after one warm-up (default 5)
+#   --repeats <n>    timed runs per benchmark after one warm-up (default 15)
 #   --check          runs each benchmark once on each target, untimed, and
 #                    compares the checksums; no timing
 #   --no-build       uses the binaries the last run built
@@ -26,7 +26,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 cd "$here"
 
 scale=1
-repeats=5
+repeats=15
 check=0
 build=1
 out=""
