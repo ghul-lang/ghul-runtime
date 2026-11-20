@@ -7,7 +7,7 @@ use System.Globalization.StringInfo
 
 // The code points of `text`, in hexadecimal, so the output is plain ASCII.
 codes(text: string) -> string is
-    let result = Text.STRING_BUILDER()
+    let result = Text.StringBuilder()
     let at mut = 0
 
     while at < text.length do
@@ -30,7 +30,7 @@ codes(text: string) -> string is
 si
 
 elements(text: string) -> string is
-    let result = Text.STRING_BUILDER()
+    let result = Text.StringBuilder()
     let at mut = 0
 
     while at < text.length do

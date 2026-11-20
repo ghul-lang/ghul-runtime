@@ -1,10 +1,10 @@
 // The string builder's members print what the same program prints on .NET,
 // and an interpolated string still builds through it.
 use IO.Std.write_line
-use Text.STRING_BUILDER
+use Text.StringBuilder
 
 entry() is
-    let builder = STRING_BUILDER()
+    let builder = StringBuilder()
 
     builder.append("ab").append('c').append(12).append(3000000000L).append(true)
     write_line(builder.to_string())

@@ -43,7 +43,7 @@ namespace Harness is
         si
 
         _escaped(text: string) -> string is
-            let result = Text.STRING_BUILDER()
+            let result = Text.StringBuilder()
 
             for c in text do
                 result.append("\\u{cast int(c):X4}")
@@ -98,7 +98,7 @@ namespace Harness is
         let random = System.Random(1357)
 
         for _ in 0..200000 do
-            let text = Text.STRING_BUILDER()
+            let text = Text.StringBuilder()
 
             for _ in 0..random.next(1, 9) do
                 text.append(samples[random.next(samples.count)])

@@ -1,7 +1,7 @@
 namespace Json is
     use Collections.LIST
     use Collections.KEY_VALUE_PAIR
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     /// Thrown when text given to `parse` is not valid JSON.
     class ParseException: Ghul.Exception is
@@ -161,7 +161,7 @@ namespace Json is
             let start = _pos
             _pos = _pos + 1
 
-            let builder = STRING_BUILDER()
+            let builder = StringBuilder()
 
             while _pos < _text.length /\ _text[_pos] != '"' do
                 if _text[_pos] == '\\' then

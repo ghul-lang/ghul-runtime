@@ -5,8 +5,8 @@ use IO.Std.write_line
 
 shown(text: string) -> string => text.replace("\n", "\\n").replace("\t", "\\t")
 
-describe(m: Text.MATCH, regex: Text.REGEX) -> string is
-    let result = Text.STRING_BUILDER()
+describe(m: Text.Match, regex: Text.Regex) -> string is
+    let result = Text.StringBuilder()
     let i mut = 0
 
     while i < m.groups.count do
@@ -90,7 +90,7 @@ si
 let n mut = 0
 
 for (pattern, options, input) in cases do
-    let regex = Text.REGEX(pattern, cast Text.RegexOptions(options))
+    let regex = Text.Regex(pattern, cast Text.RegexOptions(options))
     write_line("{n} /{shown(pattern)}/ {options} \"{shown(input)}\"")
 
     let m mut = regex.match(input)
@@ -106,7 +106,7 @@ for (pattern, options, input) in cases do
 od
 
 // The rest of the surface.
-let mail = Text.REGEX("(\\w+)@(?<host>\\w+)\\.com")
+let mail = Text.Regex("(\\w+)@(?<host>\\w+)\\.com")
 let found = mail.match("mail bob@example.com now")
 write_line("{found.success} {found.value} {found.index} {found.length} {found.groups[1].value} {found.groups["host"].value} {found.groups["nothing"].success}")
 write_line("{mail.is_match("none here")} {mail.is_match("a@b.com")} {mail.is_match("a@b.com", 1)} {mail.is_match("a@b.com", 2)}")
@@ -121,32 +121,32 @@ od
 
 write_line(mail.replace("x@y.com and z@w.com", "$2 <${{host}}> $1 [$&] $$"))
 write_line(mail.replace("x@y.com and z@w.com", "[$`|$'|$+|$_]"))
-write_line(Text.REGEX("\\d+").replace("a1b22c333", m => "{m.value.length}"))
-write_line(Text.REGEX.replace("a-b--c", "-+", "+"))
-write_line(Text.REGEX.replace("A-b-C", "[a-z]", "?", Text.RegexOptions.IGNORE_CASE))
-write_line(Text.REGEX.replace("one two", "\\w+", m => m.value.to_upper()))
+write_line(Text.Regex("\\d+").replace("a1b22c333", m => "{m.value.length}"))
+write_line(Text.Regex.replace("a-b--c", "-+", "+"))
+write_line(Text.Regex.replace("A-b-C", "[a-z]", "?", Text.RegexOptions.IGNORE_CASE))
+write_line(Text.Regex.replace("one two", "\\w+", m => m.value.to_upper()))
 
-for piece in Text.REGEX.split("a, b,c ,d", "\\s*,\\s*") do
+for piece in Text.Regex.split("a, b,c ,d", "\\s*,\\s*") do
     write_line("piece '{piece}'")
 od
 
-for piece in Text.REGEX("(-)").split("1-2-3") do
+for piece in Text.Regex("(-)").split("1-2-3") do
     write_line("with capture '{piece}'")
 od
 
-for piece in Text.REGEX("x*").split("abc") do
+for piece in Text.Regex("x*").split("abc") do
     write_line("empty separator '{piece}'")
 od
 
-write_line(Text.REGEX.escape("a.b*c(d)[e]{{f}} g#h\\i^$|?+\t"))
-write_line("{Text.REGEX.is_match("Hello", "^h", Text.RegexOptions.IGNORE_CASE)} {Text.REGEX.is_match("Hello", "^h")}")
-write_line("{Text.REGEX.match("key=value", "(?<k>\\w+)=(?<v>\\w+)").groups["v"].value}")
-write_line("{Text.REGEX.matches("a1b2c3", "\\d").count} {Text.REGEX.matches("A1B2", "[a-z]", Text.RegexOptions.IGNORE_CASE).count}")
-write_line("{Text.REGEX("a+", Text.RegexOptions.COMPILED).match("baaa").value} {Text.REGEX("a+")}")
-write_line("{Text.REGEX("x").match("abc").success} '{Text.REGEX("x").match("abc").value}' {Text.REGEX("x").match("abc").index}")
+write_line(Text.Regex.escape("a.b*c(d)[e]{{f}} g#h\\i^$|?+\t"))
+write_line("{Text.Regex.is_match("Hello", "^h", Text.RegexOptions.IGNORE_CASE)} {Text.Regex.is_match("Hello", "^h")}")
+write_line("{Text.Regex.match("key=value", "(?<k>\\w+)=(?<v>\\w+)").groups["v"].value}")
+write_line("{Text.Regex.matches("a1b2c3", "\\d").count} {Text.Regex.matches("A1B2", "[a-z]", Text.RegexOptions.IGNORE_CASE).count}")
+write_line("{Text.Regex("a+", Text.RegexOptions.COMPILED).match("baaa").value} {Text.Regex("a+")}")
+write_line("{Text.Regex("x").match("abc").success} '{Text.Regex("x").match("abc").value}' {Text.Regex("x").match("abc").index}")
 
 // Inputs long enough to overflow a recursive matcher's native stack.
-let long = Text.STRING_BUILDER()
+let long = Text.StringBuilder()
 let k mut = 0
 
 while k < 200000 do
@@ -157,5 +157,5 @@ od
 long.append("c")
 
 let deep = long.to_string()
-write_line("{Text.REGEX("(a|b)*c").match(deep).length} {Text.REGEX("(?:ab)+c").match(deep).length} {Text.REGEX("[ab]*?c").match(deep).length}")
-write_line("{Text.REGEX("^(a|b)*d").is_match(deep)}")
+write_line("{Text.Regex("(a|b)*c").match(deep).length} {Text.Regex("(?:ab)+c").match(deep).length} {Text.Regex("[ab]*?c").match(deep).length}")
+write_line("{Text.Regex("^(a|b)*d").is_match(deep)}")

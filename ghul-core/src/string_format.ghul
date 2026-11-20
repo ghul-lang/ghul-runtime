@@ -1,5 +1,5 @@
 namespace Ghul is
-    use Text.STRING_BUILDER
+    use Text.StringBuilder
 
     partial string is
         /// `format` with its one placeholder, `{0}`, replaced by `argument`.
@@ -36,7 +36,7 @@ namespace Ghul is
             _format(format, arguments)
 
         _format(format: string, arguments: ARRAY[object?]) -> string static is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let i mut = 0
 
             while i < format.length do
@@ -151,7 +151,7 @@ namespace Ghul is
         ///
         /// - replacement: the text each line ending becomes
         replace_line_endings(replacement: string) -> string is
-            let result = STRING_BUILDER()
+            let result = StringBuilder()
             let i mut = 0
 
             while i < length do

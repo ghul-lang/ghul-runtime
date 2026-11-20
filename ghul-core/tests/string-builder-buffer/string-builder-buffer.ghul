@@ -2,7 +2,7 @@
 // one long one, and clear() keeps its room for the next string. Inserting,
 // removing and replacing code units in place agree with what was built.
 use IO.Std.write_line
-use Text.STRING_BUILDER
+use Text.StringBuilder
 
 checksum(text: string) -> int is
     let sum mut = 0
@@ -17,7 +17,7 @@ checksum(text: string) -> int is
 si
 
 entry() is
-    let builder = STRING_BUILDER()
+    let builder = StringBuilder()
     let i mut = 0
 
     while i < 1000000 do
@@ -37,7 +37,7 @@ entry() is
     builder[0] = 'E'
     write_line("{builder} {builder.length} {builder[4]}")
 
-    let sized = STRING_BUILDER(64)
+    let sized = StringBuilder(64)
     sized.append('x', 100)
     write_line("{sized.length} {sized.to_string().substring(95)}")
 

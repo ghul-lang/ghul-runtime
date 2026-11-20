@@ -2,7 +2,7 @@
 // much they hold: a few hundred thousand code units build, join and edit
 // without the cost growing with the square of the length.
 use IO.Std.write_line
-use Text.STRING_BUILDER
+use Text.StringBuilder
 use Collections.LIST
 
 checksum(text: string) -> int is
@@ -18,8 +18,8 @@ checksum(text: string) -> int is
 si
 
 entry() is
-    let builder = STRING_BUILDER()
-    let expected = STRING_BUILDER()
+    let builder = StringBuilder()
+    let expected = StringBuilder()
     let i mut = 0
 
     while i < 300000 do
@@ -32,7 +32,7 @@ entry() is
     builder.append("tail")
     write_line("{builder.length} {builder[builder.length - 1]}")
 
-    let pieces = STRING_BUILDER()
+    let pieces = StringBuilder()
     i = 0
 
     while i < 2000 do

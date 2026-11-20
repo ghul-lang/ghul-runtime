@@ -26,7 +26,7 @@ namespace Text is
 
         let values = _small_values[T]()
         let mask = values[(1 << shift) - 1]
-        let digits = Text.STRING_BUILDER()
+        let digits = Text.StringBuilder()
         let remaining mut = value
 
         do

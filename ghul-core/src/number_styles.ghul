@@ -221,7 +221,7 @@ namespace Ghul is
             fi
         od
 
-        let digits = Text.STRING_BUILDER()
+        let digits = Text.StringBuilder()
         let point mut = -1
         let seen_digit mut = false
 

@@ -91,7 +91,7 @@ namespace Generate is
         write_line("    // first and last code point in six hexadecimal digits and C is its class.")
         write_line("    _text_element_ranges() -> string =>")
 
-        let line = Text.STRING_BUILDER()
+        let line = Text.StringBuilder()
         let i mut = 0
 
         while i < ranges.count do

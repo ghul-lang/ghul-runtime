@@ -424,7 +424,7 @@ namespace Ghul is
 
         // Every digit, for the exact conversion where the mantissa above
         // drops some or one floating-point operation would not round once.
-        let all_digits = Text.STRING_BUILDER()
+        let all_digits = Text.StringBuilder()
         let fraction_digits mut = 0
 
         // Commas group the digits before the decimal point, anywhere after
@@ -554,7 +554,7 @@ namespace Ghul is
 
     // Whether the mantissa left out some of `digits`: it keeps 18
     // significant digits.
-    _drops_digits(digits: Text.STRING_BUILDER) -> bool is
+    _drops_digits(digits: Text.StringBuilder) -> bool is
         let kept mut = 0
         let started mut = false
 

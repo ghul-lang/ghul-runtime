@@ -4,7 +4,7 @@
 // surrogate classification, string concatenation, a builder made from a
 // string, parsing a uint, and division with its remainder.
 use IO.Std.write_line
-use Text.STRING_BUILDER
+use Text.StringBuilder
 use Collections.LIST
 
 entry() is
@@ -46,10 +46,10 @@ entry() is
     write_line(string.concat("x", "y", "z"))
     write_line("[{string.concat(LIST[string]().to_array())}]")
 
-    let builder = STRING_BUILDER("start")
+    let builder = StringBuilder("start")
     builder.append(" then more")
     write_line("{builder.to_string()} {builder.length}")
-    write_line("[{STRING_BUILDER(16).append("sized").to_string()}]")
+    write_line("[{StringBuilder(16).append("sized").to_string()}]")
 
     write_line("{uint.parse("4294967295")} {uint.parse(" 7 ")}")
 
