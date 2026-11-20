@@ -56,7 +56,7 @@ namespace Collections is
         /// twice.
         ///
         /// - source: the entries to copy
-        init(source: Iterable[KEY_VALUE_PAIR[K, V]]) is
+        init(source: Iterable[KeyValuePair[K, V]]) is
             _add_all(source);
         si
 
@@ -85,7 +85,7 @@ namespace Collections is
         /// has the key.
         ///
         /// - pair: the entry to add
-        add(pair: KEY_VALUE_PAIR[K, V]) is
+        add(pair: KeyValuePair[K, V]) is
             add(pair.key, pair.value);
         si
 
@@ -100,7 +100,7 @@ namespace Collections is
         /// `pair`'s value.
         ///
         /// - pair: the entry to look for
-        contains(pair: KEY_VALUE_PAIR[K, V]) -> bool is
+        contains(pair: KeyValuePair[K, V]) -> bool is
             let value: V mut = _
 
             return try_get_value(pair.key, value ref) /\ value =~ pair.value
@@ -110,7 +110,7 @@ namespace Collections is
         /// to `pair`'s value, answering whether it did.
         ///
         /// - pair: the entry to remove
-        remove(pair: KEY_VALUE_PAIR[K, V]) -> bool =>
+        remove(pair: KeyValuePair[K, V]) -> bool =>
             contains(pair) /\ remove(pair.key)
 
         /// Removes `key`, answering whether the map had it.
@@ -230,7 +230,7 @@ namespace Collections is
         values: Bag[V] => MAP_VIEW[V](() -> int => _count, () -> Iterator[V] => MAP_TABLE_ITERATOR[V](_hashes, _values, _used));
 
         /// An iterator over the entries.
-        iterator: Iterator[KEY_VALUE_PAIR[K, V]] => MAP_ITERATOR[K, V](_hashes, _keys, _values, _used);
+        iterator: Iterator[KeyValuePair[K, V]] => MAP_ITERATOR[K, V](_hashes, _keys, _values, _used);
 
         _allocate(size: int) is
             _buckets = Ghul._array_new[int](size);
@@ -253,7 +253,7 @@ namespace Collections is
             return _values![entry];
         si
 
-        _add_all(source: Iterable[KEY_VALUE_PAIR[K, V]]) is
+        _add_all(source: Iterable[KeyValuePair[K, V]]) is
             for pair in source do
                 add(pair.key, pair.value);
             od
@@ -390,7 +390,7 @@ namespace Collections is
     si
 
     /// Iterates the entries a map held when the iterator was made.
-    class MAP_ITERATOR[K, V]: Iterator[KEY_VALUE_PAIR[K, V]] is
+    class MAP_ITERATOR[K, V]: Iterator[KeyValuePair[K, V]] is
         _hashes: ARRAY[int]?;
         _keys: ARRAY[K]?;
         _values: ARRAY[V]?;
@@ -425,7 +425,7 @@ namespace Collections is
         si
 
         /// The entry the iterator is positioned at.
-        current: KEY_VALUE_PAIR[K, V] => KEY_VALUE_PAIR[K, V](_keys![_index], _values![_index]);
+        current: KeyValuePair[K, V] => KeyValuePair[K, V](_keys![_index], _values![_index]);
 
         /// Releases nothing: a map holds no resource.
         dispose() is si

@@ -1,6 +1,6 @@
 namespace Json is
     use Collections.LIST
-    use Collections.KEY_VALUE_PAIR
+    use Collections.KeyValuePair
     use Text.StringBuilder
 
     /// `value` as compact JSON text - no whitespace beyond what a string
@@ -91,7 +91,7 @@ namespace Json is
         builder.append(']')
     si
 
-    _write_object(fields: LIST[KEY_VALUE_PAIR[string, Value]], builder: StringBuilder) is
+    _write_object(fields: LIST[KeyValuePair[string, Value]], builder: StringBuilder) is
         builder.append('{')
 
         for i in 0..fields.count do

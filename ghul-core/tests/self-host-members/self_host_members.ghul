@@ -1,7 +1,7 @@
 // The members the compiler's own source uses that the core library
 // supplies: string.format, replace_line_endings, ulong parsing,
 // char.is_symbol, a mutable list searched through its trait, an enum marked
-// as flags, and LAZY.
+// as flags, and Lazy.
 use IO.Std.write_line
 
 @Ghul.Flags()
@@ -44,7 +44,7 @@ entry() is
     write_line("{nodes.remove(first)} {nodes.remove(first)} {nodes.count}")
 
     let calls mut = 0
-    let lazy = Ghul.LAZY[int](() -> int is
+    let lazy = Ghul.Lazy[int](() -> int is
         calls = calls + 1
         return 42
     si)

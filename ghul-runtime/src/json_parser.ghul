@@ -1,6 +1,6 @@
 namespace Json is
     use Collections.LIST
-    use Collections.KEY_VALUE_PAIR
+    use Collections.KeyValuePair
     use Text.StringBuilder
 
     /// Thrown when text given to `parse` is not valid JSON.
@@ -282,7 +282,7 @@ namespace Json is
         _parse_object() -> Value is
             _pos = _pos + 1
 
-            let fields = LIST[KEY_VALUE_PAIR[string, Value]]()
+            let fields = LIST[KeyValuePair[string, Value]]()
 
             _skip_whitespace()
 
@@ -309,7 +309,7 @@ namespace Json is
                 _pos = _pos + 1
                 _skip_whitespace()
 
-                fields.add(KEY_VALUE_PAIR(name, _parse_value()))
+                fields.add(KeyValuePair(name, _parse_value()))
 
                 _skip_whitespace()
 

@@ -2,7 +2,7 @@ namespace Json is
     use Collections.LIST
     use Collections.MAP
     use Collections.SET
-    use Collections.KEY_VALUE_PAIR
+    use Collections.KeyValuePair
     use Ghul.Reflection.BindingFlags
     use Ghul.Reflection.ConstructorInfo
     use Ghul.Reflection.FieldInfo
@@ -61,14 +61,14 @@ namespace Json is
         fi
 
         let type = value.get_type()
-        let fields = LIST[KEY_VALUE_PAIR[string, Value]]()
+        let fields = LIST[KeyValuePair[string, Value]]()
 
         if type.is_defined(typeof Ghul.Internal.VARIANT_ATTRIBUTE, false) then
-            fields.add(KEY_VALUE_PAIR[string, Value](_KIND, Value.STRING(type.name.to_lower())))
+            fields.add(KeyValuePair[string, Value](_KIND, Value.STRING(type.name.to_lower())))
         fi
 
         for member in _members(type) do
-            fields.add(KEY_VALUE_PAIR[string, Value](member.name, to_json(member.read(value))))
+            fields.add(KeyValuePair[string, Value](member.name, to_json(member.read(value))))
         od
 
         return Value.OBJECT(fields)

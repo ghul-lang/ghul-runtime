@@ -1,4 +1,4 @@
-// STACK, QUEUE and SET's set operations, and a KEY_VALUE_PAIR destructured
+// STACK, QUEUE and SET's set operations, and a KeyValuePair destructured
 // by position, as on .NET: a stack and a queue iterate from the end they
 // remove from, and an empty one throws when read.
 
@@ -35,7 +35,7 @@ m["x"] = 1
 m["y"] = 2
 for (k, v) in m do write_line("{k}={v}") od
 write_line("{m |> map(((k, v)) => v) |> sum()}")
-let (kk, vv) = KEY_VALUE_PAIR("p", 5)
+let (kk, vv) = KeyValuePair("p", 5)
 write_line("{kk} {vv}")
 
 try

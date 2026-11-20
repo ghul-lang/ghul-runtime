@@ -605,7 +605,7 @@ namespace Tests is
             are_equal("got 42", journal |> Ghul.Pipes.join(", "))
         si
 
-        pacing_until(journal: LIST[string], flag: BOX[bool], limit: int) -> COROUTINE is
+        pacing_until(journal: LIST[string], flag: Box[bool], limit: int) -> COROUTINE is
             for i in 1::limit do
                 if flag.value then
                     journal.add("noticed")
@@ -618,7 +618,7 @@ namespace Tests is
             journal.add("gave up")
         si
 
-        setting(flag: BOX[bool], milliseconds: int) -> COROUTINE is
+        setting(flag: Box[bool], milliseconds: int) -> COROUTINE is
             await sleep(milliseconds)
             flag.value = true
         si
@@ -626,7 +626,7 @@ namespace Tests is
         @Test()
         A_due_sleeper_should_get_a_turn_while_another_coroutine_keeps_pausing() is
             let journal = LIST[string]()
-            let flag = BOX[bool](false)
+            let flag = Box[bool](false)
 
             let _ = pacing_until(journal, flag, 100000)
             let _ = setting(flag, 10)

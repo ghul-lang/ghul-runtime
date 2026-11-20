@@ -27,7 +27,7 @@ namespace Tests is
                 pipe
                     |> index()
 
-            assert_are_equal(empty`[INDEXED_VALUE[int]](), result)
+            assert_are_equal(empty`[IndexedValue[int]](), result)
         si
 
         @Test()

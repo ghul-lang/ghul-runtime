@@ -3,18 +3,18 @@
 use IO.Std.write_line
 
 union Op is
-    APPENDED(list: Collections.LIST[Collections.KEY_VALUE_PAIR[string, int]])
+    APPENDED(list: Collections.LIST[Collections.KeyValuePair[string, int]])
 si
 
 entry() is
-    let a = Collections.KEY_VALUE_PAIR("one", 1)
-    let b = Collections.KEY_VALUE_PAIR("o{"ne"}", 1)
-    let c = Collections.KEY_VALUE_PAIR("one", 2)
+    let a = Collections.KeyValuePair("one", 1)
+    let b = Collections.KeyValuePair("o{"ne"}", 1)
+    let c = Collections.KeyValuePair("one", 2)
 
     write_line("{a =~ b} {a =~ c} {a.get_hash_code() == b.get_hash_code()}")
 
-    let left = Collections.LIST[Collections.KEY_VALUE_PAIR[string, int]]()
-    let right = Collections.LIST[Collections.KEY_VALUE_PAIR[string, int]]()
+    let left = Collections.LIST[Collections.KeyValuePair[string, int]]()
+    let right = Collections.LIST[Collections.KeyValuePair[string, int]]()
 
     left.add(a)
     right.add(b)

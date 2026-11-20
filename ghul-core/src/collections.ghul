@@ -156,7 +156,7 @@ namespace Collections is
     si
 
     /// A read-only map from keys to values, iterated as key and value pairs.
-    trait Map[K, V]: Bag[KEY_VALUE_PAIR[K, V]] open is
+    trait Map[K, V]: Bag[KeyValuePair[K, V]] open is
         /// The value `key` maps to; throws if the map has no such key.
         [key: K]: V pure;
 
@@ -181,7 +181,7 @@ namespace Collections is
     si
 
     /// A map whose entries can be added, replaced and removed.
-    trait MutableMap[K, V]: MutableBag[KEY_VALUE_PAIR[K, V]] open is
+    trait MutableMap[K, V]: MutableBag[KeyValuePair[K, V]] open is
         /// The value `key` maps to; throws if the map has no such key.
         /// Assigning adds the key or replaces its value.
         [key: K]: V, = value;

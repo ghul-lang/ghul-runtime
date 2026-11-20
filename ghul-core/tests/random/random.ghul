@@ -3,8 +3,8 @@
 use IO.Std.write_line
 
 entry() is
-    let first = Ghul.RANDOM(42)
-    let second = Ghul.RANDOM(42)
+    let first = Ghul.Random(42)
+    let second = Ghul.Random(42)
 
     let same mut = true
     let in_range mut = true
@@ -32,7 +32,7 @@ entry() is
     write_line("same sequence: {same}")
     write_line("in range: {in_range}")
 
-    let unseeded = Ghul.RANDOM()
+    let unseeded = Ghul.Random()
     let n = unseeded.next(3)
     write_line("unseeded in range: {n >= 0 /\ n < 3}")
 si

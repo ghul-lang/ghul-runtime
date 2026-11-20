@@ -1,13 +1,13 @@
 namespace Ghul is
     use Collections.Iterable
     use Collections.Iterator
-    use Collections.KEY_VALUE_PAIR
+    use Collections.KeyValuePair
     use Collections.LIST
     use Collections.MAP
     use Collections.Map
 
     /// A live view of a string-keyed environment: reading a key that isn't set gives an absent value, and writing null removes the key.
-    trait Environment: Iterable[KEY_VALUE_PAIR[string, string]] is
+    trait Environment: Iterable[KeyValuePair[string, string]] is
         /// Reads or writes the value for `key`, absent if it isn't set.
         [key: string]: string?, = value
 
@@ -160,14 +160,14 @@ namespace Ghul is
         process_path: string? => null
 
         /// An iterator over the keys and values set.
-        iterator: Iterator[KEY_VALUE_PAIR[string, string]] => _pairs().iterator
+        iterator: Iterator[KeyValuePair[string, string]] => _pairs().iterator
 
-        _pairs() -> LIST[KEY_VALUE_PAIR[string, string]] is
-            let result = LIST[KEY_VALUE_PAIR[string, string]]()
+        _pairs() -> LIST[KeyValuePair[string, string]] is
+            let result = LIST[KeyValuePair[string, string]]()
             let i mut = 0
 
             while i < _count do
-                result.add(KEY_VALUE_PAIR[string, string](_names[i], _values[i]))
+                result.add(KeyValuePair[string, string](_names[i], _values[i]))
                 i = i + 1
             od
 

@@ -1,6 +1,6 @@
 namespace Json is
     use Collections.LIST
-    use Collections.KEY_VALUE_PAIR
+    use Collections.KeyValuePair
 
     /// A JSON value: null, a boolean, a number, a string, an array, or an
     /// object. A number is held as `double`, as every mainstream JSON
@@ -25,7 +25,7 @@ namespace Json is
         /// An object's fields, in the order they were parsed or added. A
         /// name can repeat; `get` and `set` both read and write the first
         /// occurrence they find.
-        OBJECT(fields: LIST[KEY_VALUE_PAIR[string, Value]])
+        OBJECT(fields: LIST[KeyValuePair[string, Value]])
     si
 
     /// The JSON value for `value`.
@@ -49,7 +49,7 @@ namespace Json is
     array(items: Value{}) -> Value => Value.ARRAY(LIST[Value](items))
 
     /// A new, empty object - add fields to it with `set`.
-    object() -> Value => Value.OBJECT(LIST[KEY_VALUE_PAIR[string, Value]]())
+    object() -> Value => Value.OBJECT(LIST[KeyValuePair[string, Value]]())
 
     /// Whether `value` holds JSON null.
     ///
@@ -83,7 +83,7 @@ namespace Json is
     /// `value`'s own fields, where it holds OBJECT; null otherwise.
     ///
     /// - value: the value to read
-    as_object(value: Value) -> LIST[KEY_VALUE_PAIR[string, Value]]? =>
+    as_object(value: Value) -> LIST[KeyValuePair[string, Value]]? =>
         if let o: Value.OBJECT = value then o.fields else null fi
 
     /// The field named `name`, or null where `object` has none - present
@@ -113,11 +113,11 @@ namespace Json is
 
         for i in 0..fields.count do
             if fields[i].key =~ name then
-                fields[i] = KEY_VALUE_PAIR(name, value)
+                fields[i] = KeyValuePair(name, value)
                 return
             fi
         od
 
-        fields.add(KEY_VALUE_PAIR(name, value))
+        fields.add(KeyValuePair(name, value))
     si
 si
