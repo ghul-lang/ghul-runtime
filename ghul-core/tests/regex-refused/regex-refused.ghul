@@ -36,7 +36,7 @@ try_pattern("a", Text.RegexOptions.NON_BACKTRACKING)
 // In the subset, near the refused ones.
 try_pattern("\\103")
 try_pattern("(a)\\12")
-try_pattern("a", Text.RegexOptions.COMPILED | Text.RegexOptions.CULTURE_INVARIANT)
+try_pattern("a", Text.RegexOptions.COMPILED | Text.RegexOptions.LOCALE_INVARIANT)
 
 // Invalid patterns.
 try_pattern("(a")

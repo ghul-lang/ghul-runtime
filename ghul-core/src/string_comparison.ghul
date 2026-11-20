@@ -1,17 +1,17 @@
 namespace Text is
     /// How two strings are compared, as .NET names the choices. This
-    /// library holds no linguistic data: the culture values compare as
+    /// library holds no linguistic data: the locale values compare as
     /// `ORDINAL` does, and the ones that ignore case as
     /// `ORDINAL_IGNORE_CASE`.
     enum StringComparison is
-        /// By the current culture; here, as `ORDINAL`.
-        CURRENT_CULTURE = 0,
-        /// By the current culture ignoring case; here, as `ORDINAL_IGNORE_CASE`.
-        CURRENT_CULTURE_IGNORE_CASE = 1,
-        /// By the invariant culture; here, as `ORDINAL`.
-        INVARIANT_CULTURE = 2,
-        /// By the invariant culture ignoring case; here, as `ORDINAL_IGNORE_CASE`.
-        INVARIANT_CULTURE_IGNORE_CASE = 3,
+        /// By the current locale; here, as `ORDINAL`.
+        CURRENT_LOCALE = 0,
+        /// By the current locale ignoring case; here, as `ORDINAL_IGNORE_CASE`.
+        CURRENT_LOCALE_IGNORE_CASE = 1,
+        /// By the invariant locale; here, as `ORDINAL`.
+        INVARIANT_LOCALE = 2,
+        /// By the invariant locale ignoring case; here, as `ORDINAL_IGNORE_CASE`.
+        INVARIANT_LOCALE_IGNORE_CASE = 3,
         /// By UTF-16 code unit.
         ORDINAL = 4,
         /// By UTF-16 code unit, each letter taken as its upper case.
@@ -60,8 +60,8 @@ namespace Ghul is
         si
 
         _ignores_case(comparison: StringComparison) -> bool static =>
-            comparison == StringComparison.CURRENT_CULTURE_IGNORE_CASE \/
-            comparison == StringComparison.INVARIANT_CULTURE_IGNORE_CASE \/
+            comparison == StringComparison.CURRENT_LOCALE_IGNORE_CASE \/
+            comparison == StringComparison.INVARIANT_LOCALE_IGNORE_CASE \/
             comparison == StringComparison.ORDINAL_IGNORE_CASE
     si
 si

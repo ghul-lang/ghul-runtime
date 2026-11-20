@@ -1,7 +1,7 @@
 namespace Ghul is
     // Classification by each code unit's Unicode general category, as .NET
     // reports it, and simple case mapping over Basic Latin, Latin-1, Latin
-    // Extended-A, Greek and Cyrillic, as .NET's invariant culture maps them;
+    // Extended-A, Greek and Cyrillic, as .NET's invariant locale maps them;
     // outside those ranges a character keeps its case.
     partial char is
         /// The Unicode general category of `c`, as .NET's
@@ -60,12 +60,12 @@ namespace Ghul is
         /// The lower-case form of the character, or the character itself where it has none.
         to_lower() -> char pure => cast char(_lower_of(cast int(self)))
 
-        /// The upper-case form of `c` under the invariant culture.
+        /// The upper-case form of `c` under the invariant locale.
         ///
         /// - c: the character to convert
         to_upper_invariant(c: char) -> char static pure => c.to_upper()
 
-        /// The lower-case form of `c` under the invariant culture.
+        /// The lower-case form of `c` under the invariant locale.
         ///
         /// - c: the character to convert
         to_lower_invariant(c: char) -> char static pure => c.to_lower()

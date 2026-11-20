@@ -107,18 +107,18 @@ namespace Ghul is
 
     partial double is
         /// The shortest text that reads back as the same value, as .NET
-        /// writes it in the invariant culture.
+        /// writes it in the invariant locale.
         to_string() -> string pure => _format_double(self)
     si
 
     partial single is
         /// The shortest text that reads back as the same value, as .NET
-        /// writes it in the invariant culture.
+        /// writes it in the invariant locale.
         to_string() -> string pure => _format_single(self)
     si
 
     // The text of each numeric type under a .NET numeric format string, as
-    // .NET writes it in the invariant culture: the standard formats `D`,
+    // .NET writes it in the invariant locale: the standard formats `D`,
     // `E`, `F`, `G`, `N`, `R` and `X` with an optional precision, and custom
     // patterns of `0`, `#`, `.` and `,`.
 

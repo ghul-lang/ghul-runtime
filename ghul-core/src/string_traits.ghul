@@ -1,6 +1,6 @@
 namespace Ghul is
     // A string orders by its code units, as .NET's string does without a
-    // culture, and iterates as its code units, as a .NET string iterates as
+    // locale, and iterates as its code units, as a .NET string iterates as
     // its chars.
     impl Equatable[string] for string is
     si

@@ -4,7 +4,7 @@ namespace Harness is
     use IO.Std.write_line
 
     entry() is
-        let invariant = System.Globalization.CultureInfo.invariant_culture
+        let invariant = System.Globalization.CultureInfo.invariant
         let random = System.Random(987)
         let failures mut = 0
         let checked mut = 0

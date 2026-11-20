@@ -1,6 +1,6 @@
 namespace Ghul is
     // Parsing scalars from text, as .NET parses them under the invariant
-    // culture with the default number styles: white space around the
+    // locale with the default number styles: white space around the
     // number, an optional leading sign and digits. A double or a single
     // can also have commas among the digits before its decimal point, a
     // decimal point and an exponent, or be one of the names Infinity and
@@ -708,7 +708,7 @@ namespace Ghul is
         /// Whether `text` holds a `int`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null
-        /// - provider: ignored; the text is read under the invariant culture
+        /// - provider: ignored; the text is read under the invariant locale
         /// - result: set to the value read, or to 0 where `text` holds none
         try_parse(text: string?, provider: FormatProvider?, result: int ref) -> bool static =>
             try_parse(text, result)
@@ -718,7 +718,7 @@ namespace Ghul is
         /// Whether `text` holds a `uint`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null
-        /// - provider: ignored; the text is read under the invariant culture
+        /// - provider: ignored; the text is read under the invariant locale
         /// - result: set to the value read, or to 0 where `text` holds none
         try_parse(text: string?, provider: FormatProvider?, result: uint ref) -> bool static =>
             try_parse(text, result)
@@ -728,7 +728,7 @@ namespace Ghul is
         /// Whether `text` holds a `long`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null
-        /// - provider: ignored; the text is read under the invariant culture
+        /// - provider: ignored; the text is read under the invariant locale
         /// - result: set to the value read, or to 0 where `text` holds none
         try_parse(text: string?, provider: FormatProvider?, result: long ref) -> bool static =>
             try_parse(text, result)
@@ -738,7 +738,7 @@ namespace Ghul is
         /// Whether `text` holds a `ulong`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null
-        /// - provider: ignored; the text is read under the invariant culture
+        /// - provider: ignored; the text is read under the invariant locale
         /// - result: set to the value read, or to 0 where `text` holds none
         try_parse(text: string?, provider: FormatProvider?, result: ulong ref) -> bool static =>
             try_parse(text, result)
@@ -748,7 +748,7 @@ namespace Ghul is
         /// Whether `text` holds a `double`, writing it to `result` where it does.
         ///
         /// - text: the text to read, or null
-        /// - provider: ignored; the text is read under the invariant culture
+        /// - provider: ignored; the text is read under the invariant locale
         /// - result: set to the value read, or to 0 where `text` holds none
         try_parse(text: string?, provider: FormatProvider?, result: double ref) -> bool static =>
             try_parse(text, result)

@@ -11,8 +11,8 @@ show(a: string, b: string) is
         "{a} {b}: "
         "{sign(string.compare(a, b, ORDINAL))} "
         "{sign(string.compare(a, b, ORDINAL_IGNORE_CASE))} "
-        "{sign(string.compare(a, b, CURRENT_CULTURE))} "
-        "{sign(string.compare(a, b, INVARIANT_CULTURE_IGNORE_CASE))}")
+        "{sign(string.compare(a, b, CURRENT_LOCALE))} "
+        "{sign(string.compare(a, b, INVARIANT_LOCALE_IGNORE_CASE))}")
 si
 
 show("apple", "Apple")

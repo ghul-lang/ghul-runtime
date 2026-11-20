@@ -1,8 +1,8 @@
 namespace Text is
-    /// A culture, as .NET's `System.Globalization.CultureInfo` is one. The
+    /// A locale, as .NET's `System.Globalization.CultureInfo` is one. The
     /// source-core targets format, parse and change case under the invariant
-    /// culture whatever culture is asked for, so the one culture there is
-    /// the invariant culture, and passing it anywhere a format provider is
+    /// locale whatever locale is asked for, so the one locale there is
+    /// the invariant locale, and passing it anywhere a format provider is
     /// taken changes nothing.
     class Locale: Ghul.FormatProvider is
         _instance: Locale static
@@ -14,16 +14,25 @@ namespace Text is
         init() is
         si
 
-        /// The invariant culture.
+        /// The invariant locale.
+        invariant: Locale static => _instance
+
+        /// The locale the program runs under, which is the invariant locale.
+        current: Locale static => _instance
+
+        /// The locale the user interface runs under, which is the invariant locale.
+        current_ui: Locale static => _instance
+
+        /// The invariant locale, under its earlier name.
         invariant_culture: Locale static => _instance
 
-        /// The culture the program runs under, which is the invariant culture.
+        /// The locale the program runs under, under its earlier name.
         current_culture: Locale static => _instance
 
-        /// The culture's name, which is empty for the invariant culture.
+        /// The locale's name, which is empty for the invariant locale.
         name: string => ""
 
-        /// How the culture changes the case of text.
+        /// How the locale changes the case of text.
         text_info: TextInfo => TextInfo()
 
         /// No formatting object: formatting here is always invariant.
@@ -37,8 +46,8 @@ si
 
 namespace Text is
 
-    /// How a culture changes the case of text, as .NET's
-    /// `System.Globalization.TextInfo` does, here under the invariant culture.
+    /// How a locale changes the case of text, as .NET's
+    /// `System.Globalization.TextInfo` does, here under the invariant locale.
     class TextInfo is
         init() is
         si
@@ -93,7 +102,7 @@ si
 namespace Ghul is
     // Each numeric type's `to_string` and `parse` with a format provider, as
     // .NET declares them. The source-core targets format and parse under the
-    // invariant culture, so the provider is accepted and ignored.
+    // invariant locale, so the provider is accepted and ignored.
 
     partial int is
         /// The value written under the numeric format string `format`.

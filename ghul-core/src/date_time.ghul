@@ -1,6 +1,6 @@
 // .NET's names for these types are kept, so source written against .NET
 // builds here unchanged. Dates are proleptic Gregorian and text follows the
-// invariant culture, since the source-core targets have no other.
+// invariant locale, since the source-core targets have no other.
 @@suppress("non-upper-snake-case-name")
 
 namespace Time is
@@ -193,12 +193,12 @@ namespace Time is
         /// - d2: the moment it starts
         -(d1: DateTime, d2: DateTime) -> TimeSpan static => d1.subtract(d2)
 
-        /// The moment as the invariant culture writes it by default,
+        /// The moment as the invariant locale writes it by default,
         /// `MM/dd/yyyy HH:mm:ss`.
         to_string() -> string => to_string("G")
 
         /// The moment written in `format`. A single letter is one of .NET's
-        /// standard formats as the invariant culture spells it (`d`, `D`,
+        /// standard formats as the invariant locale spells it (`d`, `D`,
         /// `t`, `T`, `g`, `G`, `s`, `o`, `u`); anything else is a custom
         /// format of `yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`, `fff` and the like,
         /// with quoted text and `\` escapes copied as they are.
@@ -210,10 +210,10 @@ namespace Time is
         /// The moment written in `format`, as `to_string(format)` writes it.
         ///
         /// - format: the format to write in
-        /// - format_provider: ignored; text follows the invariant culture
+        /// - format_provider: ignored; text follows the invariant locale
         to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string => to_string(format)
 
-        /// The moment `text` writes, in the invariant culture: a date as
+        /// The moment `text` writes, in the invariant locale: a date as
         /// `yyyy-MM-dd` or `MM/dd/yyyy`, optionally followed by a time as
         /// `HH:mm`, `HH:mm:ss` or `HH:mm:ss.fffffff`, after a space or a `T`.
         /// A trailing `Z` reads the time as UTC and gives it as local time,
@@ -407,7 +407,7 @@ namespace Time is
         from_seconds(seconds: long) -> TimeSpan static pure => TimeSpan(seconds * 10_000_000L)
 
         /// The interval written in `format`: `c`, `g` or `G`, .NET's standard
-        /// formats as the invariant culture spells them, or a custom format of
+        /// formats as the invariant locale spells them, or a custom format of
         /// `d`, `hh`, `mm`, `ss` and `fff` and the like, with `\` escapes and
         /// quoted text copied as they are.
         ///
@@ -417,7 +417,7 @@ namespace Time is
         /// The interval written in `format`, as `to_string(format)` writes it.
         ///
         /// - format: the format to write in
-        /// - format_provider: ignored; text follows the invariant culture
+        /// - format_provider: ignored; text follows the invariant locale
         to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string => to_string(format)
 
         /// The interval `text` writes, as `[-][d.]hh:mm[:ss[.fffffff]]` or as
@@ -430,7 +430,7 @@ namespace Time is
         ///
         /// - text: the text to read
         /// - format: the custom format it is written in
-        /// - format_provider: ignored; text follows the invariant culture
+        /// - format_provider: ignored; text follows the invariant locale
         parse_exact(text: string, format: string, format_provider: Ghul.FormatProvider?) -> TimeSpan static pure =>
             Ghul.Internal.TIME_SPAN_TEXT.parse_exact(text, format)
 
@@ -485,7 +485,7 @@ namespace Ghul.Internal is
     use Time.TimeSpan
     use Text.StringBuilder
 
-    // Writes a date in a custom format under the invariant culture.
+    // Writes a date in a custom format under the invariant locale.
     class DATE_FORMAT is
         write(moment: DateTime, format: string) -> string static => write(moment, format, null)
 
@@ -606,7 +606,7 @@ namespace Ghul.Internal is
             ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     si
 
-    // Reads a date in the forms the invariant culture writes most often.
+    // Reads a date in the forms the invariant locale writes most often.
     class DATE_PARSE is
         parse(text: string) -> DateTime static pure is
             let at mut = 0
@@ -729,7 +729,7 @@ namespace Ghul.Internal is
         si
     si
 
-    // Writes and reads a TimeSpan as text under the invariant culture.
+    // Writes and reads a TimeSpan as text under the invariant locale.
     class TIME_SPAN_TEXT is
         write(span: Time.TimeSpan, format: string) -> string static is
             if format.length == 0 \/ format =~ "c" \/ format =~ "t" \/ format =~ "T" then

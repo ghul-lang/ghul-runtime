@@ -1,7 +1,7 @@
 namespace Ghul is
     /// Supplies an object that controls formatting, as .NET's
     /// `System.IFormatProvider` does; on .NET this is that interface. The
-    /// source-core targets format under the invariant culture whatever
+    /// source-core targets format under the invariant locale whatever
     /// provider is given.
     trait FormatProvider open is
         /// An object that formats values of `format_type`, or null where this
@@ -23,7 +23,7 @@ namespace Ghul is
         ///
         /// - format: the format to write in
         /// - format_provider: ignored on the source-core targets, which format
-        ///   under the invariant culture
+        ///   under the invariant locale
         to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string
     si
 si

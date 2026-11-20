@@ -269,7 +269,7 @@ namespace Time is
         /// A hash of the moment in UTC.
         get_hash_code() -> int => cast int(utc_ticks ^ (utc_ticks >> 32))
 
-        /// The moment as the invariant culture writes it by default,
+        /// The moment as the invariant locale writes it by default,
         /// `MM/dd/yyyy HH:mm:ss zzz`.
         to_string() -> string => to_string(null)
 
@@ -288,7 +288,7 @@ namespace Time is
         /// The clock time written in `format`, as `to_string(format)` writes it.
         ///
         /// - format: the format to write in
-        /// - format_provider: ignored; text follows the invariant culture
+        /// - format_provider: ignored; text follows the invariant locale
         to_string(format: string?, format_provider: Ghul.FormatProvider?) -> string => to_string(format)
 
         _moved(clock: DateTime) -> DateTimeOffset => DateTimeOffset(clock.ticks, offset)

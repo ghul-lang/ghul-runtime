@@ -24,8 +24,8 @@ namespace Text is
         RIGHT_TO_LEFT = 64,
         /// ECMAScript behaviour; not supported on this target.
         ECMA_SCRIPT = 256,
-        /// Accepted and ignored: matching always uses the invariant culture.
-        CULTURE_INVARIANT = 512,
+        /// Accepted and ignored: matching always uses the invariant locale.
+        LOCALE_INVARIANT = 512,
         /// A matcher that never backtracks; not supported on this target.
         NON_BACKTRACKING = 1024
     si
