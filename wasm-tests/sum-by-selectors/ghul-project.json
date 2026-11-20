@@ -1,0 +1,7 @@
+{
+    "name": "sum-by-selectors",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

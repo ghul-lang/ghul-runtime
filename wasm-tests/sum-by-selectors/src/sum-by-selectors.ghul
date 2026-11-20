@@ -1,0 +1,11 @@
+use default
+
+// sum_by over every numeric type, with selectors whose result only the
+// overload chosen settles: a literal over a tuple pack, a function group,
+// a conversion.
+write_line("{"89" |> index() |> sum_by((position, digit) => position * int(digit))}")
+write_line("{[(1, 2), (3, 4)] |> sum_by((a, b) => a * b)}")
+write_line("{[12, 34] |> sum_by(digit_sum)}")
+write_line("{"12" |> sum_by(int)}")
+write_line("{[2n, 3n] |> sum_by(n => n * 1_000_000_000_000n)}")
+write_line("{["a", "bb"] |> sum_by(s => ushort(s.length))} {["a", "bb"] |> sum_by(s => cast byte(s.length))} {[1.5, 2.0] |> sum_by(x => single(x))}")
