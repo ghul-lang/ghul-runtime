@@ -28,6 +28,7 @@ namespace Ghul is
         current: T
 
         _started: bool field
+        _next: T field
 
         /// Creates a range from `from` up to but not including `to`.
         init(from: T, to: T) is
@@ -35,23 +36,27 @@ namespace Ghul is
             self.to = to
 
             current = from
+            _next = from
             _started = false
         si
 
         /// Advances to the next element, and returns whether one was reached.
         move_next() -> bool is
-            if _started then
-                current = current + T.one
-            else
-                _started = true
+            if !(_next < to) then
+                return false
             fi
 
-            return current < to
+            current = _next
+            _next = _next + T.one
+            _started = true
+
+            return true
         si
 
         /// Rewinds to `from`, as though the range had not been read yet.
         reset() is
             current = from
+            _next = from
             _started = false
         si
 
@@ -82,6 +87,8 @@ namespace Ghul is
         current: T
 
         _started: bool field
+        _next: T field
+        _finished: bool field
 
         /// Creates a range from `from` to `to`, including both.
         init(from: T, to: T) is
@@ -89,32 +96,37 @@ namespace Ghul is
             self.to = to
 
             current = from
+            _next = from
+            _finished = to < from
             _started = false
         si
 
         // The last element is the largest value of `T` when `to` is, so
-        // the step is taken only once the cursor is known to be short of
-        // it. Incrementing first and comparing after would wrap round.
+        // the range finishes on reaching `to` rather than stepping past it,
+        // which would wrap round.
         /// Advances to the next element, and returns whether one was reached.
         move_next() -> bool is
-            if !_started then
-                _started = true
-
-                return current <= to
+            if _finished then
+                return false
             fi
 
-            if current < to then
-                current = current + T.one
+            current = _next
+            _started = true
 
-                return true
+            if _next =~ to then
+                _finished = true
+            else
+                _next = _next + T.one
             fi
 
-            return false
+            return true
         si
 
         /// Rewinds to `from`, as though the range had not been read yet.
         reset() is
             current = from
+            _next = from
+            _finished = to < from
             _started = false
         si
 
