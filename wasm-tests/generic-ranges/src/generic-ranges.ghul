@@ -1,0 +1,9 @@
+use default
+
+// `..` and `::` over every integer type and bigint, from one generic range
+// bounded on Ghul.Math.BinaryInteger; char keeps its own.
+write_line("{(1ub..4ub) |> list()} {(-2b::2b) |> list()} {(cast short(1)..cast short(3)) |> list()} {(65530us::65535us) |> list()}")
+write_line("{(1u..4u) |> list()} {(1L::3L) |> list()} {(18446744073709551613ul::18446744073709551615ul) |> list()}")
+write_line("{(1w..3w) |> list()} {(1uw::3uw) |> list()} {(99999999999999999998n::100000000000000000000n) |> list()}")
+write_line("{('a'::'e') |> list()} {(1..4) |> list()} {(0::3) |> list()}")
+write_line("{(5L..5L) |> count()} {(250ub::255ub) |> count()} {(1L..1000000L) |> sum()}")

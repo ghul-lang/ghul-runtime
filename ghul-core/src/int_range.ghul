@@ -9,6 +9,12 @@ namespace Ghul is
         to: T
     si
 
+    /// Implemented by an iterator that can be rewound to its starting point.
+    trait Resettable is
+        /// Rewinds to the starting point, so the next read starts again.
+        reset()
+    si
+
     /// The half-open range of `int` from `from` up to but not including `to`, produced by `..`.
     struct INT_RANGE: Range[int], Iterable[int], Iterator[int] is
         /// This range, as its own iterator.
@@ -76,93 +82,6 @@ si
 
 namespace Ghul is
     use Collections
-
-    /// The half-open range of `long` from `from` up to but not including `to`, produced by `..`.
-    struct LONG_RANGE: Range[long], Iterable[long], Iterator[long] is
-        /// This range, as its own iterator.
-        iterator: Iterator[long] => self
-
-        /// The first element.
-        from: long
-        /// The exclusive upper bound.
-        to: long
-
-        /// The element the range is currently at.
-        current: long
-
-        _next: long
-
-        /// Creates a range from `from` up to but not including `to`.
-        init(from: long, to: long) is
-            self.from = from
-            self.to = to
-
-            _next = from
-        si
-
-        /// Advances to the next element, and returns whether one was reached.
-        move_next() -> bool is
-            if _next >= to then
-                return false
-            fi
-
-            current = _next
-            _next = _next + 1L
-
-            return true
-        si
-
-        /// Has no effect; the range holds no resource to release.
-        dispose() is
-        si
-    si
-
-    /// The closed range of `long` from `from` to `to`, including both, produced by `::`.
-    struct LONG_RANGE_INCLUSIVE: Range[long], Iterable[long], Iterator[long] is
-        /// This range, as its own iterator.
-        iterator: Iterator[long] => self
-
-        /// The first element.
-        from: long
-        /// The inclusive upper bound.
-        to: long
-
-        /// The element the range is currently at.
-        current: long
-
-        _next: long
-        _finished: bool
-
-        /// Creates a range from `from` to `to`, including both.
-        init(from: long, to: long) is
-            self.from = from
-            self.to = to
-
-            _next = from
-            _finished = from > to
-        si
-
-        /// Advances to the next element, and returns whether one was reached.
-        move_next() -> bool is
-            if _finished then
-                return false
-            fi
-
-            current = _next
-
-            if _next == to then
-                _finished = true
-            else
-                _next = _next + 1L
-            fi
-
-            return true
-        si
-
-        /// Has no effect; the range holds no resource to release.
-        dispose() is
-        si
-    si
 
     /// The half-open range of `char` from `from` up to but not including `to`, produced by `..`.
     struct CHAR_RANGE: Range[char], Iterable[char], Iterator[char] is
@@ -247,13 +166,6 @@ si
 
 namespace Ghul.Intrinsics is
     use Ghul
-
-    /// The range from `from` up to but not including `to`.
-    ..(from: long, to: long) -> LONG_RANGE pure => LONG_RANGE(from, to)
-
-    /// The range from `from` to `to`, including both.
-    ::(from: long, to: long) -> LONG_RANGE_INCLUSIVE pure =>
-        LONG_RANGE_INCLUSIVE(from, to)
 
     /// The range from `from` up to but not including `to`.
     ..(from: char, to: char) -> CHAR_RANGE pure => CHAR_RANGE(from, to)

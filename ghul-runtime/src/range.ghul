@@ -1,11 +1,10 @@
-@@IF.dotnet()
 namespace Ghul is
     use Collections
-    use System.Numerics.IBinaryInteger
-    use System.Numerics.IAdditionOperators.`+
+    use Ghul.Math.BinaryInteger
+    use Ghul.Math.AdditionOperators.`+
 
     // Ranges over any of the primitive integer types, over `char`, and
-    // over `bigint` - everything .NET's `IBinaryInteger[T]` covers. `int`
+    // over `bigint` - everything .NET's `BinaryInteger[T]` covers. `int`
     // keeps its own `INT_RANGE` and `INT_RANGE_INCLUSIVE`, which the
     // compiler constructs directly from the two bounds, so an ordinary
     // `1..5` never pays for the generic instantiation.
@@ -15,8 +14,8 @@ namespace Ghul is
     // is where a range legitimately starts, and `char` and the unsigned
     // types both have one.
 
-    /// The half-open range from `from` up to but not including `to`, over any type `IBinaryInteger[T]` covers.
-    struct RANGE[T: IBinaryInteger[T]]: Range[T], Iterable[T], Iterator[T], Resettable is
+    /// The half-open range from `from` up to but not including `to`, over any type `BinaryInteger[T]` covers.
+    struct RANGE[T: BinaryInteger[T]]: Range[T], Iterable[T], Iterator[T], Resettable is
         /// This range, as its own iterator.
         iterator: Iterator[T] => self
 
@@ -69,8 +68,8 @@ namespace Ghul is
         si
     si
 
-    /// The closed range from `from` to `to`, including both, over any type `IBinaryInteger[T]` covers.
-    struct RANGE_INCLUSIVE[T: IBinaryInteger[T]]: Range[T], Iterable[T], Iterator[T], Resettable is
+    /// The closed range from `from` to `to`, including both, over any type `BinaryInteger[T]` covers.
+    struct RANGE_INCLUSIVE[T: BinaryInteger[T]]: Range[T], Iterable[T], Iterator[T], Resettable is
         /// This range, as its own iterator.
         iterator: Iterator[T] => self
 
@@ -139,13 +138,13 @@ si
 // them rather than among the library's globals.
 namespace Ghul.Intrinsics is
     use Ghul
-    use System.Numerics.IBinaryInteger
+    use Ghul.Math.BinaryInteger
 
     /// The range from `from` up to but not including `to`.
-    ..[T: IBinaryInteger[T]](from: T, to: T) -> RANGE[T] pure =>
+    ..[T: BinaryInteger[T]](from: T, to: T) -> RANGE[T] pure =>
         RANGE[T](from, to)
 
     /// The range from `from` to `to`, including both.
-    ::[T: IBinaryInteger[T]](from: T, to: T) -> RANGE_INCLUSIVE[T] pure =>
+    ::[T: BinaryInteger[T]](from: T, to: T) -> RANGE_INCLUSIVE[T] pure =>
         RANGE_INCLUSIVE[T](from, to)
 si
