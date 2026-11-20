@@ -90,7 +90,7 @@ namespace Ghul is
         op_explicit(value: single) -> bigint static pure => bigint(cast double(value))
 
         /// The value under the numeric format string `format`, as .NET writes
-        /// a BigInteger in the invariant culture.
+        /// a BigInteger in the invariant locale.
         ///
         /// - format: a standard or custom numeric format string
         to_string(format: string) -> string pure is

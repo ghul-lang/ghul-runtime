@@ -1,6 +1,6 @@
 namespace Ghul is
     // The text .NET gives a number under a standard or custom numeric format
-    // string, in the invariant culture.
+    // string, in the invariant locale.
     //
     // A value is held as a decimal: its sign, its significant digits with no
     // zeros at either end, and `point`, where the value is 0.digits times ten

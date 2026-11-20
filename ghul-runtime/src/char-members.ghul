@@ -5,7 +5,7 @@ namespace Ghul.Internal is
     // properties and the case mappings as methods. They replace System.Char's
     // statics of the same names, which the compiler doesn't import where these
     // are present. Categories are .NET's, and case maps as the invariant
-    // culture maps it.
+    // locale maps it.
     partial char is
         /// Whether the character is a decimal digit in any script: category
         /// `DECIMAL_DIGIT_NUMBER`.
@@ -51,11 +51,11 @@ namespace Ghul.Internal is
         /// Whether the character is a control character.
         is_control: bool pure => _category == 14
 
-        /// The character in upper case, as the invariant culture maps it; a
+        /// The character in upper case, as the invariant locale maps it; a
         /// character with no upper-case form is itself.
         to_upper() -> char pure => char.to_upper_invariant(self)
 
-        /// The character in lower case, as the invariant culture maps it; a
+        /// The character in lower case, as the invariant locale maps it; a
         /// character with no lower-case form is itself.
         to_lower() -> char pure => char.to_lower_invariant(self)
 

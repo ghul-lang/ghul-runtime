@@ -221,11 +221,11 @@ namespace Ghul is
         trim_end(trim_chars: ARRAY[char]) -> string pure => substring(0, _last_not_in(trim_chars) + 1)
 
         /// The string with each letter made upper case under the invariant
-        /// culture.
+        /// locale.
         to_upper_invariant() -> string pure => to_upper()
 
         /// The string with each letter made lower case under the invariant
-        /// culture.
+        /// locale.
         to_lower_invariant() -> string pure => to_lower()
 
         /// The order of `a` and `b` by their code units: negative where `a`

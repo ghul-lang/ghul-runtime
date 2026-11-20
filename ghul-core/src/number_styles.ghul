@@ -31,7 +31,7 @@ namespace Ghul is
 
     partial int is
         /// The `int` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `int`'s range.
         ///
@@ -48,7 +48,7 @@ namespace Ghul is
 
     partial long is
         /// The `long` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `long`'s range.
         ///
@@ -65,7 +65,7 @@ namespace Ghul is
 
     partial uint is
         /// The `uint` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `uint`'s range.
         ///
@@ -82,7 +82,7 @@ namespace Ghul is
 
     partial ulong is
         /// The `ulong` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `ulong`'s range.
         ///
@@ -99,7 +99,7 @@ namespace Ghul is
 
     partial short is
         /// The `short` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `short`'s range.
         ///
@@ -116,7 +116,7 @@ namespace Ghul is
 
     partial ushort is
         /// The `ushort` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `ushort`'s range.
         ///
@@ -133,7 +133,7 @@ namespace Ghul is
 
     partial byte is
         /// The `byte` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `byte`'s range.
         ///
@@ -150,7 +150,7 @@ namespace Ghul is
 
     partial ubyte is
         /// The `ubyte` that `text` holds under `styles`, as .NET reads it under
-        /// the invariant culture; throws `Ghul.FormatException` where it holds
+        /// the invariant locale; throws `Ghul.FormatException` where it holds
         /// none, and `Ghul.OverflowException` where it holds one outside
         /// `ubyte`'s range.
         ///
