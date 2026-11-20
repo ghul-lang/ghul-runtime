@@ -140,7 +140,7 @@ namespace Ghul.Math is
         max_value: TSelf static
     si
 
-    /// A number: zero and one, and the four arithmetic operators. On .NET
+    /// A number: zero and one, the four arithmetic operators, and equality. On .NET
     /// this is `System.Numerics.INumberBase<TSelf>`. Of its .NET members,
     /// `zero` and `one` are declared on the targets built from source.
     trait NumberBase[TSelf: NumberBase[TSelf]]:
@@ -149,7 +149,8 @@ namespace Ghul.Math is
         MultiplyOperators[TSelf, TSelf, TSelf],
         DivisionOperators[TSelf, TSelf, TSelf],
         AdditiveIdentity[TSelf, TSelf],
-        MultiplicativeIdentity[TSelf, TSelf] open
+        MultiplicativeIdentity[TSelf, TSelf],
+        Ghul.Equatable[TSelf] open
     is
         /// Zero.
         zero: TSelf static
@@ -158,10 +159,10 @@ namespace Ghul.Math is
         one: TSelf static
     si
 
-    /// A number with an order. On .NET this is `System.Numerics.INumber<TSelf>`.
+    /// A number with an order, compared with `<>`. On .NET this is `System.Numerics.INumber<TSelf>`.
     /// The targets built from source give it no members beyond those of
     /// `NumberBase`, and its `%` comes with `BinaryInteger`.
-    trait Number[TSelf: Number[TSelf]]: NumberBase[TSelf] open is si
+    trait Number[TSelf: Number[TSelf]]: NumberBase[TSelf], Ghul.Comparable[TSelf] open is si
 
     /// A number made of bits, with the bitwise operators. On .NET this is
     /// `System.Numerics.IBinaryNumber<TSelf>`.

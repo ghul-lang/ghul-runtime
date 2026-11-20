@@ -6,17 +6,14 @@ namespace Ghul.Pipes is
 
     use Collections
 
-    @IF.dotnet()
-    use System.Numerics.INumber
+    use Ghul.Math.Number
 
     // The arithmetic operators on a bounded type parameter are reachable
     // only once imported by name, and each comes from the interface that
     // declares it rather than from the bound.
-    @IF.dotnet()
-    use System.Numerics.IAdditionOperators.`+
+    use Ghul.Math.AdditionOperators.`+
 
-    @IF.dotnet()
-    use System.Numerics.IMultiplyOperators.`*
+    use Ghul.Math.MultiplyOperators.`*
 
     // Each read of a pipe starts from the beginning. A stage is its own
     // iterator for the first read from the thread that made it, as a C#
@@ -133,8 +130,7 @@ namespace Ghul.Pipes is
     // operators. As with `min` and `max`, these are free functions
     // because `Pipe[T]` cannot bound its own `T`.
     /// The total of `source`'s elements, or `T.zero` when it's empty.
-    @IF.dotnet()
-    sum[T: INumber[T]](source: Iterable[T]) -> T pure is
+    sum[T: Number[T]](source: Iterable[T]) -> T pure is
         let total mut = T.zero
 
         for value in source do
@@ -145,8 +141,7 @@ namespace Ghul.Pipes is
     si
 
     /// The product of `source`'s elements, or `T.one` when it's empty.
-    @IF.dotnet()
-    product[T: INumber[T]](source: Iterable[T]) -> T pure is
+    product[T: Number[T]](source: Iterable[T]) -> T pure is
         let running mut = T.one
 
         for value in source do
@@ -158,8 +153,7 @@ namespace Ghul.Pipes is
 
     /// The total of what `selector` returns for each of `source`'s elements,
     /// or `N.zero` when it's empty.
-    @IF.dotnet()
-    sum_by[T..,N: INumber[N]](source: Iterable[T], selector: T.. -> N pure) -> N pure is
+    sum_by[T..,N: Number[N]](source: Iterable[T], selector: T.. -> N pure) -> N pure is
         let total mut = N.zero
 
         for value in source do

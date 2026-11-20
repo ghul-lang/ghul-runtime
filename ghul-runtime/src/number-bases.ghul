@@ -1,0 +1,186 @@
+namespace Text is
+    use Ghul.Math.BinaryInteger
+    use Ghul.Math.MinMaxValue
+    use Ghul.Math.AdditionOperators.`+
+    use Ghul.Math.SubtractionOperators.`-
+    use Ghul.Math.MultiplyOperators.`*
+    use Ghul.Math.DivisionOperators.`/
+    use Ghul.Math.BitwiseOperators.`&
+    use Ghul.Math.BitwiseOperators.`|
+    use Ghul.Math.ShiftOperators.`<<
+    use Ghul.Math.ShiftOperators.`>>>
+
+    /// `value`'s digits in `base`, which is 2, 8, 10 or 16. In base 10 a
+    /// negative value has a minus sign; in the other bases it is written as
+    /// its two's-complement bits, all of the type's width, in lower case.
+    /// Throws `ArgumentException` for any other base.
+    ///
+    /// - value: the number to write
+    /// - base: the base to write it in
+    to_base[T: BinaryInteger[T] /\ MinMaxValue[T]](value: T, base: int) -> string is
+        let shift = _shift_for(base)
+
+        if shift == 0 then
+            return "{value}"
+        fi
+
+        let values = _small_values[T]()
+        let mask = values[(1 << shift) - 1]
+        let digits = Text.STRING_BUILDER()
+        let remaining mut = value
+
+        do
+            digits.insert(0, _digit_char(_small_index(remaining & mask, values)))
+            remaining = remaining >>> shift
+
+            if remaining =~ T.zero then
+                break
+            fi
+        od
+
+        return digits.to_string()
+    si
+
+    /// The `T` that `text` holds in `base`, which is 2, 8, 10 or 16, or null
+    /// where `text` isn't a number in that base or doesn't fit a `T`: write
+    /// `from_base[int]("ff", 16)`, or let the type expected decide `T`. In
+    /// base 10 a leading `-` or `+` is allowed. In base 16 a leading `0x` is
+    /// allowed. In the bases other than 10 the digits are the type's
+    /// two's-complement bits, so `"ff"` is -1 as a `byte`, as `to_base`
+    /// writes it. Throws `ArgumentException` for any other base.
+    ///
+    /// - text: the digits to read
+    /// - base: the base they are in
+    from_base[T: BinaryInteger[T] /\ MinMaxValue[T] struct](text: string, base: int) -> T? is
+        let shift = _shift_for(base)
+        let values = _small_values[T]()
+
+        let at mut = 0
+        let negative mut = false
+
+        if text.length > 0 /\ text[0] == '-' /\ shift == 0 then
+            negative = true
+            at = 1
+        elif text.length > 0 /\ text[0] == '+' then
+            at = 1
+        fi
+
+        if shift == 4 /\ at + 1 < text.length /\ text[at] == '0' /\ (text[at + 1] == 'x' \/ text[at + 1] == 'X') then
+            at = at + 2
+        fi
+
+        if at >= text.length then
+            return null
+        fi
+
+        let width = if shift == 0 then 0 else _width[T]() fi
+        let ten = values[10]
+        let signed = T.min_value < T.zero
+        let result mut = T.zero
+
+        while at < text.length do
+            let digit = _digit_value(text[at])
+
+            if digit < 0 \/ digit >= base then
+                return null
+            fi
+
+            let d = values[digit]
+
+            if shift != 0 then
+                if !((result >>> (width - shift)) =~ T.zero) then
+                    return null
+                fi
+
+                result = (result << shift) | d
+            elif negative /\ !signed then
+                // An unsigned type holds no negative number: only zeros read.
+                if !(d =~ T.zero) then
+                    return null
+                fi
+            elif negative then
+                // Gathered below zero, so the least value, whose magnitude
+                // no positive value of the type holds, can be read.
+                if result < (T.min_value + d) / ten then
+                    return null
+                fi
+
+                result = result * ten - d
+            else
+                if result > (T.max_value - d) / ten then
+                    return null
+                fi
+
+                result = result * ten + d
+            fi
+
+            at = at + 1
+        od
+
+        return result
+    si
+
+    /// The number `text` holds in `base` as a `long`, or null where it
+    /// isn't one: `from_base[long](text, base)`, for a call with no type
+    /// to decide `T`.
+    ///
+    /// - text: the digits to read
+    /// - base: the base they are in
+    from_base(text: string, base: int) -> long? => from_base[long](text, base)
+
+    // How many bits a digit in `base` stands for, or 0 for base 10. Throws
+    // for a base that isn't supported.
+    _shift_for(base: int) -> int =>
+        if base == 2 then 1
+        elif base == 8 then 3
+        elif base == 16 then 4
+        elif base == 10 then 0
+        else throw Ghul.ArgumentException("invalid base")
+        fi
+
+    // The values 0 to 16 as a `T`, each one more than the last.
+    _small_values[T: BinaryInteger[T]]() -> Collections.LIST[T] is
+        let result = Collections.LIST[T]()
+        let value mut = T.zero
+
+        for _ in 0::16 do
+            result.add(value)
+            value = value + T.one
+        od
+
+        return result
+    si
+
+    // The index in `values` of `value`, which is one of them.
+    _small_index[T: BinaryInteger[T]](value: T, values: Collections.LIST[T]) -> int is
+        for i in 0..values.count do
+            if values[i] =~ value then
+                return i
+            fi
+        od
+
+        return 0
+    si
+
+    // The number of bits in a `T`: how far one shifts left before it is gone.
+    _width[T: BinaryInteger[T] /\ MinMaxValue[T]]() -> int is
+        let bit mut = T.one
+        let result mut = 0
+
+        while !(bit =~ T.zero) do
+            bit = bit << 1
+            result = result + 1
+        od
+
+        return result
+    si
+
+    _digit_value(c: char) -> int =>
+        if c >= '0' /\ c <= '9' then int(c) - int('0')
+        elif c >= 'a' /\ c <= 'f' then int(c) - int('a') + 10
+        elif c >= 'A' /\ c <= 'F' then int(c) - int('A') + 10
+        else -1
+        fi
+
+    _digit_char(digit: int) -> char => "0123456789abcdef"[digit]
+si
