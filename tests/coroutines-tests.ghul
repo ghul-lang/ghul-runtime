@@ -17,7 +17,7 @@ namespace Tests is
         init() is
         si
 
-        ping(s: SCHEDULER, journal: LIST[string], name: string, n: int) -> COROUTINE[int] is
+        ping(s: SCHEDULER, journal: LIST[string], name: string, n: int) -> Coroutine[int] is
             let total mut = 0
 
             for i in 1::n do
@@ -29,14 +29,14 @@ namespace Tests is
             return total
         si
 
-        producer(s: SCHEDULER, ch: CHANNEL[int], n: int) -> COROUTINE is
+        producer(s: SCHEDULER, ch: Channel[int], n: int) -> Coroutine is
             for i in 1::n do
                 ch.send(i)
                 await s.pause()
             od
         si
 
-        consumer(s: SCHEDULER, ch: CHANNEL[int], n: int) -> COROUTINE[int] is
+        consumer(s: SCHEDULER, ch: Channel[int], n: int) -> Coroutine[int] is
             let total mut = 0
 
             for i in 1::n do
@@ -48,43 +48,43 @@ namespace Tests is
             return total
         si
 
-        boom(s: SCHEDULER) -> COROUTINE is
+        boom(s: SCHEDULER) -> Coroutine is
             await s.pause()
             throw System.Exception("bang")
         si
 
-        immediate(s: SCHEDULER, v: int) -> COROUTINE[int] is
+        immediate(s: SCHEDULER, v: int) -> Coroutine[int] is
             let x = await Tasks.ValueTask[int](v)
             return x
         si
 
-        failing(s: SCHEDULER) -> COROUTINE[int] is
+        failing(s: SCHEDULER) -> Coroutine[int] is
             await s.pause()
             throw System.Exception("no result")
         si
 
-        parked_taker(channel: CHANNEL[string]) -> COROUTINE[string] is
+        parked_taker(channel: Channel[string]) -> Coroutine[string] is
             return await channel.receive()
         si
 
-        journalling_receiver(ch: CHANNEL[int], journal: LIST[string]) -> COROUTINE is
+        journalling_receiver(ch: Channel[int], journal: LIST[string]) -> Coroutine is
             let _ = await ch.receive()
             journal.add("received")
         si
 
-        double_after_pause(v: int) -> COROUTINE[int] is
+        double_after_pause(v: int) -> Coroutine[int] is
             await pause()
             return v * 2
         si
 
-        calls_another(journal: LIST[string]) -> COROUTINE[int] is
+        calls_another(journal: LIST[string]) -> Coroutine[int] is
             journal.add("before")
             let v = await double_after_pause(21)
             journal.add("after {v}")
             return v
         si
 
-        awaits_failure(journal: LIST[string]) -> COROUTINE is
+        awaits_failure(journal: LIST[string]) -> Coroutine is
             try
                 await failing(SCHEDULER.current)
             catch e: System.Exception
@@ -92,12 +92,12 @@ namespace Tests is
             yrt
         si
 
-        joiner(target: COROUTINE[int], journal: LIST[string]) -> COROUTINE is
+        joiner(target: Coroutine[int], journal: LIST[string]) -> Coroutine is
             let v = await target
             journal.add("joined {v}")
         si
 
-        holds_lock(lock: MUTEX, journal: LIST[string], name: string) -> COROUTINE is
+        holds_lock(lock: MUTEX, journal: LIST[string], name: string) -> Coroutine is
             await lock.acquire()
             journal.add("{name} in")
             await pause()
@@ -105,7 +105,7 @@ namespace Tests is
             lock.release()
         si
 
-        takes_permit(semaphore: SEMAPHORE, journal: LIST[string], name: string) -> COROUTINE is
+        takes_permit(semaphore: Semaphore, journal: LIST[string], name: string) -> Coroutine is
             await semaphore.acquire()
             journal.add("{name} in")
             await pause()
@@ -113,7 +113,7 @@ namespace Tests is
             journal.add("{name} out")
         si
 
-        receives_once(ch: CHANNEL[int], journal: LIST[string], name: string) -> COROUTINE is
+        receives_once(ch: Channel[int], journal: LIST[string], name: string) -> Coroutine is
             let v = await ch.receive()
             journal.add("{name} got {v}")
         si
@@ -148,7 +148,7 @@ namespace Tests is
         @Test()
         Channel_Hands_Off_From_Producer_To_Consumer() is
             let s = SCHEDULER()
-            let ch = CHANNEL[int]()
+            let ch = Channel[int]()
             let p = s.spawn(sch => producer(sch, ch, 3))
             let c = s.spawn(sch => consumer(sch, ch, 3))
 
@@ -162,7 +162,7 @@ namespace Tests is
         @Test()
         Channel_Receive_Parks_Until_A_Send_Arrives() is
             let s = SCHEDULER()
-            let ch = CHANNEL[string]()
+            let ch = Channel[string]()
             let t = s.spawn(_ => parked_taker(ch))
 
             is_false(t.completed)
@@ -181,7 +181,7 @@ namespace Tests is
         @Test()
         Channel_Send_Resumes_The_Receiver_From_Run_Not_Inline() is
             let s = SCHEDULER()
-            let ch = CHANNEL[int]()
+            let ch = Channel[int]()
             let journal = LIST[string]()
 
             let receiver = s.spawn(_ => journalling_receiver(ch, journal))
@@ -375,7 +375,7 @@ namespace Tests is
         Semaphore_Admits_Up_To_Its_Permits() is
             SCHEDULER.current = SCHEDULER()
             let journal = LIST[string]()
-            let semaphore = SEMAPHORE(2)
+            let semaphore = Semaphore(2)
 
             let _ = takes_permit(semaphore, journal, "a")
             let _ = takes_permit(semaphore, journal, "b")
@@ -416,7 +416,7 @@ namespace Tests is
         Send_To_A_Parked_Receiver_Cannot_Be_Overtaken() is
             SCHEDULER.current = SCHEDULER()
             let journal = LIST[string]()
-            let ch = CHANNEL[int]()
+            let ch = Channel[int]()
 
             let _ = receives_once(ch, journal, "first")
 
@@ -436,7 +436,7 @@ namespace Tests is
             are_equal("first got 1, second got 2", journal |> Ghul.Pipes.join(", "))
         si
 
-        sleeper(journal: LIST[string], name: string, milliseconds: int) -> COROUTINE is
+        sleeper(journal: LIST[string], name: string, milliseconds: int) -> Coroutine is
             await sleep(milliseconds)
             journal.add(name)
         si
@@ -489,31 +489,31 @@ namespace Tests is
             are_equal("done", journal |> Ghul.Pipes.join(", "))
         si
 
-        sleeping_twice(journal: LIST[string], name: string, first: int, second: int) -> COROUTINE is
+        sleeping_twice(journal: LIST[string], name: string, first: int, second: int) -> Coroutine is
             await sleep(first)
             journal.add("{name} woke")
             await sleep(second)
             journal.add("{name} woke again")
         si
 
-        pacing(journal: LIST[string], turns: int) -> COROUTINE is
+        pacing(journal: LIST[string], turns: int) -> Coroutine is
             for i in 1::turns do
                 journal.add("turn {i}")
                 await pause()
             od
         si
 
-        sleeps_then_doubles(v: int, milliseconds: int) -> COROUTINE[int] is
+        sleeps_then_doubles(v: int, milliseconds: int) -> Coroutine[int] is
             await sleep(milliseconds)
             return v * 2
         si
 
-        sleeps_then_throws(milliseconds: int) -> COROUTINE is
+        sleeps_then_throws(milliseconds: int) -> Coroutine is
             await sleep(milliseconds)
             throw System.Exception("late")
         si
 
-        waits_for(other: COROUTINE[int], journal: LIST[string]) -> COROUTINE[int] is
+        waits_for(other: Coroutine[int], journal: LIST[string]) -> Coroutine[int] is
             let v = await other
             journal.add("got {v}")
             return v + 1
@@ -605,7 +605,7 @@ namespace Tests is
             are_equal("got 42", journal |> Ghul.Pipes.join(", "))
         si
 
-        pacing_until(journal: LIST[string], flag: Box[bool], limit: int) -> COROUTINE is
+        pacing_until(journal: LIST[string], flag: Box[bool], limit: int) -> Coroutine is
             for i in 1::limit do
                 if flag.value then
                     journal.add("noticed")
@@ -618,7 +618,7 @@ namespace Tests is
             journal.add("gave up")
         si
 
-        setting(flag: Box[bool], milliseconds: int) -> COROUTINE is
+        setting(flag: Box[bool], milliseconds: int) -> Coroutine is
             await sleep(milliseconds)
             flag.value = true
         si
@@ -636,7 +636,7 @@ namespace Tests is
             are_equal("noticed", journal |> Ghul.Pipes.join(", "))
         si
 
-        delaying(journal: LIST[string], name: string, n: int) -> COROUTINE is
+        delaying(journal: LIST[string], name: string, n: int) -> Coroutine is
             for i in 1::n do
                 journal.add("{name} {i}")
                 await Tasks.TASK.delay(10)
@@ -658,7 +658,7 @@ namespace Tests is
             are_equal(6, journal.count)
         si
 
-        computed_elsewhere(threads: LIST[int]) -> COROUTINE[int] is
+        computed_elsewhere(threads: LIST[int]) -> Coroutine[int] is
             let v = await Tasks.TASK.run(() -> int => 42)
             threads.add(System.Threading.Thread.current_thread.managed_thread_id)
             return v
@@ -678,7 +678,7 @@ namespace Tests is
             are_equal(System.Threading.Thread.current_thread.managed_thread_id, threads[0])
         si
 
-        sleeping_twice(journal: LIST[string]) -> COROUTINE is
+        sleeping_twice(journal: LIST[string]) -> Coroutine is
             await sleep(5)
             journal.add("slept")
             await sleep(5)
@@ -701,7 +701,7 @@ namespace Tests is
             is_true(journal.contains("task 2"))
         si
 
-        awaiting_a_fault() -> COROUTINE is
+        awaiting_a_fault() -> Coroutine is
             await Tasks.TASK.run(() -> void is
                 throw System.InvalidOperationException("task failed")
             si)
