@@ -94,7 +94,7 @@ namespace Tests is
             try
                 let result = maybe.value
 
-            catch ex: System.InvalidOperationException
+            catch ex: Ghul.InvalidOperationException
                 caught_expected = true
             yrt
 
@@ -110,7 +110,7 @@ namespace Tests is
             try
                 let result = maybe.value
 
-            catch ex: System.InvalidOperationException
+            catch ex: Ghul.InvalidOperationException
                 caught_expected = true
             yrt
 

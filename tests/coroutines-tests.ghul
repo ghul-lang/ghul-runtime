@@ -50,7 +50,7 @@ namespace Tests is
 
         boom(s: SCHEDULER) -> Coroutine is
             await s.pause()
-            throw System.Exception("bang")
+            throw Ghul.Exception("bang")
         si
 
         immediate(s: SCHEDULER, v: int) -> Coroutine[int] is
@@ -60,7 +60,7 @@ namespace Tests is
 
         failing(s: SCHEDULER) -> Coroutine[int] is
             await s.pause()
-            throw System.Exception("no result")
+            throw Ghul.Exception("no result")
         si
 
         parked_taker(channel: Channel[string]) -> Coroutine[string] is
@@ -87,7 +87,7 @@ namespace Tests is
         awaits_failure(journal: LIST[string]) -> Coroutine is
             try
                 await failing(SCHEDULER.current)
-            catch e: System.Exception
+            catch e: Ghul.Exception
                 journal.add("caught {e.message}")
             yrt
         si
@@ -219,7 +219,7 @@ namespace Tests is
 
             try
                 let _ = handle.value
-            catch e: System.Exception
+            catch e: Ghul.Exception
                 thrown = e.message
             yrt
 
@@ -465,9 +465,9 @@ namespace Tests is
             // The later sleeper is registered first, so wake order comes
             // from the deadlines, not from registration.
             let _ = sleeper(journal, "later", 100)
-            System.Threading.Thread.sleep(30)
+            Tasks.Thread.sleep(30)
             let _ = sleeper(journal, "sooner", 1)
-            System.Threading.Thread.sleep(100)
+            Tasks.Thread.sleep(100)
 
             are_equal(0, journal.count)
 
@@ -510,7 +510,7 @@ namespace Tests is
 
         sleeps_then_throws(milliseconds: int) -> Coroutine is
             await sleep(milliseconds)
-            throw System.Exception("late")
+            throw Ghul.Exception("late")
         si
 
         waits_for(other: Coroutine[int], journal: LIST[string]) -> Coroutine[int] is
@@ -660,7 +660,7 @@ namespace Tests is
 
         computed_elsewhere(threads: LIST[int]) -> Coroutine[int] is
             let v = await Tasks.TASK.run(() -> int => 42)
-            threads.add(System.Threading.Thread.current_thread.managed_thread_id)
+            threads.add(Tasks.Thread.current_thread.managed_thread_id)
             return v
         si
 
@@ -675,7 +675,7 @@ namespace Tests is
 
             are_equal(42, handle.value)
             are_equal(1, threads.count)
-            are_equal(System.Threading.Thread.current_thread.managed_thread_id, threads[0])
+            are_equal(Tasks.Thread.current_thread.managed_thread_id, threads[0])
         si
 
         sleeping_twice(journal: LIST[string]) -> Coroutine is
@@ -703,7 +703,7 @@ namespace Tests is
 
         awaiting_a_fault() -> Coroutine is
             await Tasks.TASK.run(() -> void is
-                throw System.InvalidOperationException("task failed")
+                throw Ghul.InvalidOperationException("task failed")
             si)
         si
 

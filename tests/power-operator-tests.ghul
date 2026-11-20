@@ -71,7 +71,7 @@ namespace Tests is
             try
                 f()
                 fail("expected OverflowException")
-            catch e: System.OverflowException
+            catch e: Ghul.OverflowException
             yrt
         si
 
@@ -79,7 +79,7 @@ namespace Tests is
             try
                 f()
                 fail("expected ArgumentOutOfRangeException")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
     si

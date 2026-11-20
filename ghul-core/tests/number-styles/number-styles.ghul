@@ -1,12 +1,12 @@
 use default
-use System.Globalization.NumberStyles
+use Text.NumberStyles
 
 try_int(text: string, styles: NumberStyles) -> string is
     try
         return "{int.parse(text, styles)}"
-    catch e: System.FormatException
+    catch e: Ghul.FormatException
         return "format"
-    catch e: System.OverflowException
+    catch e: Ghul.OverflowException
         return "overflow"
     yrt
 si
@@ -14,9 +14,9 @@ si
 try_long(text: string, styles: NumberStyles) -> string is
     try
         return "{long.parse(text, styles)}"
-    catch e: System.FormatException
+    catch e: Ghul.FormatException
         return "format"
-    catch e: System.OverflowException
+    catch e: Ghul.OverflowException
         return "overflow"
     yrt
 si

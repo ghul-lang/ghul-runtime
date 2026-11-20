@@ -1,7 +1,7 @@
 // The string and char members, parsing, and strings as comparable and
 // iterable values print what the same program prints on .NET.
 use IO.Std.write_line
-use Ghul.StringSplitOptions
+use Text.StringSplitOptions
 
 joined(pieces: ARRAY[string]) -> string => "[{string.join("|", pieces)}]"
 

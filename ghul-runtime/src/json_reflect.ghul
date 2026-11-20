@@ -97,15 +97,15 @@ namespace Json is
 
     // A member JSON reads and writes: its name, its declared type, how to
     // read it, and how to write it where it can be written.
-    class _MEMBER(name: string public, type: System.Type public, read: (object) -> object? public, write: ((object, object?) -> void)? public)
+    class _MEMBER(name: string public, type: Ghul.Type public, read: (object) -> object? public, write: ((object, object?) -> void)? public)
 
     // `type`'s public instance properties and then fields, level by level
     // from `type` itself to its root, each name once, leaving out those
     // the compiler synthesises.
-    _members(type: System.Type) -> LIST[_MEMBER] static is
+    _members(type: Ghul.Type) -> LIST[_MEMBER] static is
         let result = LIST[_MEMBER]()
         let seen = SET[string]()
-        let level: System.Type? mut = type
+        let level: Ghul.Type? mut = type
 
         while let current = level do
             for property in current.get_properties(_LEVEL) do
@@ -169,7 +169,7 @@ namespace Json is
     ///
     /// - json: the JSON value to read
     /// - type: the type to build
-    from_json(json: Value, type: System.Type) -> object? static is
+    from_json(json: Value, type: Ghul.Type) -> object? static is
         if isa Value.NULL(json) then
             return null
         fi
@@ -216,7 +216,7 @@ namespace Json is
     // An instance of `type` holding `items`: an array of the element type
     // for an array or a sequence trait, and otherwise `type` itself made
     // through its parameterless constructor, each item added to it.
-    _build_sequence(items: LIST[Value], type: System.Type) -> object static is
+    _build_sequence(items: LIST[Value], type: Ghul.Type) -> object static is
         let element_type = _element_type(type)
 
         if type.is_array \/ type.is_interface then
@@ -238,7 +238,7 @@ namespace Json is
 
     // An array of `element_type` holding `items`.
     @IF.dotnet()
-    _array(element_type: System.Type, items: LIST[Value]) -> object static is
+    _array(element_type: Ghul.Type, items: LIST[Value]) -> object static is
         let result = System.Array.create_instance(element_type, items.count)
 
         for i in 0..items.count do
@@ -251,13 +251,13 @@ namespace Json is
     // Building an array of a type known only at run time is not supported
     // off .NET.
     @IF.not.dotnet()
-    _array(element_type: System.Type, items: LIST[Value]) -> object static =>
+    _array(element_type: Ghul.Type, items: LIST[Value]) -> object static =>
         throw Ghul.NotSupportedException("an array of {element_type.name} cannot be built from JSON on this target")
 
     // An instance of the list type `type` holding `values`, made with room
     // for exactly that many where it takes a capacity, or null where `type` is not a list.
     @IF.dotnet()
-    _filled(type: System.Type, values: LIST[object?]) -> object? static is
+    _filled(type: Ghul.Type, values: LIST[object?]) -> object? static is
         let sized = type.get_constructor([typeof int])?
         let made = if sized then Ghul.Reflection.Activator.create_instance(type, [cast object(values.count)]) else Ghul.Reflection.Activator.create_instance(type) fi
 
@@ -275,7 +275,7 @@ namespace Json is
     // An instance of the list type `type` holding `values`, its storage
     // filled in one step, or null where `type` is not a list.
     @IF.not.dotnet()
-    _filled(type: System.Type, values: LIST[object?]) -> object? static is
+    _filled(type: Ghul.Type, values: LIST[object?]) -> object? static is
         if let list: Ghul.Internal.UntypedList = Ghul.Reflection.Activator.create_instance(type) then
             list.fill_untyped(values.to_array())
 
@@ -287,7 +287,7 @@ namespace Json is
 
     // What a sequence of `type` holds: an array's element type, or the one
     // type argument of a generic sequence, and `object` otherwise.
-    _element_type(type: System.Type) -> System.Type is
+    _element_type(type: Ghul.Type) -> Ghul.Type is
         if type.is_array then
             return type.get_element_type()!
         fi
@@ -302,7 +302,7 @@ namespace Json is
     si
 
     // `union_type`'s own `UNION_ATTRIBUTE`, read off its custom attributes.
-    _union_attribute(union_type: System.Type) -> Ghul.Internal.UNION_ATTRIBUTE static is
+    _union_attribute(union_type: Ghul.Type) -> Ghul.Internal.UNION_ATTRIBUTE static is
         for attribute in union_type.get_custom_attributes(typeof Ghul.Internal.UNION_ATTRIBUTE, false) do
             if let found: Ghul.Internal.UNION_ATTRIBUTE = attribute then
                 return found
@@ -314,7 +314,7 @@ namespace Json is
 
     // The variant of `union_type` that `json`'s discriminator field names,
     // built from `json`'s other fields.
-    _build_variant(json: Value, union_type: System.Type) -> object static is
+    _build_variant(json: Value, union_type: Ghul.Type) -> object static is
         let attribute = _union_attribute(union_type)
 
         if attribute.variants.count == 0 then
@@ -347,7 +347,7 @@ namespace Json is
     // parameter read from the field of the same name, and then
     // each remaining field written to the member of the same name.
     // `discriminator` names a field that is not a member.
-    _build_object(json: Value, type: System.Type, discriminator: string?) -> object static is
+    _build_object(json: Value, type: Ghul.Type, discriminator: string?) -> object static is
         let fields = as_object(json)
 
         if !fields? then

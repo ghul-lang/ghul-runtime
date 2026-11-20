@@ -74,13 +74,13 @@ namespace Tests is
             try
                 [1, 2, 3] |> step(0)
                 fail("expected step(0) to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
 
             try
                 [1, 2, 3] |> step(-1)
                 fail("expected step(-1) to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
     si

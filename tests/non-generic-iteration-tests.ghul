@@ -15,12 +15,12 @@ namespace Tests is
     // reflection, which is also how such a consumer finds them.
     @TestClass()
     class NonGenericIterationShould is
-        _iterable: System.Type
-        _enumerator: System.Type
+        _iterable: Ghul.Type
+        _enumerator: Ghul.Type
 
         init() is
-            _iterable = System.Type.get_type("System.Collections.IEnumerable")!
-            _enumerator = System.Type.get_type("System.Collections.IEnumerator")!
+            _iterable = Ghul.Type.get_type("System.Collections.IEnumerable")!
+            _enumerator = Ghul.Type.get_type("System.Collections.IEnumerator")!
         si
 
         _cursor(source: object) -> object =>

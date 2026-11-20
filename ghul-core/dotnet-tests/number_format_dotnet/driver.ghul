@@ -4,8 +4,8 @@ namespace Harness is
     use IO.Std.write_line
 
     entry() is
-        let invariant = System.Globalization.CultureInfo.invariant
-        let random = System.Random(4321)
+        let invariant = Text.Locale.invariant
+        let random = Ghul.Random(4321)
         let failures mut = 0
         let checked mut = 0
 

@@ -154,7 +154,7 @@ namespace Tests is
         // here the test host's, which carries one.
         @Test()
         Environment_ProgramVersion_IsTheEntryAssemblysInformationalVersion() is
-            let entry = System.Reflection.Assembly.get_entry_assembly()
+            let entry = Ghul.Reflection.Assembly.get_entry_assembly()
 
             is_true(entry?)
 

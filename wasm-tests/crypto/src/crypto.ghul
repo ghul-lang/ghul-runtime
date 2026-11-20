@@ -14,7 +14,7 @@ write_line(to_hex_lower(md5(abc)))
 write_line(to_hex_lower(sha1(abc)))
 write_line(to_hex_lower(sha256(abc)))
 write_line(to_hex_lower(sha256(Text.Encoding.ascii.get_bytes(""))))
-write_line("{to_hex_lower(Crypto.MD5.hash_data(abc)) =~ to_hex_lower(System.Security.Cryptography.MD5.hash_data(abc))}")
+write_line("{to_hex_lower(Crypto.MD5.hash_data(abc)) =~ to_hex_lower(Crypto.MD5.hash_data(abc))}")
 write_line("{to_hex_lower(Crypto.SHA256.hash_data(abc)) =~ to_hex_lower(sha256(abc))}")
 
 let in_bounds mut = true
@@ -30,5 +30,5 @@ od
 
 write_line("{random_bytes(16).count} {random_bytes(0).count} {in_bounds} {in_range} {random_int(5, 6)}")
 
-let random: Crypto.RandomNumberGenerator = System.Security.Cryptography.RandomNumberGenerator.create()
+let random: Crypto.RandomNumberGenerator = Crypto.RandomNumberGenerator.create()
 write_line("{Crypto.RandomNumberGenerator.get_bytes(4).count} {random == random} {Crypto.RandomNumberGenerator.get_int32(1)}")

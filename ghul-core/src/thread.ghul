@@ -9,7 +9,7 @@ namespace Tasks is
         /// - milliseconds: how long to wait; a value below -1 throws `ArgumentOutOfRangeException`
         sleep(milliseconds: int) static is
             if milliseconds < -1 then
-                throw System.ArgumentOutOfRangeException(
+                throw Ghul.ArgumentOutOfRangeException(
                     "milliseconds", "Number must be either non-negative and less than or equal to Int32.MaxValue or -1.")
             fi
 
@@ -30,7 +30,7 @@ namespace Tasks is
             let milliseconds = timeout.total_milliseconds
 
             if milliseconds < -1.0 \/ milliseconds > 2147483647.0 then
-                throw System.ArgumentOutOfRangeException(
+                throw Ghul.ArgumentOutOfRangeException(
                     "timeout", "Number must be either non-negative and less than or equal to Int32.MaxValue or -1.")
             fi
 

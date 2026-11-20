@@ -1,6 +1,6 @@
 namespace Ghul.Pipes is
     use Collections
-    use System.Globalization.StringInfo
+    use Text.StringInfo
 
     /// The text elements of a string, in order: each is what a reader sees
     /// as one character, a grapheme cluster, as

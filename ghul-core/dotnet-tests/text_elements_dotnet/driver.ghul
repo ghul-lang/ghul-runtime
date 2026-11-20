@@ -5,7 +5,7 @@
 // among them.
 namespace Harness is
     use IO.Std.write_line
-    use System.Globalization.StringInfo
+    use Text.StringInfo
     use Ghul._TEXT_ELEMENTS
 
     class CHECK is
@@ -95,7 +95,7 @@ namespace Harness is
             code = code + 1
         od
 
-        let random = System.Random(1357)
+        let random = Ghul.Random(1357)
 
         for _ in 0..200000 do
             let text = Text.StringBuilder()

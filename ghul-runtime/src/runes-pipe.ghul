@@ -1,6 +1,6 @@
 namespace Ghul.Pipes is
     use Collections
-    use System.Text.Rune
+    use Text.Rune
 
     /// The code points of a string, in order, as runes. A surrogate pair is
     /// one rune, and a surrogate that is not part of a pair is the

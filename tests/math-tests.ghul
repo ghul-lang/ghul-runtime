@@ -29,7 +29,7 @@ namespace Tests is
 
             for i in 0..2000 do
                 random.next_bytes(bytes)
-                result.add(System.BitConverter.to_double(bytes, 0))
+                result.add(Ghul.Math.BitConverter.to_double(bytes, 0))
             od
 
             return result
@@ -48,15 +48,15 @@ namespace Tests is
 
             for i in 0..2000 do
                 random.next_bytes(bytes)
-                result.add(System.BitConverter.to_single(bytes, 0))
+                result.add(Ghul.Math.BitConverter.to_single(bytes, 0))
             od
 
             return result
         si
 
-        bits(value: double) -> long static => System.BitConverter.double_to_int64_bits(value)
+        bits(value: double) -> long static => Ghul.Math.BitConverter.double_to_int64_bits(value)
 
-        bits(value: single) -> int static => System.BitConverter.single_to_int32_bits(value)
+        bits(value: single) -> int static => Ghul.Math.BitConverter.single_to_int32_bits(value)
 
         @Test()
         BitIncrement_AgreesWithSystemMath() is

@@ -80,7 +80,7 @@ entry() is
     show("generator", twice(LIST([4])))
     show("permutations", LIST([1, 2]) |> permutations())
     show("range", 0..3)
-    show("random", System.Random())
+    show("random", Ghul.Random())
     show("list of points", LIST([POINT(0, 0)]))
     show("inspect", inspect(LIST(["a", "b"])))
     show("inspect struct", inspect(PAIR("q", 1)))

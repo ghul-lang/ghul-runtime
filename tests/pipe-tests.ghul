@@ -3,7 +3,7 @@ namespace Tests is
 
     use Collections
 
-    use System.Text.StringBuilder
+    use Text.StringBuilder
 
     use NSubstitute
     use NSubstitute.SubstituteExtensions.returns
@@ -62,7 +62,7 @@ namespace Tests is
 
             try
                 pipe |> first()!
-            catch ex: System.InvalidOperationException
+            catch ex: Ghul.InvalidOperationException
                 caught_expected = true
             yrt
 
@@ -149,7 +149,7 @@ namespace Tests is
 
             try
                 pipe |> find(i => i > 10)!
-            catch ex: System.InvalidOperationException
+            catch ex: Ghul.InvalidOperationException
                 caught_expected = true
             yrt
 
@@ -164,7 +164,7 @@ namespace Tests is
 
             try
                 pipe |> find(i => i == 10)!
-            catch ex: System.InvalidOperationException
+            catch ex: Ghul.InvalidOperationException
                 caught_expected = true
             yrt
 
@@ -706,7 +706,7 @@ namespace Tests is
         si
     si
 
-    class ReverseIntComparer: IComparer[int] is
+    class ReverseIntComparer: Comparer[int] is
         init() is si
         compare(x: int, y: int) -> int => y - x
     si

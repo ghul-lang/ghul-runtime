@@ -2,18 +2,18 @@
 // spills into a second block, answering as .NET does.
 use IO.Std.write_line
 use Ghul.Pipes
-use System.Security.Cryptography.MD5
-use System.Security.Cryptography.SHA1
-use System.Security.Cryptography.SHA256
+use Crypto.MD5
+use Crypto.SHA1
+use Crypto.SHA256
 
 hex(bytes: ARRAY[ubyte]) -> string => bytes |> map(b => "{int(b):x2}") |> join("")
 
-text(length: int) -> ARRAY[ubyte] => System.Text.Encoding.utf8.get_bytes(string('a', length))
+text(length: int) -> ARRAY[ubyte] => Text.Encoding.utf8.get_bytes(string('a', length))
 
 entry() is
     let messages = [
-        System.Text.Encoding.utf8.get_bytes("abc"),
-        System.Text.Encoding.utf8.get_bytes("The quick brown fox jumps over the lazy dog"),
+        Text.Encoding.utf8.get_bytes("abc"),
+        Text.Encoding.utf8.get_bytes("The quick brown fox jumps over the lazy dog"),
         text(0), text(55), text(56), text(63), text(64), text(65), text(1000)
     ]
 

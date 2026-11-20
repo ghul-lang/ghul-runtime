@@ -13,7 +13,7 @@ free(address: word)
 
 let megabyte = 1 << 20
 
-heap() -> long => System.GC.get_total_memory(true)
+heap() -> long => Ghul.GC.get_total_memory(true)
 
 // A megabyte array, its address left only in C memory at `slot`, pinned when a
 // pinner is given.

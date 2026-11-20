@@ -3,7 +3,7 @@ use IO.Std.write_line
 // UTF-8 text, a string writer, an auto-flushing file writer and a moving
 // file that replaces another behave as they do on .NET.
 entry() is
-    let bytes = System.Text.Encoding.utf8.get_bytes("héllo ☃")
+    let bytes = Text.Encoding.utf8.get_bytes("héllo ☃")
 
     write_line("{bytes.count} {Text.UTF8_ENCODING().get_string(bytes)}")
 

@@ -2,7 +2,7 @@
 // code unit, the culture choices as the ordinal ones do, and those that
 // ignore case compare each letter as its upper case.
 use IO.Std.write_line
-use Ghul.StringComparison.*
+use Text.StringComparison.*
 
 sign(n: int) -> int => if n < 0 then -1 elif n > 0 then 1 else 0 fi
 

@@ -61,7 +61,7 @@ namespace Tests is
         init() is si
 
         iterator: Collections.Iterator[int] =>
-            throw System.Exception("should have been displayed, not enumerated")
+            throw Ghul.Exception("should have been displayed, not enumerated")
 
         display(state: Ghul.DISPLAY_STATE) is
             state.append("spelled out")
@@ -461,7 +461,7 @@ namespace Tests is
             let task = Tasks.TASK.from_result(42)
 
             are_equal(task.to_string(), $(task))
-            are_equal("System.Random", $(System.Random(1)))
+            are_equal("System.Random", $(Ghul.Random(1)))
         si
 
         @Test()

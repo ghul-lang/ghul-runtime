@@ -14,7 +14,7 @@ namespace Tests is
         thrown(action: () -> void) -> bool is
             try
                 action()
-            catch e: System.Exception
+            catch e: Ghul.Exception
                 return true
             yrt
 
@@ -178,7 +178,7 @@ namespace Tests is
         // the helper calls out to throw.
         @Test()
         Element_Index_Helpers_AreMarkedForInlining() is
-            let flags = System.Reflection.BindingFlags.INSTANCE | System.Reflection.BindingFlags.NON_PUBLIC
+            let flags = Ghul.Reflection.BindingFlags.INSTANCE | Ghul.Reflection.BindingFlags.NON_PUBLIC
 
             for (type, name) in [
                 (typeof MATRIX_2_VIEW[int], "_view_index"),

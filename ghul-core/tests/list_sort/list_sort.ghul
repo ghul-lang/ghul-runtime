@@ -3,7 +3,7 @@
 // old name, IComparer, which still reaches Comparer.
 use IO.Std.write_line
 
-class BY_LENGTH: Collections.IComparer[string] is
+class BY_LENGTH: Collections.Comparer[string] is
     init() is si
 
     compare(x: string?, y: string?) -> int => x!.length - y!.length

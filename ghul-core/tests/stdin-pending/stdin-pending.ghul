@@ -21,4 +21,4 @@ od
 
 write_line("ended: {IO.Std.wait_for_input(0)} {IO.Std.has_pending_input()}")
 write_line("ended, with a timeout: {IO.Std.wait_for_input(1)}")
-write_line("heap: {System.GC.get_total_memory(false) > 0L} {System.GC.get_total_memory(true) > 0L}")
+write_line("heap: {Ghul.GC.get_total_memory(false) > 0L} {Ghul.GC.get_total_memory(true) > 0L}")

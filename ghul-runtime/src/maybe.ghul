@@ -23,7 +23,7 @@ namespace Ghul is
             if _has_value then
                 _value
             else
-                throw System.InvalidOperationException("maybe has no value")
+                throw Ghul.InvalidOperationException("maybe has no value")
             fi
 
         /// Two `MAYBE` values are equal when both are absent, or both hold equal values.
@@ -77,7 +77,7 @@ namespace Ghul is
             fi
 
         /// `T` for a `MAYBE[T]` type, mirroring `System.Nullable.get_underlying_type`; null for any other type.
-        underlying_type(type: System.Type) -> System.Type? static =>
+        underlying_type(type: Ghul.Type) -> Ghul.Type? static =>
             if type.is_generic_type /\ type.get_generic_type_definition() =~ typeof MAYBE[_] then
                 type.get_generic_arguments()[0]
             else

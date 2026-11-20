@@ -12,7 +12,7 @@ namespace Tests is
     class REVERSE_ITERATORS_Should is
         init() is si
 
-        reverse(source: object, source_type: System.Type) -> Iterator[int] is
+        reverse(source: object, source_type: Ghul.Type) -> Iterator[int] is
             let iterators = (typeof INT_RANGE).assembly.get_type("Ghul.Internal.REVERSE_ITERATORS")!
             let method = iterators.get_method("reverse_iterator", [source_type])!
 

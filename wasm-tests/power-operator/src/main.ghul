@@ -7,7 +7,7 @@ overflows(f: () -> long) -> string is
     try
         f()
         return "no throw"
-    catch e: System.OverflowException
+    catch e: Ghul.OverflowException
         return e.message
     yrt
 si

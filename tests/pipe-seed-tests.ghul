@@ -182,7 +182,7 @@ namespace Tests is
             try
                 digits(5, 1) |> count()
                 fail("expected digits(5, 1) to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
 

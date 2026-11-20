@@ -2,7 +2,7 @@
 // decoding every encoding has, answering as .NET does.
 use IO.Std.write_line
 use Ghul.Pipes
-use System.Text.Encoding
+use Text.Encoding
 
 bytes(values: ARRAY[ubyte]) -> string => values |> map(b => "{b}") |> join(" ")
 

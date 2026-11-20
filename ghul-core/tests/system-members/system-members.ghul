@@ -1,12 +1,12 @@
 use default
-use System.BitConverter
+use Ghul.Math.BitConverter
 use IO.Uri
-use System.Security.Cryptography.RandomNumberGenerator
+use Crypto.RandomNumberGenerator
 
-@System.Obsolete("superseded")
+@Ghul.Obsolete("superseded")
 old() -> int => 1
 
-@System.Obsolete()
+@Ghul.Obsolete()
 older() -> int => 2
 
 write_line("obsolete still callable: {old()} {older()}")
@@ -68,7 +68,7 @@ write_line("nan {double.is_na_n(BitConverter.int64_bits_to_double(0x7FF800000000
 write_line("to_double {BitConverter.to_double(BitConverter.get_bytes(2.75), 0)} to_single {BitConverter.to_single(BitConverter.get_bytes(cast single(0.5)), 0)}")
 try
     BitConverter.to_int32(bytes, 6)
-catch e: System.ArgumentException
+catch e: Ghul.ArgumentException
     write_line("short read throws")
 yrt
 
@@ -84,15 +84,15 @@ RandomNumberGenerator.create().get_non_zero_bytes(nz)
 write_line("non-zero: {nz |> all(b => b != 0ub)}")
 try
     RandomNumberGenerator.get_int32(0)
-catch e: System.ArgumentException
+catch e: Ghul.ArgumentException
     write_line("bad bound throws")
 yrt
 
 // MethodImpl is accepted, as on .NET, where it sets the method's flags
-@System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AGGRESSIVE_INLINING)
+@Ghul.MethodImpl(Ghul.MethodImplOptions.AGGRESSIVE_INLINING)
 twice(x: int) -> int => x * 2
 
-@System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NO_INLINING)
+@Ghul.MethodImpl(Ghul.MethodImplOptions.NO_INLINING)
 thrice(x: int) -> int => x * 3
 
 write_line("method impl: {twice(21)} {thrice(14)}")

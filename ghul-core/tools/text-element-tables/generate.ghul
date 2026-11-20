@@ -9,7 +9,7 @@
 // The class numbers are the constants in src/text_elements.ghul.
 namespace Generate is
     use IO.Std.write_line
-    use System.Globalization.StringInfo
+    use Text.StringInfo
 
     // Whether .NET reads all of `text` as one text element.
     one(text: string) -> bool => StringInfo.get_next_text_element_length(text, 0) == text.length

@@ -197,13 +197,13 @@ namespace Tests is
             try
                 p[3]
                 fail("expected p[3] to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
 
             try
                 p[-1]
                 fail("expected p[-1] to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -286,7 +286,7 @@ namespace Tests is
             try
                 s[2]
                 fail("expected s[2] to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -336,13 +336,13 @@ namespace Tests is
             try
                 p[3] = 99
                 fail("expected p[3] = 99 to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
 
             try
                 p[-1] = 99
                 fail("expected p[-1] = 99 to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -386,7 +386,7 @@ namespace Tests is
             try
                 p.insert(4, 99)
                 fail("expected insert(4, 99) to throw")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
 

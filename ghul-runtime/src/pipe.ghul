@@ -2,7 +2,7 @@ namespace Ghul.Pipes is
     use Ghul.InvalidOperationException
     use Ghul.NotImplementedException
 
-    use System.Text.StringBuilder
+    use Text.StringBuilder
 
     use Collections
 

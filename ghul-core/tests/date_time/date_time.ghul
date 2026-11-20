@@ -42,7 +42,7 @@ entry() is
 
     write_line("{d =~ DateTime(2026, 9, 25, 13, 4, 5)} {d < d.add_ticks(1L)}")
 
-    let formattable: System.IFormattable = d
+    let formattable: Ghul.Formattable = d
 
     write_line(formattable.to_string("yyyy/MM", null))
 

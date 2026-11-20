@@ -27,7 +27,7 @@ namespace Text is
 si
 
 namespace Ghul is
-    use System.Globalization.NumberStyles
+    use Text.NumberStyles
 
     partial int is
         /// The `int` that `text` holds under `styles`, as .NET reads it under
@@ -37,7 +37,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> int static is
+        parse(text: string, styles: Text.NumberStyles) -> int static is
             let (status, bits) = _parse_styled(text, styles, 32, true)
 
             _throw_unless_parsed(status)
@@ -54,7 +54,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> long static is
+        parse(text: string, styles: Text.NumberStyles) -> long static is
             let (status, bits) = _parse_styled(text, styles, 64, true)
 
             _throw_unless_parsed(status)
@@ -71,7 +71,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> uint static is
+        parse(text: string, styles: Text.NumberStyles) -> uint static is
             let (status, bits) = _parse_styled(text, styles, 32, false)
 
             _throw_unless_parsed(status)
@@ -88,7 +88,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> ulong static is
+        parse(text: string, styles: Text.NumberStyles) -> ulong static is
             let (status, bits) = _parse_styled(text, styles, 64, false)
 
             _throw_unless_parsed(status)
@@ -105,7 +105,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> short static is
+        parse(text: string, styles: Text.NumberStyles) -> short static is
             let (status, bits) = _parse_styled(text, styles, 16, true)
 
             _throw_unless_parsed(status)
@@ -122,7 +122,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> ushort static is
+        parse(text: string, styles: Text.NumberStyles) -> ushort static is
             let (status, bits) = _parse_styled(text, styles, 16, false)
 
             _throw_unless_parsed(status)
@@ -139,7 +139,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> byte static is
+        parse(text: string, styles: Text.NumberStyles) -> byte static is
             let (status, bits) = _parse_styled(text, styles, 8, true)
 
             _throw_unless_parsed(status)
@@ -156,7 +156,7 @@ namespace Ghul is
         ///
         /// - text: the text to parse
         /// - styles: what may surround and make up the number
-        parse(text: string, styles: System.Globalization.NumberStyles) -> ubyte static is
+        parse(text: string, styles: Text.NumberStyles) -> ubyte static is
             let (status, bits) = _parse_styled(text, styles, 8, false)
 
             _throw_unless_parsed(status)

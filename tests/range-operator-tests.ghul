@@ -82,7 +82,7 @@ namespace Tests is
                 slice_of(source, from::<0)
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -95,7 +95,7 @@ namespace Tests is
                 slice_of(source, from::<<0)
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 

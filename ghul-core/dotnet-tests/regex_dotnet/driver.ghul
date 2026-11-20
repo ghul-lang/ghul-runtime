@@ -5,8 +5,8 @@
 namespace Harness is
     use IO.Std.write_line
     use Collections.LIST
-    use System.Text.RegularExpressions.Regex
-    use System.Text.RegularExpressions.RegexOptions
+    use Text.Regex
+    use Text.RegexOptions
     use Ghul.Internal.RX_PROGRAM
     use Ghul.Internal.RX_MATCHER
 
@@ -17,10 +17,10 @@ namespace Harness is
         timeouts: int
         inconsistent: int
 
-        stopwatch: System.Diagnostics.Stopwatch
+        stopwatch: Time.Stopwatch
 
         init() is
-            stopwatch = System.Diagnostics.Stopwatch.start_new()
+            stopwatch = Time.Stopwatch.start_new()
         si
 
         CASE_LIMIT_MS: int static => 2000
@@ -29,7 +29,7 @@ namespace Harness is
         compare(pattern: string, options: int, input: string) is
             checked = checked + 1
 
-            let clock = System.Diagnostics.Stopwatch.start_new()
+            let clock = Time.Stopwatch.start_new()
             let theirs = _theirs(pattern, options, input)
             let theirs_ms = clock.elapsed_milliseconds
             clock.restart()
@@ -135,7 +135,7 @@ namespace Harness is
         // backtracking engine has to agree with itself on both; where .NET
         // doesn't, its answer is not evidence about ours.
         _consistent(pattern: string, options: int, input: string, mine_start: int) -> bool is
-            let timeout = System.TimeSpan.from_milliseconds(1000.0)
+            let timeout = Time.TimeSpan.from_milliseconds(1000.0)
 
             try
                 let anchored = Regex("\\G(?:{pattern})", cast RegexOptions(options), timeout)
@@ -175,7 +175,7 @@ namespace Harness is
                 od
 
                 return true
-            catch e: System.Exception
+            catch e: Ghul.Exception
                 return true
             yrt
         si
@@ -183,15 +183,15 @@ namespace Harness is
         _program(pattern: string, options: int) -> RX_PROGRAM? is
             try
                 return RX_PROGRAM(pattern, options)
-            catch e: System.ArgumentException
+            catch e: Ghul.ArgumentException
                 return null
             yrt
         si
 
         _regex(pattern: string, options: int) -> Regex? is
             try
-                return Regex(pattern, cast RegexOptions(options), System.TimeSpan.from_milliseconds(1000.0))
-            catch e: System.ArgumentException
+                return Regex(pattern, cast RegexOptions(options), Time.TimeSpan.from_milliseconds(1000.0))
+            catch e: Ghul.ArgumentException
                 return null
             yrt
         si
