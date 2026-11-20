@@ -24,6 +24,35 @@ namespace Benchmarks is
             od
     si
 
+    /// Somewhere a benchmark puts what it allocates, so that the optimiser
+    /// can't prove an allocation unused and remove it with the work it was
+    /// meant to measure. The slots are reachable for the whole run.
+    class Sink is
+        _slots: LIST[object]? static
+
+        /// Keeps `value` reachable, in one of a few slots chosen by `index`.
+        ///
+        /// - value: the object to keep
+        /// - index: any number; consecutive numbers use different slots
+        keep(value: object, index: int) static is
+            let slots = _slots ?? _create()
+
+            slots[index & 63] = value
+        si
+
+        _create() -> LIST[object] static is
+            let slots = LIST[object]()
+
+            for _ in 0..64 do
+                slots.add(slots)
+            od
+
+            _slots = slots
+
+            return slots
+        si
+    si
+
     /// A deterministic pseudo-random sequence, the same on every target, so
     /// the checksums agree.
     class Lcg is

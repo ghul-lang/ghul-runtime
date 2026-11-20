@@ -81,11 +81,11 @@ namespace Benchmarks is
         return long(squares.count) + squares[squares.count - 1] % 1_000_007L
     si
 
-    _counting(limit: int) -> int{} is
+    _counting(values: LIST[int], limit: int) -> int{} is
         let i mut = 0
 
         while i < limit do
-            yield i
+            yield values[i % values.count]
             i = i + 1
         od
     si
@@ -93,7 +93,17 @@ namespace Benchmarks is
     generator(n: int) -> long is
         let total mut = 0L
 
-        for x in _counting(n) do
+        let random = Lcg(7L)
+        let values = LIST[int]()
+
+        for _ in 0..1000 do
+            values.add(random.below(1000))
+        od
+
+        let counting = _counting(values, n)
+        Sink.keep(counting, 0)
+
+        for x in counting do
             total = total + long(x)
         od
 

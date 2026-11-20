@@ -3,7 +3,7 @@ use IO.Std.write_line
 use Benchmarks
 
 // benchmarks list                         the family and name of each benchmark
-// benchmarks run <name> [scale] [repeats] times one benchmark (scale 1, 5 repeats)
+// benchmarks run <name> [scale] [repeats] times one benchmark (scale 1, 15 repeats)
 // benchmarks check [scale]                runs every benchmark once, untimed,
 //                                         and writes each checksum
 entry(args: string[]) -> int is
@@ -51,7 +51,7 @@ entry(args: string[]) -> int is
         fi
 
         let scale = if args.count > 2 then double.parse(args[2]) else 1.0 fi
-        let repeats = if args.count > 3 then int.parse(args[3]) else 5 fi
+        let repeats = if args.count > 3 then int.parse(args[3]) else 15 fi
 
         measure(benchmark, scale, repeats)
 
