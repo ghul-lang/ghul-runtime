@@ -75,7 +75,7 @@ namespace Ghul is
         /// informational version, which a .NET build's `Version` sets, or
         /// `0.0.0-local` where it has none.
         program_version: string static is
-            if let assembly = System.Reflection.Assembly.get_entry_assembly() then
+            if let assembly = Ghul.Reflection.Assembly.get_entry_assembly() then
                 for attribute in assembly.get_custom_attributes(typeof System.Reflection.AssemblyInformationalVersionAttribute, false) do
                     if let informational: System.Reflection.AssemblyInformationalVersionAttribute = attribute then
                         return informational.informational_version
