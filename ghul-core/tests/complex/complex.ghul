@@ -23,5 +23,5 @@ entry() is
     write_line("{show(complex.asin(b))} {show(complex.acos(b))} {show(complex.atan(b))}")
     write_line("{show(complex.log10(a))} {show(complex.log(a, 2.0))}")
     write_line("{a =~ complex(3.0, 4.0)} {a =~ b}")
-    write_line("{1r + 2j} {2.5j} {1.5e2r} {3r + 4j =~ a} {a == complex(3.0, 4.0)} {a != b} {a == b} {cast complex(2.5)} {cast complex(7)}")
+    write_line("{1r + 2j} {2.5j} {1.5e2r} {3r + 4j =~ a} {a == complex(3.0, 4.0)} {a != b} {a == b} {cast complex(2.5)} {cast complex(7)} {complex(1.5)} {complex(7)}")
 si

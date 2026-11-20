@@ -6,7 +6,7 @@ namespace Ghul is
     /// `2.5r` is the complex number with real part 2.5 and `2.5j` the one
     /// with imaginary part 2.5. Its arithmetic operators take two complex
     /// numbers, never a complex number and a `double`: a real `x` is
-    /// written `complex(x, 0.0)` or `cast complex(x)`.
+    /// written `complex(x)`.
     partial complex is
         /// The real part.
         real: double
@@ -21,6 +21,38 @@ namespace Ghul is
         init(real: double, imaginary: double) is
             self.real = real
             self.imaginary = imaginary
+        si
+
+        /// The real number `value`, with a zero imaginary part.
+        ///
+        /// - value: the real part
+        init(value: double) is
+            self.real = value
+            self.imaginary = 0.0
+        si
+
+        /// The real number `value`, with a zero imaginary part.
+        ///
+        /// - value: the real part
+        init(value: single) is
+            self.real = cast double(value)
+            self.imaginary = 0.0
+        si
+
+        /// The real number `value`, with a zero imaginary part.
+        ///
+        /// - value: the real part
+        init(value: int) is
+            self.real = cast double(value)
+            self.imaginary = 0.0
+        si
+
+        /// The real number `value`, with a zero imaginary part.
+        ///
+        /// - value: the real part
+        init(value: long) is
+            self.real = cast double(value)
+            self.imaginary = 0.0
         si
 
         /// 0 + 0i.
