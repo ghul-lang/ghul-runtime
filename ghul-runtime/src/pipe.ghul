@@ -153,7 +153,6 @@ namespace Ghul.Pipes is
 
     /// The total of what `selector` returns for each of `source`'s elements,
     /// or `N.zero` when it's empty.
-    @IF.dotnet()
     sum_by[T..,N: Number[N]](source: Iterable[T], selector: T.. -> N pure) -> N pure is
         let total mut = N.zero
 
