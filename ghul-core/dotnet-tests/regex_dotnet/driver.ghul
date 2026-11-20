@@ -331,7 +331,7 @@ namespace Harness is
         let pieces = ["a", "b", "ab", ".", "\\d", "\\w", "\\s", "\\b", "[ab]", "[^a]", "[a-c1]", "^", "$", "\\p{{L}}", "x"]
         let quantifiers = ["", "", "", "*", "+", "?", "*?", "+?", "??", "{{2}}", "{{1,2}}", "{{0,2}}?"]
         let alphabet = "aab1 x\nAB_"
-        let random = Ghul.RANDOM(4021)
+        let random = Ghul.Random(4021)
         let n mut = 0
 
         while n < 20000 do
@@ -357,7 +357,7 @@ namespace Harness is
     // A pattern of up to `depth` nested groups. Inside a group repeated
     // without bound, nothing repeats without bound again, so no pattern
     // needs exponential backtracking to fail.
-    _pattern(random: Ghul.RANDOM, pieces: string[], quantifiers: string[], depth: int, in_loop: bool) -> string is
+    _pattern(random: Ghul.Random, pieces: string[], quantifiers: string[], depth: int, in_loop: bool) -> string is
         let result = Text.StringBuilder()
         let parts = 1 + random.next(4)
         let i mut = 0

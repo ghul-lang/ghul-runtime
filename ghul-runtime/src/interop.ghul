@@ -284,10 +284,10 @@ namespace Ghul.Interop is
         /// through the answer's `value`. Throws once the pinner is disposed.
         ///
         /// - value: what to copy, usually a struct marked `@layout("c")`
-        pin_struct[T](value: T) -> PINNED[T] is
+        pin_struct[T](value: T) -> Pinned[T] is
             let array = Ghul.Pipes.repeat(value, 1) |> ARRAY()
 
-            return PINNED[T](array, pin(array))
+            return Pinned[T](array, pin(array))
         si
 
         /// The address of a NUL-terminated UTF-8 copy of `text`, valid until the pinner
@@ -328,7 +328,7 @@ namespace Ghul.Interop is
 
     /// A value held in place by a `PINNER`, as `PINNER.pin_struct` answers it.
     @IF.llvm()
-    class PINNED[T] is
+    class Pinned[T] is
         _array: ARRAY[T]
 
         /// The address of the value, valid until the pinner that holds it is disposed.

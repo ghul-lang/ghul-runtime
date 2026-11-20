@@ -249,11 +249,11 @@ namespace Ghul.Pipes is
         EXCEPT_PIPE[T](source, right)
 
     /// The elements of `source` paired with their position, counting from 0.
-    index[T](source: Iterable[T]) -> Iterable[INDEXED_VALUE[T]] pure =>
+    index[T](source: Iterable[T]) -> Iterable[IndexedValue[T]] pure =>
         INDEX_PIPE[T](source, 0)
 
     /// The elements of `source` paired with their position, counting from `index`.
-    index[T](source: Iterable[T], index: int) -> Iterable[INDEXED_VALUE[T]] pure =>
+    index[T](source: Iterable[T], index: int) -> Iterable[IndexedValue[T]] pure =>
         INDEX_PIPE[T](source, index)
 
     /// The elements of `source` and `other` paired up, stopping when either runs out.

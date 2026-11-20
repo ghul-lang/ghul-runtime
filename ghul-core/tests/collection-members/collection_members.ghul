@@ -26,9 +26,9 @@ as_set(set: MutableSet[int]) is
     write_line("add 1 {set.add(1)}, add 1 again {set.add(1)}")
 si
 
-as_pairs(pairs: MutableBag[KEY_VALUE_PAIR[string, int]]) is
-    write_line("contains (a, 1) {pairs.contains(KEY_VALUE_PAIR("a", 1))}, contains (a, 2) {pairs.contains(KEY_VALUE_PAIR("a", 2))}, contains (z, 1) {pairs.contains(KEY_VALUE_PAIR("z", 1))}")
-    write_line("remove (a, 2) {pairs.remove(KEY_VALUE_PAIR("a", 2))}, remove (a, 1) {pairs.remove(KEY_VALUE_PAIR("a", 1))}, count {pairs.count}")
+as_pairs(pairs: MutableBag[KeyValuePair[string, int]]) is
+    write_line("contains (a, 1) {pairs.contains(KeyValuePair("a", 1))}, contains (a, 2) {pairs.contains(KeyValuePair("a", 2))}, contains (z, 1) {pairs.contains(KeyValuePair("z", 1))}")
+    write_line("remove (a, 2) {pairs.remove(KeyValuePair("a", 2))}, remove (a, 1) {pairs.remove(KeyValuePair("a", 1))}, count {pairs.count}")
 si
 
 entry() is

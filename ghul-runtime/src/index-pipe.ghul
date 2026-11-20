@@ -2,15 +2,15 @@ namespace Ghul.Pipes is
     use Collections
 
     /// `source`'s elements paired with a running index, starting at `index`.
-    class INDEX_PIPE[T]: PipeStage[INDEXED_VALUE[T]] is
+    class INDEX_PIPE[T]: PipeStage[IndexedValue[T]] is
         _initial_index: int
         _index: int
         _source: Iterable[T]
         _iterator: Iterator[T]
 
         /// The current element paired with its index.
-        current: INDEXED_VALUE[T] =>
-            INDEXED_VALUE(_index, _iterator.current)
+        current: IndexedValue[T] =>
+            IndexedValue(_index, _iterator.current)
 
         init(source: Iterable[T], index: int) is
             super.init()
@@ -22,7 +22,7 @@ namespace Ghul.Pipes is
         si
 
         /// A new stage over the same source, not yet read.
-        fresh() -> PipeStage[INDEXED_VALUE[T]] => INDEX_PIPE[T](_source, _initial_index)
+        fresh() -> PipeStage[IndexedValue[T]] => INDEX_PIPE[T](_source, _initial_index)
 
         /// Advances to the next element, incrementing the index.
         move_next() -> bool is

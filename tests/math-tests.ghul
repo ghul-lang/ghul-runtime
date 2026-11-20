@@ -24,7 +24,7 @@ namespace Tests is
                 1.0 / 0.0, -1.0 / 0.0, 0.0 / 0.0, 4294967296.0, 2.3283064365386963e-10
             ])
 
-            let random = RANDOM(1234)
+            let random = Random(1234)
             let bytes = ARRAY[ubyte](repeat(0ub, 8))
 
             for i in 0..2000 do
@@ -43,7 +43,7 @@ namespace Tests is
                 1.0s / 0.0s, -1.0s / 0.0s, 0.0s / 0.0s
             ])
 
-            let random = RANDOM(5678)
+            let random = Random(5678)
             let bytes = ARRAY[ubyte](repeat(0ub, 4))
 
             for i in 0..2000 do

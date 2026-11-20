@@ -1,6 +1,6 @@
 namespace Collections is
     /// A key and the value it maps to: what iterating a map yields.
-    struct KEY_VALUE_PAIR[K, V] is
+    struct KeyValuePair[K, V] is
         _key: K field
         _value: V field
 
@@ -26,7 +26,7 @@ namespace Collections is
         /// Whether `other` has an equal key and an equal value.
         ///
         /// - other: the pair to compare with
-        =~(other: KEY_VALUE_PAIR[K, V]) -> bool pure => _key =~ other.key /\ _value =~ other.value
+        =~(other: KeyValuePair[K, V]) -> bool pure => _key =~ other.key /\ _value =~ other.value
 
         /// A hash of the key and the value, alike for pairs that are equal.
         get_hash_code() -> int => Ghul._hash_of(_key) * 31 + Ghul._hash_of(_value)

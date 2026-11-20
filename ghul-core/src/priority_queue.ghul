@@ -1,10 +1,10 @@
 namespace Collections is
     /// A collection whose elements are removed lowest priority first. Elements
     /// of equal priority come out in no particular order. This is .NET's
-    /// `PriorityQueue<TElement, TPriority>`, which ghūl names `PRIORITY_QUEUE`
+    /// `PriorityQueue<TElement, TPriority>`, which ghūl names `PriorityQueue`
     /// on .NET as well. Like .NET's, it is not a sequence: it is read one
     /// element at a time.
-    class PRIORITY_QUEUE[E, P] is
+    class PriorityQueue[E, P] is
         // A binary min-heap on the priorities, in one list of pairs.
         _heap: LIST[(element: E, priority: P)]
         _comparer: Comparer[P]

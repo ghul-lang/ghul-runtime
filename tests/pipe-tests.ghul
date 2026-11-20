@@ -525,7 +525,7 @@ namespace Tests is
         Each_EmptySequence_DoesNotCallAction() is
             let pipe = empty[int]()
 
-            let action_was_called = BOX(false)
+            let action_was_called = Box(false)
 
             pipe |> each(element is
                 action_was_called.value = true
