@@ -5,8 +5,8 @@ namespace Ghul is
     /// `System.Numerics.Complex` is, computed the way .NET computes it.
     /// `2.5r` is the complex number with real part 2.5 and `2.5j` the one
     /// with imaginary part 2.5. Its arithmetic operators take two complex
-    /// numbers, never a complex number and a `double`: a real `x` is
-    /// written `complex(x)`.
+    /// numbers; an `int`, `long`, `single` or `double` operand widens to
+    /// complex, so `z * 2` and `1.5 + z` are complex.
     partial complex is
         /// The real part.
         real: double
@@ -250,6 +250,7 @@ namespace Ghul is
         ///
         /// - left: the first operand
         /// - right: the second operand
+        @widen_operands()
         +(left: complex, right: complex) -> complex static pure =>
             complex(left.real + right.real, left.imaginary + right.imaginary)
 
@@ -257,6 +258,7 @@ namespace Ghul is
         ///
         /// - left: the first operand
         /// - right: the second operand
+        @widen_operands()
         -(left: complex, right: complex) -> complex static pure =>
             complex(left.real - right.real, left.imaginary - right.imaginary)
 
@@ -269,6 +271,7 @@ namespace Ghul is
         ///
         /// - left: the first operand
         /// - right: the second operand
+        @widen_operands()
         *(left: complex, right: complex) -> complex static pure =>
             complex(
                 left.real * right.real - left.imaginary * right.imaginary,
@@ -278,6 +281,7 @@ namespace Ghul is
         ///
         /// - left: the dividend
         /// - right: the divisor
+        @widen_operands()
         /(left: complex, right: complex) -> complex static pure is
             let a = left.real
             let b = left.imaginary
