@@ -37,10 +37,10 @@ exception(path: string) is
             write_line("exception read: {line}")
 
             if line =~ "two" then
-                throw System.InvalidOperationException("stop at {line}")
+                throw Ghul.InvalidOperationException("stop at {line}")
             fi
         od
-    catch e: System.InvalidOperationException
+    catch e: Ghul.InvalidOperationException
         write_line("caught: {e.message}")
     yrt
 

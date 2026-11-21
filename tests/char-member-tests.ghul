@@ -3,7 +3,7 @@ namespace Tests is
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
-    use System.Text.Rune
+    use Text.Rune
 
     // The members the runtime gives char on .NET, checked against .NET's own
     // answers for every UTF-16 code unit that is a whole scalar value, as

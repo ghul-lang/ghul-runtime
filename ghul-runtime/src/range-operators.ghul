@@ -37,7 +37,7 @@ namespace Ghul.Intrinsics is
     _inclusive_end(to: int) -> System.Index pure is
         if to < 1 then
             throw
-                System.ArgumentOutOfRangeException(
+                Ghul.ArgumentOutOfRangeException(
                     "to",
                     "{to} from the end is not an element to include: to run through the last element, use ::<1")
         fi

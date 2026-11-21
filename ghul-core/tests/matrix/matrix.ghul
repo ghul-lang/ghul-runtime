@@ -42,7 +42,7 @@ refuses(build: () -> void) -> string is
     try
         build()
         return "built"
-    catch e: System.Exception
+    catch e: Ghul.Exception
         return "refused"
     yrt
 si

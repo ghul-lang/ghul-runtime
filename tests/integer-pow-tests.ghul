@@ -68,7 +68,7 @@ namespace Tests is
             try
                 pow(2, 31)
                 fail("expected pow(2, 31) to throw")
-            catch e: System.OverflowException
+            catch e: Ghul.OverflowException
                 are_equal("pow(2, 31) is too large for int: pass a bigint for an exact result", e.message)
             yrt
         si
@@ -91,7 +91,7 @@ namespace Tests is
             try
                 f()
                 fail("expected OverflowException")
-            catch e: System.OverflowException
+            catch e: Ghul.OverflowException
             yrt
         si
 
@@ -99,7 +99,7 @@ namespace Tests is
             try
                 f()
                 fail("expected ArgumentOutOfRangeException")
-            catch e: System.ArgumentOutOfRangeException
+            catch e: Ghul.ArgumentOutOfRangeException
             yrt
         si
     si

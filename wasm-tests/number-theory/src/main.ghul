@@ -56,7 +56,7 @@ overflowed(f: () -> int) -> string is
     try
         f()
         return "no"
-    catch e: System.OverflowException
+    catch e: Ghul.OverflowException
         return "overflow"
     yrt
 si

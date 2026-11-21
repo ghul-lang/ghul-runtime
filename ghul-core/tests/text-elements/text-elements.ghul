@@ -2,8 +2,8 @@
 // System.Globalization.StringInfo splitting text where .NET splits it, with
 // what each throws, against what the same program prints on .NET.
 use IO.Std.write_line
-use System.Text.Rune
-use System.Globalization.StringInfo
+use Text.Rune
+use Text.StringInfo
 
 // The code points of `text`, in hexadecimal, so the output is plain ASCII.
 codes(text: string) -> string is

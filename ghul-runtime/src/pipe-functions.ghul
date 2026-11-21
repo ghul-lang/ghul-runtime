@@ -2,7 +2,7 @@ namespace Ghul.Pipes is
     use ARRAY = Ghul.Intrinsics.Staging.ARRAY
     use Ghul.InvalidOperationException
 
-    use System.Text.StringBuilder
+    use Text.StringBuilder
 
     use Collections
 
@@ -56,7 +56,7 @@ namespace Ghul.Pipes is
     /// `n` of 1 keeps everything. Combined with a bounded range, `0::20 |> step(3)`
     /// reads the elements 0, 3, 6, 9, 12, 15, 18.
     step[T](source: Iterable[T], n: int) -> Iterable[T] pure =>
-        assert n >= 1 else System.ArgumentOutOfRangeException("n", "{n} is not positive: step must be at least 1") in
+        assert n >= 1 else Ghul.ArgumentOutOfRangeException("n", "{n} is not positive: step must be at least 1") in
         STEP_PIPE[T](source, n)
 
     /// The elements of `source` with duplicates removed, keeping each one's first occurrence.
@@ -971,7 +971,7 @@ namespace Ghul.Pipes is
     ///
     /// `digits(10, 2)` reads 1, 0, 1, 0, and `digits(255, 16)` reads 15, 15.
     digits(value: int, base: int) -> Iterable[int] pure =>
-        assert base >= 2 else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        assert base >= 2 else Ghul.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
         DIGITS_PIPE(long(value), long(base)) |> map(digit => int(digit))
 
     /// The same as `digits`, over a `long`.
@@ -980,7 +980,7 @@ namespace Ghul.Pipes is
 
     /// The same as `digits`, over a `long`.
     digits(value: long, base: long) -> Iterable[long] pure =>
-        assert base >= 2L else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        assert base >= 2L else Ghul.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
         DIGITS_PIPE(value, base)
 
     /// The same as `digits`, over a `bigint`.
@@ -989,7 +989,7 @@ namespace Ghul.Pipes is
 
     /// The same as `digits`, over a `bigint`.
     digits(value: bigint, base: bigint) -> Iterable[bigint] pure =>
-        assert base >= 2n else System.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
+        assert base >= 2n else Ghul.ArgumentOutOfRangeException("base", "{base} is not a base: digits needs a base of 2 or more") in
         BIG_DIGITS_PIPE(value, base)
 
     /// The words of `text`: its runs of characters that are not white space, in order.
@@ -1007,7 +1007,7 @@ namespace Ghul.Pipes is
     /// `"a😀".length` is 3. A surrogate that is not part of a pair reads as
     /// the replacement character, U+FFFD. `runes(text) |> string()` gives
     /// `text` back.
-    runes(text: string) -> Iterable[System.Text.Rune] pure =>
+    runes(text: string) -> Iterable[Text.Rune] pure =>
         RUNES_PIPE(text)
 
     /// The text elements of `text`, in order: each is what a reader sees as

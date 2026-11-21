@@ -49,7 +49,7 @@ namespace Tests is
         MSTEST.fail(message)
     si
 
-    is_instance_of_type(value: object?, type: System.Type) is
+    is_instance_of_type(value: object?, type: Ghul.Type) is
         MSTEST.is_instance_of_type(value, type, "", "")
     si
 si

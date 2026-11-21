@@ -53,7 +53,7 @@ namespace Ghul is
         to_string() -> string =>
             (
                 let result =
-                    System.Text.StringBuilder()
+                    Text.StringBuilder()
                         .append(from)
                         .append("..")
                         .append(to)
@@ -109,7 +109,7 @@ namespace Ghul is
         to_string() -> string =>
             (
                 let result =
-                    System.Text.StringBuilder()
+                    Text.StringBuilder()
                         .append(from)
                         .append("::")
                         .append(to)

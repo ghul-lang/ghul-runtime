@@ -27,10 +27,10 @@ catch e: Ghul.ArgumentException
 yrt
 
 // The moved types still answer to their old names.
-let rune: System.Text.Rune = Text.Rune(0x41)
-let culture: System.Globalization.CultureInfo = System.Globalization.CultureInfo.invariant
-let encoding: System.Text.Encoding = Text.Encoding.utf8
-let styles: System.Globalization.NumberStyles = Text.NumberStyles.HEX_NUMBER
-let comparison: Ghul.StringComparison = Text.StringComparison.ORDINAL
-let options: Ghul.StringSplitOptions = Text.StringSplitOptions.NONE
-write_line("{rune.value} '{culture.name}' {encoding.get_bytes("a").count} {styles == System.Globalization.NumberStyles.HEX_NUMBER} {comparison == System.StringComparison.ORDINAL} {options == System.StringSplitOptions.NONE}")
+let rune: Text.Rune = Text.Rune(0x41)
+let culture: Text.Locale = Text.Locale.invariant
+let encoding: Text.Encoding = Text.Encoding.utf8
+let styles: Text.NumberStyles = Text.NumberStyles.HEX_NUMBER
+let comparison: Text.StringComparison = Text.StringComparison.ORDINAL
+let options: Text.StringSplitOptions = Text.StringSplitOptions.NONE
+write_line("{rune.value} '{culture.name}' {encoding.get_bytes("a").count} {styles == Text.NumberStyles.HEX_NUMBER} {comparison == Text.StringComparison.ORDINAL} {options == Text.StringSplitOptions.NONE}")

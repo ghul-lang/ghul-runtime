@@ -11,7 +11,7 @@ namespace Harness is
     si
 
     entry() is
-        let random = System.Random(2468)
+        let random = Ghul.Random(2468)
         let failures mut = 0
         let checked mut = 0
 

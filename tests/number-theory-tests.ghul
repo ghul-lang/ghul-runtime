@@ -188,7 +188,7 @@ namespace Tests is
 
             try
                 factorial(13)
-            catch e: System.OverflowException
+            catch e: Ghul.OverflowException
                 thrown = true
             yrt
 

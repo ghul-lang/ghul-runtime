@@ -209,8 +209,8 @@ namespace IO is
         /// - relative_to: the directory to start from
         /// - path: the path to reach
         get_relative_path(relative_to: string, path: string) -> string static pure is
-            let from = get_full_path(relative_to).split('/', Ghul.StringSplitOptions.REMOVE_EMPTY_ENTRIES)
-            let to = get_full_path(path).split('/', Ghul.StringSplitOptions.REMOVE_EMPTY_ENTRIES)
+            let from = get_full_path(relative_to).split('/', Text.StringSplitOptions.REMOVE_EMPTY_ENTRIES)
+            let to = get_full_path(path).split('/', Text.StringSplitOptions.REMOVE_EMPTY_ENTRIES)
             let shared mut = 0
 
             while shared < from.count /\ shared < to.count /\ from[shared] =~ to[shared] do

@@ -152,7 +152,7 @@ namespace Tests is
                 result[2]
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -164,7 +164,7 @@ namespace Tests is
                 result.count
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -179,7 +179,7 @@ namespace Tests is
                 od
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
 
             assert_elements([2, 3], seen)
@@ -193,7 +193,7 @@ namespace Tests is
                 result.count
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -210,7 +210,7 @@ namespace Tests is
                 source |> slice(-1..2)
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 
@@ -222,7 +222,7 @@ namespace Tests is
                 result[3]
 
                 fail("should have thrown")
-            catch ex: System.ArgumentOutOfRangeException
+            catch ex: Ghul.ArgumentOutOfRangeException
             yrt
         si
 

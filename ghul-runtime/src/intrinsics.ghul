@@ -17,7 +17,7 @@ namespace Ghul.Intrinsics.Staging is
     @intrinsic("type.reference")
     struct REFERENCE[E] is
         /// Reads or writes the referenced value.
-        value: E => throw System.NotImplementedException(), = value is si
+        value: E => throw Ghul.NotImplementedException(), = value is si
 
         // TODO:
         // value: E innate reference.read, = value innate reference.assign;
@@ -34,7 +34,7 @@ namespace Ghul.Intrinsics.Staging is
     @intrinsic("type.pointer")
     struct POINTER[E] is
         /// Reads or writes the pointed-to value.
-        value: E => throw System.NotImplementedException(), = value is si
+        value: E => throw Ghul.NotImplementedException(), = value is si
 
         // TODO:
         // value: E innate pointer.read, = value innate pointer.assign;

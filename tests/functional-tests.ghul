@@ -181,7 +181,7 @@ namespace Tests is
             calls_of_flaky = calls_of_flaky + 1
 
             if calls_of_flaky < 3 then
-                throw System.Exception("flaky")
+                throw Ghul.Exception("flaky")
             fi
 
             return a + b
@@ -208,12 +208,12 @@ namespace Tests is
 
         @Test()
         Retry_ThrowsTheLastFailure() is
-            let f = retry((n: int) -> int => throw System.Exception("no"), 2)
+            let f = retry((n: int) -> int => throw Ghul.Exception("no"), 2)
 
             try
                 f(1)
                 is_true(false)
-            catch e: System.Exception
+            catch e: Ghul.Exception
                 are_equal("no", e.message)
             yrt
         si

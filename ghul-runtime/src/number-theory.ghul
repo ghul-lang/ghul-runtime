@@ -340,7 +340,7 @@ namespace Ghul.NumberTheory is
             let inverse = _MONTGOMERY.inverse(un)
             let one = _MONTGOMERY.one(un)
             let r2 = _MONTGOMERY.r2(un)
-            let s = System.Numerics.BitOperations.trailing_zero_count(un - 1ul)
+            let s = Ghul.Math.BitOperations.trailing_zero_count(un - 1ul)
             let d = (un - 1ul) >> s
 
             return
@@ -755,7 +755,7 @@ namespace Ghul.NumberTheory is
                 return
             fi
 
-            let twos = System.Numerics.BitOperations.trailing_zero_count(rest)
+            let twos = Ghul.Math.BitOperations.trailing_zero_count(rest)
             let t mut = 0
 
             while t < twos do
@@ -976,17 +976,17 @@ namespace Ghul.NumberTheory is
             return range_product(low, middle) * range_product(middle + 1L, high)
         si
 
-        overflow(what: string) -> System.OverflowException static =>
-            System.OverflowException("{what} is too large for its type: pass a bigint for an exact result")
+        overflow(what: string) -> Ghul.OverflowException static =>
+            Ghul.OverflowException("{what} is too large for its type: pass a bigint for an exact result")
 
-        negative(name: string, what: string) -> System.ArgumentOutOfRangeException static =>
-            System.ArgumentOutOfRangeException(name, "{what} is not defined for a negative {name}")
+        negative(name: string, what: string) -> Ghul.ArgumentOutOfRangeException static =>
+            Ghul.ArgumentOutOfRangeException(name, "{what} is not defined for a negative {name}")
 
-        not_positive(name: string, what: string) -> System.ArgumentOutOfRangeException static =>
-            System.ArgumentOutOfRangeException(name, "{what} needs a positive {name}")
+        not_positive(name: string, what: string) -> Ghul.ArgumentOutOfRangeException static =>
+            Ghul.ArgumentOutOfRangeException(name, "{what} needs a positive {name}")
 
-        bad_base(base: long) -> System.ArgumentOutOfRangeException static =>
-            System.ArgumentOutOfRangeException("base", "{base} is not a base: digit_sum needs a base of 2 or more")
+        bad_base(base: long) -> Ghul.ArgumentOutOfRangeException static =>
+            Ghul.ArgumentOutOfRangeException("base", "{base} is not a base: digit_sum needs a base of 2 or more")
 
         // a * b mod m for a and b below m, with m below 2^63.
         multiply_mod(a: long, b: long, m: long) -> long static is
@@ -1054,7 +1054,7 @@ namespace Ghul.NumberTheory is
             return false
         fi
 
-        let s = System.Numerics.BitOperations.trailing_zero_count(n - 1)
+        let s = Ghul.Math.BitOperations.trailing_zero_count(n - 1)
         let d = cast long((n - 1) >> s)
 
         return

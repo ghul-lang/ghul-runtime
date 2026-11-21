@@ -57,7 +57,7 @@ namespace Ghul is
         /// answers for `Nullable[T]`; null for any other type.
         ///
         /// - type: the type to look at
-        underlying_type(type: System.Type) -> System.Type? static => Ghul.Internal.TYPE_DESCRIPTIONS.of(type).maybe_underlying
+        underlying_type(type: Ghul.Type) -> Ghul.Type? static => Ghul.Internal.TYPE_DESCRIPTIONS.of(type).maybe_underlying
 
         /// `value`'s own text when present, otherwise `"none"`.
         to_string() -> string =>

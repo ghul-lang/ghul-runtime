@@ -2,10 +2,10 @@ namespace Tests is
     use Ghul
 
     use Collections
-    use System.Exception
+    use Ghul.Exception
     use System.Diagnostics.Process
     use System.Diagnostics.ProcessStartInfo
-    use System.Reflection.Assembly
+    use Ghul.Reflection.Assembly
 
     use Microsoft.VisualStudio.TestTools.UnitTesting
 

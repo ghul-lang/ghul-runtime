@@ -10,7 +10,7 @@ namespace Tests is
         representations() -> Collections.Iterable[(mime: string, content: ARRAY[ubyte])] pure =>
             [
                 (mime = "image/png", content = [0x89`ub, 0x50`ub, 0x4E`ub, 0x47`ub]),
-                (mime = "text/plain", content = System.Text.Encoding.utf8.get_bytes(caption))
+                (mime = "text/plain", content = Text.Encoding.utf8.get_bytes(caption))
             ]
     si
 
@@ -25,7 +25,7 @@ namespace Tests is
 
             are_equal(2, representations.count)
             are_equal("image/png", representations[0].mime)
-            are_equal("a picture", System.Text.Encoding.utf8.get_string(representations[1].content))
+            are_equal("a picture", Text.Encoding.utf8.get_string(representations[1].content))
         si
 
         // Offering other media for a value leaves the text `$` writes for it

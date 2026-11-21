@@ -34,12 +34,12 @@ let now = DateTimeOffset.utc_now
 write_line("utc_now offset {now.offset} after 2026: {now.year >= 2026}")
 try
     DateTimeOffset(instant, TimeSpan.from_hours(1))
-catch e: System.ArgumentException
+catch e: Ghul.ArgumentException
     write_line("utc with offset throws")
 yrt
 try
     DateTimeOffset(0L, TimeSpan.from_minutes(30.5))
-catch e: System.ArgumentException
+catch e: Ghul.ArgumentException
     write_line("partial minute throws")
 yrt
 

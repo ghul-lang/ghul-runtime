@@ -4,8 +4,8 @@ namespace Harness is
     use IO.Std.write_line
 
     entry() is
-        let invariant = System.Globalization.CultureInfo.invariant
-        let random = System.Random(987)
+        let invariant = Text.Locale.invariant
+        let random = Ghul.Random(987)
         let failures mut = 0
         let checked mut = 0
 
@@ -31,7 +31,7 @@ namespace Harness is
 
         while i < 100000 do
             let bits = random.next_int64()
-            let v = System.BitConverter.int64_bits_to_double(bits)
+            let v = Ghul.Math.BitConverter.int64_bits_to_double(bits)
 
             if !double.is_na_n(v) then
                 checked = checked + 1
@@ -48,7 +48,7 @@ namespace Harness is
             fi
 
             let fbits = random.next(int.min_value, int.max_value)
-            let f = System.BitConverter.int32_bits_to_single(fbits)
+            let f = Ghul.Math.BitConverter.int32_bits_to_single(fbits)
 
             if !single.is_na_n(f) then
                 checked = checked + 1

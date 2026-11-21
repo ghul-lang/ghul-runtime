@@ -5,7 +5,7 @@ use Ghul.Math.ModulusOperators.`%
 use Ghul.Math.ShiftOperators.`<<
 use Ghul.Math.BitwiseOperators.`&
 use Ghul.Math.UnaryNegationOperators.`-
-use System.Numerics.ISubtractionOperators.`-
+use Ghul.Math.SubtractionOperators.`-
 
 // Generic arithmetic through the generic-math traits, on the scalar types
 // and bigint: the operators are each type's own, and the identities are
@@ -30,7 +30,7 @@ product[T: NumberBase[T]](values: T[]) -> T is
     return result
 si
 
-difference[T: System.Numerics.INumber[T]](a: T, b: T) -> T => a - b
+difference[T: Ghul.Math.Number[T]](a: T, b: T) -> T => a - b
 
 negated[T: SignedNumber[T]](value: T) -> T => -value
 

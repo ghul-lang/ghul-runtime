@@ -1,7 +1,7 @@
 // System.Numerics.BitOperations' counts, logarithms, power-of-two tests and
 // rotations, answering as .NET does.
 use IO.Std.write_line
-use System.Numerics.BitOperations
+use Ghul.Math.BitOperations
 
 entry() is
     write_line("{BitOperations.pop_count(0u)} {BitOperations.pop_count(0xFFu)} {BitOperations.pop_count(0xFFFF_FFFFu)} {BitOperations.pop_count(0xF0F0_0000_0000_0001ul)}")

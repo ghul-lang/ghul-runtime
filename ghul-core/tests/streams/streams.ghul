@@ -19,7 +19,7 @@ IO.File.write_all_text("probe-data.txt", "line one\nlíne two 😀\r\nthird")
 let use stream = IO.File.open_read("probe-data.txt")
 let buffer = repeat(0ub, 5) |> ARRAY()
 let first = stream.read(buffer, 0, 5)
-write_line("first read {first}: {System.Text.Encoding.utf8.get_string(buffer, 0, first)}")
+write_line("first read {first}: {Text.Encoding.utf8.get_string(buffer, 0, first)}")
 let reader = IO.StreamReader(stream)
 write_line("rest line: [{reader.read_line()}]")
 write_line("next line: [{reader.read_line()}] peek {reader.peek()}")
@@ -35,7 +35,7 @@ try
 catch e: IO.FileNotFoundException
     write_line("missing file: not found")
 yrt
-write_line("encoding {IO.Std.output_encoding.web_name} {IO.Std.input_encoding.web_name} {System.Text.Encoding.ascii.web_name} {System.Text.Encoding.utf16.web_name} {System.Text.Encoding.utf32.web_name}")
+write_line("encoding {IO.Std.output_encoding.web_name} {IO.Std.input_encoding.web_name} {Text.Encoding.ascii.web_name} {Text.Encoding.utf16.web_name} {Text.Encoding.utf32.web_name}")
 write_line("width {IO.Std.window_width} height {IO.Std.window_height}")
 let input = IO.Std.open_standard_input()
 write_line("stdin stream {input.can_read} {input.can_seek} {input.can_write}")

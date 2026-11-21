@@ -227,7 +227,7 @@ namespace Tests is
 
             try
                 let _ = [("a", 1), ("a", 2)] |> collect_map()
-            catch e: System.ArgumentException
+            catch e: Ghul.ArgumentException
                 threw = true
             yrt
 
