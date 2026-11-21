@@ -56,7 +56,7 @@ namespace Ghul.Reflection is
         let found = _functions_named(name)
 
         if found.count > 1 then
-            throw System.Reflection.AmbiguousMatchException("more than one function is named {name}")
+            throw _ambiguous("more than one function has the name {name}")
         fi
 
         return if found.count == 1 then found[0] else null fi
@@ -77,6 +77,12 @@ namespace Ghul.Reflection is
 
         return null
     si
+
+    // The exception .NET's own lookups throw for more than one match,
+    // constructed by its name, which every compiler accepts: one that maps
+    // the type into Ghul.Reflection no longer resolves the .NET spelling.
+    _ambiguous(message: string) -> Ghul.Exception =>
+        cast Ghul.Exception(Ghul.Reflection.Activator.create_instance(Ghul.Type.get_type("System.Reflection.AmbiguousMatchException, System.Private.CoreLib")!, [cast object(message)]))
 
     // The public functions named `name` in the namespace's carriers, in
     // every loaded assembly: a namespace has one carrier for each assembly

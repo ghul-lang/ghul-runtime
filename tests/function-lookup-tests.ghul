@@ -25,8 +25,8 @@ namespace Tests is
 
             try
                 Ghul.Reflection.get_function("Ghul.Math.abs")
-            catch ex: System.Reflection.AmbiguousMatchException
-                thrown = true
+            catch ex: Ghul.Exception
+                thrown = ex.get_type() == Ghul.Type.get_type("System.Reflection.AmbiguousMatchException, System.Private.CoreLib")
             yrt
 
             is_true(thrown)
