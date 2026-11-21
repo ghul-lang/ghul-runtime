@@ -38,6 +38,47 @@ namespace Ghul is
             _describe = describe
         si
 
+        /// The type named `name`, among the types reflection describes, or
+        /// null if there is none. An assembly-qualified name, as .NET
+        /// takes, is accepted: what follows the type's name is ignored.
+        ///
+        /// - name: the type's full name, such as `Ghul.Math.$globals`
+        get_type(name: string) -> Type? static is
+            let wanted = _without_assembly(name)
+
+            for type in TYPE_DESCRIPTIONS.roots() do
+                if type._full_name =~ wanted then
+                    return type
+                fi
+            od
+
+            if let found = TYPE_DESCRIPTIONS.registered(wanted) then
+                return found
+            fi
+
+            return null
+        si
+
+        // `name` without the assembly that qualifies it: the text before the
+        // first comma outside brackets.
+        _without_assembly(name: string) -> string static is
+            let depth mut = 0
+
+            for i in 0..name.length do
+                let c = name[i]
+
+                if c == '[' then
+                    depth = depth + 1
+                elif c == ']' then
+                    depth = depth - 1
+                elif c == ',' /\ depth == 0 then
+                    return name.substring(0, i).trim()
+                fi
+            od
+
+            return name.trim()
+        si
+
         /// The type's name, qualified by its namespace, with its type
         /// arguments in brackets.
         full_name: string => _full_name
@@ -221,8 +262,13 @@ namespace Ghul is
         /// The public constructors.
         get_constructors() -> ARRAY[ConstructorInfo] => get_constructors(BindingFlags.PUBLIC | BindingFlags.INSTANCE)
 
-        /// The methods `flags` selects, as `get_fields` selects fields. Only
-        /// the methods marked `@test()` are described.
+        /// The methods `flags` selects, as `get_fields` selects fields. A
+        /// method a type declares again with the same parameter types, as
+        /// an override does, is reported once, as the type nearest this one
+        /// declares it. The methods described are those marked `@test()`,
+        /// and, for the program's own types and the library types marked
+        /// `@reflected()`, the others that have no type parameters of their
+        /// own.
         ///
         /// - flags: which methods to report
         get_methods(flags: BindingFlags) -> ARRAY[MethodInfo] is
@@ -232,7 +278,7 @@ namespace Ghul is
 
             while let current = level do
                 for method in current._described.methods do
-                    if _selects(flags, method.is_public, method.is_static, inherited) then
+                    if _selects(flags, method.is_public, method.is_static, inherited) /\ !_has_method(result, method) then
                         result.add(method)
                     fi
                 od
@@ -250,6 +296,81 @@ namespace Ghul is
 
         /// The public methods, the type's own and its base types'.
         get_methods() -> ARRAY[MethodInfo] => get_methods(BindingFlags.PUBLIC | BindingFlags.INSTANCE | BindingFlags.STATIC)
+
+        /// The public method named `name`, the type's own or a base type's,
+        /// or null if there is none.
+        ///
+        /// Throws `AmbiguousMatchException` where more than one method has
+        /// that name.
+        ///
+        /// - name: the method's name
+        get_method(name: string) -> MethodInfo? is
+            let found: MethodInfo? mut = null
+
+            for method in get_methods() do
+                if method.name =~ name then
+                    if found? then
+                        throw Ghul.Reflection.AmbiguousMatchException("more than one method of {_full_name} is named {name}")
+                    fi
+
+                    found = method
+                fi
+            od
+
+            return found
+        si
+
+        /// The public method named `name` whose parameters are exactly
+        /// `types`, in order, the type's own or a base type's, or null if
+        /// there is none.
+        ///
+        /// - name: the method's name
+        /// - types: the type of each parameter, in order
+        get_method(name: string, types: ARRAY[Type]) -> MethodInfo? is
+            for method in get_methods() do
+                if method.name =~ name /\ _takes(method, types) then
+                    return method
+                fi
+            od
+
+            return null
+        si
+
+        // Whether `method`'s parameters are exactly `types`, in order.
+        _takes(method: MethodInfo, types: ARRAY[Type]) -> bool is
+            let parameters = method.get_parameters()
+
+            if parameters.count != types.count then
+                return false
+            fi
+
+            for i in 0..types.count do
+                if parameters[i].parameter_type != types[i] then
+                    return false
+                fi
+            od
+
+            return true
+        si
+
+        // Whether `methods` already has one named as `method` is, taking
+        // the same parameter types.
+        _has_method(methods: LIST[MethodInfo], method: MethodInfo) -> bool is
+            let parameters = method.get_parameters()
+            let types = LIST[Type]()
+
+            for parameter in parameters do
+                types.add(parameter.parameter_type)
+            od
+
+            for other in methods do
+                if other.name =~ method.name /\ _takes(other, types.to_array()) then
+                    return true
+                fi
+            od
+
+            return false
+        si
 
         /// The attributes of `attribute_type` the type carries.
         ///

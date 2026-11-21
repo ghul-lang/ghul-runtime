@@ -1,0 +1,60 @@
+namespace Tests is
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // Ghul.Reflection.get_function, which finds a global function by the
+    // name the source gives it, across the namespace's carriers in every
+    // loaded assembly.
+    @TestClass()
+    class FUNCTION_LOOKUP_TESTS is
+        init() is si
+
+        @Test()
+        Get_function__finds_a_library_global_by_its_overload_and_calls_it() is
+            let abs = Ghul.Reflection.get_function("Ghul.Math.abs", [typeof int])!
+
+            are_equal("abs", abs.name)
+            is_true(abs.is_static)
+            are_equal(5, cast int(abs.invoke(null, [cast object(-5)])!))
+        si
+
+        @Test()
+        Get_function__throws_where_the_name_is_overloaded() is
+            let thrown mut = false
+
+            try
+                Ghul.Reflection.get_function("Ghul.Math.abs")
+            catch ex: System.Reflection.AmbiguousMatchException
+                thrown = true
+            yrt
+
+            is_true(thrown)
+        si
+
+        @Test()
+        Get_function__finds_a_global_of_the_program_by_name_alone() is
+            let found = Ghul.Reflection.get_function("Tests.Lookup.only_one")!
+
+            are_equal(7, cast int(found.invoke(null, [cast object(3)])!))
+        si
+
+        @Test()
+        Get_type__finds_a_type_by_name_ignoring_the_assembly() is
+            are_equal(typeof Tests.FUNCTION_LOOKUP_TESTS, Ghul.Reflection.get_type("Tests.FUNCTION_LOOKUP_TESTS")!)
+            are_equal(typeof Tests.FUNCTION_LOOKUP_TESTS, Ghul.Reflection.get_type("Tests.FUNCTION_LOOKUP_TESTS, tests")!)
+            is_true(!Ghul.Reflection.get_type("Tests.MISSING")?)
+        si
+
+        @Test()
+        Get_function__returns_null_for_a_name_nothing_declares() is
+            is_true(!Ghul.Reflection.get_function("Tests.Lookup.missing")?)
+            is_true(!Ghul.Reflection.get_function("Tests.Lookup.only_one", [typeof string])?)
+            is_true(!Ghul.Reflection.get_function("No.Such.Namespace.abs")?)
+        si
+    si
+si
+
+namespace Tests.Lookup is
+    only_one(value: int) -> int => value + 4
+si

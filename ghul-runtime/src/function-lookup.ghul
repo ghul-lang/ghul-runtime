@@ -1,0 +1,118 @@
+@@IF.dotnet()
+namespace Ghul.Reflection is
+    use System.AppDomain
+    use Collections.LIST
+    use ARRAY = Ghul.Intrinsics.Staging.ARRAY
+
+    use Ghul.Internal.GLOBALS_ATTRIBUTE
+
+    /// The type named `name`, qualified by its namespace, in any loaded
+    /// assembly, or null if there is none. An assembly-qualified name is
+    /// accepted: what follows the type's name is ignored.
+    ///
+    /// - name: the type's full name
+    get_type(name: string) -> Type? is
+        let wanted = _without_assembly(name)
+
+        for assembly in AppDomain.current_domain.get_assemblies() do
+            if let found = assembly.get_type(wanted) then
+                return found
+            fi
+        od
+
+        return null
+    si
+
+    // `name` without the assembly that qualifies it: the text before the
+    // first comma outside brackets.
+    _without_assembly(name: string) -> string is
+        let depth mut = 0
+
+        for i in 0..name.length do
+            let c = name[i]
+
+            if c == '[' then
+                depth = depth + 1
+            elif c == ']' then
+                depth = depth - 1
+            elif c == ',' /\ depth == 0 then
+                return name.substring(0, i).trim()
+            fi
+        od
+
+        return name.trim()
+    si
+
+    /// The global function named `name`, qualified by its namespace as the
+    /// source names it, such as `Ghul.Math.sqrt`, or null if there is none.
+    /// Throws `AmbiguousMatchException` where the namespace has more than
+    /// one function of that name.
+    ///
+    /// - name: the function's name, qualified by its namespace
+    get_function(name: string) -> MethodInfo? is
+        let found = _functions_named(name)
+
+        if found.count > 1 then
+            throw System.Reflection.AmbiguousMatchException("more than one function is named {name}")
+        fi
+
+        return if found.count == 1 then found[0] else null fi
+    si
+
+    /// The global function named `name`, qualified by its namespace as the
+    /// source names it, whose parameters are exactly `types`, in order, or
+    /// null if there is none.
+    ///
+    /// - name: the function's name, qualified by its namespace
+    /// - types: the type of each parameter, in order
+    get_function(name: string, types: ARRAY[Type]) -> MethodInfo? is
+        for function in _functions_named(name) do
+            if _takes(function, types) then
+                return function
+            fi
+        od
+
+        return null
+    si
+
+    // The public functions named `name` in the namespace's carriers, in
+    // every loaded assembly: a namespace has one carrier for each assembly
+    // that gives it globals.
+    _functions_named(name: string) -> LIST[MethodInfo] is
+        let dot = name.last_index_of('.')
+        let `namespace: string? = if dot < 0 then null else name.substring(0, dot) fi
+        let simple = name.substring(dot + 1)
+        let result = LIST[MethodInfo]()
+        let flags = BindingFlags.PUBLIC | BindingFlags.STATIC | BindingFlags.DECLARED_ONLY
+
+        for assembly in AppDomain.current_domain.get_assemblies() do
+            for type in assembly.get_types() do
+                if type.`namespace =~ `namespace /\ type.is_defined(typeof GLOBALS_ATTRIBUTE, false) then
+                    for method in type.get_methods(flags) do
+                        if method.name =~ simple /\ !method.is_generic_method_definition then
+                            result.add(method)
+                        fi
+                    od
+                fi
+            od
+        od
+
+        return result
+    si
+
+    _takes(method: MethodInfo, types: ARRAY[Type]) -> bool is
+        let parameters = method.get_parameters()
+
+        if parameters.count != types.count then
+            return false
+        fi
+
+        for i in 0..types.count do
+            if parameters[i].parameter_type != types[i] then
+                return false
+            fi
+        od
+
+        return true
+    si
+si
