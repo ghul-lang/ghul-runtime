@@ -45,18 +45,16 @@ namespace Ghul.Reflection is
 
     /// The global function named `name`, qualified by its namespace as the
     /// source names it, such as `Ghul.Math.sqrt`, or null if there is none.
-    /// Throws `System.Reflection.AmbiguousMatchException` where the
-    /// namespace has more than one function of that name: the exception
-    /// .NET's own lookups throw, which ghūl names
-    /// `Ghul.Reflection.AmbiguousMatchException`, as the core library on
-    /// wasm and llvm does, so one `catch` serves every target.
+    /// Throws `Ghul.Reflection.AmbiguousMatchException`, .NET's own
+    /// `System.Reflection.AmbiguousMatchException`, where the namespace has
+    /// more than one function of that name.
     ///
     /// - name: the function's name, qualified by its namespace
     get_function(name: string) -> MethodInfo? is
         let found = _functions_named(name)
 
         if found.count > 1 then
-            throw _ambiguous("more than one function has the name {name}")
+            throw Ghul.Reflection.AmbiguousMatchException("more than one function has the name {name}")
         fi
 
         return if found.count == 1 then found[0] else null fi
@@ -77,12 +75,6 @@ namespace Ghul.Reflection is
 
         return null
     si
-
-    // The exception .NET's own lookups throw for more than one match,
-    // constructed by its name, which every compiler accepts: one that maps
-    // the type into Ghul.Reflection no longer resolves the .NET spelling.
-    _ambiguous(message: string) -> Ghul.Exception =>
-        cast Ghul.Exception(Ghul.Reflection.Activator.create_instance(Ghul.Type.get_type("System.Reflection.AmbiguousMatchException, System.Private.CoreLib")!, [cast object(message)]))
 
     // The public functions named `name` in the namespace's carriers, in
     // every loaded assembly: a namespace has one carrier for each assembly
