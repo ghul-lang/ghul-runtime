@@ -28,4 +28,4 @@
 .NET disagrees with itself: /\p{L}*?.{2}($?)+?([^a]{1,2}|a?^{2}){0,2}?/ options 16 on "A1A_"
   mine:   [0+2 2+0 - ][2+2 4+0 - ]
   theirs: [2+0 2+0 - ]
-checked 20067, 0 differ, 5 too slow for .NET to finish, 12 where .NET disagrees with itself or its compiled engine
+checked 25082, 0 differ, 5 too slow for .NET to finish, 13 where .NET disagrees with itself or its compiled engine

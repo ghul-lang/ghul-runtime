@@ -17,10 +17,6 @@ try_pattern(pattern: string) is
 si
 
 // Outside the subset.
-try_pattern("a(?=b)")
-try_pattern("a(?!b)")
-try_pattern("(?<=a)b")
-try_pattern("(?<!a)b")
 try_pattern("(?>a+)b")
 try_pattern("(?(a)b|c)")
 try_pattern("(?<o-c>a)")

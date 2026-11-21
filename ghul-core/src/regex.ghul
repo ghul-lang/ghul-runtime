@@ -187,9 +187,10 @@ namespace Text is
     /// A regular expression, in the subset of .NET's syntax this target
     /// runs, with .NET's meaning: literals and escapes, `.`, classes,
     /// `\d \w \s \b` and their negations, `\p{…}` general categories,
-    /// anchors, numbered, named and non-capturing groups, greedy and lazy
-    /// quantifiers, and inline options. A pattern with a construct outside
-    /// the subset, such as a backreference or lookaround, is refused with
+    /// anchors, numbered, named and non-capturing groups, lookahead and
+    /// lookbehind, greedy and lazy quantifiers, and inline options. A
+    /// pattern with a construct outside the subset, such as a
+    /// backreference or an atomic group, is refused with
     /// `ArgumentException`. Matching backtracks, as .NET's default engine
     /// does, so a pattern that nests unbounded quantifiers can take
     /// exponential time. Where .NET's own engines give different matches,
