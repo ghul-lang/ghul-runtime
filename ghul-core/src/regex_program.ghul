@@ -9,6 +9,11 @@ namespace Ghul.Internal is
         ignore_case: bool public
         set: RX_SET? public
 
+        // Whether the op is in a lookbehind's body, which runs from right
+        // to left: a character it reads is the one before the position,
+        // and a group it closes started where it is now.
+        backward: bool public
+
         init(op: int, a: int, b: int) is
             self.op = op
             self.a = a
@@ -33,6 +38,12 @@ namespace Ghul.Internal is
         PROGRESSED: int static => 15
         MATCH: int static => 16
         CLOSE: int static => 17
+
+        // A lookaround: `b` is which, as RX_NODE's LOOK_ constants, the
+        // assertion's body follows it and ends with LOOK_END, and `a` is
+        // where to go on once the assertion holds.
+        LOOK: int static => 18
+        LOOK_END: int static => 19
     si
 
     // A compiled pattern: its instructions, and how many save slots a match
@@ -47,6 +58,8 @@ namespace Ghul.Internal is
         // Each group's name, by number; a group with no name is named by its
         // number.
         names: LIST[string] public
+
+        _backward: bool
 
         init(pattern: string, options: int) is
             let flags = RX_FLAGS(
@@ -112,6 +125,7 @@ namespace Ghul.Internal is
 
         _emit(op: int, a: int, b: int) -> RX_OP is
             let result = RX_OP(op, a, b)
+            result.backward = _backward
             ops.add(result)
             return result
         si
@@ -143,9 +157,18 @@ namespace Ghul.Internal is
             elif kind == RX_NODE.NOT_BOUNDARY then
                 _emit(RX_OP.NOT_BOUNDARY, 0, 0)
             elif kind == RX_NODE.CONCAT then
-                for child in node.children do
-                    _compile(child)
-                od
+                if _backward then
+                    let i mut = node.children.count - 1
+
+                    while i >= 0 do
+                        _compile(node.children[i])
+                        i = i - 1
+                    od
+                else
+                    for child in node.children do
+                        _compile(child)
+                    od
+                fi
             elif kind == RX_NODE.ALTERNATE then
                 _alternate(node.children, 0)
             elif kind == RX_NODE.GROUP then
@@ -164,6 +187,16 @@ namespace Ghul.Internal is
                 fi
             elif kind == RX_NODE.REPEAT then
                 _repeat(node)
+            elif kind == RX_NODE.LOOK then
+                // As in .NET, a lookbehind's body runs from right to left,
+                // and a lookahead's from left to right wherever it is.
+                let look = _emit(RX_OP.LOOK, 0, node.c)
+                let outer = _backward
+                _backward = node.c == RX_NODE.LOOK_BEHIND \/ node.c == RX_NODE.LOOK_BEHIND_NOT
+                _compile(node.children[0])
+                _emit(RX_OP.LOOK_END, 0, 0)
+                _backward = outer
+                look.a = ops.count
             fi
         si
 
@@ -320,7 +353,6 @@ namespace Ghul.Internal is
         _text: string
         _slots: LIST[int]
         _undo: LIST[int]
-        _choices: LIST[int]
 
         init(program: RX_PROGRAM, text: string) is
             _program = program
@@ -334,7 +366,6 @@ namespace Ghul.Internal is
                 i = i + 1
             od
             _undo = LIST[int]()
-            _choices = LIST[int]()
         si
 
         // The group spans of the first match starting at or after `start`,
@@ -370,12 +401,21 @@ namespace Ghul.Internal is
             od
 
             _undo.clear()
-            _choices.clear()
 
+            return _exec(0, start)
+        si
+
+        // Runs the program from `from` with the text position at `start`,
+        // until MATCH or, inside a lookaround's body, LOOK_END. A run that
+        // fails undoes every slot it set; one that succeeds leaves them
+        // set, and undoable by the caller.
+        _exec(from: int, start: int) -> bool is
             let ops = _program.ops
             let text = _text
             let length = text.length
-            let pc mut = 0
+            let choices = LIST[int]()
+            let undo_from = _undo.count
+            let pc mut = from
             let at mut = start
 
             while true do
@@ -383,30 +423,13 @@ namespace Ghul.Internal is
                 let code = op.op
                 let ok mut = true
 
-                if code == RX_OP.CHAR then
-                    if at < length /\ _same(cast int(text[at]), op.a, op.ignore_case) then
-                        at = at + 1
-                        pc = pc + 1
-                    else
-                        ok = false
-                    fi
-                elif code == RX_OP.ANY then
-                    if at < length then
-                        at = at + 1
-                        pc = pc + 1
-                    else
-                        ok = false
-                    fi
-                elif code == RX_OP.ANY_BUT_LINE_FEED then
-                    if at < length /\ text[at] != '\n' then
-                        at = at + 1
-                        pc = pc + 1
-                    else
-                        ok = false
-                    fi
-                elif code == RX_OP.SET then
-                    if at < length /\ op.set!.contains(cast int(text[at]), op.ignore_case) then
-                        at = at + 1
+                if code <= RX_OP.SET then
+                    // CHAR, ANY, ANY_BUT_LINE_FEED and SET read one
+                    // character: the one at the position, or before it.
+                    let read = if op.backward then at - 1 else at fi
+
+                    if read >= 0 /\ read < length /\ _accepts(op, text[read]) then
+                        at = if op.backward then read else read + 1 fi
                         pc = pc + 1
                     else
                         ok = false
@@ -433,9 +456,9 @@ namespace Ghul.Internal is
                     ok = !_is_boundary(at)
                     pc = pc + 1
                 elif code == RX_OP.SPLIT then
-                    _choices.add(op.b)
-                    _choices.add(at)
-                    _choices.add(_undo.count)
+                    choices.add(op.b)
+                    choices.add(at)
+                    choices.add(_undo.count)
                     pc = op.a
                 elif code == RX_OP.JUMP then
                     pc = op.a
@@ -453,33 +476,77 @@ namespace Ghul.Internal is
                     _undo.add(_slots[first])
                     _undo.add(first + 1)
                     _undo.add(_slots[first + 1])
-                    _slots[first] = _slots[op.b]
-                    _slots[first + 1] = at
+                    if op.backward then
+                        _slots[first] = at
+                        _slots[first + 1] = _slots[op.b]
+                    else
+                        _slots[first] = _slots[op.b]
+                        _slots[first + 1] = at
+                    fi
                     pc = pc + 1
+                elif code == RX_OP.LOOK then
+                    ok = _look(op, pc + 1, at)
+                    pc = op.a
                 elif code == RX_OP.MATCH then
+                    return true
+                elif code == RX_OP.LOOK_END then
                     return true
                 fi
 
                 if !ok then
-                    if _choices.count == 0 then
+                    if choices.count == 0 then
+                        _undo_to(undo_from)
                         return false
                     fi
 
-                    let top = _choices.count
-                    let undo_to = _choices[top - 1]
-                    at = _choices[top - 2]
-                    pc = _choices[top - 3]
-                    _choices.remove_range(top - 3, 3)
+                    let top = choices.count
+                    let undo_to = choices[top - 1]
+                    at = choices[top - 2]
+                    pc = choices[top - 3]
+                    choices.remove_range(top - 3, 3)
 
-                    while _undo.count > undo_to do
-                        let n = _undo.count
-                        _slots[_undo[n - 2]] = _undo[n - 1]
-                        _undo.remove_range(n - 2, 2)
-                    od
+                    _undo_to(undo_to)
                 fi
             od
 
             return false
+        si
+
+        // Whether the lookaround `op`, whose body starts at `body`, holds at
+        // `at`. Once it holds it is not retried, as in .NET: a positive one
+        // keeps the groups its body captured, and a negative one keeps none.
+        _look(op: RX_OP, body: int, at: int) -> bool is
+            let mark = _undo.count
+            let found = _exec(body, at)
+
+            if op.b == RX_NODE.LOOK_AHEAD \/ op.b == RX_NODE.LOOK_BEHIND then
+                return found
+            fi
+
+            _undo_to(mark)
+            return !found
+        si
+
+        _undo_to(count: int) is
+            while _undo.count > count do
+                let n = _undo.count
+                _slots[_undo[n - 2]] = _undo[n - 1]
+                _undo.remove_range(n - 2, 2)
+            od
+        si
+
+        _accepts(op: RX_OP, c: char) -> bool is
+            let code = op.op
+
+            if code == RX_OP.CHAR then
+                return _same(cast int(c), op.a, op.ignore_case)
+            elif code == RX_OP.ANY then
+                return true
+            elif code == RX_OP.ANY_BUT_LINE_FEED then
+                return c != '\n'
+            fi
+
+            return op.set!.contains(cast int(c), op.ignore_case)
         si
 
         _same(c: int, wanted: int, ignore_case: bool) -> bool =>

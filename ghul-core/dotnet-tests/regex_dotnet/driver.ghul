@@ -319,7 +319,22 @@ namespace Harness is
             ("(x?){{1,2}}y", 0, "xy y"),
             ("(x?)+y", 0, "xy y"),
             ("(?<g>a(?<g>b))", 0, "ab"),
-            ("(A(\\b)+?.?)", 0, "A\n")
+            ("(A(\\b)+?.?)", 0, "A\n"),
+            ("\\w+(?=,)", 0, "ab,cd,ef"),
+            ("\\w+(?!,)", 0, "ab,cd,ef"),
+            ("(?<=,)\\w+", 0, "ab,cd,ef"),
+            ("(?<!,)\\b\\w+", 0, "ab,cd,ef"),
+            ("(?<=^|,)(\"[^\"]*\"|[^,]*)", 0, "a,\"b,c\",,d"),
+            ("(?=(\\w+))\\w", 0, "abc de"),
+            ("(?!(\\w))\\W", 0, "a b"),
+            ("(?<=(\\d+))x", 0, "12x 3x"),
+            ("(?<=a(?=b)b)c", 0, "abc acb"),
+            ("(?<=\\b\\w*)z", 0, "abz z"),
+            ("(?=a)*a", 0, "aa"),
+            ("(?<!a)(?<=b)c", 0, "bc ac c"),
+            ("q(?i)(?=U)u", 0, "qu qU"),
+            ("(?<=(a|ab))c", 0, "abc ac"),
+            ("^(?:(?!ab).)*$", 2, "xyz\nxaby\nba")
         ]
 
         for (pattern, options, input) in cases do
@@ -330,12 +345,24 @@ namespace Harness is
         // the characters they mention.
         let pieces = ["a", "b", "ab", ".", "\\d", "\\w", "\\s", "\\b", "[ab]", "[^a]", "[a-c1]", "^", "$", "\\p{{L}}", "x"]
         let quantifiers = ["", "", "", "*", "+", "?", "*?", "+?", "??", "{{2}}", "{{1,2}}", "{{0,2}}?"]
+        let groups = ["(", "(?:", "(?<g>", "(?i:"]
+
+        _random_cases(check, Ghul.Random(4021), 20000, pieces, quantifiers, groups)
+
+        // And again with lookarounds among the groups.
+        let looking = ["(", "(?:", "(?<g>", "(?i:", "(?=", "(?!", "(?<=", "(?<!"]
+
+        _random_cases(check, Ghul.Random(4022), 5000, pieces, quantifiers, looking)
+
+        write_line("checked {check.checked}, {check.differ} differ, {check.timeouts} too slow for .NET to finish, {check.inconsistent} where .NET disagrees with itself or its compiled engine")
+    si
+
+    _random_cases(check: CHECK, random: Ghul.Random, count: int, pieces: string[], quantifiers: string[], groups: string[]) is
         let alphabet = "aab1 x\nAB_"
-        let random = Ghul.Random(4021)
         let n mut = 0
 
-        while n < 20000 do
-            let pattern = _pattern(random, pieces, quantifiers, 3, false)
+        while n < count do
+            let pattern = _pattern(random, pieces, quantifiers, groups, 3, false)
             let input = Text.StringBuilder()
             let length = random.next(12)
             let k mut = 0
@@ -350,14 +377,12 @@ namespace Harness is
             check.compare(pattern, options, input.to_string())
             n = n + 1
         od
-
-        write_line("checked {check.checked}, {check.differ} differ, {check.timeouts} too slow for .NET to finish, {check.inconsistent} where .NET disagrees with itself or its compiled engine")
     si
 
     // A pattern of up to `depth` nested groups. Inside a group repeated
     // without bound, nothing repeats without bound again, so no pattern
     // needs exponential backtracking to fail.
-    _pattern(random: Ghul.Random, pieces: string[], quantifiers: string[], depth: int, in_loop: bool) -> string is
+    _pattern(random: Ghul.Random, pieces: string[], quantifiers: string[], groups: string[], depth: int, in_loop: bool) -> string is
         let result = Text.StringBuilder()
         let parts = 1 + random.next(4)
         let i mut = 0
@@ -373,11 +398,11 @@ namespace Harness is
 
             if choice < 2 /\ depth > 0 then
                 let inner = in_loop \/ _unbounded(quantifier)
-                let group = ["(", "(?:", "(?<g>", "(?i:"][random.next(4)]
-                result.append("{group}{_pattern(random, pieces, quantifiers, depth - 1, inner)}")
+                let group = groups[random.next(groups.count)]
+                result.append("{group}{_pattern(random, pieces, quantifiers, groups, depth - 1, inner)}")
 
                 if random.next(3) == 0 then
-                    result.append("|{_pattern(random, pieces, quantifiers, depth - 1, inner)}")
+                    result.append("|{_pattern(random, pieces, quantifiers, groups, depth - 1, inner)}")
                 fi
 
                 result.append(")")

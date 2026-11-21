@@ -239,6 +239,15 @@ namespace Ghul.Internal is
         REPEAT: int static => 13
         EMPTY: int static => 14
 
+        // A lookaround assertion: `c` is which, one of the LOOK_ constants
+        // below, and the only child is what it looks for.
+        LOOK: int static => 15
+
+        LOOK_AHEAD: int static => 0
+        LOOK_AHEAD_NOT: int static => 1
+        LOOK_BEHIND: int static => 2
+        LOOK_BEHIND_NOT: int static => 3
+
         // Whether the node can match without consuming anything.
         can_be_empty: bool is
             if kind == CHAR \/ kind == ANY \/ kind == SET then
@@ -657,6 +666,7 @@ namespace Ghul.Internal is
 
             let inner = flags.copy()
             let group: RX_GROUP? mut = null
+            let look mut = -1
 
             if _at < _pattern.length /\ _pattern[_at] == '?' then
                 _at = _at + 1
@@ -681,7 +691,8 @@ namespace Ghul.Internal is
                     _at = _at + 1
                     return null
                 elif c == '<' /\ _at + 1 < _pattern.length /\ (_pattern[_at + 1] == '=' \/ _pattern[_at + 1] == '!') then
-                    _unsupported("lookbehind (?<{_pattern[_at + 1]}...)", start)
+                    look = if _pattern[_at + 1] == '=' then RX_NODE.LOOK_BEHIND else RX_NODE.LOOK_BEHIND_NOT fi
+                    _at = _at + 2
                 elif c == '<' \/ c == '\'' then
                     let close = if c == '<' then '>' else '\'' fi
                     _at = _at + 1
@@ -718,7 +729,8 @@ namespace Ghul.Internal is
                     group = RX_GROUP(name)
                     _groups.add(group)
                 elif c == '=' \/ c == '!' then
-                    _unsupported("lookahead (?{c}...)", start)
+                    look = if c == '=' then RX_NODE.LOOK_AHEAD else RX_NODE.LOOK_AHEAD_NOT fi
+                    _at = _at + 1
                 elif c == '>' then
                     _unsupported("an atomic group (?>...)", start)
                 elif c == '(' then
@@ -754,6 +766,13 @@ namespace Ghul.Internal is
             fi
 
             _at = _at + 1
+
+            if look >= 0 then
+                let assertion = RX_NODE(RX_NODE.LOOK)
+                assertion.c = look
+                assertion.children.add(body)
+                return assertion
+            fi
 
             let node = RX_NODE(RX_NODE.GROUP)
             node.group = group
