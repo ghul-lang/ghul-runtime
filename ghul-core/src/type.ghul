@@ -310,7 +310,7 @@ namespace Ghul is
             for method in get_methods() do
                 if method.name =~ name then
                     if found? then
-                        throw Ghul.Reflection.AmbiguousMatchException("more than one method of {_full_name} is named {name}")
+                        throw Ghul.Reflection.AmbiguousMatchException("more than one method of {_full_name} has the name {name}")
                     fi
 
                     found = method
