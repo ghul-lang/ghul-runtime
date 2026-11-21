@@ -317,6 +317,7 @@ namespace Ghul is
         // the result fits, and ask the host otherwise.
 
         /// The sum.
+        @widen_operands()
         +(left: bigint, right: bigint) -> bigint static pure is
             if _bigint_is_small(left) /\ _bigint_is_small(right) then
                 let x = _bigint_small(left)
@@ -334,6 +335,7 @@ namespace Ghul is
         si
 
         /// The difference.
+        @widen_operands()
         -(left: bigint, right: bigint) -> bigint static pure is
             if _bigint_is_small(left) /\ _bigint_is_small(right) then
                 let x = _bigint_small(left)
@@ -349,6 +351,7 @@ namespace Ghul is
         si
 
         /// The product.
+        @widen_operands()
         *(left: bigint, right: bigint) -> bigint static pure is
             if _bigint_is_small(left) /\ _bigint_is_small(right) then
                 let x = _bigint_small(left)
@@ -450,6 +453,7 @@ namespace Ghul is
         si
 
         /// The quotient, truncated towards zero.
+        @widen_operands()
         /(dividend: bigint, divisor: bigint) -> bigint static pure is
             if divisor.is_zero then
                 throw DivideByZeroException()
@@ -464,6 +468,7 @@ namespace Ghul is
         si
 
         /// The remainder, with the sign of `dividend`.
+        @widen_operands()
         %(dividend: bigint, divisor: bigint) -> bigint static pure is
             if divisor.is_zero then
                 throw DivideByZeroException()
@@ -612,6 +617,7 @@ namespace Ghul is
     si
 
     impl Comparable[bigint] for bigint is
+        @widen_operands()
         <>(other: bigint) -> int pure => bigint._order(self, other)
     si
 si

@@ -1,0 +1,14 @@
+// An int or long operand beside a bigint widens to bigint; an int beside a
+// long still meets in long, and a double never widens to bigint.
+use IO.Std.write_line
+
+let a = 10n
+let i = 3
+let l = 4_000_000_000L
+
+write_line("{a + i} {i * a} {a - l} {l % a} {i < a} {a >= l}")
+write_line("{i + l}")
+
+// a parameter only bigint arithmetic decides is inferred as bigint
+let scaled = y => a * y
+write_line("{scaled(5n)}")

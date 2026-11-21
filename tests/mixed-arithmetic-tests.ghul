@@ -103,5 +103,38 @@ namespace Tests is
 
             are_equal(-1r + 7j, times_a(1r + 1j))
         si
+
+        @Test()
+        A_widened_real_operand__should_reach_the_mixed_form() is
+            let infinite = complex(1.0 / 0.0, 0.0)
+
+            are_equal(0.0, (infinite * 2.0).imaginary)
+            are_equal(0.0, (2.0 * infinite).imaginary)
+            are_equal(0.0, (infinite * 2).imaginary)
+            are_equal(0.0, (infinite / 2.0).imaginary)
+            are_equal(4.5r + 4j, (3r + 4j) + 1.5)
+        si
+
+        @Test()
+        A_complex__should_destructure_into_its_parts() is
+            let (re, im) = 3r + 4j
+
+            are_equal(3.0, re)
+            are_equal(4.0, im)
+        si
+
+        @Test()
+        An_int_or_long_beside_a_bigint__should_be_widened_to_bigint() is
+            let a = 10n
+            let i = 3
+            let l = 4_000_000_000L
+
+            are_equal(13n, a + i)
+            are_equal(30n, i * a)
+            are_equal(-3_999_999_990n, a - l)
+            are_equal(0n, l % a)
+            is_true(i < a)
+            are_equal(typeof long, (i + l).get_type())
+        si
     si
 si

@@ -299,6 +299,15 @@ namespace Ghul is
             return complex((b + a * cod) / (d + c * cod), (-a + b * cod) / (d + c * cod))
         si
 
+        /// The real and imaginary parts, so `let (re, im) = z` reads both.
+        ///
+        /// - re: set to the real part
+        /// - im: set to the imaginary part
+        deconstruct(re: double ref, im: double ref) is
+            re! = real
+            im! = imaginary
+        si
+
         /// Whether `other` has the same parts, compared as `double.=~`
         /// compares them.
         ///

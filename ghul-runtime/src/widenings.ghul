@@ -12,9 +12,22 @@ namespace Ghul.Internal is
         @widening() long_to_single(value: long) -> single static pure => single(value)
         @widening() long_to_double(value: long) -> double static pure => double(value)
         @widening() single_to_double(value: single) -> double static pure => double(value)
+        @widening() int_to_bigint(value: int) -> bigint static pure => bigint(value)
+        @widening() long_to_bigint(value: long) -> bigint static pure => bigint(value)
         @widening() int_to_complex(value: int) -> complex static pure => complex(value)
         @widening() long_to_complex(value: long) -> complex static pure => complex(value)
         @widening() single_to_complex(value: single) -> complex static pure => complex(value)
         @widening() double_to_complex(value: double) -> complex static pure => complex(value)
+
+        // An operator over a complex and a real, standing in for complex's
+        // own where the real operand was widened to reach it, so the
+        // operation runs on the real directly.
+        @widened_form() +(left: complex, right: double) -> complex static pure => complex(left.real + right, left.imaginary)
+        @widened_form() +(left: double, right: complex) -> complex static pure => complex(left + right.real, right.imaginary)
+        @widened_form() -(left: complex, right: double) -> complex static pure => complex(left.real - right, left.imaginary)
+        @widened_form() -(left: double, right: complex) -> complex static pure => complex(left - right.real, -right.imaginary)
+        @widened_form() *(left: complex, right: double) -> complex static pure => complex(left.real * right, left.imaginary * right)
+        @widened_form() *(left: double, right: complex) -> complex static pure => complex(left * right.real, left * right.imaginary)
+        @widened_form() /(left: complex, right: double) -> complex static pure => complex(left.real / right, left.imaginary / right)
     si
 si

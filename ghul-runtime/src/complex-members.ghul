@@ -1,0 +1,16 @@
+@@IF.dotnet()
+
+namespace Ghul.Internal is
+    // The members ghūl gives complex on .NET, as the core library's complex
+    // has them on the other targets.
+    partial complex is
+        /// The real and imaginary parts, so `let (re, im) = z` reads both.
+        ///
+        /// - re: set to the real part
+        /// - im: set to the imaginary part
+        deconstruct(re: double ref, im: double ref) is
+            re! = real
+            im! = imaginary
+        si
+    si
+si
