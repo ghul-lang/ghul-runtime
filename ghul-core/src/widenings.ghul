@@ -10,6 +10,8 @@ namespace Ghul.Internal is
         @widening() long_to_single(value: long) -> single static pure => single(value)
         @widening() long_to_double(value: long) -> double static pure => double(value)
         @widening() single_to_double(value: single) -> double static pure => double(value)
+        @widening() int_to_bigint(value: int) -> bigint static pure => bigint(value)
+        @widening() long_to_bigint(value: long) -> bigint static pure => bigint(value)
         @widening() int_to_complex(value: int) -> complex static pure => complex(value)
         @widening() long_to_complex(value: long) -> complex static pure => complex(value)
         @widening() single_to_complex(value: single) -> complex static pure => complex(value)

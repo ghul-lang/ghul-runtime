@@ -122,5 +122,19 @@ namespace Tests is
             are_equal(3.0, re)
             are_equal(4.0, im)
         si
+
+        @Test()
+        An_int_or_long_beside_a_bigint__should_be_widened_to_bigint() is
+            let a = 10n
+            let i = 3
+            let l = 4_000_000_000L
+
+            are_equal(13n, a + i)
+            are_equal(30n, i * a)
+            are_equal(-3_999_999_990n, a - l)
+            are_equal(0n, l % a)
+            is_true(i < a)
+            are_equal(typeof long, (i + l).get_type())
+        si
     si
 si
