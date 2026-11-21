@@ -45,8 +45,11 @@ namespace Ghul.Reflection is
 
     /// The global function named `name`, qualified by its namespace as the
     /// source names it, such as `Ghul.Math.sqrt`, or null if there is none.
-    /// Throws `AmbiguousMatchException` where the namespace has more than
-    /// one function of that name.
+    /// Throws `System.Reflection.AmbiguousMatchException` where the
+    /// namespace has more than one function of that name: the exception
+    /// .NET's own lookups throw, which ghūl names
+    /// `Ghul.Reflection.AmbiguousMatchException`, as the core library on
+    /// wasm and llvm does, so one `catch` serves every target.
     ///
     /// - name: the function's name, qualified by its namespace
     get_function(name: string) -> MethodInfo? is

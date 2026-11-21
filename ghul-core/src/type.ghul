@@ -300,8 +300,8 @@ namespace Ghul is
         /// The public method named `name`, the type's own or a base type's,
         /// or null if there is none.
         ///
-        /// Throws `AmbiguousMatchException` where more than one method has
-        /// that name.
+        /// Throws `Ghul.Reflection.AmbiguousMatchException` where more than
+        /// one method has that name, as .NET's `get_method` does.
         ///
         /// - name: the method's name
         get_method(name: string) -> MethodInfo? is

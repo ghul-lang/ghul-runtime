@@ -97,7 +97,10 @@ namespace Ghul.Reflection is
     si
 
     /// Thrown where a lookup by name finds more than one member, such as
-    /// `Type.get_method` on a name the type overloads.
+    /// `Type.get_method` on a name the type overloads. It stands for .NET's
+    /// `System.Reflection.AmbiguousMatchException`, which ghūl names
+    /// `Ghul.Reflection.AmbiguousMatchException` too, so one `catch` serves
+    /// every target.
     @suppress("non-upper-snake-case-name")
     class AmbiguousMatchException: Ghul.Exception is
         /// - message: what was looked for
@@ -1180,8 +1183,8 @@ namespace Ghul.Reflection is
 
     /// The global function named `name`, qualified by its namespace as the
     /// source names it, such as `Ghul.Math.sqrt`, or null if reflection
-    /// describes none. Throws `AmbiguousMatchException` where the namespace
-    /// has more than one function of that name.
+    /// describes none. Throws `Ghul.Reflection.AmbiguousMatchException`
+    /// where the namespace has more than one function of that name.
     ///
     /// - name: the function's name, qualified by its namespace
     get_function(name: string) -> MethodInfo? =>
