@@ -55,9 +55,11 @@ namespace Ghul.Interop is
     elements[T](array: ARRAY[T]) -> word
 
     /// The number of bytes a value of `T` takes where it is stored, as one element of an
-    /// `ARRAY[T]`: C's `sizeof` for a struct marked `@layout("c")`, and the size of a pointer
-    /// for a reference.
-    @IF.llvm()
+    /// `ARRAY[T]`. A scalar's size is the same on every target, `word` included. On
+    /// llvm a struct marked `@layout("c")` measures as C's `sizeof` does and a reference as
+    /// a pointer; on .NET a struct measures as the runtime stores it. On wasm a struct or a
+    /// reference measures as one 4-byte reference, since nothing lays out its fields in
+    /// memory there.
     @intrinsic("type.size_of")
     size_of[T]() -> int
 

@@ -1,0 +1,7 @@
+// The sizes Ghul.Interop.size_of gives on wasm.
+use IO.Std.write_line
+use Ghul.Interop.size_of
+
+write_line("bool {size_of[bool]()} ubyte {size_of[ubyte]()} short {size_of[short]()} char {size_of[char]()}")
+write_line("int {size_of[int]()} long {size_of[long]()} single {size_of[single]()} double {size_of[double]()}")
+write_line("word {size_of[word]()}")
