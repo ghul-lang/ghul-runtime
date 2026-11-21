@@ -83,5 +83,25 @@ namespace Tests is
             are_equal(typeof long, (n * big).get_type())
             are_equal(typeof double, (n * 2.0).get_type())
         si
+
+        @Test()
+        A_real_operand_beside_a_complex__should_be_widened_to_complex() is
+            let a = 3r + 4j
+
+            are_equal(6r + 8j, a * 2)
+            are_equal(6r + 8j, 2 * a)
+            are_equal(4.5r + 4j, a + 1.5)
+            are_equal(6r + 8j, a * 2L)
+            are_equal(1.5r + 2j, a * 0.5s)
+            are_equal(-1.5r - 4j, 1.5 - a)
+        si
+
+        @Test()
+        An_unannotated_parameter__should_settle_on_complex() is
+            let a = 3r + 4j
+            let times_a = y => a * y
+
+            are_equal(-1r + 7j, times_a(1r + 1j))
+        si
     si
 si
