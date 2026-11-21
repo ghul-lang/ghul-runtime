@@ -30,4 +30,14 @@ entry() is
 
     let times_a = y => a * y
     write_line("{times_a(1r + 1j)}")
+
+    // a widened real operand reaches the mixed form, which works part by
+    // part, so an infinite part stays infinite and a zero part stays zero
+    let infinite = complex(1.0 / 0.0, 0.0)
+    write_line("{(infinite * 2.0).imaginary =~ 0.0} {(2.0 * infinite).imaginary =~ 0.0} {(infinite * 2).imaginary =~ 0.0} {(infinite / 2.0).imaginary =~ 0.0}")
+    write_line("{a + 1.5} {1.5 - a} {a * 0.5} {a / 2.0}")
+
+    // a complex number destructures into its parts
+    let (re, im) = a
+    write_line("{re} {im}")
 si

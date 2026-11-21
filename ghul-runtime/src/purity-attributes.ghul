@@ -57,6 +57,15 @@ namespace Ghul.Internal is
     si
 
     // Marker attribute emitted by the compiler on a library operator
+    // declared @widened_form(): it stands in for a widening-marked operator
+    // where an operand arrived widened from a real. Compiler-emitted; not
+    // user-facing.
+    class WIDENED_FORM_ATTRIBUTE: Attribute is
+        init() is
+        si
+    si
+
+    // Marker attribute emitted by the compiler on a library operator
     // declared @widen_operands(): an operator an operand may be widened to
     // reach. Compiler-emitted; not user-facing.
     class WIDEN_OPERANDS_ATTRIBUTE: Attribute is

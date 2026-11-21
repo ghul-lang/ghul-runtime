@@ -303,6 +303,15 @@ namespace Ghul is
         /// compares them.
         ///
         /// - other: the complex number to compare with
+        /// The real and imaginary parts, so `let (re, im) = z` reads both.
+        ///
+        /// - re: set to the real part
+        /// - im: set to the imaginary part
+        deconstruct(re: double ref, im: double ref) is
+            re! = real
+            im! = imaginary
+        si
+
         =~(other: complex) -> bool pure => real =~ other.real /\ imaginary =~ other.imaginary
 
         /// A hash of both parts, equal for complex numbers `=~` finds equal.
