@@ -1,7 +1,5 @@
-// The hashes, under their Crypto names; the compiler keeps their
-// System.Security.Cryptography names as second spellings. The digests are
-// computed in ghūl, so they need no cryptography library on either
-// source-core target.
+// The hashes, under their Crypto names. The digests are computed in ghūl,
+// so they need no cryptography library on either source-core target.
 @@suppress("non-upper-snake-case-name")
 
 namespace Crypto is

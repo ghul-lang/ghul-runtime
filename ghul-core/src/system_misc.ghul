@@ -1,5 +1,4 @@
-// The type keeps .NET's name, in Ghul; the compiler keeps System.ObsoleteAttribute
-// as a second spelling.
+// The type keeps .NET's name, in Ghul.
 @@suppress("non-upper-snake-case-name")
 
 namespace Ghul is
