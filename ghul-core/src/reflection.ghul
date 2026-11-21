@@ -96,7 +96,20 @@ namespace Ghul.Reflection is
         set_value(instance: object?, value: object?) => _set(instance!, value)
     si
 
-    /// A parameter of a constructor.
+    /// Thrown where a lookup by name finds more than one member, such as
+    /// `Type.get_method` on a name the type overloads. It stands for .NET's
+    /// `System.Reflection.AmbiguousMatchException`, which ghūl names
+    /// `Ghul.Reflection.AmbiguousMatchException` too, so one `catch` serves
+    /// every target.
+    @suppress("non-upper-snake-case-name")
+    class AmbiguousMatchException: Ghul.Exception is
+        /// - message: what was looked for
+        init(message: string) is
+            super.init(message)
+        si
+    si
+
+    /// A parameter of a constructor or a method.
     @suppress("non-upper-snake-case-name")
     class ParameterInfo is
         /// The parameter's name, which .NET allows to be absent.
@@ -155,11 +168,17 @@ namespace Ghul.Reflection is
     si
 
     /// A method, as far as reflection reaches one: a property's accessor,
-    /// or a method or global function marked `@test()`.
+    /// a method or global function marked `@test()`, or a method a type
+    /// declares that has no type parameters of its own.
     @suppress("non-upper-snake-case-name")
     class MethodInfo is
         _invoke: (object?, ARRAY[object?]) -> object?
         _attributes: ARRAY[object]
+        _parameters: ARRAY[ParameterInfo]
+
+        /// The type that declares the method, or null where none is
+        /// recorded.
+        declaring_type: Type?
 
         /// The method's name.
         name: string
@@ -186,6 +205,45 @@ namespace Ghul.Reflection is
 
             _invoke = (receiver: object?, given: ARRAY[object?]) -> object? => invoke(receiver!, given)
             _attributes = []
+            _parameters = []
+        si
+
+        /// A method `declaring_type` declares.
+        ///
+        /// - name: the method's name
+        /// - return_type: the type it returns, `void` included
+        /// - declaring_type: the type that declares it
+        /// - is_public: whether it is public
+        /// - is_static: whether it belongs to the type rather than to an instance
+        /// - parameters: its parameters, in order
+        /// - invoke: calls it on an instance, or with null where it is
+        ///   static, with arguments, and returns what it returns, or null
+        init(name: string, return_type: Type, declaring_type: Type?, is_public: bool, is_static: bool, parameters: ARRAY[ParameterInfo], invoke: (object?, ARRAY[object?]) -> object?) is
+            self.init(name, return_type, declaring_type, is_public, is_static, parameters, [], invoke)
+        si
+
+        /// A method `declaring_type` declares, carrying `attributes`.
+        ///
+        /// - name: the method's name
+        /// - return_type: the type it returns, `void` included
+        /// - declaring_type: the type that declares it, or null where none
+        ///   is recorded
+        /// - is_public: whether it is public
+        /// - is_static: whether it belongs to the type rather than to an instance
+        /// - parameters: its parameters, in order
+        /// - attributes: the attributes it carries
+        /// - invoke: calls it on an instance, or with null where it is
+        ///   static, with arguments, and returns what it returns, or null
+        init(name: string, return_type: Type, declaring_type: Type?, is_public: bool, is_static: bool, parameters: ARRAY[ParameterInfo], attributes: ARRAY[object], invoke: (object?, ARRAY[object?]) -> object?) is
+            self.name = name
+            self.return_type = return_type
+            self.declaring_type = declaring_type
+            self.is_public = is_public
+            self.is_static = is_static
+
+            _invoke = invoke
+            _attributes = attributes
+            _parameters = parameters
         si
 
         /// A method that takes no arguments and returns nothing.
@@ -207,7 +265,11 @@ namespace Ghul.Reflection is
             si
 
             _attributes = attributes
+            _parameters = []
         si
+
+        /// The method's parameters, in order.
+        get_parameters() -> ARRAY[ParameterInfo] => _parameters
 
         /// Calls the method on `instance` with `arguments`, and returns
         /// what it returns, or null for a method that returns nothing.
@@ -517,6 +579,19 @@ namespace Ghul.Internal is
             _describers[type] = describe
         si
 
+        /// The type registered under the full name `name`, or null.
+        ///
+        /// - name: the type's full name
+        registered(name: string) -> Type? static is
+            for type in _describers.keys do
+                if type.full_name =~ name then
+                    return type
+                fi
+            od
+
+            return null
+        si
+
         /// What reflection knows about `type`. Throws `NotSupportedException`
         /// where the program was built without descriptions of its types.
         ///
@@ -549,8 +624,8 @@ namespace Ghul.Internal is
 
         /// The types `Assembly.get_types` lists: each class of the program's
         /// own that declares a method marked `@test()`, and a type for each
-        /// namespace whose global functions include one, named as .NET names
-        /// that namespace's `$globals` class. A source library's tests are
+        /// namespace whose global functions include one or are described,
+        /// named as .NET names that namespace's `$globals` class. A source library's tests are
         /// not the program's, so none of its types is listed. Throws
         /// `NotSupportedException` where the program was built without
         /// descriptions of its types.
@@ -583,12 +658,14 @@ namespace Ghul.Internal is
     class ROOT_TYPES is
         _types: LIST[Type]
         _namespaces: LIST[string]
-        _globals: MAP[string, LIST[(name: string, is_public: bool, call: () -> void)]]
+        _globals: MAP[string, LIST[(TYPE_DESCRIPTION) -> void]]
+        _parameters: LIST[ParameterInfo]
 
         init() is
             _types = LIST[Type]()
             _namespaces = LIST[string]()
-            _globals = MAP[string, LIST[(name: string, is_public: bool, call: () -> void)]]()
+            _globals = MAP[string, LIST[(TYPE_DESCRIPTION) -> void]]()
+            _parameters = LIST[ParameterInfo]()
         si
 
         _type(type: Type) is
@@ -596,32 +673,152 @@ namespace Ghul.Internal is
         si
 
         _global_test(`namespace: string, name: string, is_public: bool, call: () -> void) is
-            let tests: LIST[(name: string, is_public: bool, call: () -> void)] mut
+            _add_global(`namespace, (description: TYPE_DESCRIPTION) -> void =>
+                description.add_test_method(name, is_public, true, (instance: object?) -> void => call()))
+        si
 
-            if !_globals.try_get_value(`namespace, tests ref) then
-                tests = LIST[(name: string, is_public: bool, call: () -> void)]()
-                _globals[`namespace] = tests
+        _parameter[T](name: string) is
+            _parameters.add(ParameterInfo(name, typeof T, _parameters.count))
+        si
+
+        // A global function of `namespace`, after a `_parameter` call for
+        // each of its parameters: `_global_function_N` for one taking N
+        // arguments that returns `R`, `_global_action_N` for one that
+        // returns nothing.
+        _global_function_0[R](`namespace: string, name: string, is_public: bool, call: () -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 0 else "{name} takes 0 arguments, not {given.count}" in
+                cast object(call()))
+        si
+
+        _global_action_0(`namespace: string, name: string, is_public: bool, call: () -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 0 else "{name} takes 0 arguments, not {given.count}"
+                call()
+                return null
+            si)
+        si
+
+        _global_function_1[A0, R](`namespace: string, name: string, is_public: bool, call: (A0) -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 1 else "{name} takes 1 arguments, not {given.count}" in
+                cast object(call(cast A0(given[0]))))
+        si
+
+        _global_action_1[A0](`namespace: string, name: string, is_public: bool, call: (A0) -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 1 else "{name} takes 1 arguments, not {given.count}"
+                call(cast A0(given[0]))
+                return null
+            si)
+        si
+
+        _global_function_2[A0, A1, R](`namespace: string, name: string, is_public: bool, call: (A0, A1) -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 2 else "{name} takes 2 arguments, not {given.count}" in
+                cast object(call(cast A0(given[0]), cast A1(given[1]))))
+        si
+
+        _global_action_2[A0, A1](`namespace: string, name: string, is_public: bool, call: (A0, A1) -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 2 else "{name} takes 2 arguments, not {given.count}"
+                call(cast A0(given[0]), cast A1(given[1]))
+                return null
+            si)
+        si
+
+        _global_function_3[A0, A1, A2, R](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2) -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 3 else "{name} takes 3 arguments, not {given.count}" in
+                cast object(call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]))))
+        si
+
+        _global_action_3[A0, A1, A2](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2) -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 3 else "{name} takes 3 arguments, not {given.count}"
+                call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]))
+                return null
+            si)
+        si
+
+        _global_function_4[A0, A1, A2, A3, R](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2, A3) -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 4 else "{name} takes 4 arguments, not {given.count}" in
+                cast object(call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]))))
+        si
+
+        _global_action_4[A0, A1, A2, A3](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2, A3) -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 4 else "{name} takes 4 arguments, not {given.count}"
+                call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]))
+                return null
+            si)
+        si
+
+        _global_function_5[A0, A1, A2, A3, A4, R](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2, A3, A4) -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 5 else "{name} takes 5 arguments, not {given.count}" in
+                cast object(call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]))))
+        si
+
+        _global_action_5[A0, A1, A2, A3, A4](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2, A3, A4) -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 5 else "{name} takes 5 arguments, not {given.count}"
+                call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]))
+                return null
+            si)
+        si
+
+        _global_function_6[A0, A1, A2, A3, A4, A5, R](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2, A3, A4, A5) -> R) is
+            _add_global_method(`namespace, name, typeof R, is_public, (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 6 else "{name} takes 6 arguments, not {given.count}" in
+                cast object(call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]), cast A5(given[5]))))
+        si
+
+        _global_action_6[A0, A1, A2, A3, A4, A5](`namespace: string, name: string, is_public: bool, call: (A0, A1, A2, A3, A4, A5) -> void) is
+            _add_global_method(`namespace, name, TYPE_DESCRIPTION.void_type, is_public, (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 6 else "{name} takes 6 arguments, not {given.count}"
+                call(cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]), cast A5(given[5]))
+                return null
+            si)
+        si
+
+        _add_global_method(`namespace: string, name: string, return_type: Type, is_public: bool, invoke: (object?, ARRAY[object?]) -> object?) is
+            let parameters = _parameters.to_array()
+
+            _parameters.clear()
+
+            _add_global(`namespace, (description: TYPE_DESCRIPTION) -> void =>
+                description.add_method(name, return_type, is_public, true, parameters, invoke))
+        si
+
+        _add_global(`namespace: string, add: (TYPE_DESCRIPTION) -> void) is
+            let adds: LIST[(TYPE_DESCRIPTION) -> void] mut
+
+            if !_globals.try_get_value(`namespace, adds ref) then
+                adds = LIST[(TYPE_DESCRIPTION) -> void]()
+                _globals[`namespace] = adds
                 _namespaces.add(`namespace)
             fi
 
-            tests.add((name = name, is_public = is_public, call = call))
+            adds.add(add)
         si
 
-        /// The types collected, followed by one for each namespace's global
-        /// tests, in the order they were first given.
+        /// The types collected, followed by one for each namespace whose
+        /// global functions are described, in the order they were first
+        /// given.
         types() -> ARRAY[Type] is
             let result = LIST[Type](_types)
 
             for `namespace in _namespaces do
-                let tests = _globals[`namespace]
+                let adds = _globals[`namespace]
                 let full_name = if `namespace.length > 0 then "{`namespace}.$globals" else "$globals" fi
 
                 result.add(Type(full_name, (description: TYPE_DESCRIPTION) is
                     description.set_kind(TYPE_KIND.CLASS)
 
-                    for test in tests do
-                        let call = test.call
-                        description.add_test_method(test.name, test.is_public, true, (instance: object?) -> void => call())
+                    for add in adds do
+                        add(description)
                     od
                 si))
             od
@@ -637,6 +834,9 @@ namespace Ghul.Internal is
 
         // What a method that returns nothing returns.
         _VOID: Type static => Type("System.Void")
+
+        /// The type a method that returns nothing reports it returns.
+        void_type: Type static => _VOID
 
         /// The class the type derives from.
         base_type: Type?
@@ -665,7 +865,9 @@ namespace Ghul.Internal is
         /// The constructors the type declares.
         constructors: LIST[ConstructorInfo]
 
-        /// The methods marked `@test()` the type declares.
+        /// The methods the type declares: those marked `@test()`, and, where
+        /// the compiler describes them, the others that have no type
+        /// parameters of their own.
         methods: LIST[MethodInfo]
 
         _parameters: LIST[ParameterInfo]
@@ -781,7 +983,138 @@ namespace Ghul.Internal is
         /// - is_static: whether it belongs to the type rather than to an instance
         /// - invoke: calls it on an instance, or with null where it is static
         add_test_method(name: string, is_public: bool, is_static: bool, invoke: (object?) -> void) is
-            methods.add(MethodInfo(name, is_public, is_static, [cast object(Ghul.TEST_ATTRIBUTE())], invoke))
+            let call = (receiver: object?, given: ARRAY[object?]) -> object? is
+                invoke(receiver)
+                return null
+            si
+
+            methods.add(MethodInfo(name, _VOID, _type, is_public, is_static, [], [cast object(Ghul.TEST_ATTRIBUTE())], call))
+        si
+
+        // A method the type declares, after a `_parameter` call for each of
+        // its parameters: `_method_N` for one taking N arguments that
+        // returns `R`, `_action_N` for one that returns nothing. `call`
+        // takes the receiver, or null where the method is static, then the
+        // arguments.
+        _method_0[R](name: string, is_public: bool, is_static: bool, call: (object?) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 0 else "{name} takes 0 arguments, not {given.count}" in
+                cast object(call(receiver)))
+        si
+
+        _action_0(name: string, is_public: bool, is_static: bool, call: (object?) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 0 else "{name} takes 0 arguments, not {given.count}"
+                call(receiver)
+                return null
+            si)
+        si
+
+        _method_1[A0, R](name: string, is_public: bool, is_static: bool, call: (object?, A0) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 1 else "{name} takes 1 arguments, not {given.count}" in
+                cast object(call(receiver, cast A0(given[0]))))
+        si
+
+        _action_1[A0](name: string, is_public: bool, is_static: bool, call: (object?, A0) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 1 else "{name} takes 1 arguments, not {given.count}"
+                call(receiver, cast A0(given[0]))
+                return null
+            si)
+        si
+
+        _method_2[A0, A1, R](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 2 else "{name} takes 2 arguments, not {given.count}" in
+                cast object(call(receiver, cast A0(given[0]), cast A1(given[1]))))
+        si
+
+        _action_2[A0, A1](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 2 else "{name} takes 2 arguments, not {given.count}"
+                call(receiver, cast A0(given[0]), cast A1(given[1]))
+                return null
+            si)
+        si
+
+        _method_3[A0, A1, A2, R](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 3 else "{name} takes 3 arguments, not {given.count}" in
+                cast object(call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]))))
+        si
+
+        _action_3[A0, A1, A2](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 3 else "{name} takes 3 arguments, not {given.count}"
+                call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]))
+                return null
+            si)
+        si
+
+        _method_4[A0, A1, A2, A3, R](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2, A3) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 4 else "{name} takes 4 arguments, not {given.count}" in
+                cast object(call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]))))
+        si
+
+        _action_4[A0, A1, A2, A3](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2, A3) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 4 else "{name} takes 4 arguments, not {given.count}"
+                call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]))
+                return null
+            si)
+        si
+
+        _method_5[A0, A1, A2, A3, A4, R](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2, A3, A4) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 5 else "{name} takes 5 arguments, not {given.count}" in
+                cast object(call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]))))
+        si
+
+        _action_5[A0, A1, A2, A3, A4](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2, A3, A4) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 5 else "{name} takes 5 arguments, not {given.count}"
+                call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]))
+                return null
+            si)
+        si
+
+        _method_6[A0, A1, A2, A3, A4, A5, R](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2, A3, A4, A5) -> R) is
+            add_method(name, typeof R, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? =>
+                assert given.count == 6 else "{name} takes 6 arguments, not {given.count}" in
+                cast object(call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]), cast A5(given[5]))))
+        si
+
+        _action_6[A0, A1, A2, A3, A4, A5](name: string, is_public: bool, is_static: bool, call: (object?, A0, A1, A2, A3, A4, A5) -> void) is
+            add_method(name, _VOID, is_public, is_static, _take_parameters(), (receiver: object?, given: ARRAY[object?]) -> object? is
+                assert given.count == 6 else "{name} takes 6 arguments, not {given.count}"
+                call(receiver, cast A0(given[0]), cast A1(given[1]), cast A2(given[2]), cast A3(given[3]), cast A4(given[4]), cast A5(given[5]))
+                return null
+            si)
+        si
+
+        // The parameters the `_parameter` calls since the last method
+        // recorded.
+        _take_parameters() -> ARRAY[ParameterInfo] is
+            let result = _parameters.to_array()
+
+            _parameters.clear()
+
+            return result
+        si
+
+        /// Records a method the type declares.
+        ///
+        /// - name: the method's name
+        /// - return_type: the type it returns, `void_type` where it returns nothing
+        /// - is_public: whether it is public
+        /// - is_static: whether it belongs to the type rather than to an instance
+        /// - parameters: its parameters, in order
+        /// - invoke: calls it on an instance, or with null where it is
+        ///   static, with arguments, and returns what it returns, or null
+        add_method(name: string, return_type: Type, is_public: bool, is_static: bool, parameters: ARRAY[ParameterInfo], invoke: (object?, ARRAY[object?]) -> object?) is
+            methods.add(MethodInfo(name, return_type, _type, is_public, is_static, parameters, invoke))
         si
 
         _constructor(make: (ARRAY[object?]) -> object, is_public: bool) is
@@ -835,4 +1168,47 @@ namespace Ghul.Internal is
         INTERFACE: int static => 8
         ARRAY: int static => 16
     si
+si
+
+namespace Ghul.Reflection is
+    use Ghul.Type
+
+    /// The type named `name`, qualified by its namespace, among the types
+    /// reflection describes, or null if there is none. An
+    /// assembly-qualified name is accepted: what follows the type's name
+    /// is ignored.
+    ///
+    /// - name: the type's full name
+    get_type(name: string) -> Type? => Type.get_type(name)
+
+    /// The global function named `name`, qualified by its namespace as the
+    /// source names it, such as `Ghul.Math.sqrt`, or null if reflection
+    /// describes none. Throws `Ghul.Reflection.AmbiguousMatchException`
+    /// where the namespace has more than one function of that name.
+    ///
+    /// - name: the function's name, qualified by its namespace
+    get_function(name: string) -> MethodInfo? =>
+        _globals_of(name)?.get_method(_function_name(name))
+
+    /// The global function named `name`, qualified by its namespace as the
+    /// source names it, whose parameters are exactly `types`, in order, or
+    /// null if reflection describes none.
+    ///
+    /// - name: the function's name, qualified by its namespace
+    /// - types: the type of each parameter, in order
+    get_function(name: string, types: ARRAY[Type]) -> MethodInfo? =>
+        _globals_of(name)?.get_method(_function_name(name), types)
+
+    _globals_of(name: string) -> Type? is
+        let dot = name.last_index_of('.')
+
+        return
+            if dot < 0 then
+                Type.get_type("$globals")
+            else
+                Type.get_type("{name.substring(0, dot)}.$globals")
+            fi
+    si
+
+    _function_name(name: string) -> string => name.substring(name.last_index_of('.') + 1)
 si

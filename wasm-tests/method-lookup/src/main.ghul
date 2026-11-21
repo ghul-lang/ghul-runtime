@@ -1,0 +1,67 @@
+namespace Probe is
+    use IO.Std.write_line
+
+    class Base is
+        init() is si
+
+        @test()
+        shared() is
+            write_line("base shared")
+        si
+
+        @test()
+        only_base() is
+            write_line("only base")
+        si
+    si
+
+    class Derived: Base is
+        init() is si
+
+        @test()
+        shared() is
+            write_line("derived shared")
+        si
+    si
+
+    @test()
+    global_check() is
+        write_line("global check")
+    si
+si
+
+namespace Runner is
+    use IO.Std.write_line
+
+    use Ghul.Reflection.MethodInfo
+
+    show(method: MethodInfo?) is
+        if let found = method then
+            write_line("{found.name}: static={found.is_static} parameters={found.get_parameters().count}")
+        else
+            write_line("not found")
+        fi
+    si
+
+    entry() is
+        let empty: ARRAY[object?] = []
+        let derived = Ghul.Reflection.get_type("Probe.Derived, method-lookup")!
+
+        write_line("by name: {derived}")
+        write_line("missing by name: {Ghul.Reflection.get_type("Probe.Missing")}")
+
+        show(derived.get_method("shared"))
+        show(derived.get_method("missing"))
+        show(derived.get_method("shared", []))
+        show(derived.get_method("shared", [typeof int]))
+        write_line("declared by {derived.get_method("shared")!.declaring_type}")
+
+        derived.get_method("shared")!.invoke(Probe.Derived(), empty)
+        derived.get_method("only_base")!.invoke(Probe.Derived(), empty)
+
+        show(Ghul.Reflection.get_function("Probe.global_check"))
+        show(Ghul.Reflection.get_function("Probe.global_check", []))
+        show(Ghul.Reflection.get_function("Probe.missing"))
+        Ghul.Reflection.get_function("Probe.global_check")!.invoke(null, empty)
+    si
+si

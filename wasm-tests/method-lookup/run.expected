@@ -1,0 +1,13 @@
+by name: Probe.Derived
+missing by name: null
+shared: static=false parameters=0
+not found
+shared: static=false parameters=0
+not found
+declared by Probe.Derived
+derived shared
+only base
+global_check: static=true parameters=0
+global_check: static=true parameters=0
+not found
+global check
