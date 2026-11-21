@@ -411,8 +411,8 @@ namespace System is
         /// - result: where the value is written
         try_parse[T: struct](value: string?, ignore_case: bool, result: T ref) -> bool static => throw _not_lowered()
 
-        _not_lowered() -> NotSupportedException static =>
-            NotSupportedException("Enum.parse and Enum.try_parse need the enum to be known where they are called")
+        _not_lowered() -> Ghul.NotSupportedException static =>
+            Ghul.NotSupportedException("Enum.parse and Enum.try_parse need the enum to be known where they are called")
 
         /// The names of `enum_type`'s members, in ascending order of value.
         ///
