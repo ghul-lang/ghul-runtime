@@ -14,5 +14,14 @@ namespace Tests is
         Describe_an_errno_value() is
             are_equal("No such file or directory", Ghul.Interop.error_text(2))
         si
+
+        @Test()
+        Measure_scalars_and_addresses() is
+            are_equal(1, Ghul.Interop.size_of[ubyte]())
+            are_equal(2, Ghul.Interop.size_of[char]())
+            are_equal(4, Ghul.Interop.size_of[int]())
+            are_equal(8, Ghul.Interop.size_of[double]())
+            are_equal(8, Ghul.Interop.size_of[word]())
+        si
     si
 si

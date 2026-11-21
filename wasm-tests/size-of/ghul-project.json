@@ -1,0 +1,7 @@
+{
+    "name": "size-of",
+    "targets": ["wasm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
