@@ -1,5 +1,4 @@
-// The secure generator, under its Crypto name; the compiler keeps its
-// System.Security.Cryptography name as a second spelling.
+// The secure generator, under its Crypto name.
 @@suppress("non-upper-snake-case-name")
 
 namespace Crypto is

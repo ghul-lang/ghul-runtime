@@ -1,5 +1,4 @@
-// The types keep .NET's names, in Ghul; the compiler keeps their
-// System.Runtime.CompilerServices names as second spellings.
+// The types keep .NET's names, in Ghul.
 @@suppress("non-upper-snake-case-name")
 
 namespace Ghul is

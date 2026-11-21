@@ -1,5 +1,4 @@
-// The encodings are under their Text names; the compiler keeps their System.Text
-// names as second spellings. StringWriter keeps .NET's name.
+// The encodings are under their Text names. StringWriter keeps .NET's name.
 @@suppress("non-upper-snake-case-name")
 
 namespace Text is

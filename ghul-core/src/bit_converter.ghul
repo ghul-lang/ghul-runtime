@@ -1,5 +1,4 @@
-// The type keeps .NET's name, in Ghul.Math; the compiler keeps
-// System.BitConverter as a second spelling.
+// The type keeps .NET's name, in Ghul.Math.
 @@suppress("non-upper-snake-case-name")
 
 namespace Ghul.Math is
