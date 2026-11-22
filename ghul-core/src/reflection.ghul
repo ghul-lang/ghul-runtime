@@ -255,7 +255,7 @@ namespace Ghul.Reflection is
         /// - call: calls it on an instance, or with null where it is static
         init(name: string, is_public: bool, is_static: bool, attributes: ARRAY[object], call: (object?) -> void) is
             self.name = name
-            self.return_type = Type("System.Void")
+            self.return_type = Type("void")
             self.is_public = is_public
             self.is_static = is_static
 
@@ -833,7 +833,7 @@ namespace Ghul.Internal is
         _type: Type?
 
         // What a method that returns nothing returns.
-        _VOID: Type static => Type("System.Void")
+        _VOID: Type static => Type("void")
 
         /// The type a method that returns nothing reports it returns.
         void_type: Type static => _VOID
