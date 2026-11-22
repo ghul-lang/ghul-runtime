@@ -159,7 +159,7 @@ namespace IO is
 
     // The files and directories, keyed by full path. A directory exists
     // where it was created, or where a file or directory below it does; the
-    // root always exists.
+    // root and the temporary directory always exist.
     @IF.wasm()
     class _MEMORY_FILES is
         _files: Collections.MAP[string, ARRAY[ubyte]] static
@@ -169,6 +169,7 @@ namespace IO is
         init() static is
             _files = Collections.MAP[string, ARRAY[ubyte]]()
             _directories = Collections.SET[string]()
+            _directories.add(_FILE_STORE.full(Path.get_temp_path()))
             _current = "/"
 
             let count = _input_file_count()
