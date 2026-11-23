@@ -1,6 +1,8 @@
 // wasm runs one thread, so it has none of this.
 @IF.not.wasm()
 namespace Ghul.Threads is
+    use System.Runtime.CompilerServices.ICriticalNotifyCompletion
+
     /// Starts a thread running `body`, with a stack of 8 MB, and answers
     /// the thread, whose `join` waits for it and answers what `body` did.
     ///
@@ -46,9 +48,50 @@ namespace Ghul.Threads is
         /// Waits for the thread to finish, and throws what its body threw,
         /// if it threw. Joining again does the same again. On llvm the
         /// exception's trace shows the join rather than where it was
-        /// thrown.
+        /// thrown, and the joining thread runs its own queued task work
+        /// while it waits.
         join() is
             _run.join()
+        si
+
+        /// What `await` reads the thread through: the awaiting function
+        /// carries on once the thread finishes, on llvm on the thread that
+        /// awaited.
+        get_awaiter() -> ThreadAwaiter => ThreadAwaiter(self, _run)
+    si
+
+    /// What `await` reads a `Thread` through.
+    class ThreadAwaiter: ICriticalNotifyCompletion is
+        _thread: Thread
+        _run: _THREAD_RUN
+
+        /// - thread: the thread awaited
+        /// - run: what runs the thread's body
+        init(thread: Thread, run: _THREAD_RUN) is
+            _thread = thread
+            _run = run
+        si
+
+        /// Whether the thread has finished.
+        is_completed: bool => _thread.is_finished
+
+        /// Throws what the thread's body threw, where it threw.
+        get_result() is
+            _thread.join()
+        si
+
+        /// Runs `continuation` once the thread finishes.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void) is
+            _run.on_completed(continuation)
+        si
+
+        /// Runs `continuation` once the thread finishes.
+        ///
+        /// - continuation: what to run
+        unsafe_on_completed(continuation: () -> void) is
+            _run.on_completed(continuation)
         si
     si
 
@@ -77,6 +120,44 @@ namespace Ghul.Threads is
 
             return _result
         si
+
+        /// What `await` reads the thread through: the awaiting function
+        /// carries on once the thread finishes, with what its body
+        /// answered, on llvm on the thread that awaited.
+        get_awaiter() -> ThreadAwaiter[T] => ThreadAwaiter[T](self, _run)
+    si
+
+    /// What `await` reads a `Thread[T]` through.
+    class ThreadAwaiter[T]: ICriticalNotifyCompletion is
+        _thread: Thread[T]
+        _run: _THREAD_RUN
+
+        /// - thread: the thread awaited
+        /// - run: what runs the thread's body
+        init(thread: Thread[T], run: _THREAD_RUN) is
+            _thread = thread
+            _run = run
+        si
+
+        /// Whether the thread has finished.
+        is_completed: bool => _thread.is_finished
+
+        /// What the thread's body answered, or what it threw thrown again.
+        get_result() -> T => _thread.join()
+
+        /// Runs `continuation` once the thread finishes.
+        ///
+        /// - continuation: what to run
+        on_completed(continuation: () -> void) is
+            _run.on_completed(continuation)
+        si
+
+        /// Runs `continuation` once the thread finishes.
+        ///
+        /// - continuation: what to run
+        unsafe_on_completed(continuation: () -> void) is
+            _run.on_completed(continuation)
+        si
     si
 
     // Runs one body on a thread of its own, catching what it throws for
@@ -101,8 +182,19 @@ namespace Ghul.Threads is
         @IF.llvm()
         _joined: bool field
 
+        // Guards `_finished` against the threads registering to be told
+        // the thread finished, and holds what they registered until then.
+        @IF.llvm()
+        _finishing: Ghul.Internal.LOCK
+
+        @IF.llvm()
+        _waiters: Collections.LIST[(inbox: Ghul.Internal.INBOX, continuation: () -> void)]
+
         @IF.dotnet()
         _thread: Tasks.Thread
+
+        @IF.dotnet()
+        _completion: Tasks.TaskCompletionSource
 
         init(body: () -> void, stack_size: int) is
             _body = body
@@ -122,6 +214,8 @@ namespace Ghul.Threads is
         @IF.llvm()
         _start(stack_size: int) is
             _joining = Ghul.Internal.LOCK()
+            _finishing = Ghul.Internal.LOCK()
+            _waiters = Collections.LIST[(inbox: Ghul.Internal.INBOX, continuation: () -> void)]()
 
             if let handle = _thread_start(() is _execute() si, cast long(stack_size)) then
                 _handle = handle
@@ -130,9 +224,36 @@ namespace Ghul.Threads is
             fi
         si
 
+        // Marks the thread finished, and hands each continuation registered
+        // to the thread that registered it.
         @IF.llvm()
         _done() is
+            _finishing.enter()
             Ghul.Internal.ATOMICS.store(_finished ref, 1)
+            let waiting = _waiters
+            _waiters = Collections.LIST[(inbox: Ghul.Internal.INBOX, continuation: () -> void)]()
+            _finishing.exit()
+
+            for (inbox, continuation) in waiting do
+                inbox.deliver(continuation)
+            od
+        si
+
+        // Runs `continuation` on the calling thread once the thread
+        // finishes: queued at once where it has, and otherwise handed back
+        // to the calling thread's scheduler when it does.
+        @IF.llvm()
+        on_completed(continuation: () -> void) is
+            _finishing.enter()
+
+            if Ghul.Internal.ATOMICS.load(_finished ref) == 1 then
+                _finishing.exit()
+                Tasks.SCHEDULER.post(continuation)
+                return
+            fi
+
+            _waiters.add((Tasks.SCHEDULER.expect_from_another_thread(), continuation))
+            _finishing.exit()
         si
 
         @IF.llvm()
@@ -140,6 +261,13 @@ namespace Ghul.Threads is
 
         @IF.llvm()
         join() is
+            if !is_finished then
+                let finished = Tasks.TASK_STATE()
+
+                on_completed(() is finished.complete() si)
+                Tasks.SCHEDULER.run_until(finished)
+            fi
+
             _joining.enter()
 
             try
@@ -166,12 +294,23 @@ namespace Ghul.Threads is
 
         @IF.dotnet()
         _start(stack_size: int) is
+            _completion = Tasks.TaskCompletionSource(Tasks.TaskCreationOptions.RUN_CONTINUATIONS_ASYNCHRONOUSLY)
             _thread = Tasks.Thread(System.Threading.ThreadStart(_execute), if stack_size > 0 then stack_size else DEFAULT_STACK_SIZE fi)
             _thread.start()
         si
 
         @IF.dotnet()
-        _done() is si
+        _done() is
+            _completion.set_result()
+        si
+
+        // Runs `continuation` once the thread finishes, on the thread pool
+        // rather than on the finishing thread, which a continuation that
+        // joins it would otherwise wait for forever.
+        @IF.dotnet()
+        on_completed(continuation: () -> void) is
+            _completion.task.get_awaiter().on_completed(continuation)
+        si
 
         @IF.dotnet()
         is_finished: bool => _thread.join(0)
