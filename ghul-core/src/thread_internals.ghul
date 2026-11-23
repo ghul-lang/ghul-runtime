@@ -178,16 +178,22 @@ namespace Ghul.Internal is
             _lock(_mutex)
             let taken = _work
 
-            if taken.count > 0 then
-                _work = fresh
+            // An empty list stays the inbox's own, and another thread can
+            // add to it as soon as the lock is released, so it is never
+            // read outside the lock.
+            if taken.count == 0 then
+                _unlock(_mutex)
+                return false
             fi
+
+            _work = fresh
             _unlock(_mutex)
 
             for work in taken do
                 ready.enqueue(work)
             od
 
-            return taken.count > 0
+            return true
         si
 
         // Waits until work is handed over or `milliseconds` pass, where

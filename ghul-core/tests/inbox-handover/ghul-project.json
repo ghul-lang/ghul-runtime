@@ -1,0 +1,9 @@
+{
+    "name": "inbox-handover",
+    "targets": ["llvm"],
+    "sources": ["*.ghul"],
+    "diagnostics": { "suppress": ["assembly-attribute-unmatched"] },
+    "dependencies": {
+        "ghul-runtime": { "path": "../../.." }
+    }
+}
