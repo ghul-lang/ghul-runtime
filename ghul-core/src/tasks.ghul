@@ -7,11 +7,14 @@ namespace Tasks is
     use System.Runtime.CompilerServices.INotifyCompletion
     use System.Runtime.CompilerServices.ICriticalNotifyCompletion
 
-    // Tasks on a target with one thread. Nothing runs concurrently: a
-    // continuation is queued when what it waits for completes, and the
-    // queue is run by whatever waits for a task's result, until that task
-    // completes. A wait that can never be satisfied, because nothing is
-    // queued and no delay is pending, throws rather than hangs.
+    // Tasks run by the thread that started them. Nothing runs
+    // concurrently on one thread: a continuation is queued when what it
+    // waits for completes, and the queue is run by whatever waits for a
+    // task's result, until that task completes. Work another thread owes
+    // this one, such as a thread's completion it awaits, arrives in its
+    // inbox and runs on this thread. A wait that can never be satisfied,
+    // because nothing is queued, no delay is pending and no other thread
+    // owes it anything, throws rather than hangs.
 
     /// An operation that completes later, with no result.
     @AsyncMethodBuilder(typeof(TASK_BUILDER))
@@ -648,10 +651,15 @@ namespace Tasks is
     si
 
     // A thread's queue of work, and the delays waiting on the clock: each
-    // thread runs its own tasks.
+    // thread runs its own tasks. On llvm, work another thread hands this
+    // one arrives in its inbox, which it has once it first waits on
+    // another thread.
     class SCHEDULER is
         _ready: QUEUE[() -> void]
         _timers: LIST[(due: long, state: TASK_STATE)]
+
+        @IF.llvm()
+        _inbox: Ghul.Internal.INBOX?
 
         init() is
             _ready = QUEUE[() -> void]()
@@ -688,8 +696,28 @@ namespace Tasks is
             _here._timers.add((System.Environment.tick_count64 + cast long(milliseconds), state))
         si
 
+        /// The calling thread's inbox, made the first time, counting one
+        /// more piece of work another thread will hand it through
+        /// `deliver`.
+        @IF.llvm()
+        expect_from_another_thread() -> Ghul.Internal.INBOX static is
+            let here = _here
+
+            if !here._inbox? then
+                here._inbox = Ghul.Internal.INBOX()
+            fi
+
+            let inbox = here._inbox!
+
+            inbox.expect()
+
+            return inbox
+        si
+
         /// Runs queued work, and completes delays as they fall due, until
-        /// `state` completes. Throws where nothing could ever complete it.
+        /// `state` completes. While another thread still owes this one
+        /// work, waits for it rather than throwing. Throws where nothing
+        /// could ever complete `state`.
         ///
         /// - state: what to wait for
         run_until(state: TASK_STATE) static is
@@ -702,6 +730,9 @@ namespace Tasks is
                     let work = _ready.dequeue()
 
                     work()
+                elif _take_from_inbox() then
+                elif _waits_on_another_thread() then
+                    _wait_for_another_thread()
                 elif _timers.count > 0 then
                     _complete_earliest_timer()
                 else
@@ -710,7 +741,46 @@ namespace Tasks is
             od
         si
 
-        _complete_earliest_timer() is
+        @IF.llvm()
+        _take_from_inbox() -> bool => _inbox?.take(_ready) ?? false
+
+        @IF.llvm()
+        _waits_on_another_thread() -> bool => _inbox?.is_waiting ?? false
+
+        // Waits for another thread to hand over work, or for the earliest
+        // delay to fall due, completing it if it has.
+        @IF.llvm()
+        _wait_for_another_thread() is
+            if _timers.count == 0 then
+                _inbox!.wait(-1L)
+                return
+            fi
+
+            let earliest = _earliest_timer()
+            let remaining = _timers[earliest].due - System.Environment.tick_count64
+
+            if remaining > 0L then
+                _inbox!.wait(remaining)
+            fi
+
+            if System.Environment.tick_count64 >= _timers[earliest].due then
+                let (_, state) = _timers[earliest]
+
+                _timers.remove_at(earliest)
+                state.complete()
+            fi
+        si
+
+        @IF.wasm()
+        _take_from_inbox() -> bool => false
+
+        @IF.wasm()
+        _waits_on_another_thread() -> bool => false
+
+        @IF.wasm()
+        _wait_for_another_thread() is si
+
+        _earliest_timer() -> int is
             let earliest mut = 0
 
             for i in 1.._timers.count do
@@ -718,6 +788,12 @@ namespace Tasks is
                     earliest = i
                 fi
             od
+
+            return earliest
+        si
+
+        _complete_earliest_timer() is
+            let earliest = _earliest_timer()
 
             let (due, state) = _timers[earliest]
 

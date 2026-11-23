@@ -125,6 +125,103 @@ namespace Ghul.Internal is
         _thread_id() -> long static
     si
 
+    // The work other threads hand one thread's scheduler, and how many
+    // of them the thread still waits on to hand it something. The thread
+    // makes it the first time it waits on another thread; until then its
+    // scheduler has none.
+    @IF.llvm()
+    class INBOX is
+        _mutex: object
+        _condition: object
+        _work: Collections.LIST[() -> void]
+        _expected: int
+
+        init() is
+            _mutex = _new_mutex()
+            _condition = _new_condition()
+            _work = Collections.LIST[() -> void]()
+        si
+
+        // Counts one more piece of work another thread will hand over.
+        // Called by the owning thread.
+        expect() is
+            _lock(_mutex)
+            _expected = _expected + 1
+            _unlock(_mutex)
+        si
+
+        // Hands over `work` that was expected, waking the owning thread if
+        // it waits. Called by any thread.
+        deliver(work: () -> void) is
+            _lock(_mutex)
+            _work.add(work)
+            _expected = _expected - 1
+            _signal(_condition)
+            _unlock(_mutex)
+        si
+
+        // Whether work has been handed over that has not been taken, or is
+        // still expected.
+        is_waiting: bool is
+            _lock(_mutex)
+            let waiting = _work.count > 0 \/ _expected > 0
+            _unlock(_mutex)
+
+            return waiting
+        si
+
+        // Moves the work handed over into `ready`, answering whether there
+        // was any. Called by the owning thread.
+        take(ready: Collections.QUEUE[() -> void]) -> bool is
+            let fresh = Collections.LIST[() -> void]()
+
+            _lock(_mutex)
+            let taken = _work
+
+            if taken.count > 0 then
+                _work = fresh
+            fi
+            _unlock(_mutex)
+
+            for work in taken do
+                ready.enqueue(work)
+            od
+
+            return taken.count > 0
+        si
+
+        // Waits until work is handed over or `milliseconds` pass, where
+        // none is waiting to be taken; a negative `milliseconds` waits as
+        // long as it takes. Called by the owning thread.
+        wait(milliseconds: long) is
+            _lock(_mutex)
+
+            if _work.count == 0 /\ _expected > 0 then
+                _wait(_condition, _mutex, milliseconds)
+            fi
+
+            _unlock(_mutex)
+        si
+
+        @intrinsic("host.mutex_new")
+        _new_mutex() -> object static
+
+        @intrinsic("host.mutex_lock")
+        _lock(mutex: object) -> bool static
+
+        @intrinsic("host.mutex_unlock")
+        _unlock(mutex: object) -> bool static
+
+        @intrinsic("host.condition_new")
+        _new_condition() -> object static
+
+        @intrinsic("host.condition_wait")
+        _wait(condition: object, mutex: object, milliseconds: long) -> int static
+
+        @intrinsic("host.condition_signal")
+        _signal(condition: object) static
+    si
+
     // The atomic operations on a value the caller names by reference, all
     // sequentially consistent. Each public operation calls the intrinsic it
     // is named for: an intrinsic outside a type's own operators is also

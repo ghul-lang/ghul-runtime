@@ -115,5 +115,60 @@ namespace Tests is
             is_true(slot.compare_exchange(first, "second"))
             are_equal("second", slot.load())
         si
+
+        @Test()
+        await_answers_what_the_body_answered() is
+            are_equal(42, _awaited_answer().result)
+        si
+
+        @Test()
+        await_throws_what_the_body_threw() is
+            are_equal("caught boom", _awaited_failure().result)
+        si
+
+        @Test()
+        await_answers_at_once_for_a_finished_thread() is
+            let done = start(() => "early")
+            done.join()
+
+            is_true(done.get_awaiter().is_completed)
+            are_equal("early", _awaited(done).result)
+        si
+
+        @Test()
+        await_waits_for_a_thread_with_no_result() is
+            let ran = AtomicBool(false)
+            let worker = start(() is ran.store(true) si)
+
+            _awaited_void(worker).wait()
+
+            is_true(ran.load())
+        si
+
+        _awaited_answer() -> Tasks.TASK[int] is
+            let worker = start(() => (Tasks.Thread.sleep(20); 6 * 7))
+            let result = await worker
+
+            return result
+        si
+
+        _awaited_failure() -> Tasks.TASK[string] is
+            try
+                await start(() -> int is throw InvalidOperationException("boom") si)
+                return "no exception"
+            catch e: InvalidOperationException
+                return "caught {e.message}"
+            yrt
+        si
+
+        _awaited(thread: Thread[string]) -> Tasks.TASK[string] is
+            let result = await thread
+
+            return result
+        si
+
+        _awaited_void(thread: Thread) -> Tasks.TASK is
+            await thread
+        si
     si
 si

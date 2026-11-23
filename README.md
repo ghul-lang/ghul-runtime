@@ -67,7 +67,7 @@ let shout = ((s: string) => s.to_upper()) >> (s => "{s}!")
 
 ### Threads - `Ghul.Threads`
 
-Threads on llvm and .NET; wasm runs one thread and does not have them. `start(body)` runs `body` on a new thread with an 8 MB stack and answers a `Thread[T]`, or a `Thread` for a body that answers nothing; `join()` waits for it and answers what the body answered, or throws what it threw. `Mutex` is a lock one thread holds at a time, and `hold(body)` runs `body` holding it. `AtomicInt`, `AtomicLong`, `AtomicBool` and `Atomic[T]` are values threads change without a lock. A program is responsible for how its threads share collections and other objects; the library makes its own hidden state safe to use from several threads.
+Threads on llvm and .NET; wasm runs one thread and does not have them. `start(body)` runs `body` on a new thread with an 8 MB stack and answers a `Thread[T]`, or a `Thread` for a body that answers nothing; `join()` waits for it and answers what the body answered, or throws what it threw. A thread can also be awaited from an asynchronous function: the function carries on once the thread finishes, on llvm on the thread that awaited it, and on .NET on a thread-pool thread, as .NET's own awaits do. On llvm, a thread waiting in `join()` or for a task runs its own queued task work while it waits. `Mutex` is a lock one thread holds at a time, and `hold(body)` runs `body` holding it. `AtomicInt`, `AtomicLong`, `AtomicBool` and `Atomic[T]` are values threads change without a lock. A program is responsible for how its threads share collections and other objects; the library makes its own hidden state safe to use from several threads.
 
 ```ghul
 use Ghul.Threads
@@ -80,6 +80,13 @@ for w in workers do
 od
 
 write_line("{hits.load()}")   // 4
+
+answer() -> Tasks.TASK[int] is
+    let result = await start(() => 6 * 7)
+    return result
+si
+
+write_line("{answer().result}")   // 42
 ```
 
 ### Coroutines - `Ghul.Coroutines`
