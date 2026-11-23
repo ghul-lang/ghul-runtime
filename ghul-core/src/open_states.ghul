@@ -19,14 +19,30 @@ namespace Ghul.Internal is
         _states: Collections.LIST[OpenState?] static
         _free: Collections.LIST[int] static
 
+        // Held while the table changes: files are opened and closed on any
+        // thread, and a finalizer can close one during an allocation made
+        // under it.
+        _lock: LOCK static
+
         init() static is
             _states = Collections.LIST[OpenState?]()
             _free = Collections.LIST[int]()
+            _lock = LOCK()
         si
 
         // Holds `state` until it is removed, and answers the slot to remove
         // it by.
         add(state: OpenState) -> int static is
+            _lock.enter()
+
+            try
+                return _add(state)
+            finally
+                _lock.exit()
+            yrt
+        si
+
+        _add(state: OpenState) -> int static is
             if _free.count > 0 then
                 let slot = _free[_free.count - 1]
 
@@ -43,16 +59,32 @@ namespace Ghul.Internal is
 
         // Lets go of the state in `slot`. A slot below zero holds nothing.
         remove(slot: int) static is
-            if slot >= 0 /\ slot < _states.count /\ _states[slot]? then
-                _states[slot] = null
-                _free.add(slot)
-            fi
+            _lock.enter()
+
+            try
+                if slot >= 0 /\ slot < _states.count /\ _states[slot]? then
+                    _states[slot] = null
+                    _free.add(slot)
+                fi
+            finally
+                _lock.exit()
+            yrt
         si
 
         // Closes every state still held, reporting each that fails on a line
         // of its own. A failure changes nothing else: the program ends as it
         // was going to.
         sweep() static is
+            _lock.enter()
+
+            try
+                _sweep()
+            finally
+                _lock.exit()
+            yrt
+        si
+
+        _sweep() static is
             let index mut = 0
 
             while index < _states.count do

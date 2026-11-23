@@ -1,0 +1,148 @@
+namespace Ghul.Internal is
+    // What the core library keeps for each thread rather than for the
+    // program: on llvm, held in the runtime's slot for the calling thread
+    // and made the first time the thread asks; on wasm, which runs one
+    // thread, one of them.
+    class THREAD_LOCALS is
+        // The state rendering a value by its own `to_string`, and that
+        // value, while it does.
+        display_host: DISPLAY_STATE? field public
+        display_value: object? field public
+
+        // The thread's queue of task work, once it has one.
+        scheduler: Tasks.SCHEDULER? field public
+
+        init() is si
+
+        @IF.llvm()
+        current: THREAD_LOCALS static is
+            if let here: THREAD_LOCALS = _state() then
+                return here
+            fi
+
+            let made = THREAD_LOCALS()
+
+            _set_state(made)
+
+            return made
+        si
+
+        @IF.llvm()
+        @intrinsic("host.thread_state")
+        _state() -> object? static
+
+        @IF.llvm()
+        @intrinsic("host.thread_set_state")
+        _set_state(state: object) static
+
+        @IF.wasm()
+        _only: THREAD_LOCALS static
+
+        @IF.wasm()
+        init() static is
+            _only = THREAD_LOCALS()
+        si
+
+        @IF.wasm()
+        current: THREAD_LOCALS static => _only
+    si
+
+    // A lock for state the core library shares between threads and the
+    // program cannot see, such as a cache. The thread holding it can take
+    // it again, as a finalizer that runs during an allocation made under
+    // the lock may, and gives it up when it has released it as often. On
+    // wasm, which runs one thread, it does nothing.
+    class LOCK is
+        @IF.llvm()
+        _mutex: object
+
+        // The thread holding the lock, or 0, read by other threads; and how
+        // many times it has taken it.
+        @IF.llvm()
+        _owner: long field
+
+        @IF.llvm()
+        _depth: int field
+
+        init() is
+            _init()
+        si
+
+        @IF.llvm()
+        _init() is
+            _mutex = _new()
+        si
+
+        @IF.wasm()
+        _init() is si
+
+        // Takes the lock, waiting while another thread holds it.
+        @IF.llvm()
+        enter() is
+            let me = _thread_id()
+
+            if ATOMICS.load(_owner ref) == me then
+                _depth = _depth + 1
+                return
+            fi
+
+            _lock(_mutex)
+            ATOMICS.store(_owner ref, me)
+            _depth = 1
+        si
+
+        @IF.wasm()
+        enter() is si
+
+        // Releases the lock once.
+        @IF.llvm()
+        exit() is
+            _depth = _depth - 1
+
+            if _depth == 0 then
+                ATOMICS.store(_owner ref, 0L)
+                _unlock(_mutex)
+            fi
+        si
+
+        @IF.wasm()
+        exit() is si
+
+        @IF.llvm()
+        @intrinsic("host.mutex_new")
+        _new() -> object static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_lock")
+        _lock(mutex: object) -> bool static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_unlock")
+        _unlock(mutex: object) -> bool static
+
+        @IF.llvm()
+        @intrinsic("host.thread_id")
+        _thread_id() -> long static
+    si
+
+    // The atomic operations on a value the caller names by reference, all
+    // sequentially consistent.
+    @IF.llvm()
+    class ATOMICS is
+        @intrinsic("atomic.load")
+        load[T](location: T ref) -> T static
+
+        @intrinsic("atomic.store")
+        store[T](location: T ref, value: T) static
+
+        @intrinsic("atomic.exchange")
+        exchange[T](location: T ref, value: T) -> T static
+
+        @intrinsic("atomic.compare_exchange")
+        compare_exchange[T](location: T ref, expected: T, replacement: T) -> bool static
+
+        // Adds `value`, answering the sum.
+        @intrinsic("atomic.add")
+        add[T](location: T ref, value: T) -> T static
+    si
+si

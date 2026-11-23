@@ -647,21 +647,37 @@ namespace Tasks is
         si
     si
 
-    // The one queue of work, and the delays waiting on the clock.
+    // A thread's queue of work, and the delays waiting on the clock: each
+    // thread runs its own tasks.
     class SCHEDULER is
-        _ready: QUEUE[() -> void] static
-        _timers: LIST[(due: long, state: TASK_STATE)] static
+        _ready: QUEUE[() -> void]
+        _timers: LIST[(due: long, state: TASK_STATE)]
 
-        init() static is
+        init() is
             _ready = QUEUE[() -> void]()
             _timers = LIST[(due: long, state: TASK_STATE)]()
+        si
+
+        // The calling thread's scheduler, made the first time it asks.
+        _here: SCHEDULER static is
+            let locals = Ghul.Internal.THREAD_LOCALS.current
+
+            if let found = locals.scheduler then
+                return found
+            fi
+
+            let made = SCHEDULER()
+
+            locals.scheduler = made
+
+            return made
         si
 
         /// Queues `work` to run when queued work next runs.
         ///
         /// - work: what to run
         post(work: () -> void) static is
-            _ready.enqueue(work)
+            _here._ready.enqueue(work)
         si
 
         /// Completes `state` once `milliseconds` have passed.
@@ -669,7 +685,7 @@ namespace Tasks is
         /// - milliseconds: how long to wait
         /// - state: what completes
         after(milliseconds: int, state: TASK_STATE) static is
-            _timers.add((System.Environment.tick_count64 + cast long(milliseconds), state))
+            _here._timers.add((System.Environment.tick_count64 + cast long(milliseconds), state))
         si
 
         /// Runs queued work, and completes delays as they fall due, until
@@ -677,6 +693,10 @@ namespace Tasks is
         ///
         /// - state: what to wait for
         run_until(state: TASK_STATE) static is
+            _here._run_until(state)
+        si
+
+        _run_until(state: TASK_STATE) is
             while !state.is_completed do
                 if _ready.count > 0 then
                     let work = _ready.dequeue()
@@ -690,7 +710,7 @@ namespace Tasks is
             od
         si
 
-        _complete_earliest_timer() static is
+        _complete_earliest_timer() is
             let earliest mut = 0
 
             for i in 1.._timers.count do

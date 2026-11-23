@@ -565,9 +565,16 @@ namespace Ghul.Internal is
         _describers: MAP[Type, (TYPE_DESCRIPTION) -> void] static
         _descriptions: MAP[Type, TYPE_DESCRIPTION] static
 
+        // Held while the tables are read or filled. A description is filled
+        // under it, so another thread never sees one half filled, and the
+        // thread filling it can ask for others, as a type referring to itself
+        // does.
+        _lock: Ghul.Internal.LOCK static
+
         init() static is
             _describers = MAP[Type, (TYPE_DESCRIPTION) -> void]()
             _descriptions = MAP[Type, TYPE_DESCRIPTION]()
+            _lock = Ghul.Internal.LOCK()
         si
 
         /// Records how to describe `type`, done the first time it is asked
@@ -576,13 +583,29 @@ namespace Ghul.Internal is
         /// - type: the type object
         /// - describe: fills in its description
         register(type: Type, describe: (TYPE_DESCRIPTION) -> void) static is
-            _describers[type] = describe
+            _lock.enter()
+
+            try
+                _describers[type] = describe
+            finally
+                _lock.exit()
+            yrt
         si
 
         /// The type registered under the full name `name`, or null.
         ///
         /// - name: the type's full name
         registered(name: string) -> Type? static is
+            _lock.enter()
+
+            try
+                return _registered(name)
+            finally
+                _lock.exit()
+            yrt
+        si
+
+        _registered(name: string) -> Type? static is
             for type in _describers.keys do
                 if type.full_name =~ name then
                     return type
@@ -597,6 +620,16 @@ namespace Ghul.Internal is
         ///
         /// - type: the type object
         of(type: Type) -> TYPE_DESCRIPTION static is
+            _lock.enter()
+
+            try
+                return _of(type)
+            finally
+                _lock.exit()
+            yrt
+        si
+
+        _of(type: Type) -> TYPE_DESCRIPTION static is
             let found: TYPE_DESCRIPTION mut
 
             if _descriptions.try_get_value(type, found ref) then

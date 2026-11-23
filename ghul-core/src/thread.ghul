@@ -1,7 +1,8 @@
 namespace Tasks is
     /// The members of .NET's `System.Threading.Thread` the source-core
-    /// targets have: pausing the program. The program is single threaded, so
-    /// the wait holds the whole program.
+    /// targets have: pausing the calling thread. Other threads go on
+    /// running; on wasm, which runs one thread, the wait holds the whole
+    /// program.
     class Thread is
         /// Waits for `milliseconds` before returning, without using the
         /// processor. Zero returns at once, and -1 waits without end.
