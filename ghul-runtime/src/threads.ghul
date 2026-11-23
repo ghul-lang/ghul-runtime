@@ -56,7 +56,8 @@ namespace Ghul.Threads is
 
         /// What `await` reads the thread through: the awaiting function
         /// carries on once the thread finishes, on llvm on the thread that
-        /// awaited.
+        /// awaited, and on .NET on a
+        /// thread-pool thread.
         get_awaiter() -> ThreadAwaiter => ThreadAwaiter(self, _run)
     si
 
@@ -123,7 +124,8 @@ namespace Ghul.Threads is
 
         /// What `await` reads the thread through: the awaiting function
         /// carries on once the thread finishes, with what its body
-        /// answered, on llvm on the thread that awaited.
+        /// answered, on llvm on the thread that awaited, and on .NET on a
+        /// thread-pool thread.
         get_awaiter() -> ThreadAwaiter[T] => ThreadAwaiter[T](self, _run)
     si
 
