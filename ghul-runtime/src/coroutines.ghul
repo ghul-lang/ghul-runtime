@@ -388,32 +388,41 @@ namespace Ghul.Coroutines is
         si
     si
 
-    // On llvm the inbox is the core library's own: another thread hands
-    // over what it owes the scheduler's thread, and the thread waits for it.
+    // On llvm the scheduler's thread has one queue of work that other
+    // threads hand it, its task loop's inbox: a continuation another thread
+    // completes arrives there, and the coroutine scheduler waits by running
+    // that loop, so an await of a thread or a future and an await the
+    // scheduler owns share one wait.
     @IF.llvm()
     class _INBOX is
-        _inbox: Ghul.Internal.INBOX
+        _posted: Collections.QUEUE[() -> void]
 
         init() is
-            _inbox = Ghul.Internal.INBOX()
+            _posted = Collections.QUEUE[() -> void]()
         si
 
-        expect() is
-            _inbox.expect()
-        si
+        expect() is si
 
+        // Called on the scheduler's thread: whatever awaited thread or
+        // future resumes the continuation has already routed it back here
+        // through the task loop.
         post(continuation: () -> void) is
-            _inbox.deliver(continuation)
+            _posted.enqueue(continuation)
         si
 
         take_all(ready: Collections.QUEUE[() -> void]) -> int is
-            let before = ready.count
-            _inbox.take(ready)
-            return ready.count - before
+            let count mut = 0
+
+            while _posted.count > 0 do
+                ready.enqueue(_posted.dequeue())
+                count = count + 1
+            od
+
+            return count
         si
 
         wait(timeout: int) is
-            _inbox.wait(cast long(timeout))
+            Tasks.SCHEDULER.run_ready(cast long(timeout))
         si
     si
 

@@ -888,6 +888,53 @@ namespace Tasks is
         @IF.wasm()
         route_here(work: () -> void) -> () -> void static => () is post(work) si
 
+        /// Runs the work queued on the calling thread, and takes what other
+        /// threads have handed it; where there is none, waits up to
+        /// `milliseconds` for some, or for a delay to fall due. A negative
+        /// `milliseconds` waits as long as another thread still owes the
+        /// thread work.
+        ///
+        /// - milliseconds: how long to wait where nothing is ready
+        @IF.llvm()
+        run_ready(milliseconds: long) static is
+            _here._run_ready(milliseconds)
+        si
+
+        @IF.llvm()
+        _run_ready(milliseconds: long) is
+            _take_from_inbox()
+
+            if _ready.count == 0 /\ _inbox? then
+                if _timers.count > 0 then
+                    let earliest = _earliest_timer()
+                    let remaining = _timers[earliest].due - System.Environment.tick_count64
+                    let wait = if milliseconds >= 0L /\ milliseconds < remaining then milliseconds else remaining fi
+
+                    if wait > 0L then
+                        _inbox!.wait(wait)
+                    fi
+
+                    if System.Environment.tick_count64 >= _timers[earliest].due then
+                        let (_, state) = _timers[earliest]
+
+                        _timers.remove_at(earliest)
+                        state.complete()
+                    fi
+                else
+                    _inbox!.wait(milliseconds)
+                fi
+
+                _take_from_inbox()
+            fi
+
+            let turns mut = _ready.count
+
+            while turns > 0 do
+                _ready.dequeue()()
+                turns = turns - 1
+            od
+        si
+
         /// Runs queued work, and completes delays as they fall due, until
         /// `state` completes. While another thread still owes this one
         /// work, waits for it rather than throwing. Throws where nothing
