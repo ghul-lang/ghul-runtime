@@ -442,9 +442,10 @@ namespace Ghul.Threads is
         _unlock(mutex: object) -> bool static
     si
 
-    /// A `int` that threads read and change without a lock. Every operation
-    /// is sequentially consistent: all threads see the operations on all
-    /// atomics in one order.
+    /// An `int` that threads read and change without a mutex. Every
+    /// operation is indivisible, so no other thread sees it half done, and
+    /// takes no lock. Every operation is sequentially consistent: all
+    /// threads see the operations on all atomics in one order.
     class AtomicInt is
         _value: int field
 
@@ -508,9 +509,10 @@ namespace Ghul.Threads is
         increment() -> int => add(1)
     si
 
-    /// A `long` that threads read and change without a lock. Every operation
-    /// is sequentially consistent: all threads see the operations on all
-    /// atomics in one order.
+    /// A `long` that threads read and change without a mutex. Every
+    /// operation is indivisible, so no other thread sees it half done, and
+    /// takes no lock. Every operation is sequentially consistent: all
+    /// threads see the operations on all atomics in one order.
     class AtomicLong is
         _value: long field
 
@@ -574,8 +576,9 @@ namespace Ghul.Threads is
         increment() -> long => add(1L)
     si
 
-    /// A `bool` that threads read and change without a lock. Every
-    /// operation is sequentially consistent.
+    /// A `bool` that threads read and change without a mutex. Every
+    /// operation is indivisible, so no other thread sees it half done, and
+    /// takes no lock. Every operation is sequentially consistent.
     class AtomicBool is
         _value: AtomicInt
 
@@ -610,9 +613,10 @@ namespace Ghul.Threads is
             _value.compare_exchange(if expected then 1 else 0 fi, if replacement then 1 else 0 fi)
     si
 
-    /// A reference that threads read and change without a lock. Every
-    /// operation is sequentially consistent; `compare_exchange` compares
-    /// references, not values.
+    /// A reference that threads read and change without a mutex. Every
+    /// operation is indivisible, so no other thread sees it half done, and
+    /// takes no lock. Every operation is sequentially consistent;
+    /// `compare_exchange` compares references, not values.
     class Atomic[T: class] is
         _value: T field
 
