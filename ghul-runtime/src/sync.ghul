@@ -1,0 +1,349 @@
+namespace Ghul.Threads is
+    use Collections.QUEUE
+    use Tasks.Future
+    use Tasks.Completer
+
+    // The primitives asynchronous code and threads share. Each has an
+    // awaitable form, which every target has, and a blocking form, which
+    // wasm, running one thread that must never wait, does not. Both forms
+    // work on one state, so code awaiting a lock and a thread blocking on
+    // it exclude each other.
+
+    /// A lock one holder has at a time: code awaiting `acquire`, or a
+    /// thread blocking in `lock`. Not reentrant.
+    class Mutex is
+        _guard: _GUARD
+        _held: bool
+        _owner: object?
+        _waiters: QUEUE[Completer[bool]]
+
+        /// A mutex nobody holds.
+        init() is
+            _guard = _GUARD()
+            _waiters = QUEUE[Completer[bool]]()
+        si
+
+        /// A future that completes once the caller holds the mutex.
+        acquire() -> Future is
+            _guard.enter()
+
+            if !_held then
+                _held = true
+                _guard.exit()
+                return Future.completed_task
+            fi
+
+            let waiter = _new_completer[bool]()
+            _waiters.enqueue(waiter)
+            _guard.exit()
+
+            return waiter.task
+        si
+
+        /// Releases the mutex, handing it to the longest waiting holder
+        /// where there is one.
+        release() is
+            _guard.enter()
+
+            if _waiters.count > 0 then
+                let next = _waiters.dequeue()
+                _owner = null
+                _guard.exit()
+                next.set_result(true)
+                return
+            fi
+
+            _held = false
+            _owner = null
+            _guard.exit()
+        si
+
+        /// Takes the mutex where nobody holds it, and answers whether it
+        /// did. Never waits.
+        try_lock() -> bool is
+            _guard.enter()
+
+            if _held then
+                _guard.exit()
+                return false
+            fi
+
+            _held = true
+            _owner = _current_thread()
+            _guard.exit()
+
+            return true
+        si
+
+        /// Waits until nobody holds the mutex, and takes it. Throws
+        /// `InvalidOperationException` where the calling thread already
+        /// holds it through `lock`.
+        @IF.not.wasm()
+        lock() is
+            let me = _current_thread()
+
+            _guard.enter()
+            let mine = _owner? /\ _owner.equals(me)
+            _guard.exit()
+
+            if mine then
+                throw Ghul.InvalidOperationException("the thread already holds this mutex")
+            fi
+
+            _block_until(acquire())
+
+            _guard.enter()
+            _owner = me
+            _guard.exit()
+        si
+
+        /// Releases the mutex the calling thread took through `lock`.
+        /// Throws `InvalidOperationException` where it did not.
+        @IF.not.wasm()
+        unlock() is
+            let me = _current_thread()
+
+            _guard.enter()
+            let mine = _owner? /\ _owner.equals(me)
+            _guard.exit()
+
+            if !mine then
+                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
+            fi
+
+            release()
+        si
+
+        /// Takes the mutex, runs `body`, and releases the mutex, also where
+        /// `body` throws; answers what `body` answers.
+        ///
+        /// - body: what to run while holding the mutex
+        @IF.not.wasm()
+        hold[T](body: () -> T) -> T is
+            lock()
+
+            try
+                return body()
+            finally
+                unlock()
+            yrt
+        si
+
+        /// Takes the mutex, runs `body`, and releases the mutex, also where
+        /// `body` throws.
+        ///
+        /// - body: what to run while holding the mutex
+        @IF.not.wasm()
+        hold(body: () -> void) is
+            lock()
+
+            try
+                body()
+            finally
+                unlock()
+            yrt
+        si
+    si
+
+    /// A count of permits: `acquire` takes one, waiting while none is
+    /// left, and `release` returns one.
+    class Semaphore is
+        _guard: _GUARD
+        _available: int
+        _waiters: QUEUE[Completer[bool]]
+
+        /// A semaphore with `permits` permits.
+        ///
+        /// - permits: how many holders it admits at once
+        init(permits: int) is
+            _guard = _GUARD()
+            _available = permits
+            _waiters = QUEUE[Completer[bool]]()
+        si
+
+        /// How many permits are free.
+        available: int is
+            _guard.enter()
+            let free = _available
+            _guard.exit()
+
+            return free
+        si
+
+        /// A future that completes once the caller holds a permit.
+        acquire() -> Future is
+            _guard.enter()
+
+            if _available > 0 then
+                _available = _available - 1
+                _guard.exit()
+                return Future.completed_task
+            fi
+
+            let waiter = _new_completer[bool]()
+            _waiters.enqueue(waiter)
+            _guard.exit()
+
+            return waiter.task
+        si
+
+        /// Takes a permit where one is free, and answers whether it did.
+        try_acquire() -> bool is
+            _guard.enter()
+
+            if _available > 0 then
+                _available = _available - 1
+                _guard.exit()
+                return true
+            fi
+
+            _guard.exit()
+            return false
+        si
+
+        /// Returns a permit, handing it to the longest waiting holder where
+        /// there is one.
+        release() is
+            _guard.enter()
+
+            if _waiters.count > 0 then
+                let next = _waiters.dequeue()
+                _guard.exit()
+                next.set_result(true)
+                return
+            fi
+
+            _available = _available + 1
+            _guard.exit()
+        si
+
+        /// Waits until a permit is free, and takes it.
+        @IF.not.wasm()
+        lock() is
+            _block_until(acquire())
+        si
+    si
+
+    /// An unbounded queue of values between producers and consumers:
+    /// `send` never waits, `receive` answers a future for the next value,
+    /// and `take` waits for it.
+    class Channel[T] is
+        _guard: _GUARD
+        _values: QUEUE[T]
+        _waiters: QUEUE[Completer[T]]
+
+        /// An empty channel.
+        init() is
+            _guard = _GUARD()
+            _values = QUEUE[T]()
+            _waiters = QUEUE[Completer[T]]()
+        si
+
+        /// Sends `value`, handing it to the longest waiting receiver where
+        /// there is one.
+        ///
+        /// - value: what to send
+        send(value: T) is
+            _guard.enter()
+
+            if _waiters.count > 0 then
+                let waiter = _waiters.dequeue()
+                _guard.exit()
+                waiter.set_result(value)
+                return
+            fi
+
+            _values.enqueue(value)
+            _guard.exit()
+        si
+
+        /// A future for the next value sent.
+        receive() -> Future[T] is
+            _guard.enter()
+
+            if _values.count > 0 then
+                let value = _values.dequeue()
+                _guard.exit()
+                return Future.from_result(value)
+            fi
+
+            let waiter = _new_completer[T]()
+            _waiters.enqueue(waiter)
+            _guard.exit()
+
+            return waiter.task
+        si
+
+        /// Waits for the next value sent, and answers it.
+        @IF.not.wasm()
+        take() -> T is
+            let next = receive()
+            _block_until(next)
+            return next.get_awaiter().get_result()
+        si
+    si
+
+    // A completer whose future resumes what awaits it through the awaiting
+    // thread's own loop, never inside whoever completes it.
+    @IF.dotnet()
+    _new_completer[T]() -> Completer[T] =>
+        Completer[T](Tasks.TaskCreationOptions.RUN_CONTINUATIONS_ASYNCHRONOUSLY)
+
+    @IF.source_core()
+    _new_completer[T]() -> Completer[T] => Completer[T]()
+
+    @IF.dotnet()
+    _block_until(future: Future) is
+        future.wait()
+    si
+
+    @IF.llvm()
+    _block_until(future: Future) is
+        future.wait()
+    si
+
+    @IF.dotnet()
+    _current_thread() -> object => cast object(System.Environment.current_managed_thread_id)
+
+    @IF.llvm()
+    _current_thread() -> object => Ghul.Internal.THREAD_LOCALS.current
+
+    @IF.wasm()
+    _current_thread() -> object => "the one thread"
+
+    // The lock guarding one primitive's own state, never held across an
+    // await or a wait.
+    @IF.dotnet()
+    class _GUARD is
+        _lock: System.Threading.Lock
+
+        init() is
+            _lock = System.Threading.Lock()
+        si
+
+        enter() is
+            _lock.enter()
+        si
+
+        exit() is
+            _lock.exit()
+        si
+    si
+
+    @IF.source_core()
+    class _GUARD is
+        _lock: Ghul.Internal.LOCK
+
+        init() is
+            _lock = Ghul.Internal.LOCK()
+        si
+
+        enter() is
+            _lock.enter()
+        si
+
+        exit() is
+            _lock.exit()
+        si
+    si
+si

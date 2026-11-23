@@ -1,0 +1,138 @@
+namespace Ghul.Threads is
+    use Tasks.Future
+
+    // Every thread runs its asynchronous code on its own event loop: work
+    // queued on the loop runs one piece at a time, and code resumed after an
+    // await resumes on the thread that awaited. `run` drives the calling
+    // thread's loop until a future completes.
+
+    /// Runs `body` on the calling thread's event loop until the future it
+    /// answers completes, and answers that future's result, or throws what
+    /// it threw.
+    ///
+    /// - body: what to run
+    run[T](body: () -> Future[T]) -> T is
+        let future = cast Future[T](EVENT_LOOP.drive(() => body()))
+        return _result(future)
+    si
+
+    /// Runs `body` on the calling thread's event loop until the future it
+    /// answers completes, or throws what it threw.
+    ///
+    /// - body: what to run
+    run(body: () -> Future) is
+        let future = EVENT_LOOP.drive(body)
+        future.get_awaiter().get_result()
+    si
+
+    /// A future that completes once `milliseconds` have passed.
+    ///
+    /// - milliseconds: how long to wait
+    sleep(milliseconds: int) -> Future => Future.delay(milliseconds)
+
+    /// A future that completes once the thread's event loop has run the
+    /// other work already queued on it.
+    pause() -> Future is
+        await Future.yield()
+    si
+
+    /// Starts `body` on a thread of its own, running on that thread's
+    /// event loop, and answers a future for its result. On wasm, which runs
+    /// one thread, `body` starts on the calling thread's loop.
+    ///
+    /// - body: what the thread runs
+    @IF.not.wasm()
+    start[T](body: () -> Future[T]) -> Future[T] is
+        let thread = Thread[T](() => run(body), _THREAD_RUN.DEFAULT_STACK_SIZE)
+        return await thread
+    si
+
+    /// Starts `body` on a thread of its own, running on that thread's
+    /// event loop, and answers a future that completes once it has. On
+    /// wasm, which runs one thread, `body` starts on the calling thread's
+    /// loop.
+    ///
+    /// - body: what the thread runs
+    @IF.not.wasm()
+    start(body: () -> Future) -> Future is
+        let thread = Thread(() is run(body) si, _THREAD_RUN.DEFAULT_STACK_SIZE)
+        await thread
+    si
+
+    @IF.wasm()
+    start[T](body: () -> Future[T]) -> Future[T] => body()
+
+    @IF.wasm()
+    start(body: () -> Future) -> Future => body()
+
+    _result[T](future: Future[T]) -> T => future.get_awaiter().get_result()
+
+    // The event loop on .NET: the synchronization context `run` installs
+    // while it drives, so .NET resumes every await made on the thread
+    // through it, on the thread.
+    @IF.dotnet()
+    class EVENT_LOOP: System.Threading.SynchronizationContext is
+        _queue: System.Collections.Concurrent.BlockingCollection[() -> void]
+
+        init() is
+            _queue = System.Collections.Concurrent.BlockingCollection[() -> void]()
+        si
+
+        // Runs `start` with a loop installed on the calling thread, and
+        // drives the loop until the future it answers completes.
+        drive(start: () -> Future) -> Future static is
+            if let running: EVENT_LOOP = System.Threading.SynchronizationContext.current then
+                throw Ghul.InvalidOperationException("run was called from code its own thread's event loop is running")
+            fi
+
+            let previous = System.Threading.SynchronizationContext.current
+            let loop = EVENT_LOOP()
+
+            System.Threading.SynchronizationContext.set_synchronization_context(loop)
+
+            try
+                let future = start()
+                loop._pump_until(future)
+                return future
+            finally
+                System.Threading.SynchronizationContext.set_synchronization_context(previous)
+            yrt
+        si
+
+        post(d: System.Threading.SendOrPostCallback, state: object?) is
+            _queue.add(() is d.invoke(state) si)
+        si
+
+        _pump_until(future: Future) is
+            future.configure_await(false).get_awaiter().on_completed(() is _queue.add(() is si) si)
+
+            while !future.is_completed do
+                _queue.take()()
+            od
+
+            // Work queued after the future completed, such as continuations
+            // of other futures it completed, still runs on this thread.
+            let work: () -> void mut
+
+            while _queue.try_take(work ref) do
+                work()
+            od
+        si
+    si
+
+    // The event loop on the source core targets is the thread's task
+    // scheduler, which every await on the thread already resumes through.
+    @IF.source_core()
+    class EVENT_LOOP is
+        drive(start: () -> Future) -> Future static is
+            let future = start()
+
+            try
+                future.wait()
+            catch _: Ghul.AggregateException
+            yrt
+
+            return future
+        si
+    si
+si

@@ -12,6 +12,10 @@ namespace Ghul.Internal is
         // The thread's queue of task work, once it has one.
         scheduler: Tasks.SCHEDULER? field public
 
+        // Whether a program thread started this one, rather than it being
+        // the program's main thread.
+        is_started_thread: bool field public
+
         init() is si
 
         @IF.llvm()
@@ -45,6 +49,31 @@ namespace Ghul.Internal is
 
         @IF.wasm()
         current: THREAD_LOCALS static => _only
+    si
+
+    // How many threads the program has started that are still running,
+    // not counting the main thread.
+    @IF.llvm()
+    class LIVE_THREADS is
+        _running: int field
+
+        _only: LIVE_THREADS static
+
+        init() is si
+
+        init() static is
+            _only = LIVE_THREADS()
+        si
+
+        count: int static => ATOMICS.load(_only._running ref)
+
+        started() static is
+            ATOMICS.add(_only._running ref, 1)
+        si
+
+        ended() static is
+            ATOMICS.add(_only._running ref, -1)
+        si
     si
 
     // A lock for state the core library shares between threads and the

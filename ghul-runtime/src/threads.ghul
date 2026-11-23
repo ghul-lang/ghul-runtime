@@ -204,6 +204,8 @@ namespace Ghul.Threads is
         si
 
         _execute() is
+            _entered()
+
             try
                 _body()
             catch e: Ghul.Exception
@@ -211,7 +213,26 @@ namespace Ghul.Threads is
             yrt
 
             _done()
+            _left()
         si
+
+        // Counted until it has handed over everything it owes, so a thread
+        // waiting on it knows another thread can still deliver.
+        @IF.llvm()
+        _entered() is
+            Ghul.Internal.THREAD_LOCALS.current.is_started_thread = true
+        si
+
+        @IF.llvm()
+        _left() is
+            Ghul.Internal.LIVE_THREADS.ended()
+        si
+
+        @IF.dotnet()
+        _entered() is si
+
+        @IF.dotnet()
+        _left() is si
 
         @IF.llvm()
         _start(stack_size: int) is
@@ -219,9 +240,12 @@ namespace Ghul.Threads is
             _finishing = Ghul.Internal.LOCK()
             _waiters = Collections.LIST[(inbox: Ghul.Internal.INBOX, continuation: () -> void)]()
 
+            Ghul.Internal.LIVE_THREADS.started()
+
             if let handle = _thread_start(() is _execute() si, cast long(stack_size)) then
                 _handle = handle
             else
+                Ghul.Internal.LIVE_THREADS.ended()
                 throw Ghul.InvalidOperationException("a thread could not be started")
             fi
         si
@@ -325,121 +349,6 @@ namespace Ghul.Threads is
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.capture(failure).throw()
             fi
         si
-    si
-
-    /// A lock that one thread holds at a time. It is not reentrant: the
-    /// thread holding it cannot take it again.
-    class Mutex is
-        @IF.llvm()
-        _mutex: object
-
-        @IF.dotnet()
-        _lock: System.Threading.Lock
-
-        /// A mutex nobody holds.
-        init() is
-            _init()
-        si
-
-        @IF.llvm()
-        _init() is
-            _mutex = _new()
-        si
-
-        @IF.dotnet()
-        _init() is
-            _lock = System.Threading.Lock()
-        si
-
-        /// Waits until no other thread holds the mutex, and takes it.
-        /// Throws `InvalidOperationException` where the calling thread
-        /// already holds it.
-        @IF.llvm()
-        lock() is
-            if !_lock(_mutex) then
-                throw Ghul.InvalidOperationException("the thread already holds this mutex")
-            fi
-        si
-
-        /// Takes the mutex where nobody holds it, and answers whether it
-        /// did. Never waits; answers false where the calling thread already
-        /// holds it.
-        @IF.llvm()
-        try_lock() -> bool => _try_lock(_mutex)
-
-        /// Releases the mutex. Throws `InvalidOperationException` where the
-        /// calling thread does not hold it.
-        @IF.llvm()
-        unlock() is
-            if !_unlock(_mutex) then
-                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
-            fi
-        si
-
-        @IF.dotnet()
-        lock() is
-            if _lock.is_held_by_current_thread then
-                throw Ghul.InvalidOperationException("the thread already holds this mutex")
-            fi
-
-            _lock.enter()
-        si
-
-        @IF.dotnet()
-        try_lock() -> bool => !_lock.is_held_by_current_thread /\ _lock.try_enter()
-
-        @IF.dotnet()
-        unlock() is
-            if !_lock.is_held_by_current_thread then
-                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
-            fi
-
-            _lock.exit()
-        si
-
-        /// Takes the mutex, runs `body`, and releases the mutex, also where
-        /// `body` throws; answers what `body` answers.
-        ///
-        /// - body: what to run while holding the mutex
-        hold[T](body: () -> T) -> T is
-            lock()
-
-            try
-                return body()
-            finally
-                unlock()
-            yrt
-        si
-
-        /// Takes the mutex, runs `body`, and releases the mutex, also where
-        /// `body` throws.
-        ///
-        /// - body: what to run while holding the mutex
-        hold(body: () -> void) is
-            lock()
-
-            try
-                body()
-            finally
-                unlock()
-            yrt
-        si
-
-        @IF.llvm()
-        @intrinsic("host.mutex_new")
-        _new() -> object static
-
-        @IF.llvm()
-        @intrinsic("host.mutex_lock")
-        _lock(mutex: object) -> bool static
-
-        @IF.llvm()
-        @intrinsic("host.mutex_try_lock")
-        _try_lock(mutex: object) -> bool static
-
-        @IF.llvm()
-        @intrinsic("host.mutex_unlock")
-        _unlock(mutex: object) -> bool static
     si
 
     /// An `int` that threads read and change without a mutex. Every

@@ -18,7 +18,7 @@ namespace Tasks is
 
     /// An operation that completes later, with no result.
     @AsyncMethodBuilder(typeof(TASK_BUILDER))
-    class TASK is
+    class Future is
         _state: TASK_STATE
 
         /// A task that has not completed.
@@ -44,11 +44,17 @@ namespace Tasks is
         /// The task itself: there is no context to return to.
         ///
         /// - continue_on_captured_context: ignored
-        configure_await(continue_on_captured_context: bool) -> TASK => self
+        configure_await(continue_on_captured_context: bool) -> Future => self
 
         /// Runs queued work until the task completes. A task that threw
         /// throws an `AggregateException` holding what it threw.
         wait() is
+            // Registering marks the thread as owed the completion, which
+            // another thread may deliver.
+            if !_state.is_completed then
+                _state.watch()
+            fi
+
             SCHEDULER.run_until(_state)
             _state.throw_aggregate()
         si
@@ -56,8 +62,8 @@ namespace Tasks is
         /// A task that runs `action` with this one once it completes.
         ///
         /// - action: what to run
-        continue_with(action: TASK -> void) -> TASK is
-            let result = TASK()
+        continue_with(action: Future -> void) -> Future is
+            let result = Future()
 
             _state.on_completed(() is
                 try
@@ -75,8 +81,8 @@ namespace Tasks is
         /// it completes.
         ///
         /// - function: what to run
-        continue_with[U](function: TASK -> U) -> TASK[U] is
-            let result = TASK[U]()
+        continue_with[U](function: Future -> U) -> Future[U] is
+            let result = Future[U]()
 
             _state.on_completed(() is
                 try
@@ -93,8 +99,8 @@ namespace Tasks is
         state: TASK_STATE => _state
 
         /// A task that has already completed.
-        completed_task: TASK static is
-            let task = TASK()
+        completed_task: Future static is
+            let task = Future()
 
             task.state.complete()
 
@@ -104,8 +110,8 @@ namespace Tasks is
         /// A task that has already completed with `result`.
         ///
         /// - result: the task's result
-        from_result[T](result: T) -> TASK[T] static is
-            let task = TASK[T]()
+        from_result[T](result: T) -> Future[T] static is
+            let task = Future[T]()
 
             task.set_result(result)
 
@@ -115,8 +121,8 @@ namespace Tasks is
         /// A task that has already thrown `exception`.
         ///
         /// - exception: what the task threw
-        from_exception(exception: Ghul.Exception) -> TASK static is
-            let task = TASK()
+        from_exception(exception: Ghul.Exception) -> Future static is
+            let task = Future()
 
             task.state.fail(exception)
 
@@ -127,8 +133,8 @@ namespace Tasks is
         /// `exception`.
         ///
         /// - exception: what the task threw
-        from_exception[T](exception: Ghul.Exception) -> TASK[T] static is
-            let task = TASK[T]()
+        from_exception[T](exception: Ghul.Exception) -> Future[T] static is
+            let task = Future[T]()
 
             task.state.fail(exception)
 
@@ -139,8 +145,8 @@ namespace Tasks is
         /// on the host's monotonic clock while something waits.
         ///
         /// - milliseconds: how long to wait
-        delay(milliseconds: int) -> TASK static is
-            let task = TASK()
+        delay(milliseconds: int) -> Future static is
+            let task = Future()
 
             SCHEDULER.after(milliseconds, task.state)
 
@@ -153,8 +159,8 @@ namespace Tasks is
         /// A task that runs `action` when queued work next runs.
         ///
         /// - action: what to run
-        run(action: () -> void) -> TASK static is
-            let task = TASK()
+        run(action: () -> void) -> Future static is
+            let task = Future()
 
             SCHEDULER.post(() is
                 try
@@ -172,8 +178,8 @@ namespace Tasks is
         /// next runs.
         ///
         /// - function: what to run
-        run[T](function: () -> T) -> TASK[T] static is
-            let task = TASK[T]()
+        run[T](function: () -> T) -> Future[T] static is
+            let task = Future[T]()
 
             SCHEDULER.post(() is
                 try
@@ -191,9 +197,9 @@ namespace Tasks is
         /// threw.
         ///
         /// - tasks: the tasks to wait for
-        when_all[T](tasks: Collections.Iterable[TASK[T]]) -> TASK[ARRAY[T]] static is
-            let all = LIST[TASK[T]](tasks)
-            let result = TASK[ARRAY[T]]()
+        when_all[T](tasks: Collections.Iterable[Future[T]]) -> Future[ARRAY[T]] static is
+            let all = LIST[Future[T]](tasks)
+            let result = Future[ARRAY[T]]()
             let remaining mut = all.count
 
             let finish = () is
@@ -231,7 +237,7 @@ namespace Tasks is
 
     /// An operation that completes later, with a result.
     @AsyncMethodBuilder(typeof(TASK_BUILDER[_]))
-    class TASK[T]: TASK is
+    class Future[T]: Future is
         _result: T
 
         /// A task that has not completed.
@@ -252,7 +258,7 @@ namespace Tasks is
         state_result: T => _result
 
         /// The awaiter `await` reads the task through, which answers the
-        /// result. Awaiting the task as a `TASK` reaches the base's instead,
+        /// result. Awaiting the task as a `Future` reaches the base's instead,
         /// which drops it.
         @suppress("hides-inherited")
         get_awaiter() -> TASK_AWAITER[T] => TASK_AWAITER[T](self)
@@ -260,13 +266,13 @@ namespace Tasks is
         /// The task itself: there is no context to return to.
         ///
         /// - continue_on_captured_context: ignored
-        configure_await(continue_on_captured_context: bool) -> TASK[T] => self
+        configure_await(continue_on_captured_context: bool) -> Future[T] => self
 
         /// A task that runs `action` with this one once it completes.
         ///
         /// - action: what to run
-        continue_with(action: TASK[T] -> void) -> TASK is
-            let result = TASK()
+        continue_with(action: Future[T] -> void) -> Future is
+            let result = Future()
 
             state.on_completed(() is
                 try
@@ -284,8 +290,8 @@ namespace Tasks is
         /// it completes.
         ///
         /// - function: what to run
-        continue_with[U](function: TASK[T] -> U) -> TASK[U] is
-            let result = TASK[U]()
+        continue_with[U](function: Future[T] -> U) -> Future[U] is
+            let result = Future[U]()
 
             state.on_completed(() is
                 try
@@ -302,9 +308,96 @@ namespace Tasks is
         ///
         /// - result: the task's result
         set_result(result: T) is
-            _result = result
-            state.complete()
+            if !try_set_result(result) then
+                state.complete()
+            fi
         si
+
+        /// Completes the task with `result` unless it has already
+        /// completed, answering whether this completed it.
+        ///
+        /// - result: the task's result
+        try_set_result(result: T) -> bool => state.try_complete_after(() is _result = result si)
+    si
+
+    /// The side of a `Future` that completes it: whoever holds the
+    /// completer decides when, and with what, its future completes, from
+    /// any thread.
+    class Completer is
+        _task: Future
+
+        /// A completer whose future has not completed.
+        init() is
+            _task = Future()
+        si
+
+        /// The future this completes.
+        task: Future => _task
+
+        /// Completes the future successfully.
+        set_result() is
+            _task.state.complete()
+        si
+
+        /// Completes the future successfully unless it has already
+        /// completed, answering whether this completed it.
+        try_set_result() -> bool => _task.state.try_complete()
+
+        /// Completes the future with `exception`.
+        ///
+        /// - exception: what the future throws
+        set_exception(exception: Ghul.Exception) is
+            _task.state.fail(exception)
+        si
+
+        /// Completes the future with `exception` unless it has already
+        /// completed, answering whether this completed it.
+        ///
+        /// - exception: what the future throws
+        try_set_exception(exception: Ghul.Exception) -> bool => _task.state.try_fail(exception)
+    si
+
+    /// The side of a `Future[T]` that completes it with a result: whoever
+    /// holds the completer decides when, and with what, its future
+    /// completes, from any thread.
+    class Completer[T] is
+        _task: Future[T]
+
+        /// A completer whose future has not completed.
+        init() is
+            _task = Future[T]()
+        si
+
+        /// The future this completes.
+        task: Future[T] => _task
+
+        /// Completes the future with `result`.
+        ///
+        /// - result: the future's result
+        set_result(result: T) is
+            if !try_set_result(result) then
+                throw Ghul.InvalidOperationException("An attempt was made to transition a task to a final state when it had already completed.")
+            fi
+        si
+
+        /// Completes the future with `result` unless it has already
+        /// completed, answering whether this completed it.
+        ///
+        /// - result: the future's result
+        try_set_result(result: T) -> bool => _task.try_set_result(result)
+
+        /// Completes the future with `exception`.
+        ///
+        /// - exception: what the future throws
+        set_exception(exception: Ghul.Exception) is
+            _task.state.fail(exception)
+        si
+
+        /// Completes the future with `exception` unless it has already
+        /// completed, answering whether this completed it.
+        ///
+        /// - exception: what the future throws
+        try_set_exception(exception: Ghul.Exception) -> bool => _task.state.try_fail(exception)
     si
 
     /// Helpers over tasks of tasks.
@@ -312,8 +405,8 @@ namespace Tasks is
         /// A task that completes as the task `task` answers does.
         ///
         /// - task: a task whose result is a task
-        unwrap[T](task: TASK[TASK[T]]) -> TASK[T] static is
-            let result = TASK[T]()
+        unwrap[T](task: Future[Future[T]]) -> Future[T] static is
+            let result = Future[T]()
 
             task.state.on_completed(() is
                 if task.is_faulted then
@@ -338,8 +431,8 @@ namespace Tasks is
         /// A task that completes as the task `task` answers does.
         ///
         /// - task: a task whose result is a task
-        unwrap(task: TASK[TASK]) -> TASK static is
-            let result = TASK()
+        unwrap(task: Future[Future]) -> Future static is
+            let result = Future()
 
             task.state.on_completed(() is
                 if task.is_faulted then
@@ -362,80 +455,140 @@ namespace Tasks is
         si
     si
 
-    /// How a task stands, and what runs once it completes.
+    /// How a task stands, and what runs once it completes. Any thread may
+    /// complete it, and any thread may wait for it: what a thread queues to
+    /// run once it completes runs on that thread.
     class TASK_STATE is
         _is_completed: bool
         _exception: Ghul.Exception?
         _continuations: LIST[() -> void]
+        _guard: Ghul.Internal.LOCK
 
         /// A task that has not completed.
         init() is
             _continuations = LIST[() -> void]()
+            _guard = Ghul.Internal.LOCK()
         si
 
         /// Whether the task has completed, successfully or not.
-        is_completed: bool => _is_completed
+        is_completed: bool is
+            _guard.enter()
+            let completed = _is_completed
+            _guard.exit()
+
+            return completed
+        si
 
         /// Whether the task completed by throwing.
-        is_faulted: bool => _exception?
+        is_faulted: bool => is_completed /\ _exception?
 
         /// What the task threw, or null where it has not thrown.
-        exception: Ghul.Exception? => _exception
+        exception: Ghul.Exception? => if is_completed then _exception else null fi
 
         /// Completes the task successfully, queueing what waits for it.
         complete() is
-            _finish(null)
+            if !try_complete() then
+                _already_completed()
+            fi
         si
 
         /// Completes the task with `exception`, queueing what waits for it.
         ///
         /// - exception: what the task threw
         fail(exception: Ghul.Exception) is
-            _finish(exception)
+            if !try_fail(exception) then
+                _already_completed()
+            fi
         si
 
-        /// Queues `continuation` once the task completes, at once where it
-        /// already has.
+        /// Completes the task successfully unless it has already completed,
+        /// answering whether this completed it.
+        try_complete() -> bool => _finish(null, null)
+
+        /// Completes the task successfully unless it has already completed,
+        /// first running `store` - which records the result - while no
+        /// other thread can complete it. Answers whether this completed it.
+        ///
+        /// - store: what records the task's result
+        try_complete_after(store: () -> void) -> bool => _finish(null, store)
+
+        /// Completes the task with `exception` unless it has already
+        /// completed, answering whether this completed it.
+        ///
+        /// - exception: what the task threw
+        try_fail(exception: Ghul.Exception) -> bool => _finish(exception, null)
+
+        /// Queues `continuation` to run on the calling thread once the task
+        /// completes, at once where it already has.
         ///
         /// - continuation: what to run
         on_completed(continuation: () -> void) is
+            _guard.enter()
+
             if _is_completed then
+                _guard.exit()
                 SCHEDULER.post(continuation)
-            else
-                _continuations.add(continuation)
+                return
             fi
+
+            _continuations.add(SCHEDULER.route_here(continuation))
+            _guard.exit()
         si
+
+        /// Marks the calling thread as waiting for the task, so it waits for
+        /// another thread to complete it rather than finding nothing left
+        /// that could.
+        watch() is
+            on_completed(() is _woken() si)
+        si
+
+        _woken() is si
 
         /// Throws an `AggregateException` holding what the task threw, where
         /// it threw.
         throw_aggregate() is
-            if let e = _exception then
+            if let e = exception then
                 throw Ghul.AggregateException(e)
             fi
         si
 
-        _finish(exception: Ghul.Exception?) is
+        _finish(exception: Ghul.Exception?, store: (() -> void)?) -> bool is
+            _guard.enter()
+
             if _is_completed then
-                throw Ghul.InvalidOperationException("An attempt was made to transition a task to a final state when it had already completed.")
+                _guard.exit()
+                return false
             fi
 
-            _is_completed = true
-            _exception = exception
+            if let s = store then
+                s()
+            fi
 
-            for continuation in _continuations do
-                SCHEDULER.post(continuation)
+            _exception = exception
+            _is_completed = true
+
+            let waiting = _continuations
+            _continuations = LIST[() -> void]()
+            _guard.exit()
+
+            for continuation in waiting do
+                continuation()
             od
 
-            _continuations.clear()
+            return true
+        si
+
+        _already_completed() is
+            throw Ghul.InvalidOperationException("An attempt was made to transition a task to a final state when it had already completed.")
         si
     si
 
-    /// What `await` reads a `TASK` through.
+    /// What `await` reads a `Future` through.
     class TASK_AWAITER: ICriticalNotifyCompletion is
-        _task: TASK
+        _task: Future
 
         /// - task: the task awaited
-        init(task: TASK) is
+        init(task: Future) is
             _task = task
         si
 
@@ -464,12 +617,12 @@ namespace Tasks is
         si
     si
 
-    /// What `await` reads a `TASK[T]` through.
+    /// What `await` reads a `Future[T]` through.
     class TASK_AWAITER[T]: ICriticalNotifyCompletion is
-        _task: TASK[T]
+        _task: Future[T]
 
         /// - task: the task awaited
-        init(task: TASK[T]) is
+        init(task: Future[T]) is
             _task = task
         si
 
@@ -500,7 +653,7 @@ namespace Tasks is
         si
     si
 
-    /// What `await TASK.yield()` reads: it never completes at once, so the
+    /// What `await Future.yield()` reads: it never completes at once, so the
     /// awaiting function carries on only once queued work ahead of it has
     /// run.
     class YIELD_AWAITABLE: ICriticalNotifyCompletion is
@@ -530,12 +683,12 @@ namespace Tasks is
         si
     si
 
-    /// The builder an asynchronous function returning `TASK` is driven by.
+    /// The builder an asynchronous function returning `Future` is driven by.
     class TASK_BUILDER is
-        _task: TASK
+        _task: Future
 
         init() is
-            _task = TASK()
+            _task = Future()
         si
 
         /// A builder for a new task.
@@ -549,7 +702,7 @@ namespace Tasks is
         si
 
         /// The task the function answers.
-        task: TASK => _task
+        task: Future => _task
 
         /// Completes the task.
         set_result() is
@@ -589,12 +742,12 @@ namespace Tasks is
         si
     si
 
-    /// The builder an asynchronous function returning `TASK[T]` is driven by.
+    /// The builder an asynchronous function returning `Future[T]` is driven by.
     class TASK_BUILDER[T] is
-        _task: TASK[T]
+        _task: Future[T]
 
         init() is
-            _task = TASK[T]()
+            _task = Future[T]()
         si
 
         /// A builder for a new task.
@@ -608,7 +761,7 @@ namespace Tasks is
         si
 
         /// The task the function answers.
-        task: TASK[T] => _task
+        task: Future[T] => _task
 
         /// Completes the task with `result`.
         ///
@@ -655,6 +808,8 @@ namespace Tasks is
     // one arrives in its inbox, which it has once it first waits on
     // another thread.
     class SCHEDULER is
+        LIVE_CHECK_MILLISECONDS: long static => 50L
+
         _ready: QUEUE[() -> void]
         _timers: LIST[(due: long, state: TASK_STATE)]
 
@@ -714,6 +869,25 @@ namespace Tasks is
             return inbox
         si
 
+        /// Wraps `work` so that whichever thread calls the wrapper hands
+        /// `work` back to the calling thread, to run when its queued work
+        /// next runs. The calling thread then waits for it rather than
+        /// finding nothing left to wait for.
+        ///
+        /// - work: what to run on the calling thread
+        @IF.llvm()
+        route_here(work: () -> void) -> () -> void static is
+            let inbox = expect_from_another_thread()
+
+            return () is inbox.deliver(work) si
+        si
+
+        /// Wraps `work` so that calling the wrapper queues it.
+        ///
+        /// - work: what to queue
+        @IF.wasm()
+        route_here(work: () -> void) -> () -> void static => () is post(work) si
+
         /// Runs queued work, and completes delays as they fall due, until
         /// `state` completes. While another thread still owes this one
         /// work, waits for it rather than throwing. Throws where nothing
@@ -744,15 +918,23 @@ namespace Tasks is
         @IF.llvm()
         _take_from_inbox() -> bool => _inbox?.take(_ready) ?? false
 
+        // Whether another thread owes this one work and could still hand
+        // it over. A started thread always has the program's main thread
+        // beside it; the main thread waits only while a started thread is
+        // still running.
         @IF.llvm()
-        _waits_on_another_thread() -> bool => _inbox?.is_waiting ?? false
+        _waits_on_another_thread() -> bool =>
+            (_inbox?.is_waiting ?? false) /\
+            (Ghul.Internal.THREAD_LOCALS.current.is_started_thread \/ Ghul.Internal.LIVE_THREADS.count > 0)
 
         // Waits for another thread to hand over work, or for the earliest
         // delay to fall due, completing it if it has.
         @IF.llvm()
         _wait_for_another_thread() is
+            // A bounded wait, so a thread that ends owing this one nothing
+            // more is noticed.
             if _timers.count == 0 then
-                _inbox!.wait(-1L)
+                _inbox!.wait(LIVE_CHECK_MILLISECONDS)
                 return
             fi
 
@@ -760,7 +942,7 @@ namespace Tasks is
             let remaining = _timers[earliest].due - System.Environment.tick_count64
 
             if remaining > 0L then
-                _inbox!.wait(remaining)
+                _inbox!.wait(if remaining < LIVE_CHECK_MILLISECONDS then remaining else LIVE_CHECK_MILLISECONDS fi)
             fi
 
             if System.Environment.tick_count64 >= _timers[earliest].due then
