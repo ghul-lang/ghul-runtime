@@ -41,9 +41,9 @@ namespace Tests is
 
         @Test()
         mutex_serialises_updates_from_several_threads() is
-            let mutex = MUTEX()
+            let mutex = Mutex()
             let total mut = 0
-            let workers = LIST[THREAD]()
+            let workers = LIST[Thread]()
 
             for n in 0..8 do
                 workers.add(start(() is
@@ -62,7 +62,7 @@ namespace Tests is
 
         @Test()
         mutex_is_not_reentrant() is
-            let mutex = MUTEX()
+            let mutex = Mutex()
             let relocked mut = false
 
             mutex.lock()
@@ -82,8 +82,8 @@ namespace Tests is
 
         @Test()
         atomics_answer_as_documented() is
-            let hits = ATOMIC_INT(0)
-            let workers = LIST[THREAD]()
+            let hits = AtomicInt(0)
+            let workers = LIST[Thread]()
 
             for n in 0..8 do
                 workers.add(start(() is for i in 0..10000 do hits.increment() od si))
@@ -95,7 +95,7 @@ namespace Tests is
 
             are_equal(80000, hits.load())
 
-            let big = ATOMIC_LONG(1L)
+            let big = AtomicLong(1L)
 
             are_equal(42L, big.add(41L))
             are_equal(42L, big.exchange(7L))
@@ -103,14 +103,14 @@ namespace Tests is
             is_false(big.compare_exchange(7L, 9L))
             are_equal(8L, big.load())
 
-            let flag = ATOMIC_BOOL(false)
+            let flag = AtomicBool(false)
 
             is_true(flag.compare_exchange(false, true))
             is_false(flag.compare_exchange(false, true))
             is_true(flag.load())
 
             let first = "first"
-            let slot = ATOMIC[string](first)
+            let slot = Atomic[string](first)
 
             is_true(slot.compare_exchange(first, "second"))
             are_equal("second", slot.load())

@@ -5,7 +5,7 @@ namespace Ghul.Threads is
     /// the thread, whose `join` waits for it and answers what `body` did.
     ///
     /// - body: what the thread runs
-    start[T](body: () -> T) -> THREAD[T] => THREAD[T](body, _THREAD_RUN.DEFAULT_STACK_SIZE)
+    start[T](body: () -> T) -> Thread[T] => Thread[T](body, _THREAD_RUN.DEFAULT_STACK_SIZE)
 
     /// Starts a thread running `body`, with a stack of `stack_size` bytes,
     /// and answers the thread, whose `join` waits for it and answers what
@@ -13,23 +13,23 @@ namespace Ghul.Threads is
     ///
     /// - body: what the thread runs
     /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
-    start[T](body: () -> T, stack_size: int) -> THREAD[T] => THREAD[T](body, stack_size)
+    start[T](body: () -> T, stack_size: int) -> Thread[T] => Thread[T](body, stack_size)
 
     /// Starts a thread running `body`, with a stack of 8 MB, and answers
     /// the thread, whose `join` waits for it.
     ///
     /// - body: what the thread runs
-    start(body: () -> void) -> THREAD => THREAD(body, _THREAD_RUN.DEFAULT_STACK_SIZE)
+    start(body: () -> void) -> Thread => Thread(body, _THREAD_RUN.DEFAULT_STACK_SIZE)
 
     /// Starts a thread running `body`, with a stack of `stack_size` bytes,
     /// and answers the thread, whose `join` waits for it.
     ///
     /// - body: what the thread runs
     /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
-    start(body: () -> void, stack_size: int) -> THREAD => THREAD(body, stack_size)
+    start(body: () -> void, stack_size: int) -> Thread => Thread(body, stack_size)
 
     /// A thread running a body that answers nothing, started by `start`.
-    class THREAD is
+    class Thread is
         _run: _THREAD_RUN
 
         /// Starts a thread running `body`.
@@ -53,7 +53,7 @@ namespace Ghul.Threads is
     si
 
     /// A thread running a body that answers a `T`, started by `start`.
-    class THREAD[T] is
+    class Thread[T] is
         _run: _THREAD_RUN
         _result: T
 
@@ -188,7 +188,7 @@ namespace Ghul.Threads is
 
     /// A lock that one thread holds at a time. It is not reentrant: the
     /// thread holding it cannot take it again.
-    class MUTEX is
+    class Mutex is
         @IF.llvm()
         _mutex: object
 
@@ -304,7 +304,7 @@ namespace Ghul.Threads is
     /// A `int` that threads read and change without a lock. Every operation
     /// is sequentially consistent: all threads see the operations on all
     /// atomics in one order.
-    class ATOMIC_INT is
+    class AtomicInt is
         _value: int field
 
         /// An atomic holding `value`.
@@ -370,7 +370,7 @@ namespace Ghul.Threads is
     /// A `long` that threads read and change without a lock. Every operation
     /// is sequentially consistent: all threads see the operations on all
     /// atomics in one order.
-    class ATOMIC_LONG is
+    class AtomicLong is
         _value: long field
 
         /// An atomic holding `value`.
@@ -435,14 +435,14 @@ namespace Ghul.Threads is
 
     /// A `bool` that threads read and change without a lock. Every
     /// operation is sequentially consistent.
-    class ATOMIC_BOOL is
-        _value: ATOMIC_INT
+    class AtomicBool is
+        _value: AtomicInt
 
         /// An atomic holding `value`.
         ///
         /// - value: the value it starts with
         init(value: bool) is
-            _value = ATOMIC_INT(if value then 1 else 0 fi)
+            _value = AtomicInt(if value then 1 else 0 fi)
         si
 
         /// The value it holds.
@@ -472,7 +472,7 @@ namespace Ghul.Threads is
     /// A reference that threads read and change without a lock. Every
     /// operation is sequentially consistent; `compare_exchange` compares
     /// references, not values.
-    class ATOMIC[T: class] is
+    class Atomic[T: class] is
         _value: T field
 
         /// An atomic holding `value`.

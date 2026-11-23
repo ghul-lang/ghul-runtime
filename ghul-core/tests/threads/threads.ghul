@@ -2,7 +2,7 @@ use default
 use Ghul.Threads
 
 // Eight threads add under a mutex; each answers how many it added.
-let mutex = MUTEX()
+let mutex = Mutex()
 let total mut = 0
 let workers = [start(() => (
     for i in 0..10000 do
@@ -18,19 +18,19 @@ od
 write_line("total {total}, answered {answered}")
 
 // The same with an atomic and no lock.
-let hits = ATOMIC_INT(0)
+let hits = AtomicInt(0)
 let counters = [start(() is for i in 0..10000 do hits.increment() od si) for _ in 0..8] |> LIST()
 counters |> each(c => c.join())
 write_line("hits {hits.load()}")
 
-let big = ATOMIC_LONG(1L)
+let big = AtomicLong(1L)
 write_line("long {big.add(41L)} {big.exchange(7L)} {big.compare_exchange(7L, 8L)} {big.compare_exchange(7L, 9L)} {big.load()}")
 
-let flag = ATOMIC_BOOL(false)
+let flag = AtomicBool(false)
 write_line("bool {flag.compare_exchange(false, true)} {flag.compare_exchange(false, true)} {flag.load()}")
 
 let first = "first"
-let slot = ATOMIC[string](first)
+let slot = Atomic[string](first)
 write_line("reference {slot.compare_exchange(first, "second")} {slot.load()}")
 
 // What the body throws comes back from every join.
@@ -75,6 +75,12 @@ try
 catch e: Ghul.InvalidOperationException
     write_line("unlock: {e.message}")
 yrt
+
+// Thread names this library's type; Tasks.Thread stays reachable by its
+// full name.
+let named: Thread[int] = start(() => 1)
+Tasks.Thread.sleep(1)
+write_line("named {named.join()}")
 
 // A thread with a small stack still runs.
 write_line("small stack {start(() => 6 * 7, 256 * 1024).join()}")
