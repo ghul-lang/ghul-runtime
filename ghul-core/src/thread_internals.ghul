@@ -126,23 +126,40 @@ namespace Ghul.Internal is
     si
 
     // The atomic operations on a value the caller names by reference, all
-    // sequentially consistent.
+    // sequentially consistent. Each public operation calls the intrinsic it
+    // is named for: an intrinsic outside a type's own operators is also
+    // declared in Ghul.Intrinsics, which every program sees, so a public
+    // intrinsic would join the overload group of any program function with
+    // the same name.
     @IF.llvm()
     class ATOMICS is
-        @intrinsic("atomic.load")
-        load[T](location: T ref) -> T static
+        load[T](location: T ref) -> T static => _load(location)
 
-        @intrinsic("atomic.store")
-        store[T](location: T ref, value: T) static
+        store[T](location: T ref, value: T) static is
+            _store(location, value)
+        si
 
-        @intrinsic("atomic.exchange")
-        exchange[T](location: T ref, value: T) -> T static
+        exchange[T](location: T ref, value: T) -> T static => _exchange(location, value)
 
-        @intrinsic("atomic.compare_exchange")
-        compare_exchange[T](location: T ref, expected: T, replacement: T) -> bool static
+        compare_exchange[T](location: T ref, expected: T, replacement: T) -> bool static =>
+            _compare_exchange(location, expected, replacement)
 
         // Adds `value`, answering the sum.
+        add[T](location: T ref, value: T) -> T static => _add(location, value)
+
+        @intrinsic("atomic.load")
+        _load[T](location: T ref) -> T static
+
+        @intrinsic("atomic.store")
+        _store[T](location: T ref, value: T) static
+
+        @intrinsic("atomic.exchange")
+        _exchange[T](location: T ref, value: T) -> T static
+
+        @intrinsic("atomic.compare_exchange")
+        _compare_exchange[T](location: T ref, expected: T, replacement: T) -> bool static
+
         @intrinsic("atomic.add")
-        add[T](location: T ref, value: T) -> T static
+        _add[T](location: T ref, value: T) -> T static
     si
 si

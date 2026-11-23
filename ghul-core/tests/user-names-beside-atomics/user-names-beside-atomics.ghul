@@ -1,0 +1,20 @@
+use default
+
+// A program's own functions named like the core library's atomic
+// operations stay the only candidates for their names: each is used as a
+// bare function value, which resolves only when its overload group holds
+// one function.
+
+add(a: int, b: int) -> int => a + b
+load(path: string) -> string => "loaded {path}"
+store(key: string, value: int) -> string => "{key}={value}"
+exchange(a: int, b: int) -> (int, int) => (b, a)
+compare_exchange(a: int, b: int, c: int) -> bool => a == b /\ b != c
+
+let adder = add
+let loader = load
+let storer = store
+let swapper = exchange
+let comparer = compare_exchange
+
+write_line("{adder(2, 3)} {loader("x")} {storer("k", 1)} {swapper(1, 2)} {comparer(1, 1, 2)}")
