@@ -76,7 +76,7 @@ namespace Ghul.Coroutines is
         si
 
         // The scheduler coroutines park on, created on first use.
-        /// The scheduler coroutines park on, created on first use if none has been installed.
+        /// The scheduler coroutines park on, created on first use if none has been installed. There is one for the program, not one for each thread, so coroutines are run from one thread.
         current: SCHEDULER static is
             if !_current? then
                 _current = SCHEDULER()

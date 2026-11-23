@@ -1,0 +1,15 @@
+total 80000, answered 80000
+hits 80000
+long 42 42 true false 8
+bool true false true
+reference true second
+caught boom
+caught boom
+finished true
+16 [3, 4] (3, x)
+relock: the thread already holds this mutex
+try_lock while held false
+try_lock when free true
+unlock: the thread does not hold this mutex
+named 1
+small stack 42

@@ -65,6 +65,23 @@ let fib = memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fi
 let shout = ((s: string) => s.to_upper()) >> (s => "{s}!")
 ```
 
+### Threads - `Ghul.Threads`
+
+Threads on llvm and .NET; wasm runs one thread and does not have them. `start(body)` runs `body` on a new thread with an 8 MB stack and answers a `Thread[T]`, or a `Thread` for a body that answers nothing; `join()` waits for it and answers what the body answered, or throws what it threw. `Mutex` is a lock one thread holds at a time, and `hold(body)` runs `body` holding it. `AtomicInt`, `AtomicLong`, `AtomicBool` and `Atomic[T]` are values threads change without a lock. A program is responsible for how its threads share collections and other objects; the library makes its own hidden state safe to use from several threads.
+
+```ghul
+use Ghul.Threads
+
+let hits = AtomicInt(0)
+let workers = [start(() => hits.increment()) for _ in 0..4]
+
+for w in workers do
+    w.join()
+od
+
+write_line("{hits.load()}")   // 4
+```
+
 ### Coroutines - `Ghul.Coroutines`
 
 Cooperative coroutines on one thread. A function that returns `Coroutine[T]` or `Coroutine` is a coroutine; one coroutine `await`s another as it would call a function, `pause()` and `sleep(ms)` give up the turn, and `run()` resumes parked coroutines until none remain. `Channel[T]` hands values between coroutines, and `MUTEX` and `Semaphore` guard what they share.

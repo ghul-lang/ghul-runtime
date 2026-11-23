@@ -25,10 +25,9 @@ namespace Ghul is
         _depth: int
 
         // The state rendering a value by its own `to_string`, and that value,
-        // so a pipe whose `to_string` renders its elements renders them into
-        // that state rather than starting a new one.
-        _text_host: DISPLAY_STATE? static
-        _text_value: object? static
+        // are kept for each thread in `Ghul.Internal.THREAD_LOCALS`, so a pipe
+        // whose `to_string` renders its elements renders them into that state
+        // rather than starting a new one.
 
         /// The default limit on how many elements of a sequence are rendered.
         default_max_elements: int static => 100
@@ -116,17 +115,18 @@ namespace Ghul is
                 displayable.display(self)
                 _depth = _depth - 1
             elif !_display(value, self) then
-                let outer_host = _text_host
-                let outer_value = _text_value
+                let here = Internal.THREAD_LOCALS.current
+                let outer_host = here.display_host
+                let outer_value = here.display_value
 
-                _text_host = self
-                _text_value = value
+                here.display_host = self
+                here.display_value = value
 
                 try
                     append(value.to_string())
                 finally
-                    _text_host = outer_host
-                    _text_value = outer_value
+                    here.display_host = outer_host
+                    here.display_value = outer_value
                 yrt
             fi
 
@@ -145,9 +145,11 @@ namespace Ghul is
         ///
         /// - items: the sequence to render
         elements_text[T](items: Collections.Iterable[T]) -> string static is
-            if let host = _text_host /\ _text_value == cast object(items) then
-                _text_host = null
-                _text_value = null
+            let here = Internal.THREAD_LOCALS.current
+
+            if let host = here.display_host /\ here.display_value == cast object(items) then
+                here.display_host = null
+                here.display_value = null
 
                 host._elements(items)
 

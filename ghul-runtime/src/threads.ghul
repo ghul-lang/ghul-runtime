@@ -1,0 +1,526 @@
+// wasm runs one thread, so it has none of this.
+@IF.not.wasm()
+namespace Ghul.Threads is
+    /// Starts a thread running `body`, with a stack of 8 MB, and answers
+    /// the thread, whose `join` waits for it and answers what `body` did.
+    ///
+    /// - body: what the thread runs
+    start[T](body: () -> T) -> Thread[T] => Thread[T](body, _THREAD_RUN.DEFAULT_STACK_SIZE)
+
+    /// Starts a thread running `body`, with a stack of `stack_size` bytes,
+    /// and answers the thread, whose `join` waits for it and answers what
+    /// `body` did.
+    ///
+    /// - body: what the thread runs
+    /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+    start[T](body: () -> T, stack_size: int) -> Thread[T] => Thread[T](body, stack_size)
+
+    /// Starts a thread running `body`, with a stack of 8 MB, and answers
+    /// the thread, whose `join` waits for it.
+    ///
+    /// - body: what the thread runs
+    start(body: () -> void) -> Thread => Thread(body, _THREAD_RUN.DEFAULT_STACK_SIZE)
+
+    /// Starts a thread running `body`, with a stack of `stack_size` bytes,
+    /// and answers the thread, whose `join` waits for it.
+    ///
+    /// - body: what the thread runs
+    /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+    start(body: () -> void, stack_size: int) -> Thread => Thread(body, stack_size)
+
+    /// A thread running a body that answers nothing, started by `start`.
+    class Thread is
+        _run: _THREAD_RUN
+
+        /// Starts a thread running `body`.
+        ///
+        /// - body: what the thread runs
+        /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+        init(body: () -> void, stack_size: int) is
+            _run = _THREAD_RUN(body, stack_size)
+        si
+
+        /// Whether the thread has finished, normally or by throwing.
+        is_finished: bool => _run.is_finished
+
+        /// Waits for the thread to finish, and throws what its body threw,
+        /// if it threw. Joining again does the same again. On llvm the
+        /// exception's trace shows the join rather than where it was
+        /// thrown.
+        join() is
+            _run.join()
+        si
+    si
+
+    /// A thread running a body that answers a `T`, started by `start`.
+    class Thread[T] is
+        _run: _THREAD_RUN
+        _result: T
+
+        /// Starts a thread running `body`.
+        ///
+        /// - body: what the thread runs
+        /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+        init(body: () -> T, stack_size: int) is
+            _run = _THREAD_RUN(() is _result = body() si, stack_size)
+        si
+
+        /// Whether the thread has finished, normally or by throwing.
+        is_finished: bool => _run.is_finished
+
+        /// Waits for the thread to finish, and answers what its body
+        /// answered, or throws what it threw. Joining again does the same
+        /// again. On llvm the exception's trace shows the join rather than
+        /// where it was thrown.
+        join() -> T is
+            _run.join()
+
+            return _result
+        si
+    si
+
+    // Runs one body on a thread of its own, catching what it throws for
+    // the joining thread to throw again.
+    class _THREAD_RUN is
+        _body: () -> void
+        _failure: Ghul.Exception? field
+
+        DEFAULT_STACK_SIZE: int static => 8 * 1024 * 1024
+
+        @IF.llvm()
+        _handle: object
+
+        @IF.llvm()
+        _finished: int field
+
+        // Held while a joining thread waits, so the thread is waited for
+        // once however many threads join it.
+        @IF.llvm()
+        _joining: Ghul.Internal.LOCK
+
+        @IF.llvm()
+        _joined: bool field
+
+        @IF.dotnet()
+        _thread: Tasks.Thread
+
+        init(body: () -> void, stack_size: int) is
+            _body = body
+            _start(stack_size)
+        si
+
+        _execute() is
+            try
+                _body()
+            catch e: Ghul.Exception
+                _failure = e
+            yrt
+
+            _done()
+        si
+
+        @IF.llvm()
+        _start(stack_size: int) is
+            _joining = Ghul.Internal.LOCK()
+
+            if let handle = _thread_start(() is _execute() si, cast long(stack_size)) then
+                _handle = handle
+            else
+                throw Ghul.InvalidOperationException("a thread could not be started")
+            fi
+        si
+
+        @IF.llvm()
+        _done() is
+            Ghul.Internal.ATOMICS.store(_finished ref, 1)
+        si
+
+        @IF.llvm()
+        is_finished: bool => Ghul.Internal.ATOMICS.load(_finished ref) == 1
+
+        @IF.llvm()
+        join() is
+            _joining.enter()
+
+            try
+                if !_joined then
+                    _thread_join(_handle)
+                    _joined = true
+                fi
+            finally
+                _joining.exit()
+            yrt
+
+            if let failure = _failure then
+                throw failure
+            fi
+        si
+
+        @IF.llvm()
+        @intrinsic("host.thread_start")
+        _thread_start(action: () -> void, stack_size: long) -> object? static
+
+        @IF.llvm()
+        @intrinsic("host.thread_join")
+        _thread_join(thread: object) static
+
+        @IF.dotnet()
+        _start(stack_size: int) is
+            _thread = Tasks.Thread(System.Threading.ThreadStart(_execute), if stack_size > 0 then stack_size else DEFAULT_STACK_SIZE fi)
+            _thread.start()
+        si
+
+        @IF.dotnet()
+        _done() is si
+
+        @IF.dotnet()
+        is_finished: bool => _thread.join(0)
+
+        @IF.dotnet()
+        join() is
+            _thread.join()
+
+            if let failure = _failure then
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.capture(failure).throw()
+            fi
+        si
+    si
+
+    /// A lock that one thread holds at a time. It is not reentrant: the
+    /// thread holding it cannot take it again.
+    class Mutex is
+        @IF.llvm()
+        _mutex: object
+
+        @IF.dotnet()
+        _lock: System.Threading.Lock
+
+        /// A mutex nobody holds.
+        init() is
+            _init()
+        si
+
+        @IF.llvm()
+        _init() is
+            _mutex = _new()
+        si
+
+        @IF.dotnet()
+        _init() is
+            _lock = System.Threading.Lock()
+        si
+
+        /// Waits until no other thread holds the mutex, and takes it.
+        /// Throws `InvalidOperationException` where the calling thread
+        /// already holds it.
+        @IF.llvm()
+        lock() is
+            if !_lock(_mutex) then
+                throw Ghul.InvalidOperationException("the thread already holds this mutex")
+            fi
+        si
+
+        /// Takes the mutex where nobody holds it, and answers whether it
+        /// did. Never waits; answers false where the calling thread already
+        /// holds it.
+        @IF.llvm()
+        try_lock() -> bool => _try_lock(_mutex)
+
+        /// Releases the mutex. Throws `InvalidOperationException` where the
+        /// calling thread does not hold it.
+        @IF.llvm()
+        unlock() is
+            if !_unlock(_mutex) then
+                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
+            fi
+        si
+
+        @IF.dotnet()
+        lock() is
+            if _lock.is_held_by_current_thread then
+                throw Ghul.InvalidOperationException("the thread already holds this mutex")
+            fi
+
+            _lock.enter()
+        si
+
+        @IF.dotnet()
+        try_lock() -> bool => !_lock.is_held_by_current_thread /\ _lock.try_enter()
+
+        @IF.dotnet()
+        unlock() is
+            if !_lock.is_held_by_current_thread then
+                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
+            fi
+
+            _lock.exit()
+        si
+
+        /// Takes the mutex, runs `body`, and releases the mutex, also where
+        /// `body` throws; answers what `body` answers.
+        ///
+        /// - body: what to run while holding the mutex
+        hold[T](body: () -> T) -> T is
+            lock()
+
+            try
+                return body()
+            finally
+                unlock()
+            yrt
+        si
+
+        /// Takes the mutex, runs `body`, and releases the mutex, also where
+        /// `body` throws.
+        ///
+        /// - body: what to run while holding the mutex
+        hold(body: () -> void) is
+            lock()
+
+            try
+                body()
+            finally
+                unlock()
+            yrt
+        si
+
+        @IF.llvm()
+        @intrinsic("host.mutex_new")
+        _new() -> object static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_lock")
+        _lock(mutex: object) -> bool static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_try_lock")
+        _try_lock(mutex: object) -> bool static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_unlock")
+        _unlock(mutex: object) -> bool static
+    si
+
+    /// A `int` that threads read and change without a lock. Every operation
+    /// is sequentially consistent: all threads see the operations on all
+    /// atomics in one order.
+    class AtomicInt is
+        _value: int field
+
+        /// An atomic holding `value`.
+        ///
+        /// - value: the value it starts with
+        init(value: int) is
+            _value = value
+        si
+
+        /// The value it holds.
+        @IF.llvm()
+        load() -> int => Ghul.Internal.ATOMICS.load(_value ref)
+
+        /// Replaces the value with `value`.
+        ///
+        /// - value: the new value
+        @IF.llvm()
+        store(value: int) is
+            Ghul.Internal.ATOMICS.store(_value ref, value)
+        si
+
+        /// Replaces the value with `value`, answering the value it replaced.
+        ///
+        /// - value: the new value
+        @IF.llvm()
+        exchange(value: int) -> int => Ghul.Internal.ATOMICS.exchange(_value ref, value)
+
+        /// Replaces the value with `replacement` if it is `expected`, and
+        /// answers whether it did.
+        ///
+        /// - expected: the value it must hold
+        /// - replacement: the value it then holds
+        @IF.llvm()
+        compare_exchange(expected: int, replacement: int) -> bool => Ghul.Internal.ATOMICS.compare_exchange(_value ref, expected, replacement)
+
+        /// Adds `value`, answering the sum.
+        ///
+        /// - value: what to add
+        @IF.llvm()
+        add(value: int) -> int => Ghul.Internal.ATOMICS.add(_value ref, value)
+
+        @IF.dotnet()
+        load() -> int => System.Threading.Volatile.read(_value ref)
+
+        @IF.dotnet()
+        store(value: int) is
+            System.Threading.Interlocked.exchange(_value ref, value)
+        si
+
+        @IF.dotnet()
+        exchange(value: int) -> int => System.Threading.Interlocked.exchange(_value ref, value)
+
+        @IF.dotnet()
+        compare_exchange(expected: int, replacement: int) -> bool => System.Threading.Interlocked.compare_exchange(_value ref, replacement, expected) == expected
+
+        @IF.dotnet()
+        add(value: int) -> int => System.Threading.Interlocked.add(_value ref, value)
+
+        /// Adds one, answering the sum.
+        increment() -> int => add(1)
+    si
+
+    /// A `long` that threads read and change without a lock. Every operation
+    /// is sequentially consistent: all threads see the operations on all
+    /// atomics in one order.
+    class AtomicLong is
+        _value: long field
+
+        /// An atomic holding `value`.
+        ///
+        /// - value: the value it starts with
+        init(value: long) is
+            _value = value
+        si
+
+        /// The value it holds.
+        @IF.llvm()
+        load() -> long => Ghul.Internal.ATOMICS.load(_value ref)
+
+        /// Replaces the value with `value`.
+        ///
+        /// - value: the new value
+        @IF.llvm()
+        store(value: long) is
+            Ghul.Internal.ATOMICS.store(_value ref, value)
+        si
+
+        /// Replaces the value with `value`, answering the value it replaced.
+        ///
+        /// - value: the new value
+        @IF.llvm()
+        exchange(value: long) -> long => Ghul.Internal.ATOMICS.exchange(_value ref, value)
+
+        /// Replaces the value with `replacement` if it is `expected`, and
+        /// answers whether it did.
+        ///
+        /// - expected: the value it must hold
+        /// - replacement: the value it then holds
+        @IF.llvm()
+        compare_exchange(expected: long, replacement: long) -> bool => Ghul.Internal.ATOMICS.compare_exchange(_value ref, expected, replacement)
+
+        /// Adds `value`, answering the sum.
+        ///
+        /// - value: what to add
+        @IF.llvm()
+        add(value: long) -> long => Ghul.Internal.ATOMICS.add(_value ref, value)
+
+        @IF.dotnet()
+        load() -> long => System.Threading.Volatile.read(_value ref)
+
+        @IF.dotnet()
+        store(value: long) is
+            System.Threading.Interlocked.exchange(_value ref, value)
+        si
+
+        @IF.dotnet()
+        exchange(value: long) -> long => System.Threading.Interlocked.exchange(_value ref, value)
+
+        @IF.dotnet()
+        compare_exchange(expected: long, replacement: long) -> bool => System.Threading.Interlocked.compare_exchange(_value ref, replacement, expected) == expected
+
+        @IF.dotnet()
+        add(value: long) -> long => System.Threading.Interlocked.add(_value ref, value)
+
+        /// Adds one, answering the sum.
+        increment() -> long => add(1L)
+    si
+
+    /// A `bool` that threads read and change without a lock. Every
+    /// operation is sequentially consistent.
+    class AtomicBool is
+        _value: AtomicInt
+
+        /// An atomic holding `value`.
+        ///
+        /// - value: the value it starts with
+        init(value: bool) is
+            _value = AtomicInt(if value then 1 else 0 fi)
+        si
+
+        /// The value it holds.
+        load() -> bool => _value.load() != 0
+
+        /// Replaces the value with `value`.
+        ///
+        /// - value: the new value
+        store(value: bool) is
+            _value.store(if value then 1 else 0 fi)
+        si
+
+        /// Replaces the value with `value`, answering the value it replaced.
+        ///
+        /// - value: the new value
+        exchange(value: bool) -> bool => _value.exchange(if value then 1 else 0 fi) != 0
+
+        /// Replaces the value with `replacement` if it is `expected`, and
+        /// answers whether it did.
+        ///
+        /// - expected: the value it must hold
+        /// - replacement: the value it then holds
+        compare_exchange(expected: bool, replacement: bool) -> bool =>
+            _value.compare_exchange(if expected then 1 else 0 fi, if replacement then 1 else 0 fi)
+    si
+
+    /// A reference that threads read and change without a lock. Every
+    /// operation is sequentially consistent; `compare_exchange` compares
+    /// references, not values.
+    class Atomic[T: class] is
+        _value: T field
+
+        /// An atomic holding `value`.
+        ///
+        /// - value: the reference it starts with
+        init(value: T) is
+            _value = value
+        si
+
+        /// The reference it holds.
+        @IF.llvm()
+        load() -> T => Ghul.Internal.ATOMICS.load(_value ref)
+
+        /// Replaces the reference with `value`.
+        ///
+        /// - value: the new reference
+        @IF.llvm()
+        store(value: T) is
+            Ghul.Internal.ATOMICS.store(_value ref, value)
+        si
+
+        /// Replaces the reference with `value`, answering the one it
+        /// replaced.
+        ///
+        /// - value: the new reference
+        @IF.llvm()
+        exchange(value: T) -> T => Ghul.Internal.ATOMICS.exchange(_value ref, value)
+
+        /// Replaces the reference with `replacement` if it is `expected`,
+        /// and answers whether it did.
+        ///
+        /// - expected: the reference it must hold
+        /// - replacement: the reference it then holds
+        @IF.llvm()
+        compare_exchange(expected: T, replacement: T) -> bool => Ghul.Internal.ATOMICS.compare_exchange(_value ref, expected, replacement)
+
+        @IF.dotnet()
+        load() -> T => System.Threading.Volatile.read(_value ref)
+
+        @IF.dotnet()
+        store(value: T) is
+            System.Threading.Interlocked.exchange(_value ref, value)
+        si
+
+        @IF.dotnet()
+        exchange(value: T) -> T => System.Threading.Interlocked.exchange(_value ref, value)
+
+        @IF.dotnet()
+        compare_exchange(expected: T, replacement: T) -> bool => cast object(System.Threading.Interlocked.compare_exchange(_value ref, replacement, expected)) == cast object(expected)
+    si
+si
