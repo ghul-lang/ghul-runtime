@@ -2,8 +2,14 @@ use default
 use Ghul.Interop
 
 // What a PINNER keeps alive, measured by the collector's heap after full collections:
-// an array pinned, or a function value kept, survives while the pinner holds it and
-// is collected once it is disposed. And a HANDLE releases its resource exactly once.
+// arrays pinned, or function values kept, survive while the pinner holds them and are
+// collected once it is disposed. And a HANDLE releases its resource exactly once.
+//
+// The collector scans the stack and registers conservatively, so a stale copy of an
+// address can keep an object alive after its last reference is gone, and whether one
+// is left depends on timing as well as on the code. Each check is made over many
+// megabyte arrays: one leaked by the pinner keeps all of them, and a stale copy only
+// one or two.
 
 @extern("c", "calloc")
 calloc(count: word, size: word) -> word
@@ -12,15 +18,16 @@ calloc(count: word, size: word) -> word
 free(address: word)
 
 let megabyte = 1 << 20
+let arrays = 16
 
 heap() -> long => Ghul.GC.get_total_memory(true)
 
-// A megabyte array, its address left only in C memory at `slot`, pinned when a
-// pinner is given.
-hand_over(slot: word, pins: PINNER?) is
+// A megabyte array, its address left only in C memory in the `index`th word at
+// `slots`, pinned when a pinner is given.
+hand_over(slots: word, index: int, pins: PINNER?) is
     let block = repeat(0xAB`ub, megabyte) |> ARRAY()
     let address = if let p = pins then p.pin(block) else 0w fi
-    write[word](slot, 0, address)
+    write[word](slots, index * 8, address)
 si
 
 // A function value holding a megabyte array, kept when a pinner is given.
@@ -30,31 +37,30 @@ keep_closure(pins: PINNER) is
     pins.keep(f)
 si
 
-retained(before: long) -> bool => heap() - before > long(megabyte / 2)
+// Whether most of the arrays are still held, or nearly all of them are gone.
+held(before: long) -> bool => heap() - before > long(arrays * megabyte / 2)
+gone(before: long) -> bool => heap() - before < long(arrays * megabyte / 4)
 
-let slot = calloc(1w, 8w)
+let slots = calloc(word(arrays), 8w)
 
 let base = heap()
 let pins = PINNER()
-hand_over(slot, pins)
-let pinned_alive = retained(base)
-let pinned_intact = read[ubyte](read[word](slot, 0), megabyte - 1) == 0xAB`ub
+for i in 0..arrays do hand_over(slots, i, pins) od
+let pinned_alive = held(base)
+let pinned_intact = 0..arrays |> all(i => read[ubyte](read[word](slots, i * 8), megabyte - 1) == 0xAB`ub)
 pins.dispose()
-let released = !retained(base)
+let released = gone(base)
 write_line("pinned: kept {pinned_alive}, intact {pinned_intact}; disposed: collected {released}")
 
-// Whether a function value is collected once its pinner is disposed depends on
-// whether a stale copy of it is left where the collector scans conservatively, so
-// only its being kept is checked.
 let base2 = heap()
 let kept = PINNER()
-keep_closure(kept)
-write_line("kept function: kept {retained(base2)}")
+for i in 0..arrays do keep_closure(kept) od
+write_line("kept function: kept {held(base2)}")
 kept.dispose()
 
 let unpinned = heap()
-hand_over(slot, null)
-let unpinned_released = !retained(unpinned)
+for i in 0..arrays do hand_over(slots, i, null) od
+let unpinned_released = gone(unpinned)
 write_line("not pinned: collected {unpinned_released}")
 
 // An empty array still answers an address; a pinner disposed twice is fine, and
@@ -131,4 +137,4 @@ write_line("arrays: {read[string](stream_pins.pin(names), 8)} {read[double](stre
 write_line("sizes: {size_of[STREAM]()} {size_of[double]()}")
 stream_pins.dispose()
 
-free(slot)
+free(slots)
