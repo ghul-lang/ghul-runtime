@@ -1,0 +1,80 @@
+use default
+use Ghul.Threads
+
+// Eight threads add under a mutex; each answers how many it added.
+let mutex = MUTEX()
+let total mut = 0
+let workers = [start(() => (
+    for i in 0..10000 do
+        mutex.hold(() is total = total + 1 si)
+    od;
+    10000)) for _ in 0..8] |> LIST()
+let answered mut = 0
+
+for w in workers do
+    answered = answered + w.join()
+od
+
+write_line("total {total}, answered {answered}")
+
+// The same with an atomic and no lock.
+let hits = ATOMIC_INT(0)
+let counters = [start(() is for i in 0..10000 do hits.increment() od si) for _ in 0..8] |> LIST()
+counters |> each(c => c.join())
+write_line("hits {hits.load()}")
+
+let big = ATOMIC_LONG(1L)
+write_line("long {big.add(41L)} {big.exchange(7L)} {big.compare_exchange(7L, 8L)} {big.compare_exchange(7L, 9L)} {big.load()}")
+
+let flag = ATOMIC_BOOL(false)
+write_line("bool {flag.compare_exchange(false, true)} {flag.compare_exchange(false, true)} {flag.load()}")
+
+let first = "first"
+let slot = ATOMIC[string](first)
+write_line("reference {slot.compare_exchange(first, "second")} {slot.load()}")
+
+// What the body throws comes back from every join.
+let thrower = start(() is throw Ghul.InvalidOperationException("boom") si)
+
+for attempt in 0..2 do
+    try
+        thrower.join()
+    catch e: Ghul.InvalidOperationException
+        write_line("caught {e.message}")
+    yrt
+od
+
+write_line("finished {thrower.is_finished}")
+
+// Values render on each thread at once without mixing their text.
+let rendering = [start(() => "{[i, i + 1]} {(i, "x")}") for i in 0..16]
+let renders = LIST[string]()
+
+for t in rendering do
+    renders.add(t.join())
+od
+
+write_line("{renders |> filter(r => r.length > 0) |> count()} {renders[3]}")
+
+// The mutex is not reentrant.
+mutex.lock()
+
+try
+    mutex.lock()
+catch e: Ghul.InvalidOperationException
+    write_line("relock: {e.message}")
+yrt
+
+write_line("try_lock while held {mutex.try_lock()}")
+mutex.unlock()
+write_line("try_lock when free {mutex.try_lock()}")
+mutex.unlock()
+
+try
+    mutex.unlock()
+catch e: Ghul.InvalidOperationException
+    write_line("unlock: {e.message}")
+yrt
+
+// A thread with a small stack still runs.
+write_line("small stack {start(() => 6 * 7, 256 * 1024).join()}")

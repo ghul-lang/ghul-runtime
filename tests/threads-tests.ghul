@@ -1,0 +1,119 @@
+namespace Tests is
+    use Ghul
+    use Collections.LIST
+
+    use Ghul.Threads
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class ThreadsShould is
+        init() is
+        si
+
+        @Test()
+        join_answers_what_the_body_answered() is
+            let worker = start(() => 6 * 7)
+
+            are_equal(42, worker.join())
+            are_equal(42, worker.join())
+            is_true(worker.is_finished)
+        si
+
+        @Test()
+        join_throws_what_the_body_threw_every_time() is
+            let thrower = start(() is throw InvalidOperationException("boom") si)
+            let caught mut = 0
+
+            for attempt in 0..2 do
+                try
+                    thrower.join()
+                catch e: InvalidOperationException
+                    are_equal("boom", e.message)
+                    caught = caught + 1
+                yrt
+            od
+
+            are_equal(2, caught)
+        si
+
+        @Test()
+        mutex_serialises_updates_from_several_threads() is
+            let mutex = MUTEX()
+            let total mut = 0
+            let workers = LIST[THREAD]()
+
+            for n in 0..8 do
+                workers.add(start(() is
+                    for i in 0..10000 do
+                        mutex.hold(() is total = total + 1 si)
+                    od
+                si))
+            od
+
+            for w in workers do
+                w.join()
+            od
+
+            are_equal(80000, total)
+        si
+
+        @Test()
+        mutex_is_not_reentrant() is
+            let mutex = MUTEX()
+            let relocked mut = false
+
+            mutex.lock()
+
+            try
+                mutex.lock()
+            catch e: InvalidOperationException
+                relocked = true
+            yrt
+
+            is_true(relocked)
+            is_false(mutex.try_lock())
+            mutex.unlock()
+            is_true(mutex.try_lock())
+            mutex.unlock()
+        si
+
+        @Test()
+        atomics_answer_as_documented() is
+            let hits = ATOMIC_INT(0)
+            let workers = LIST[THREAD]()
+
+            for n in 0..8 do
+                workers.add(start(() is for i in 0..10000 do hits.increment() od si))
+            od
+
+            for w in workers do
+                w.join()
+            od
+
+            are_equal(80000, hits.load())
+
+            let big = ATOMIC_LONG(1L)
+
+            are_equal(42L, big.add(41L))
+            are_equal(42L, big.exchange(7L))
+            is_true(big.compare_exchange(7L, 8L))
+            is_false(big.compare_exchange(7L, 9L))
+            are_equal(8L, big.load())
+
+            let flag = ATOMIC_BOOL(false)
+
+            is_true(flag.compare_exchange(false, true))
+            is_false(flag.compare_exchange(false, true))
+            is_true(flag.load())
+
+            let first = "first"
+            let slot = ATOMIC[string](first)
+
+            is_true(slot.compare_exchange(first, "second"))
+            are_equal("second", slot.load())
+        si
+    si
+si
