@@ -1,0 +1,303 @@
+// wasm runs one thread, so it has none of this.
+@IF.not.wasm()
+namespace Ghul.Threads is
+    /// Starts a thread running `body`, with a stack of 8 MB, and answers
+    /// the thread, whose `join` waits for it and answers what `body` did.
+    ///
+    /// - body: what the thread runs
+    start[T](body: () -> T) -> THREAD[T] => THREAD[T](body, _THREAD_RUN.DEFAULT_STACK_SIZE)
+
+    /// Starts a thread running `body`, with a stack of `stack_size` bytes,
+    /// and answers the thread, whose `join` waits for it and answers what
+    /// `body` did.
+    ///
+    /// - body: what the thread runs
+    /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+    start[T](body: () -> T, stack_size: int) -> THREAD[T] => THREAD[T](body, stack_size)
+
+    /// Starts a thread running `body`, with a stack of 8 MB, and answers
+    /// the thread, whose `join` waits for it.
+    ///
+    /// - body: what the thread runs
+    start(body: () -> void) -> THREAD => THREAD(body, _THREAD_RUN.DEFAULT_STACK_SIZE)
+
+    /// Starts a thread running `body`, with a stack of `stack_size` bytes,
+    /// and answers the thread, whose `join` waits for it.
+    ///
+    /// - body: what the thread runs
+    /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+    start(body: () -> void, stack_size: int) -> THREAD => THREAD(body, stack_size)
+
+    /// A thread running a body that answers nothing, started by `start`.
+    class THREAD is
+        _run: _THREAD_RUN
+
+        /// Starts a thread running `body`.
+        ///
+        /// - body: what the thread runs
+        /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+        init(body: () -> void, stack_size: int) is
+            _run = _THREAD_RUN(body, stack_size)
+        si
+
+        /// Whether the thread has finished, normally or by throwing.
+        is_finished: bool => _run.is_finished
+
+        /// Waits for the thread to finish, and throws what its body threw,
+        /// if it threw. Joining again does the same again. On llvm the
+        /// exception's trace shows the join rather than where it was
+        /// thrown.
+        join() is
+            _run.join()
+        si
+    si
+
+    /// A thread running a body that answers a `T`, started by `start`.
+    class THREAD[T] is
+        _run: _THREAD_RUN
+        _result: T
+
+        /// Starts a thread running `body`.
+        ///
+        /// - body: what the thread runs
+        /// - stack_size: the size of the thread's stack in bytes; zero or less is 8 MB
+        init(body: () -> T, stack_size: int) is
+            _run = _THREAD_RUN(() is _result = body() si, stack_size)
+        si
+
+        /// Whether the thread has finished, normally or by throwing.
+        is_finished: bool => _run.is_finished
+
+        /// Waits for the thread to finish, and answers what its body
+        /// answered, or throws what it threw. Joining again does the same
+        /// again. On llvm the exception's trace shows the join rather than
+        /// where it was thrown.
+        join() -> T is
+            _run.join()
+
+            return _result
+        si
+    si
+
+    // Runs one body on a thread of its own, catching what it throws for
+    // the joining thread to throw again.
+    class _THREAD_RUN is
+        _body: () -> void
+        _failure: Ghul.Exception? field
+
+        DEFAULT_STACK_SIZE: int static => 8 * 1024 * 1024
+
+        @IF.llvm()
+        _handle: object
+
+        @IF.llvm()
+        _finished: int field
+
+        // Held while a joining thread waits, so the thread is waited for
+        // once however many threads join it.
+        @IF.llvm()
+        _joining: Ghul.Internal.LOCK
+
+        @IF.llvm()
+        _joined: bool field
+
+        @IF.dotnet()
+        _thread: Tasks.Thread
+
+        init(body: () -> void, stack_size: int) is
+            _body = body
+            _start(stack_size)
+        si
+
+        _execute() is
+            try
+                _body()
+            catch e: Ghul.Exception
+                _failure = e
+            yrt
+
+            _done()
+        si
+
+        @IF.llvm()
+        _start(stack_size: int) is
+            _joining = Ghul.Internal.LOCK()
+
+            if let handle = _thread_start(() is _execute() si, cast long(stack_size)) then
+                _handle = handle
+            else
+                throw Ghul.InvalidOperationException("a thread could not be started")
+            fi
+        si
+
+        @IF.llvm()
+        _done() is
+            Ghul.Internal.ATOMICS.store(_finished ref, 1)
+        si
+
+        @IF.llvm()
+        is_finished: bool => Ghul.Internal.ATOMICS.load(_finished ref) == 1
+
+        @IF.llvm()
+        join() is
+            _joining.enter()
+
+            try
+                if !_joined then
+                    _thread_join(_handle)
+                    _joined = true
+                fi
+            finally
+                _joining.exit()
+            yrt
+
+            if let failure = _failure then
+                throw failure
+            fi
+        si
+
+        @IF.llvm()
+        @intrinsic("host.thread_start")
+        _thread_start(action: () -> void, stack_size: long) -> object? static
+
+        @IF.llvm()
+        @intrinsic("host.thread_join")
+        _thread_join(thread: object) static
+
+        @IF.dotnet()
+        _start(stack_size: int) is
+            _thread = Tasks.Thread(_execute, if stack_size > 0 then stack_size else DEFAULT_STACK_SIZE fi)
+            _thread.start()
+        si
+
+        @IF.dotnet()
+        _done() is si
+
+        @IF.dotnet()
+        is_finished: bool => _thread.join(0)
+
+        @IF.dotnet()
+        join() is
+            _thread.join()
+
+            if let failure = _failure then
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.capture(failure).throw()
+            fi
+        si
+    si
+
+    /// A lock that one thread holds at a time. It is not reentrant: the
+    /// thread holding it cannot take it again.
+    class MUTEX is
+        @IF.llvm()
+        _mutex: object
+
+        @IF.dotnet()
+        _monitor: object
+
+        /// A mutex nobody holds.
+        init() is
+            _init()
+        si
+
+        @IF.llvm()
+        _init() is
+            _mutex = _new()
+        si
+
+        @IF.dotnet()
+        _init() is
+            _monitor = object()
+        si
+
+        /// Waits until no other thread holds the mutex, and takes it.
+        /// Throws `InvalidOperationException` where the calling thread
+        /// already holds it.
+        @IF.llvm()
+        lock() is
+            if !_lock(_mutex) then
+                throw Ghul.InvalidOperationException("the thread already holds this mutex")
+            fi
+        si
+
+        /// Takes the mutex where nobody holds it, and answers whether it
+        /// did. Never waits; answers false where the calling thread already
+        /// holds it.
+        @IF.llvm()
+        try_lock() -> bool => _try_lock(_mutex)
+
+        /// Releases the mutex. Throws `InvalidOperationException` where the
+        /// calling thread does not hold it.
+        @IF.llvm()
+        unlock() is
+            if !_unlock(_mutex) then
+                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
+            fi
+        si
+
+        @IF.dotnet()
+        lock() is
+            if System.Threading.Monitor.is_entered(_monitor) then
+                throw Ghul.InvalidOperationException("the thread already holds this mutex")
+            fi
+
+            System.Threading.Monitor.enter(_monitor)
+        si
+
+        @IF.dotnet()
+        try_lock() -> bool => !System.Threading.Monitor.is_entered(_monitor) /\ System.Threading.Monitor.try_enter(_monitor)
+
+        @IF.dotnet()
+        unlock() is
+            if !System.Threading.Monitor.is_entered(_monitor) then
+                throw Ghul.InvalidOperationException("the thread does not hold this mutex")
+            fi
+
+            System.Threading.Monitor.exit(_monitor)
+        si
+
+        /// Takes the mutex, runs `body`, and releases the mutex, also where
+        /// `body` throws; answers what `body` answers.
+        ///
+        /// - body: what to run while holding the mutex
+        hold[T](body: () -> T) -> T is
+            lock()
+
+            try
+                return body()
+            finally
+                unlock()
+            yrt
+        si
+
+        /// Takes the mutex, runs `body`, and releases the mutex, also where
+        /// `body` throws.
+        ///
+        /// - body: what to run while holding the mutex
+        hold(body: () -> void) is
+            lock()
+
+            try
+                body()
+            finally
+                unlock()
+            yrt
+        si
+
+        @IF.llvm()
+        @intrinsic("host.mutex_new")
+        _new() -> object static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_lock")
+        _lock(mutex: object) -> bool static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_try_lock")
+        _try_lock(mutex: object) -> bool static
+
+        @IF.llvm()
+        @intrinsic("host.mutex_unlock")
+        _unlock(mutex: object) -> bool static
+    si
+si
