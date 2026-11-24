@@ -182,6 +182,14 @@ namespace Ghul.Internal is
             _unlock(_mutex)
         si
 
+        // Counts one piece of expected work as no longer coming. Called by
+        // the owning thread.
+        withdraw() is
+            _lock(_mutex)
+            _expected = _expected - 1
+            _unlock(_mutex)
+        si
+
         // Hands over `work` that was expected, waking the owning thread if
         // it waits. Called by any thread.
         deliver(work: () -> void) is
