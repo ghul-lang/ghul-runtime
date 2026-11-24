@@ -12,9 +12,6 @@ namespace Ghul.Internal is
         // The thread's queue of task work, once it has one.
         scheduler: Concurrency.SCHEDULER? field public
 
-        // The thread's coroutine scheduler, once it has one.
-        coroutine_scheduler: object? field public
-
         // Whether a program thread started this one, rather than it being
         // the program's main thread.
         is_started_thread: bool field public

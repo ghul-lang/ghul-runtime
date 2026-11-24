@@ -89,26 +89,6 @@ si
 write_line("{answer().result}")   // 42
 ```
 
-### Coroutines - `Ghul.Coroutines`
-
-Cooperative coroutines on one thread. A function that returns `Coroutine[T]` or `Coroutine` is a coroutine; one coroutine `await`s another as it would call a function, `pause()` and `sleep(ms)` give up the turn, and `run()` resumes parked coroutines until none remain. `Channel[T]` hands values between coroutines, and `MUTEX` and `Semaphore` guard what they share.
-
-```ghul
-use Ghul.Coroutines
-
-square_later(n: int) -> Coroutine[int] is
-    await pause()
-    return n * n
-si
-
-report() -> Coroutine is
-    write_line("{await square_later(4)}")
-si
-
-report()
-run()
-```
-
 ### Results and optional values - `Result`, `MAYBE`
 
 Both are in `Ghul`, imported with `use Ghul`. `Result[T, E]` is the outcome of an operation that produces a `T` or fails with an `E`: `OK` is its default variant, so `result?` asks whether it succeeded and `if let value: Result.OK = result` reads the value. `MAYBE[T]` is a value that may be absent, which `min`, `max` and other terminals return for an empty sequence.

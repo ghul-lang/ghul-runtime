@@ -3,7 +3,7 @@ namespace System.Runtime.CompilerServices is
     // names it: the state machine the function becomes, the awaiter shapes,
     // and the attribute naming the builder a task-like type is driven by.
     // The task-like types and their builders are declared by the libraries
-    // that offer them, such as ghul-runtime's coroutines.
+    // that offer them, such as the core's `Future`.
 
     /// The state machine an asynchronous function compiles to.
     trait IAsyncStateMachine open is
