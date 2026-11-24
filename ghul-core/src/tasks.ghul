@@ -192,6 +192,43 @@ namespace Tasks is
             return task
         si
 
+        /// A task that completes once all of `tasks` complete. It throws what
+        /// the first of them that threw threw.
+        ///
+        /// - tasks: the tasks to wait for
+        when_all(tasks: Collections.Iterable[Future]) -> Future static is
+            let all = LIST[Future](tasks)
+            let result = Future()
+            let remaining mut = all.count
+
+            let finish = () is
+                for task in all do
+                    if task.is_faulted then
+                        result.state.fail(task.exception!)
+                        return
+                    fi
+                od
+
+                result.state.complete()
+            si
+
+            if remaining == 0 then
+                finish()
+            fi
+
+            for task in all do
+                task.state.on_completed(() is
+                    remaining = remaining - 1
+
+                    if remaining == 0 then
+                        finish()
+                    fi
+                si)
+            od
+
+            return result
+        si
+
         /// A task whose result is the results of `tasks`, in order, once all
         /// of them complete. It throws what the first of them that threw
         /// threw.
@@ -878,8 +915,16 @@ namespace Tasks is
         @IF.llvm()
         route_here(work: () -> void) -> () -> void static is
             let inbox = expect_from_another_thread()
+            let here = Ghul.Internal.THREAD_LOCALS.current
 
-            return () is inbox.deliver(work) si
+            return () is
+                if Ghul.Internal.THREAD_LOCALS.current == here then
+                    inbox.withdraw()
+                    post(work)
+                else
+                    inbox.deliver(work)
+                fi
+            si
         si
 
         /// Wraps `work` so that calling the wrapper queues it.

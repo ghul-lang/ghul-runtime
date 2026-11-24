@@ -1,0 +1,29 @@
+// Code waiting on a future that completes on the same thread resumes in the
+// order the completions happened, among everything else queued on that
+// thread, on every target.
+use IO.Std.write_line
+
+use Tasks.Future
+use Tasks.Completer
+
+let gate = Completer()
+
+waiter(name: string) -> Future is
+    await gate.task
+
+    write_line("{name} resumed")
+si
+
+releaser() -> Future is
+    gate.set_result()
+
+    await Future.`yield()
+
+    write_line("releaser resumed")
+si
+
+let started = [waiter("first"), waiter("second"), releaser()]
+
+Future.when_all(started).wait()
+
+write_line("all complete")
