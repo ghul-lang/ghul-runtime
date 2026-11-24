@@ -458,7 +458,7 @@ namespace Tests is
         // for the task; a type ghūl did not compile says what it is itself.
         @Test()
         Render_a_type_from_another_language_by_its_own_to_string() is
-            let task = Tasks.TASK.from_result(42)
+            let task = Concurrency.Future.from_result(42)
 
             are_equal(task.to_string(), $(task))
             are_equal("System.Random", $(Ghul.Random(1)))

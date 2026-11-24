@@ -2,7 +2,7 @@ namespace Tests is
     use Ghul
     use Collections.LIST
 
-    use Ghul.Threads
+    use Concurrency
 
     use Microsoft.VisualStudio.TestTools.UnitTesting
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
@@ -145,14 +145,14 @@ namespace Tests is
             is_true(ran.load())
         si
 
-        _awaited_answer() -> Tasks.TASK[int] is
+        _awaited_answer() -> Concurrency.Future[int] is
             let worker = start(() => (Tasks.Thread.sleep(20); 6 * 7))
             let result = await worker
 
             return result
         si
 
-        _awaited_failure() -> Tasks.TASK[string] is
+        _awaited_failure() -> Concurrency.Future[string] is
             try
                 await start(() -> int is throw InvalidOperationException("boom") si)
                 return "no exception"
@@ -161,13 +161,13 @@ namespace Tests is
             yrt
         si
 
-        _awaited(thread: Thread[string]) -> Tasks.TASK[string] is
+        _awaited(thread: Thread[string]) -> Concurrency.Future[string] is
             let result = await thread
 
             return result
         si
 
-        _awaited_void(thread: Thread) -> Tasks.TASK is
+        _awaited_void(thread: Thread) -> Concurrency.Future is
             await thread
         si
     si

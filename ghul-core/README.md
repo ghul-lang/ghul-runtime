@@ -128,9 +128,9 @@ the member's own body and holds overrides to nothing, the member is marked
   from a string, `uint.parse` and `Math.div_rem`, against .NET's output
 - `tests/async-surface` — the state machine, awaiter and exception types an
   asynchronous function's lowering uses, driven by hand, and the interval clock
-- `tests/tasks` — asynchronous functions returning `Tasks.TASK` and
-  `Tasks.TASK[T]`, awaits on yields, delays and other tasks, a `TASK[int]`
-  awaited through a `TASK`, failures through `await` and through `result`,
+- `tests/tasks` — asynchronous functions returning `Concurrency.Future` and
+  `Concurrency.Future[T]`, awaits on yields, delays and other tasks, a `Future[int]`
+  awaited through a `Future`, failures through `await` and through `result`,
   and the task combinators
 - `tests/disposable` — `use` over a class of the program's own, an iterator and
   a reader, disposing in reverse order and when an exception leaves the block
@@ -156,10 +156,10 @@ diagnostic that says so, and a comment in the test names what it waits for.
 
 ## Tasks
 
-`Tasks.TASK` and `Tasks.TASK[T]` are the task model of the targets with no
-.NET base class library. `TASK[T]` extends `TASK`, as .NET's `Task<TResult>`
-extends `Task`, and hides its awaiter so that awaiting a `TASK[T]` gives its
-result. Awaiting it as a `TASK` gives nothing.
+`Concurrency.Future` and `Concurrency.Future[T]` are the task model of the targets with no
+.NET base class library. `Future[T]` extends `Future`, as .NET's `Task<TResult>`
+extends `Task`, and hides its awaiter so that awaiting a `Future[T]` gives its
+result. Awaiting it as a `Future` gives nothing.
 
 There is one thread, so nothing runs concurrently. A continuation is queued
 when what it waits for completes, and the queue runs only when something

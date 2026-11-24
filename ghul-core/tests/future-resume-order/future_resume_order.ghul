@@ -3,8 +3,8 @@
 // thread, on every target.
 use IO.Std.write_line
 
-use Tasks.Future
-use Tasks.Completer
+use Concurrency.Future
+use Concurrency.Completer
 
 let gate = Completer()
 

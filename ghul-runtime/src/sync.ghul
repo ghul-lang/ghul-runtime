@@ -1,7 +1,7 @@
-namespace Ghul.Threads is
+namespace Concurrency is
     use Collections.QUEUE
-    use Tasks.Future
-    use Tasks.Completer
+    use Concurrency.Future
+    use Concurrency.Completer
 
     // The primitives asynchronous code and threads share. Each has an
     // awaitable form, which every target has, and a blocking form, which

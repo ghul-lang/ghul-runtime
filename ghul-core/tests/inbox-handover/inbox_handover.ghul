@@ -16,14 +16,14 @@ let all_once mut = true
 
 for _ in 0..rounds do
     let count = COUNT()
-    let done = Tasks.TASK_STATE()
-    let inbox = Tasks.SCHEDULER.expect_from_another_thread()
+    let done = Concurrency.TASK_STATE()
+    let inbox = Concurrency.SCHEDULER.expect_from_another_thread()
 
     for _ in 1..per_round do
-        Tasks.SCHEDULER.expect_from_another_thread()
+        Concurrency.SCHEDULER.expect_from_another_thread()
     od
 
-    let producer = Ghul.Threads.start(() is
+    let producer = Concurrency.start(() is
         for _ in 0..per_round do
             inbox.deliver(() is
                 count.runs = count.runs + 1
@@ -35,15 +35,15 @@ for _ in 0..rounds do
         od
     si)
 
-    Tasks.SCHEDULER.run_until(done)
+    Concurrency.SCHEDULER.run_until(done)
     producer.join()
 
     // Anything handed over twice is still waiting in the inbox: one more
     // delivery from this thread brings it out.
-    let settled = Tasks.TASK_STATE()
-    Tasks.SCHEDULER.expect_from_another_thread()
+    let settled = Concurrency.TASK_STATE()
+    Concurrency.SCHEDULER.expect_from_another_thread()
     inbox.deliver(() is settled.complete() si)
-    Tasks.SCHEDULER.run_until(settled)
+    Concurrency.SCHEDULER.run_until(settled)
 
     if count.runs != per_round then
         all_once = false

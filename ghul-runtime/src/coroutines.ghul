@@ -422,7 +422,7 @@ namespace Ghul.Coroutines is
         si
 
         wait(timeout: int) is
-            Tasks.SCHEDULER.run_ready(cast long(timeout))
+            Concurrency.SCHEDULER.run_ready(cast long(timeout))
         si
     si
 

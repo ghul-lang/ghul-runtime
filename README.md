@@ -65,12 +65,12 @@ let fib = memo_rec((fib, n: int) => if n < 2 then bigint(n) else fib(n - 1) + fi
 let shout = ((s: string) => s.to_upper()) >> (s => "{s}!")
 ```
 
-### Threads - `Ghul.Threads`
+### Threads - `Concurrency`
 
 Threads on llvm and .NET; wasm runs one thread and does not have them. `start(body)` runs `body` on a new thread with an 8 MB stack and answers a `Thread[T]`, or a `Thread` for a body that answers nothing; `join()` waits for it and answers what the body answered, or throws what it threw. A thread can also be awaited from an asynchronous function: the function carries on once the thread finishes, on llvm on the thread that awaited it, and on .NET on a thread-pool thread, as .NET's own awaits do. On llvm, a thread waiting in `join()` or for a task runs its own queued task work while it waits. `Mutex` is a lock one thread holds at a time, and `hold(body)` runs `body` holding it. `AtomicInt`, `AtomicLong`, `AtomicBool` and `Atomic[T]` are values threads change without a mutex: each operation on one is indivisible, so no other thread sees it half done, and takes no lock. A program is responsible for how its threads share collections and other objects; the library makes its own hidden state safe to use from several threads.
 
 ```ghul
-use Ghul.Threads
+use Concurrency
 
 let hits = AtomicInt(0)
 let workers = [start(() => hits.increment()) for _ in 0..4]
@@ -81,7 +81,7 @@ od
 
 write_line("{hits.load()}")   // 4
 
-answer() -> Tasks.TASK[int] is
+answer() -> Concurrency.Future[int] is
     let result = await start(() => 6 * 7)
     return result
 si

@@ -1,16 +1,16 @@
-// Tasks on a target with one thread: asynchronous functions returning TASK
-// and TASK[T], awaits on yields, delays and other tasks, results read by
+// Tasks on a target with one thread: asynchronous functions returning Future
+// and Future[T], awaits on yields, delays and other tasks, results read by
 // running queued work, failures through await and through result, and the
 // combinators the library offers.
 use IO.Std.write_line
 
-double_later(n: int) -> Tasks.TASK[int] is
-    await Tasks.TASK.`yield()
+double_later(n: int) -> Concurrency.Future[int] is
+    await Concurrency.Future.`yield()
 
     return n * 2
 si
 
-sum_of_doubles(count: int) -> Tasks.TASK[int] is
+sum_of_doubles(count: int) -> Concurrency.Future[int] is
     let total mut = 0
 
     for i in 1::count do
@@ -20,27 +20,27 @@ sum_of_doubles(count: int) -> Tasks.TASK[int] is
     return total
 si
 
-after_delay(label: string) -> Tasks.TASK is
-    await Tasks.TASK.delay(1)
+after_delay(label: string) -> Concurrency.Future is
+    await Concurrency.Future.delay(1)
 
     write_line("after a delay: {label}")
 si
 
-fails() -> Tasks.TASK[int] is
-    await Tasks.TASK.`yield()
+fails() -> Concurrency.Future[int] is
+    await Concurrency.Future.`yield()
 
     throw Ghul.InvalidOperationException("failed inside")
 si
 
-awaits_through_the_base() -> Tasks.TASK is
-    let task: Tasks.TASK = double_later(5)
+awaits_through_the_base() -> Concurrency.Future is
+    let task: Concurrency.Future = double_later(5)
 
     await task
 
     write_line("awaited through the base: {task.is_completed}")
 si
 
-catches() -> Tasks.TASK[string] is
+catches() -> Concurrency.Future[string] is
     try
         await fails()
 
@@ -59,7 +59,7 @@ entry() is
 
     awaits_through_the_base().wait()
 
-    let tasks: ARRAY[Tasks.TASK] = [Tasks.TASK.from_result(1), Tasks.TASK.completed_task]
+    let tasks: ARRAY[Concurrency.Future] = [Concurrency.Future.from_result(1), Concurrency.Future.completed_task]
 
     write_line("a task with a result is a task: {tasks[0].is_completed} {tasks[1].is_completed}")
 
@@ -69,25 +69,25 @@ entry() is
         write_line("aggregate: {e.inner_exception?.message}")
     yrt
 
-    write_line("from_result: {Tasks.TASK.from_result(7).result}")
-    write_line("completed: {Tasks.TASK.completed_task.is_completed}")
+    write_line("from_result: {Concurrency.Future.from_result(7).result}")
+    write_line("completed: {Concurrency.Future.completed_task.is_completed}")
 
-    let continued = Tasks.TASK.from_result(20).continue_with((t: Tasks.TASK[int]) -> int => t.result + 1)
+    let continued = Concurrency.Future.from_result(20).continue_with((t: Concurrency.Future[int]) -> int => t.result + 1)
 
     write_line("continue_with: {continued.result}")
 
-    let all = Tasks.TASK.when_all([double_later(1), double_later(2), double_later(3)])
+    let all = Concurrency.Future.when_all([double_later(1), double_later(2), double_later(3)])
 
     write_line("when_all: {all.result[0]} {all.result[1]} {all.result[2]}")
 
-    let nested = Tasks.TASK.from_result(5).continue_with((t: Tasks.TASK[int]) -> Tasks.TASK[int] => double_later(t.result))
+    let nested = Concurrency.Future.from_result(5).continue_with((t: Concurrency.Future[int]) -> Concurrency.Future[int] => double_later(t.result))
 
     write_line("unwrap: {Tasks.TaskExtensions.unwrap(nested).result}")
 
-    write_line("run: {Tasks.TASK.run(() => 41 + 1).result}")
+    write_line("run: {Concurrency.Future.run(() => 41 + 1).result}")
 
     try
-        Tasks.TASK().wait()
+        Concurrency.Future().wait()
     catch e: Ghul.InvalidOperationException
         write_line("never completes: {e.message}")
     yrt

@@ -639,7 +639,7 @@ namespace Tests is
         delaying(journal: LIST[string], name: string, n: int) -> Coroutine is
             for i in 1::n do
                 journal.add("{name} {i}")
-                await Tasks.TASK.delay(10)
+                await Concurrency.Future.delay(10)
             od
         si
 
@@ -659,7 +659,7 @@ namespace Tests is
         si
 
         computed_elsewhere(threads: LIST[int]) -> Coroutine[int] is
-            let v = await Tasks.TASK.run(() -> int => 42)
+            let v = await Concurrency.Future.run(() -> int => 42)
             threads.add(Tasks.Thread.current_thread.managed_thread_id)
             return v
         si
@@ -702,7 +702,7 @@ namespace Tests is
         si
 
         awaiting_a_fault() -> Coroutine is
-            await Tasks.TASK.run(() -> void is
+            await Concurrency.Future.run(() -> void is
                 throw Ghul.InvalidOperationException("task failed")
             si)
         si

@@ -1,5 +1,5 @@
 use default
-use Ghul.Threads
+use Concurrency
 
 // Eight threads add under a mutex; each answers how many it added.
 let mutex = Mutex()

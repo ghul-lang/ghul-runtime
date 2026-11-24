@@ -1,6 +1,6 @@
 // wasm runs one thread, so it has none of this.
 @IF.not.wasm()
-namespace Ghul.Threads is
+namespace Concurrency is
     use System.Runtime.CompilerServices.ICriticalNotifyCompletion
 
     /// Starts a thread running `body`, with a stack of 8 MB, and answers
@@ -196,7 +196,7 @@ namespace Ghul.Threads is
         _thread: Tasks.Thread
 
         @IF.dotnet()
-        _completion: Tasks.TaskCompletionSource
+        _completion: Concurrency.Completer
 
         init(body: () -> void, stack_size: int) is
             _body = body
@@ -274,11 +274,11 @@ namespace Ghul.Threads is
 
             if Ghul.Internal.ATOMICS.load(_finished ref) == 1 then
                 _finishing.exit()
-                Tasks.SCHEDULER.post(continuation)
+                Concurrency.SCHEDULER.post(continuation)
                 return
             fi
 
-            _waiters.add((Tasks.SCHEDULER.expect_from_another_thread(), continuation))
+            _waiters.add((Concurrency.SCHEDULER.expect_from_another_thread(), continuation))
             _finishing.exit()
         si
 
@@ -288,10 +288,10 @@ namespace Ghul.Threads is
         @IF.llvm()
         join() is
             if !is_finished then
-                let finished = Tasks.TASK_STATE()
+                let finished = Concurrency.TASK_STATE()
 
                 on_completed(() is finished.complete() si)
-                Tasks.SCHEDULER.run_until(finished)
+                Concurrency.SCHEDULER.run_until(finished)
             fi
 
             _joining.enter()
@@ -320,7 +320,7 @@ namespace Ghul.Threads is
 
         @IF.dotnet()
         _start(stack_size: int) is
-            _completion = Tasks.TaskCompletionSource(Tasks.TaskCreationOptions.RUN_CONTINUATIONS_ASYNCHRONOUSLY)
+            _completion = Concurrency.Completer(Tasks.TaskCreationOptions.RUN_CONTINUATIONS_ASYNCHRONOUSLY)
             _thread = Tasks.Thread(System.Threading.ThreadStart(_execute), if stack_size > 0 then stack_size else DEFAULT_STACK_SIZE fi)
             _thread.start()
         si

@@ -146,7 +146,7 @@ namespace Tests is
         FirstRead_FromAnotherThread_IsFresh() is
             let pipe = [1, 2, 3] |> map(x => x)
 
-            let other = Tasks.TASK.run[Iterator[int]](() -> Iterator[int] => pipe.iterator).result
+            let other = Concurrency.Future.run[Iterator[int]](() -> Iterator[int] => pipe.iterator).result
 
             are_not_same(pipe, other)
             are_same(pipe, pipe.iterator)
