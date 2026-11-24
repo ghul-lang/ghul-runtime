@@ -1,7 +1,0 @@
-{
-    "name": "coroutines",
-    "targets": ["wasm"],
-    "dependencies": {
-        "ghul-runtime": { "path": "../.." }
-    }
-}

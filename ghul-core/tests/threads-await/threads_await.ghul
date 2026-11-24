@@ -1,10 +1,10 @@
 use default
-use Ghul.Threads
+use Concurrency
 
 // An asynchronous function awaits a thread's result; waiting for the task
 // blocks until the thread hands its completion back, rather than throwing
 // because nothing on this thread can complete it.
-answer() -> Tasks.TASK[int] is
+answer() -> Concurrency.Future[int] is
     let worker = start(() => (Tasks.Thread.sleep(20); 6 * 7))
     let result = await worker
 
@@ -14,7 +14,7 @@ si
 write_line("awaited {answer().result}")
 
 // A thread that throws throws again where it is awaited.
-failing() -> Tasks.TASK[string] is
+failing() -> Concurrency.Future[string] is
     try
         await start(() -> int is throw Ghul.InvalidOperationException("worker failed") si)
         return "no exception"
@@ -26,7 +26,7 @@ si
 write_line(failing().result)
 
 // A thread that has already finished is awaited without waiting.
-finished() -> Tasks.TASK[string] is
+finished() -> Concurrency.Future[string] is
     let done = start(() => "early")
     done.join()
 
@@ -39,13 +39,13 @@ write_line("finished {finished().result}")
 // on, in the order they complete.
 let order = LIST[string]()
 
-slow() -> Tasks.TASK is
+slow() -> Concurrency.Future is
     await start(() is Tasks.Thread.sleep(200) si)
     order.add("thread")
 si
 
-quick() -> Tasks.TASK is
-    await Tasks.TASK.delay(10)
+quick() -> Concurrency.Future is
+    await Concurrency.Future.delay(10)
     order.add("delay")
 si
 
@@ -57,7 +57,7 @@ write_line("order {order |> join(", ")}")
 // worker waits for a flag only that queued work sets.
 let flag = AtomicBool(false)
 
-Tasks.TASK.run(() is flag.store(true) si)
+Concurrency.Future.run(() is flag.store(true) si)
 
 let waiter = start(() -> int is
     while !flag.load() do
@@ -70,7 +70,7 @@ si)
 write_line("joined {waiter.join()}")
 
 // Several threads awaited from one function, each resuming it in turn.
-sum() -> Tasks.TASK[int] is
+sum() -> Concurrency.Future[int] is
     let workers = [start(() => (Tasks.Thread.sleep(5 * i); i)) for i in 1::4] |> LIST()
     let total mut = 0
 

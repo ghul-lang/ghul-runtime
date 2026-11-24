@@ -1,4 +1,4 @@
-// object.equals(a, b) and Tasks.TASK.from_exception[T], as on .NET.
+// object.equals(a, b) and Concurrency.Future.from_exception[T], as on .NET.
 use IO.Std.write_line
 
 class Key(id: int public) is
@@ -14,7 +14,7 @@ let none: object? = null
 write_line("{object.equals(a, Key(1))} {object.equals(a, Key(2))} {object.equals(a, a)}")
 write_line("{object.equals(none, none)} {object.equals(a, none)} {object.equals(none, a)}")
 
-let failed: Tasks.TASK[int] = Tasks.TASK.from_exception[int](Ghul.Exception("inner cause"))
+let failed: Concurrency.Future[int] = Concurrency.Future.from_exception[int](Ghul.Exception("inner cause"))
 
 try
     let _ = failed.result;
@@ -22,7 +22,7 @@ catch e: Ghul.Exception
     write_line("threw: {e.get_base_exception().message}")
 yrt
 
-let inferred: Tasks.TASK[string] = Tasks.TASK.from_exception(Ghul.Exception("by context"))
+let inferred: Concurrency.Future[string] = Concurrency.Future.from_exception(Ghul.Exception("by context"))
 
 try
     let _ = inferred.result;

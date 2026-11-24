@@ -1,5 +1,5 @@
-namespace Ghul.Threads is
-    use Tasks.Future
+namespace Concurrency is
+    use Concurrency.Future
 
     // Every thread runs its asynchronous code on its own event loop: work
     // queued on the loop runs one piece at a time, and code resumed after an

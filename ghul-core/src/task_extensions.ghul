@@ -1,0 +1,58 @@
+namespace Tasks is
+    use Concurrency.Future
+
+    /// Helpers over tasks of tasks.
+    class TaskExtensions is
+        /// A task that completes as the task `task` answers does.
+        ///
+        /// - task: a task whose result is a task
+        unwrap[T](task: Future[Future[T]]) -> Future[T] static is
+            let result = Future[T]()
+
+            task.state.on_completed(() is
+                if task.is_faulted then
+                    result.state.fail(task.exception!)
+                    return
+                fi
+
+                let inner = task.state_result
+
+                inner.state.on_completed(() is
+                    if inner.is_faulted then
+                        result.state.fail(inner.exception!)
+                    else
+                        result.set_result(inner.state_result)
+                    fi
+                si)
+            si)
+
+            return result
+        si
+
+        /// A task that completes as the task `task` answers does.
+        ///
+        /// - task: a task whose result is a task
+        unwrap(task: Future[Future]) -> Future static is
+            let result = Future()
+
+            task.state.on_completed(() is
+                if task.is_faulted then
+                    result.state.fail(task.exception!)
+                    return
+                fi
+
+                let inner = task.state_result
+
+                inner.state.on_completed(() is
+                    if inner.is_faulted then
+                        result.state.fail(inner.exception!)
+                    else
+                        result.state.complete()
+                    fi
+                si)
+            si)
+
+            return result
+        si
+    si
+si
