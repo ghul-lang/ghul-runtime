@@ -57,7 +57,29 @@ namespace Ghul.Coroutines is
     // await is reported as an error instead.
     /// Drives coroutines on one thread. Calling a coroutine starts it on the caller's stack until it suspends; `run` then resumes parked coroutines one at a time until none remain.
     class SCHEDULER is
-        _current: SCHEDULER? static
+        @IF.dotnet()
+        _per_thread: System.Threading.ThreadLocal[SCHEDULER?] static
+
+        @IF.dotnet()
+        init() static is
+            _per_thread = System.Threading.ThreadLocal[SCHEDULER?]()
+        si
+
+        @IF.dotnet()
+        _installed() -> SCHEDULER? static => _per_thread.value
+
+        @IF.dotnet()
+        _install(s: SCHEDULER) static is
+            _per_thread.value = s
+        si
+
+        @IF.source_core()
+        _installed() -> SCHEDULER? static => cast SCHEDULER?(Ghul.Internal.THREAD_LOCALS.current.coroutine_scheduler)
+
+        @IF.source_core()
+        _install(s: SCHEDULER) static is
+            Ghul.Internal.THREAD_LOCALS.current.coroutine_scheduler = s
+        si
 
         _ready: Collections.QUEUE[() -> void]
         _sleepers: Collections.LIST[SLEEPER]
@@ -76,15 +98,18 @@ namespace Ghul.Coroutines is
         si
 
         // The scheduler coroutines park on, created on first use.
-        /// The scheduler coroutines park on, created on first use if none has been installed. There is one for the program, not one for each thread, so coroutines are run from one thread.
+        /// The scheduler coroutines on the calling thread park on, created on first use if none has been installed. Each thread has its own.
         current: SCHEDULER static is
-            if !_current? then
-                _current = SCHEDULER()
+            if let found = _installed() then
+                return found
             fi
-            return _current
+
+            let made = SCHEDULER()
+            _install(made)
+            return made
         si,
             = s is
-                _current = s
+                _install(s)
             si
 
         // An awaitable that parks the calling coroutine until `run`
@@ -125,6 +150,7 @@ namespace Ghul.Coroutines is
         /// Wraps `continuation` from an await this scheduler doesn't own, so it only posts back to the scheduler's inbox for `run` to resume. Called by the coroutine builders.
         external(continuation: () -> void) -> () -> void is
             _outstanding = _outstanding + 1
+            _inbox.expect()
 
             let inbox = _inbox
 
@@ -289,9 +315,17 @@ namespace Ghul.Coroutines is
         Tasks.Thread.sleep(milliseconds)
     si
 
-    // A program on a target with a source core library has one thread,
-    // which waits for the deadline on the clock.
-    @IF.source_core()
+    // On llvm the thread blocks until the deadline, on an inbox nothing
+    // will deliver to.
+    @IF.llvm()
+    _pause_thread(milliseconds: int) is
+        let never = Ghul.Internal.INBOX()
+        never.expect()
+        never.wait(cast long(milliseconds))
+    si
+
+    // wasm has one thread, which waits for the deadline on the clock.
+    @IF.wasm()
     _pause_thread(milliseconds: int) is
         let deadline = SCHEDULER.now + cast long(milliseconds)
 
@@ -311,6 +345,10 @@ namespace Ghul.Coroutines is
             _posted = System.Collections.Concurrent.ConcurrentQueue[() -> void]()
             _signal = System.Threading.ManualResetEventSlim(false)
         si
+
+        // Counts one more post another thread will make. The count of
+        // posts owed is the scheduler's own on .NET.
+        expect() is si
 
         // Posts `continuation`, from any thread.
         post(continuation: () -> void) is
@@ -350,11 +388,51 @@ namespace Ghul.Coroutines is
         si
     si
 
-    // On a target with a source core library there is no other thread to
-    // post from, so a coroutine awaiting something the scheduler does not
-    // own would wait for ever, and waiting is reported instead.
-    @IF.source_core()
+    // On llvm the scheduler's thread has one queue of work that other
+    // threads hand it, its task loop's inbox: a continuation another thread
+    // completes arrives there, and the coroutine scheduler waits by running
+    // that loop, so an await of a thread or a future and an await the
+    // scheduler owns share one wait.
+    @IF.llvm()
     class _INBOX is
+        _posted: Collections.QUEUE[() -> void]
+
+        init() is
+            _posted = Collections.QUEUE[() -> void]()
+        si
+
+        expect() is si
+
+        // Called on the scheduler's thread: whatever awaited thread or
+        // future resumes the continuation has already routed it back here
+        // through the task loop.
+        post(continuation: () -> void) is
+            _posted.enqueue(continuation)
+        si
+
+        take_all(ready: Collections.QUEUE[() -> void]) -> int is
+            let count mut = 0
+
+            while _posted.count > 0 do
+                ready.enqueue(_posted.dequeue())
+                count = count + 1
+            od
+
+            return count
+        si
+
+        wait(timeout: int) is
+            Tasks.SCHEDULER.run_ready(cast long(timeout))
+        si
+    si
+
+    // wasm runs one thread, so there is no other thread to post from: a
+    // coroutine awaiting something the scheduler does not own would wait
+    // for ever, and waiting is reported instead.
+    @IF.wasm()
+    class _INBOX is
+        expect() is si
+
         _posted: Collections.QUEUE[() -> void]
 
         init() is
