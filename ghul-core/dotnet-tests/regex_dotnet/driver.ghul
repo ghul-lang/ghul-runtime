@@ -33,7 +33,7 @@ namespace Harness is
             let theirs = _theirs(pattern, options, input)
             let theirs_ms = clock.elapsed_milliseconds
             clock.restart()
-            let work = Tasks.TASK.run(() => _mine(pattern, options, input))
+            let work = Concurrency.Future.run(() => _mine(pattern, options, input))
 
             if !work.wait(CASE_LIMIT_MS) then
                 write_line("runaway: /{_shown(pattern)}/ options {options} on \"{_shown(input)}\" ran past {CASE_LIMIT_MS} ms; .NET: {theirs}")
