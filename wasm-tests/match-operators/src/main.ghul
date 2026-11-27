@@ -1,0 +1,68 @@
+// The runtime's `~` overloads, compiled from the runtime's own sources:
+// case values and pattern leaves match against ranges of each element
+// type, predicates and sets, and print what the same program prints on
+// .NET.
+use IO.Std.write_line
+use Collections.SET
+
+grade(n: int) -> string =>
+    case n
+    when 0..50 then "fail"
+    when 50::69 then "pass"
+    when 70::100 then "distinction"
+    else "out of range"
+    esac
+
+letter(c: char) -> string =>
+    case c
+    when 'a'::'z' then "lower"
+    when 'A'..'[' then "upper"
+    else "other"
+    esac
+
+wide(n: long) -> string =>
+    case n
+    when 0L..1_000_000_000_000L then "small"
+    else "large"
+    esac
+
+band(x: double) -> string =>
+    case x
+    when 0.0..0.5 then "low"
+    when 0.5::1.0 then "high"
+    else "outside"
+    esac
+
+parity(n: int) -> string =>
+    case n
+    when ~n => n % 2 == 0 then "even"
+    else "odd"
+    esac
+
+vowel(c: char, vowels: SET[char]) -> string =>
+    case c
+    when vowels then "vowel"
+    else "consonant"
+    esac
+
+entry() is
+    write_line("{grade(10)} {grade(50)} {grade(69)} {grade(70)} {grade(100)} {grade(101)}")
+    write_line("{letter('q')} {letter('Z')} {letter('7')}")
+    write_line("{wide(5L)} {wide(1_000_000_000_000L)}")
+    write_line("{band(0.0)} {band(0.5)} {band(1.0)} {band(1.5)} {band(-0.1)}")
+
+    let zero = 0.0
+    write_line(band(zero / zero))
+    write_line("{parity(4)} {parity(7)}")
+
+    let vowels = SET[char](['a', 'e', 'i', 'o', 'u'])
+    write_line("{vowel('e', vowels)} {vowel('x', vowels)}")
+
+    let pair = (0.25, "quarter")
+    case pair
+    when (~0.0..0.5, name) then write_line("low {name}")
+    else write_line("not low")
+    esac
+
+    write_line("{0.0..1.0} {0.0::1.0}")
+si

@@ -344,7 +344,7 @@ namespace Ghul is
     /// string or character inside another value quoted.
     ///
     /// - value: the value to render
-    inspect(value: object?) -> string is
+    inspect(value: object?) -> string pure is
         let state = DISPLAY_STATE(DisplayMode.DETAILED, DISPLAY_STATE.default_max_elements)
 
         state.render(value)

@@ -1,0 +1,50 @@
+namespace Ghul is
+    // Ranges over `double` hold their two endpoints and nothing else.
+    // A `double` has no next value to step to, so they are not iterable,
+    // and `for x in 0.0..1.0 do` is a type error rather than a loop with
+    // a step chosen for the reader. They exist to be matched against.
+
+    /// The half-open range of `double` from `from` up to but not including `to`, produced by `..`.
+    struct DOUBLE_RANGE: Range[double] is
+        /// The lower bound, included.
+        from: double
+        /// The upper bound, excluded.
+        to: double
+
+        /// Creates a range from `from` up to but not including `to`.
+        init(from: double, to: double) is
+            self.from = from
+            self.to = to
+        si
+
+        /// Renders as `from..to`.
+        to_string() -> string => "{from}..{to}"
+    si
+
+    /// The closed range of `double` from `from` to `to`, including both, produced by `::`.
+    struct DOUBLE_RANGE_INCLUSIVE: Range[double] is
+        /// The lower bound, included.
+        from: double
+        /// The upper bound, included.
+        to: double
+
+        /// Creates a range from `from` to `to`, including both.
+        init(from: double, to: double) is
+            self.from = from
+            self.to = to
+        si
+
+        /// Renders as `from::to`.
+        to_string() -> string => "{from}::{to}"
+    si
+si
+
+namespace Ghul.Intrinsics is
+    use Ghul
+
+    /// The range from `from` up to but not including `to`.
+    ..(from: double, to: double) -> DOUBLE_RANGE pure => DOUBLE_RANGE(from, to)
+
+    /// The range from `from` to `to`, including both.
+    ::(from: double, to: double) -> DOUBLE_RANGE_INCLUSIVE pure => DOUBLE_RANGE_INCLUSIVE(from, to)
+si

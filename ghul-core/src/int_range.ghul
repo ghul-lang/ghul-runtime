@@ -173,4 +173,10 @@ namespace Ghul.Intrinsics is
     /// The range from `from` to `to`, including both.
     ::(from: char, to: char) -> CHAR_RANGE_INCLUSIVE pure =>
         CHAR_RANGE_INCLUSIVE(from, to)
+
+    /// Whether `value` is in `range`: at least `from` and below `to`.
+    ~(value: char, range: CHAR_RANGE) -> bool => value >= range.from /\ value < range.to
+
+    /// Whether `value` is in `range`: at least `from` and at most `to`.
+    ~(value: char, range: CHAR_RANGE_INCLUSIVE) -> bool => value >= range.from /\ value <= range.to
 si

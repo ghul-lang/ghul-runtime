@@ -1,0 +1,40 @@
+// The match operator `~`: a `case` value or a `~`-marked pattern leaf is
+// tested with whichever of `~` and `=~` fits better, so these let an arm
+// test a value against a range, a predicate or a set as readily as it
+// compares it with a value.
+namespace Ghul.Intrinsics is
+    use Ghul
+    use Ghul.Math.BinaryInteger
+
+    /// Whether `value` is in `range`: at least `from` and below `to`.
+    ~(value: int, range: INT_RANGE) -> bool => value >= range.from /\ value < range.to
+
+    /// Whether `value` is in `range`: at least `from` and at most `to`.
+    ~(value: int, range: INT_RANGE_INCLUSIVE) -> bool => value >= range.from /\ value <= range.to
+
+    /// Whether `value` is in `range`: at least `from` and below `to`.
+    ~[T: BinaryInteger[T]](value: T, range: RANGE[T]) -> bool =>
+        value >= range.from /\ value < range.to
+
+    /// Whether `value` is in `range`: at least `from` and at most `to`.
+    ~[T: BinaryInteger[T]](value: T, range: RANGE_INCLUSIVE[T]) -> bool =>
+        value >= range.from /\ value <= range.to
+
+    // The double ranges are tested with the strict comparisons and `==`
+    // alone, each of which is false when either operand is NaN, so NaN
+    // is in no range.
+
+    /// Whether `value` is in `range`: at least `from` and below `to`. `NaN` is in no range.
+    ~(value: double, range: DOUBLE_RANGE) -> bool =>
+        (value > range.from \/ value == range.from) /\ value < range.to
+
+    /// Whether `value` is in `range`: at least `from` and at most `to`. `NaN` is in no range.
+    ~(value: double, range: DOUBLE_RANGE_INCLUSIVE) -> bool =>
+        (value > range.from \/ value == range.from) /\ (value < range.to \/ value == range.to)
+
+    /// Whether `test` holds for `value`.
+    ~[T](value: T, test: (T) -> bool) -> bool => test(value)
+
+    /// Whether `set` holds `value`.
+    ~[T](value: T, set: Collections.Set[T]) -> bool pure => set.contains(value)
+si

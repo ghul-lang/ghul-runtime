@@ -1,0 +1,83 @@
+namespace Tests is
+    use Ghul
+    use Collections.SET
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class MATCH_OPERATOR_Should is
+        init() is si
+
+        grade(n: int) -> string =>
+            case n
+            when 0..50 then "fail"
+            when 50::69 then "pass"
+            when 70::100 then "distinction"
+            else "out of range"
+            esac
+
+        letter(c: char) -> string =>
+            case c
+            when 'a'::'z' then "lower"
+            when 'A'..'[' then "upper"
+            else "other"
+            esac
+
+        band(x: double) -> string =>
+            case x
+            when 0.0..0.5 then "low"
+            when 0.5::1.0 then "high"
+            else "outside"
+            esac
+
+        @Test()
+        int_range__given_value_at_each_bound__matches_half_open_and_closed_ends() is
+            are_equal("fail pass pass distinction distinction out of range",
+                "{grade(10)} {grade(50)} {grade(69)} {grade(70)} {grade(100)} {grade(101)}")
+        si
+
+        @Test()
+        char_range__given_letters__matches_each_range() is
+            are_equal("lower upper other", "{letter('q')} {letter('Z')} {letter('7')}")
+        si
+
+        @Test()
+        long_range__given_value_at_upper_bound__does_not_match() is
+            let wide = (n: long) => case n when 0L..1_000_000_000_000L then "small" else "large" esac
+
+            are_equal("small large", "{wide(5L)} {wide(1_000_000_000_000L)}")
+        si
+
+        @Test()
+        double_range__given_value_at_each_bound__matches_half_open_and_closed_ends() is
+            are_equal("low high high outside outside",
+                "{band(0.0)} {band(0.5)} {band(1.0)} {band(1.5)} {band(-0.1)}")
+        si
+
+        @Test()
+        double_range__given_nan__matches_no_range() is
+            are_equal("outside", band(0.0 / 0.0))
+        si
+
+        @Test()
+        predicate__given_function_literal__matches_where_it_holds() is
+            let parity = (n: int) => case n when ~x => x % 2 == 0 then "even" else "odd" esac
+
+            are_equal("even odd", "{parity(4)} {parity(7)}")
+        si
+
+        @Test()
+        set__given_member_and_non_member__matches_member_only() is
+            let vowels = SET[char](['a', 'e', 'i', 'o', 'u'])
+            let vowel = (c: char) => case c when vowels then "vowel" else "consonant" esac
+
+            are_equal("vowel consonant", "{vowel('e')} {vowel('x')}")
+        si
+
+        @Test()
+        double_range__rendered__shows_its_operator() is
+            are_equal("0.25..1 0::1.5", "{0.25..1.0} {0.0::1.5}")
+        si
+    si
+si
