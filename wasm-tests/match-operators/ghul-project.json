@@ -1,0 +1,7 @@
+{
+    "name": "match-operators",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
