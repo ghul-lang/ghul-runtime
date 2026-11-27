@@ -1,0 +1,6 @@
+true true true 3
+caught: =~ of a negative
+caught: <> of a negative
+caught: ~ of a negative
+thing: Cannot access a disposed object.
+Object name: 'thing'.

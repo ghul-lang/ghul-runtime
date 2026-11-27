@@ -1,0 +1,7 @@
+{
+    "name": "throwing-operators",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

@@ -2,8 +2,10 @@ namespace Ghul is
     /// The base of every exception: what `throw` raises and `catch` handles.
     @suppress("non-upper-snake-case-name")
     class Exception open is
+        _message: string
+
         /// What went wrong, for a person to read.
-        message: string;
+        message: string => _message
 
         _inner_exception: Exception?
 
@@ -13,18 +15,18 @@ namespace Ghul is
         /// An exception whose message names its type and says only that it
         /// was thrown.
         init() is
-            self.message = "Exception of type '{_type_name(self)}' was thrown.";
+            _message = "Exception of type '{_type_name(self)}' was thrown.";
         si
 
         /// - message: what went wrong
         init(message: string) is
-            self.message = message;
+            _message = message
         si
 
         /// - message: what went wrong
         /// - inner_exception: the exception this one is thrown because of, or null
         init(message: string, inner_exception: Exception?) is
-            self.message = message;
+            _message = message
             _inner_exception = inner_exception;
         si
 
@@ -150,8 +152,10 @@ namespace Ghul is
     /// Thrown when an object that has been closed or disposed is used. As on
     /// .NET, the message names the object where an object name is given.
     class ObjectDisposedException: InvalidOperationException open is
+        _object_name: string
+
         /// The name of the object that was used, or empty.
-        object_name: string
+        object_name: string => _object_name
 
         /// - object_name: the name of the object that was used, or null
         init(object_name: string?) is
@@ -162,7 +166,7 @@ namespace Ghul is
         /// - message: what went wrong, or null for the general message
         init(object_name: string?, message: string?) is
             super.init(_message(object_name, message))
-            self.object_name = object_name ?? ""
+            _object_name = object_name ?? ""
         si
 
         _message(object_name: string?, message: string?) -> string static is
@@ -309,12 +313,14 @@ namespace Ghul is
     ///
     /// - T: the type of what the value held instead
     class UnwrapFailedException[T]: Exception open is
+        _payload: T
+
         /// What the value held instead of the default variant.
-        payload: T;
+        payload: T => _payload
 
         /// - payload: what the value held instead
         init(payload: T) is
-            self.payload = payload;
+            _payload = payload;
             super.init("unwrap failed: the value holds a non-default variant");
         si
     si
