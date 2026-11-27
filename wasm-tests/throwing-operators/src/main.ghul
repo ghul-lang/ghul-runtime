@@ -1,0 +1,61 @@
+// Operators whose bodies throw core exceptions need no `pure`: constructing
+// an exception writes only the new exception, so each operator is proven
+// store-free, and a narrowing survives constructing one.
+
+use IO.Std.write_line
+
+class Thing(v: int public) is
+    =~(other: Thing) -> bool =>
+        if v < 0 then throw Ghul.InvalidOperationException("=~ of a negative") else v == other.v fi
+
+    <>(other: Thing) -> int =>
+        if v < 0 then throw Ghul.Exception("<> of a negative") else v - other.v fi
+
+    get_hash_code() -> int => v
+si
+
+struct Odd is
+    init() is si
+si
+
+~(value: int, o: Odd) -> bool =>
+    if value < 0 then
+        throw Ghul.ArgumentOutOfRangeException("value", "~ of a negative")
+    else
+        value % 2 == 1
+    fi
+
+class Holder(name: string? public) is si
+
+name_length(h: Holder) -> int =>
+    if h.name? then
+        let unsupported = Ghul.NotSupportedException("unsupported")
+        let disposed = Ghul.ObjectDisposedException("thing")
+        let aggregate = Ghul.AggregateException("aggregate")
+        h.name.length
+    else
+        0
+    fi
+
+write_line("{Thing(1) =~ Thing(1)} {Thing(1) < Thing(2)} {3 ~ Odd()} {name_length(Holder("abc"))}")
+
+try
+    write_line("{Thing(-1) =~ Thing(1)}")
+catch e: Ghul.Exception
+    write_line("caught: {e.message}")
+yrt
+
+try
+    write_line("{Thing(-1) < Thing(1)}")
+catch e: Ghul.Exception
+    write_line("caught: {e.message}")
+yrt
+
+try
+    write_line("{-1 ~ Odd()}")
+catch e: Ghul.Exception
+    write_line("caught: {e.message}")
+yrt
+
+let disposed = Ghul.ObjectDisposedException("thing")
+write_line("{disposed.object_name}: {disposed.message}")
