@@ -1,5 +1,6 @@
 // The process's environment, arguments, path, memory and clock, and the
-// processor count, through the global functions, ending with an exit status.
+// processor count, through the global functions, a program run to completion,
+// ending with an exit status.
 use IO.Std.write_line
 use Concurrency.run
 use Concurrency.sleep
@@ -19,6 +20,9 @@ entry() is
     write_line("the monotonic clock advanced at least 20: {Time.monotonic_ms() - before >= 20L}")
 
     write_line("processors: {Concurrency.processor_count()}")
+
+    let ran = Process.run("/bin/sh", ["-c", "printf ran; exit 2"])
+    write_line("run: {ran.output} {ran.exit_code}")
 
     write_line("exiting")
     Process.exit(3)

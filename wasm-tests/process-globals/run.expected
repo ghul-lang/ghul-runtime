@@ -5,4 +5,5 @@ path is the environment's: true
 memory is not negative: true
 the monotonic clock advanced at least 20: true
 processors: 1
+run: ran 2
 exiting

@@ -120,12 +120,12 @@ let doc = Json.parse("[1, 2, 3]")
 let text = Json.write(doc)
 ```
 
-### Processes and the environment - `IO.Process`, `Ghul.Environment`
+### Processes and the environment - `Process`, `Ghul.Environment`
 
-`IO.Process.run` runs a program and returns its exit code and everything it wrote. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
+`Process.run` runs a program and returns its exit code and everything it wrote. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
 
 ```ghul
-let result = IO.Process.run("git", ["--version"])
+let result = Process.run("git", ["--version"])
 write_line("{result.exit_code} {result.output}")
 ```
 
