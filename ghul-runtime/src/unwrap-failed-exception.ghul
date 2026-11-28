@@ -1,7 +1,9 @@
 namespace Ghul is
     /// Thrown when `!` unwraps a union value that holds a variant other than
-    /// the default one. Catch this to handle every failed unwrap whatever the
-    /// value held; catch `UnwrapFailedException[T]` to read the value.
+    /// the default one, where that variant does not hold a `Ghul.Error`. Catch
+    /// this to handle any such failure whatever the value held; catch
+    /// `UnwrapFailedException[T]` to read the value. A failure whose variant
+    /// holds a `Ghul.Error` throws `ErrorException` instead.
     class UnwrapFailedException: Exception open is
         /// - message: what the value held instead of the default variant
         init(message: string) is
