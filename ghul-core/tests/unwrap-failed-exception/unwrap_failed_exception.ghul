@@ -1,13 +1,19 @@
-// UnwrapFailedException[T]: the typed payload a host reads after catching,
-// with a struct payload and a union payload.
+// The exceptions a failed `!` throws: UnwrapFailedException[T] with the
+// value a host reads after catching, caught either as itself or as its
+// non-generic base, and ErrorException with the Ghul.Error it holds.
 namespace Test is
     use IO.Std.write_line
 
-    struct POINT(x: int, y: int)
+    struct POINT(x: int public, y: int public)
 
     union Outcome is
         GOOD
         BAD
+    si
+
+    union Failure: Ghul.Error is
+        DISK_FULL(device: string)
+        OTHER(message: string)
     si
 
     entry() is
@@ -26,6 +32,28 @@ namespace Test is
             else
                 write_line("good")
             fi
+        yrt
+
+        try
+            throw Ghul.UnwrapFailedException[string]("elsewhere")
+        catch e: Ghul.UnwrapFailedException
+            write_line("caught by the base: {e.message}")
+        yrt
+
+        try
+            throw Ghul.ErrorException(Failure.OTHER("permission denied"))
+        catch e: Ghul.ErrorException
+            write_line(e.message)
+
+            if let o: Failure.OTHER = e.error then
+                write_line("the error comes back: {o.message}")
+            fi
+        yrt
+
+        try
+            throw Ghul.ErrorException(Failure.DISK_FULL("sda"))
+        catch e: Ghul.Exception
+            write_line(e.message)
         yrt
     si
 si

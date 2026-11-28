@@ -305,23 +305,4 @@ namespace Ghul is
             super.init(message);
         si
     si
-
-    /// Thrown when `!` unwraps a union value that holds a non-default variant.
-    /// The payload is what the value held instead: the complement variant's
-    /// field value when that variant declares exactly one field, otherwise the
-    /// whole variant value.
-    ///
-    /// - T: the type of what the value held instead
-    class UnwrapFailedException[T]: Exception open is
-        _payload: T
-
-        /// What the value held instead of the default variant.
-        payload: T => _payload
-
-        /// - payload: what the value held instead
-        init(payload: T) is
-            _payload = payload;
-            super.init("unwrap failed: the value holds a non-default variant");
-        si
-    si
 si

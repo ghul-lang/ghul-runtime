@@ -1,3 +1,7 @@
 3,4
-unwrap failed: the value holds a non-default variant
+unwrap failed: the value holds POINT(x = 3, y = 4)
 bad
+caught by the base: unwrap failed: the value holds elsewhere
+permission denied
+the error comes back: permission denied
+Failure.DISK_FULL(device = sda)
