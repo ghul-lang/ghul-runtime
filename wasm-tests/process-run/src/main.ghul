@@ -11,7 +11,7 @@ describe(result: Ghul.Result[Process.Output, Process.Error]) -> string =>
         case failed.error
         when n: Process.Error.NOT_FOUND then "not found: {n.program}"
         when p: Process.Error.PERMISSION_DENIED then "permission denied: {p.program}"
-        when o: Process.Error.OTHER then "other: {o.description}"
+        when o: Process.Error.OTHER then "other: {o.message}"
         esac
     else
         "neither"
@@ -31,6 +31,10 @@ entry() is
         write_line(recover(f.error))
         write_line("has a message: {f.error.message.length > 0}")
     fi
+
+    let other: Ghul.Error = Process.Error.OTHER("could not fork")
+
+    write_line("other through the trait: {other.message}")
 
     write_line("waited: {IO.Process.run("/bin/sh", ["-c", "exit 5"]).exit_code}")
 

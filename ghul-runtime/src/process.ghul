@@ -62,8 +62,9 @@ namespace Process is
         /// The program exists but is not allowed to run.
         PERMISSION_DENIED(program: string)
 
-        /// The program could not be started for another reason, described.
-        OTHER(description: string)
+        /// The program could not be started for another reason, which
+        /// `message` gives.
+        OTHER(message: string)
     si
 
     /// Runs `file_name` with `arguments`, sharing this process's standard
@@ -180,13 +181,13 @@ namespace Ghul.Internal is
         // system error number: ENOENT or ERROR_FILE_NOT_FOUND, then EACCES
         // or ERROR_ACCESS_DENIED.
         @IF.dotnet()
-        start_failure(file_name: string, code: int, description: string) -> Error static =>
+        start_failure(file_name: string, code: int, message: string) -> Error static =>
             if code == 2 then
                 Error.NOT_FOUND(file_name)
             elif code == 13 \/ code == 5 then
                 Error.PERMISSION_DENIED(file_name)
             else
-                Error.OTHER(description)
+                Error.OTHER(message)
             fi
 
         // Runs the program on the calling thread, which waits for it.

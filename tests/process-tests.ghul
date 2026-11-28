@@ -60,6 +60,13 @@ namespace Tests is
         si
 
         @Test()
+        Error_Other_GivesItsMessageThroughTheErrorTrait() is
+            let error: Ghul.Error = Error.OTHER("could not fork")
+
+            are_equal("could not fork", error.message)
+        si
+
+        @Test()
         Run_WhileTheProgramRuns_OtherTasksGoOn() is
             is_true(Concurrency.run(_ticks_while_running()) > 0)
         si
