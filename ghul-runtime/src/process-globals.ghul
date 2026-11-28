@@ -1,0 +1,91 @@
+namespace Ghul is
+    /// The process's environment variables, read and written live.
+    environment() -> Environment => ENVIRONMENT.instance
+si
+
+namespace Process is
+    use Collections.LIST
+
+    /// Ends the process with `status` as its exit status, after writing
+    /// out what the program has written to standard output.
+    ///
+    /// - status: the process's exit status
+    exit(status: int) is
+        Ghul.ENVIRONMENT.instance.exit(status)
+    si
+
+    /// The arguments the program was started with, in order, without the
+    /// path of the program itself.
+    @IF.dotnet()
+    arguments() -> string[] is
+        let command_line = System.Environment.get_command_line_args()
+        let result = LIST[string]()
+
+        for i in 1..command_line.count do
+            result.add(command_line[i])
+        od
+
+        return result
+    si
+
+    /// The arguments the program was started with, in order, without the
+    /// path of the program itself.
+    @IF.source_core()
+    arguments() -> string[] => Ghul.ENVIRONMENT.arguments
+
+    /// The path of the executable the process is running, or null where
+    /// there is none, as on the wasm target.
+    path() -> string? => Ghul.ENVIRONMENT.instance.process_path
+
+    /// The bytes of physical memory the process occupies: its resident
+    /// set, or its working set where the system calls it that. Reading it
+    /// collects nothing, and it is 0 where the host cannot say.
+    @IF.dotnet()
+    memory() -> long => System.Environment.working_set
+
+    /// The bytes of physical memory the process occupies: its resident
+    /// set, or its working set where the system calls it that. Reading it
+    /// collects nothing, and it is 0 where the host cannot say.
+    @IF.source_core()
+    memory() -> long => cast long(Ghul.Internal.HOST_MEASURES.working_set_bytes())
+si
+
+namespace Time is
+    /// Milliseconds on a clock that only ever moves forward, for measuring
+    /// how long something took. Where the clock starts is unspecified, so
+    /// only the difference between two readings means anything.
+    @IF.dotnet()
+    monotonic_ms() -> long => System.Environment.tick_count64
+
+    /// Milliseconds on a clock that only ever moves forward, for measuring
+    /// how long something took. Where the clock starts is unspecified, so
+    /// only the difference between two readings means anything.
+    @IF.source_core()
+    monotonic_ms() -> long => cast long(Ghul.Internal.HOST_MEASURES.monotonic_milliseconds())
+si
+
+namespace Concurrency is
+    /// How many processors the program can run on. It is 1 on the wasm and
+    /// llvm targets, which do not ask the host.
+    @IF.dotnet()
+    processor_count() -> int => System.Environment.processor_count
+
+    /// How many processors the program can run on. It is 1 on the wasm and
+    /// llvm targets, which do not ask the host.
+    @IF.source_core()
+    processor_count() -> int => 1
+si
+
+namespace Ghul.Internal is
+    // What the host measures about the running process.
+    @IF.source_core()
+    class HOST_MEASURES is
+        // Milliseconds since the program started, as the host measures them.
+        @intrinsic("host.monotonic_milliseconds")
+        monotonic_milliseconds() -> double static
+
+        // The process's resident memory, as the host measures it.
+        @intrinsic("host.working_set_bytes")
+        working_set_bytes() -> double static
+    si
+si

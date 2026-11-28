@@ -1,0 +1,60 @@
+namespace Tests is
+    use Ghul
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class ProcessGlobalsShould is
+        init() is
+        si
+
+        @Test()
+        environment_reads_and_writes_the_process_environment() is
+            Ghul.environment()["PROCESS_GLOBALS_TEST"] = "written"
+
+            are_equal("written", System.Environment.get_environment_variable("PROCESS_GLOBALS_TEST"))
+
+            System.Environment.set_environment_variable("PROCESS_GLOBALS_TEST", null)
+
+            is_false(Ghul.environment()["PROCESS_GLOBALS_TEST"]?)
+        si
+
+        @Test()
+        arguments_leaves_out_the_program_path() is
+            let command_line = System.Environment.get_command_line_args()
+            let arguments = Process.arguments()
+
+            are_equal(command_line.count - 1, arguments.count)
+
+            for i in 0..arguments.count do
+                are_equal(command_line[i + 1], arguments[i])
+            od
+        si
+
+        @Test()
+        path_is_the_executable_path() is
+            is_true(Process.path() =~ System.Environment.process_path)
+        si
+
+        @Test()
+        memory_is_the_working_set() is
+            is_true(Process.memory() > 0L)
+        si
+
+        @Test()
+        monotonic_ms_moves_forward_in_milliseconds() is
+            let before = Time.monotonic_ms()
+
+            Concurrency.run(Concurrency.sleep(20))
+
+            is_true(Time.monotonic_ms() - before >= 20L)
+        si
+
+        @Test()
+        processor_count_is_the_machine_count() is
+            are_equal(System.Environment.processor_count, Concurrency.processor_count())
+        si
+    si
+si
