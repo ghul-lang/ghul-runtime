@@ -1,0 +1,7 @@
+ran: [out] [err] 4
+ran: [two words||] [] 0
+not found: ghul-no-such-program
+recovered ghul-no-such-program
+has a message: true
+waited: 5
+thrown: true

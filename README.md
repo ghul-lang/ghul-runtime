@@ -122,11 +122,16 @@ let text = Json.write(doc)
 
 ### Processes and the environment - `Process`, `Ghul.Environment`
 
-`Process.run` runs a program and returns its exit code and everything it wrote. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
+`Process.run` runs a program and answers a future of a `Ghul.Result`: `OK` with the program's exit code and everything it wrote, whatever the exit code, or `ERROR` with a `Process.Error` saying why it could not start. Each library area's failures implement `Ghul.Error`. `Ghul.Environment`, the type of an `entry` function's `env` parameter, is a live view of the process environment that can also end the process with `exit`.
 
 ```ghul
-let result = Process.run("git", ["--version"])
-write_line("{result.exit_code} {result.output}")
+let result = await Process.run("git", ["--version"])
+
+if let ran: Ghul.Result.OK = result then
+    write_line("{ran.value.exit_code} {ran.value.output}")
+elif let failed: Ghul.Result.ERROR = result then
+    write_line(failed.error.message)
+fi
 ```
 
 ### MSBuild targets

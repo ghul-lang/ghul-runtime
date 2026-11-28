@@ -1,0 +1,7 @@
+{
+    "name": "process-run-concurrent",
+    "targets": ["llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

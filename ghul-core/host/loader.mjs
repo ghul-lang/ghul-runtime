@@ -1489,7 +1489,7 @@ function node_processes() {
             result = node_child_process.spawnSync(file, args, { stdio: ["inherit", "pipe", "pipe"], maxBuffer: 1 << 30 });
 
             if (result.error !== undefined) {
-                failure = result.error.code === "ENOENT" ? 1 : 2;
+                failure = result.error.code === "ENOENT" ? 1 : result.error.code === "EACCES" ? 3 : 2;
                 return -1;
             }
 
