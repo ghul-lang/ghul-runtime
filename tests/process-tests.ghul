@@ -46,6 +46,31 @@ namespace Tests is
             is_true(isa Error.PERMISSION_DENIED(error))
         si
 
+        // The native error code is a Win32 error on Windows and an errno
+        // elsewhere, so the same number can mean different failures.
+        // Ghul.Internal is not reachable by name from source, so this calls
+        // PROCESS_HOST through reflection.
+        @Test()
+        StartFailure_ReadsTheCodeAsTheHostPlatformsError() is
+            let process_host = (typeof Output).assembly.get_type("Ghul.Internal.PROCESS_HOST")!
+            let start_failure = process_host.get_method("start_failure", [typeof string, typeof int, typeof string, typeof bool])!
+
+            let host = (code: int, windows: bool) =>
+                cast Error(start_failure.invoke(null, ["tool", cast object(code), "described", cast object(windows)]))
+
+            is_true(isa Error.NOT_FOUND(host(2, true)))
+            is_true(isa Error.NOT_FOUND(host(3, true)))
+            is_true(isa Error.PERMISSION_DENIED(host(5, true)))
+            is_true(isa Error.OTHER(host(13, true)))
+
+            is_true(isa Error.NOT_FOUND(host(2, false)))
+            is_true(isa Error.OTHER(host(3, false)))
+            is_true(isa Error.OTHER(host(5, false)))
+            is_true(isa Error.PERMISSION_DENIED(host(13, false)))
+
+            are_equal("described", host(5, false).message)
+        si
+
         @Test()
         Run_Failure_IsRecoveredThroughTheErrorTrait() is
             let error: Ghul.Error = _failed(Concurrency.run(Process.run("ghul-no-such-program", [])))

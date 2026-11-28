@@ -97,7 +97,7 @@ namespace Process is
         try
             process = System.Diagnostics.Process.start(start_info)
         catch e: System.ComponentModel.Win32Exception
-            failure = Ghul.Internal.PROCESS_HOST.start_failure(file_name, e.native_error_code, e.message)
+            failure = Ghul.Internal.PROCESS_HOST.start_failure(file_name, e.native_error_code, e.message, System.OperatingSystem.is_windows())
         yrt
 
         if let started = process then
@@ -178,17 +178,22 @@ namespace Ghul.Internal is
         si
 
         // The failure .NET reports for a program it could not start, by its
-        // system error number: ENOENT or ERROR_FILE_NOT_FOUND, then EACCES
-        // or ERROR_ACCESS_DENIED.
+        // native error code, which is a Win32 error on Windows and an errno
+        // elsewhere: ERROR_FILE_NOT_FOUND or ERROR_PATH_NOT_FOUND, then
+        // ERROR_ACCESS_DENIED; or ENOENT, then EACCES.
         @IF.dotnet()
-        start_failure(file_name: string, code: int, message: string) -> Error static =>
-            if code == 2 then
-                Error.NOT_FOUND(file_name)
-            elif code == 13 \/ code == 5 then
-                Error.PERMISSION_DENIED(file_name)
-            else
-                Error.OTHER(message)
+        start_failure(file_name: string, code: int, message: string, windows: bool) -> Error static is
+            let not_found = code == 2 \/ (windows /\ code == 3)
+            let denied = if windows then code == 5 else code == 13 fi
+
+            if not_found then
+                return Error.NOT_FOUND(file_name)
+            elif denied then
+                return Error.PERMISSION_DENIED(file_name)
             fi
+
+            return Error.OTHER(message)
+        si
 
         // Runs the program on the calling thread, which waits for it.
         @IF.source_core()
