@@ -1,0 +1,11 @@
+namespace Ghul is
+    /// A failure a caller is expected to handle, carried in the ERROR
+    /// variant of a `Result`. Each library area has a union of its own
+    /// failures implementing this, such as `Process.Error`; a function that
+    /// calls into several areas can return `Result[T, Ghul.Error]`, and the
+    /// precise failure is recovered with `if let` or `case` on its type.
+    trait Error open is
+        /// A description of the failure for a person to read.
+        message: string => "{self}"
+    si
+si

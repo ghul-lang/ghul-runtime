@@ -15,104 +15,238 @@ namespace IO is
         error: string
     si
 
-    /// Runs other programs. The same calls work on .NET, on the llvm target,
-    /// and on the wasm target run by Node; a wasm program run anywhere
-    /// else, such as a browser, cannot start a program, and is told so.
+    /// Runs other programs, waiting for each to finish.
     class Process is
-        /// Runs `file_name` with `arguments` to completion, sharing this
-        /// process's standard input and capturing its standard output and
-        /// standard error. Throws `IO.FileNotFoundException` where there is
-        /// no such program.
+        /// Runs `file_name` with `arguments` to completion and waits for it,
+        /// as `Process.run` does. Throws `IO.FileNotFoundException` where
+        /// the program cannot be found or is not allowed to run, and
+        /// `Ghul.InvalidOperationException` where it cannot be started for
+        /// any other reason.
         ///
         /// - file_name: the program to run; a name with no directory is
         ///   looked for on the `PATH`
         /// - arguments: the arguments to pass, each as one argument
-        @IF.dotnet()
         run(file_name: string, arguments: Iterable[string]) -> ProcessResult static is
-            let start_info = System.Diagnostics.ProcessStartInfo(file_name)
+            let output = Ghul.Internal.PROCESS_HOST.run_and_wait(file_name, arguments)
 
-            for argument in arguments do
-                start_info.argument_list.add(argument)
-            od
-
-            start_info.use_shell_execute = false
-            start_info.redirect_standard_output = true
-            start_info.redirect_standard_error = true
-
-            let process: System.Diagnostics.Process? mut = null
-
-            try
-                process = System.Diagnostics.Process.start(start_info)
-            catch e: System.ComponentModel.Win32Exception
-                throw IO.FileNotFoundException("Could not run {file_name}: {e.message}")
-            yrt
-
-            if let started = process then
-                // Standard error is read alongside standard output, so a
-                // program that fills one pipe while this waits on the other
-                // cannot stop.
-                let error = started.standard_error.read_to_end_async()
-                let output = started.standard_output.read_to_end()
-
-                started.wait_for_exit()
-
-                return ProcessResult(started.exit_code, output, error.result)
-            fi
-
-            throw Ghul.InvalidOperationException("Could not run {file_name}")
+            return ProcessResult(output.exit_code, output.output, output.error)
         si
+    si
+si
 
-        /// Runs `file_name` with `arguments` to completion, sharing this
-        /// process's standard input and capturing its standard output and
-        /// standard error. Throws `IO.FileNotFoundException` where there is
-        /// no such program.
-        ///
-        /// - file_name: the program to run; a name with no directory is
-        ///   looked for on the `PATH`
-        /// - arguments: the arguments to pass, each as one argument
-        @IF.source_core()
-        run(file_name: string, arguments: Iterable[string]) -> ProcessResult static is
-            _begin(file_name)
+namespace Process is
+    use Collections.Iterable
+    use Collections.LIST
+    use Concurrency.Future
 
-            for argument in arguments do
-                _add_argument(argument)
-            od
+    /// What a program run with `run` did: its exit status and everything it
+    /// wrote to standard output and standard error. A program that ran and
+    /// failed is still an `Output`; its failure is its `exit_code`.
+    class Output(exit_code: int, output: string, error: string) is
+        /// The program's exit status. A program killed by a signal has 128
+        /// plus the signal's number, as .NET reports it.
+        exit_code: int
 
-            let exit_code = _run()
+        /// Everything the program wrote to standard output.
+        output: string
 
-            if exit_code == -1 then
-                if _failure() == 1 then
-                    throw IO.FileNotFoundException("Could not run {file_name}: no such program")
+        /// Everything the program wrote to standard error.
+        error: string
+    si
+
+    /// Why `run` could not start a program.
+    union Error: Ghul.Error is
+        /// There is no program by that name, or none on the `PATH`.
+        NOT_FOUND(program: string)
+
+        /// The program exists but is not allowed to run.
+        PERMISSION_DENIED(program: string)
+
+        /// The program could not be started for another reason, which
+        /// `message` gives.
+        OTHER(message: string)
+    si
+
+    /// Runs `file_name` with `arguments`, sharing this process's standard
+    /// input and capturing its standard output and standard error. The
+    /// future completes when the program has finished, with its `Output`
+    /// whatever its exit status, or with an `Error` where it could not be
+    /// started. On .NET and the llvm target the program runs while the
+    /// caller's other tasks go on; on the wasm target the program has
+    /// finished by the time `run` returns, and a wasm program run anywhere
+    /// but Node cannot start a program, and is told so.
+    ///
+    /// - file_name: the program to run; a name with no directory is
+    ///   looked for on the `PATH`
+    /// - arguments: the arguments to pass, each as one argument
+    @IF.dotnet()
+    run(file_name: string, arguments: Iterable[string]) -> Future[Ghul.Result[Output, Error]] is
+        let start_info = System.Diagnostics.ProcessStartInfo(file_name)
+
+        for argument in arguments do
+            start_info.argument_list.add(argument)
+        od
+
+        start_info.use_shell_execute = false
+        start_info.redirect_standard_output = true
+        start_info.redirect_standard_error = true
+
+        let process: System.Diagnostics.Process? mut = null
+        let failure: Error? mut = null
+
+        try
+            process = System.Diagnostics.Process.start(start_info)
+        catch e: System.ComponentModel.Win32Exception
+            failure = Ghul.Internal.PROCESS_HOST.start_failure(file_name, e.native_error_code, e.message, System.OperatingSystem.is_windows())
+        yrt
+
+        if let started = process then
+            // Both pipes are read together, so a program that fills one
+            // while nothing reads the other cannot stop.
+            let error = started.standard_error.read_to_end_async()
+            let output = started.standard_output.read_to_end_async()
+
+            await started.wait_for_exit_async(System.Threading.CancellationToken.none)
+
+            return Ghul.Result.OK[Output, Error](Output(started.exit_code, await output, await error))
+        fi
+
+        return Ghul.Result.ERROR[Output, Error](failure ?? Error.OTHER("Could not start {file_name}"))
+    si
+
+    /// Runs `file_name` with `arguments`, sharing this process's standard
+    /// input and capturing its standard output and standard error. The
+    /// future completes when the program has finished, with its `Output`
+    /// whatever its exit status, or with an `Error` where it could not be
+    /// started. On .NET and the llvm target the program runs while the
+    /// caller's other tasks go on; on the wasm target the program has
+    /// finished by the time `run` returns, and a wasm program run anywhere
+    /// but Node cannot start a program, and is told so.
+    ///
+    /// - file_name: the program to run; a name with no directory is
+    ///   looked for on the `PATH`
+    /// - arguments: the arguments to pass, each as one argument
+    @IF.llvm()
+    run(file_name: string, arguments: Iterable[string]) -> Future[Ghul.Result[Output, Error]] is
+        let copied = arguments |> LIST()
+
+        return await Concurrency.start(() => Ghul.Internal.PROCESS_HOST.run_here(file_name, copied))
+    si
+
+    /// Runs `file_name` with `arguments`, sharing this process's standard
+    /// input and capturing its standard output and standard error. The
+    /// future completes when the program has finished, with its `Output`
+    /// whatever its exit status, or with an `Error` where it could not be
+    /// started. On .NET and the llvm target the program runs while the
+    /// caller's other tasks go on; on the wasm target the program has
+    /// finished by the time `run` returns, and a wasm program run anywhere
+    /// but Node cannot start a program, and is told so.
+    ///
+    /// - file_name: the program to run; a name with no directory is
+    ///   looked for on the `PATH`
+    /// - arguments: the arguments to pass, each as one argument
+    @IF.wasm()
+    run(file_name: string, arguments: Iterable[string]) -> Future[Ghul.Result[Output, Error]] =>
+        Future.from_result(Ghul.Internal.PROCESS_HOST.run_here(file_name, arguments))
+si
+
+namespace Ghul.Internal is
+    use Collections.Iterable
+    use Concurrency.Future
+
+    use Output = Process.Output
+    use Error = Process.Error
+
+    // What Process.run needs from the host, and a way to reach Process.run
+    // from inside namespace IO, where `Process` names the IO.Process class.
+    class PROCESS_HOST is
+        // Runs the program and waits for it, throwing where it could not start.
+        run_and_wait(file_name: string, arguments: Iterable[string]) -> Output static is
+            let result = Concurrency.run(Process.run(file_name, arguments))
+
+            if let failed: Ghul.Result.ERROR = result then
+                let error = failed.error
+
+                if isa Error.OTHER(error) then
+                    throw Ghul.InvalidOperationException("Could not run {file_name}: {error.message}")
                 fi
 
-                throw Ghul.InvalidOperationException("Could not run {file_name}")
+                throw IO.FileNotFoundException("Could not run {file_name}: {error.message}")
             fi
 
-            return ProcessResult(exit_code, _output() ?? "", _error() ?? "")
+            return result!
         si
 
+        // The failure .NET reports for a program it could not start, by its
+        // native error code, which is a Win32 error on Windows and an errno
+        // elsewhere: ERROR_FILE_NOT_FOUND or ERROR_PATH_NOT_FOUND, then
+        // ERROR_ACCESS_DENIED; or ENOENT, then EACCES.
+        @IF.dotnet()
+        start_failure(file_name: string, code: int, message: string, windows: bool) -> Error static is
+            let not_found = code == 2 \/ (windows /\ code == 3)
+            let denied = if windows then code == 5 else code == 13 fi
+
+            if not_found then
+                return Error.NOT_FOUND(file_name)
+            elif denied then
+                return Error.PERMISSION_DENIED(file_name)
+            fi
+
+            return Error.OTHER(message)
+        si
+
+        // Runs the program on the calling thread, which waits for it.
+        @IF.source_core()
+        run_here(file_name: string, arguments: Iterable[string]) -> Ghul.Result[Output, Error] static is
+            begin(file_name)
+
+            for argument in arguments do
+                add_argument(argument)
+            od
+
+            let exit_code = run()
+
+            if exit_code == -1 then
+                let reason = failure()
+
+                if reason == 1 then
+                    return Ghul.Result.ERROR[Output, Error](Error.NOT_FOUND(file_name))
+                elif reason == 3 then
+                    return Ghul.Result.ERROR[Output, Error](Error.PERMISSION_DENIED(file_name))
+                fi
+
+                return Ghul.Result.ERROR[Output, Error](Error.OTHER("Could not start {file_name}"))
+            fi
+
+            return Ghul.Result.OK[Output, Error](Output(exit_code, output() ?? "", error() ?? ""))
+        si
+
+        // Starts the command `begin` and `add_argument` built, waits for it,
+        // and answers its exit status, or -1 where it could not start, with
+        // `failure` saying why: 1 for no such program, 3 for not allowed to
+        // run it, 2 for anything else.
         @IF.source_core()
         @intrinsic("host.process_begin")
-        _begin(file_name: string) static
+        begin(file_name: string) static
 
         @IF.source_core()
         @intrinsic("host.process_add_argument")
-        _add_argument(argument: string) static
+        add_argument(argument: string) static
 
         @IF.source_core()
         @intrinsic("host.process_run")
-        _run() -> int static
+        run() -> int static
 
         @IF.source_core()
         @intrinsic("host.process_failure")
-        _failure() -> int static
+        failure() -> int static
 
         @IF.source_core()
         @intrinsic("host.process_output")
-        _output() -> string? static
+        output() -> string? static
 
         @IF.source_core()
         @intrinsic("host.process_error")
-        _error() -> string? static
+        error() -> string? static
     si
 si

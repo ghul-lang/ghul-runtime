@@ -1,0 +1,22 @@
+// The caller's other tasks go on while Process.run's program runs.
+use IO.Std.write_line
+
+waiting() -> Concurrency.Future[int] is
+    let running = Process.run("/bin/sh", ["-c", "sleep 0.3"])
+    let ticks mut = 0
+
+    while !running.is_completed do
+        await Concurrency.sleep(10)
+        ticks = ticks + 1
+    od
+
+    let result = await running
+
+    write_line("finished: {result?}")
+
+    return ticks
+si
+
+entry() is
+    write_line("other work ran meanwhile: {Concurrency.run(waiting()) > 0}")
+si

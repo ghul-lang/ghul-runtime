@@ -1,0 +1,46 @@
+// Process.run's outcomes: a program that ran, whatever its exit status, a
+// program that does not exist, the failure recovered through Ghul.Error,
+// and IO.Process.run, which waits and throws.
+use IO.Std.write_line
+use Concurrency.run
+
+describe(result: Ghul.Result[Process.Output, Process.Error]) -> string =>
+    if let ran: Ghul.Result.OK = result then
+        "ran: [{ran.value.output}] [{ran.value.error}] {ran.value.exit_code}"
+    elif let failed: Ghul.Result.ERROR = result then
+        case failed.error
+        when n: Process.Error.NOT_FOUND then "not found: {n.program}"
+        when p: Process.Error.PERMISSION_DENIED then "permission denied: {p.program}"
+        when o: Process.Error.OTHER then "other: {o.message}"
+        esac
+    else
+        "neither"
+    fi
+
+recover(error: Ghul.Error) -> string =>
+    if let n: Process.Error.NOT_FOUND = error then "recovered {n.program}" else "not recovered" fi
+
+entry() is
+    write_line(describe(run(Process.run("/bin/sh", ["-c", "printf out; printf err >&2; exit 4"]))))
+    write_line(describe(run(Process.run("printf", ["%s|", "two words", ""]))))
+    write_line(describe(run(Process.run("ghul-no-such-program", []))))
+
+    let failed = run(Process.run("ghul-no-such-program", []))
+
+    if let f: Ghul.Result.ERROR = failed then
+        write_line(recover(f.error))
+        write_line("has a message: {f.error.message.length > 0}")
+    fi
+
+    let other: Ghul.Error = Process.Error.OTHER("could not fork")
+
+    write_line("other through the trait: {other.message}")
+
+    write_line("waited: {IO.Process.run("/bin/sh", ["-c", "exit 5"]).exit_code}")
+
+    try
+        IO.Process.run("ghul-no-such-program", [])
+    catch e: IO.FileNotFoundException
+        write_line("thrown: {e.message.contains("ghul-no-such-program")}")
+    yrt
+si

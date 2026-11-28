@@ -3,6 +3,9 @@ namespace Tests is
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
     use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
+    use Output = Process.Output
+    use Error = Process.Error
+
     @TestClass()
     class ProcessShould is
         init() is
@@ -10,23 +13,99 @@ namespace Tests is
 
         @Test()
         Run_Command_CapturesOutputErrorAndStatus() is
-            let result = IO.Process.run("/bin/sh", ["-c", "printf out; printf err >&2; exit 4"])
+            let output = _ran(Concurrency.run(Process.run("/bin/sh", ["-c", "printf out; printf err >&2; exit 4"])))
 
-            are_equal("out", result.output)
-            are_equal("err", result.error)
-            are_equal(4, result.exit_code)
+            are_equal("out", output.output)
+            are_equal("err", output.error)
+            are_equal(4, output.exit_code)
         si
 
         @Test()
         Run_EachArgument_ReachesTheProgramWhole() is
-            let result = IO.Process.run("printf", ["%s|", "two words", ""])
+            let output = _ran(Concurrency.run(Process.run("printf", ["%s|", "two words", ""])))
 
-            are_equal("two words||", result.output)
-            are_equal(0, result.exit_code)
+            are_equal("two words||", output.output)
+            are_equal(0, output.exit_code)
         si
 
         @Test()
-        Run_MissingProgram_ThrowsFileNotFound() is
+        Run_MissingProgram_IsNotFound() is
+            let error = _failed(Concurrency.run(Process.run("ghul-no-such-program", [])))
+
+            if let n: Error.NOT_FOUND = error then
+                are_equal("ghul-no-such-program", n.program)
+            else
+                fail("expected NOT_FOUND, got {error}")
+            fi
+        si
+
+        @Test()
+        Run_ProgramNotAllowedToRun_IsPermissionDenied() is
+            let error = _failed(Concurrency.run(Process.run("/dev/null", [])))
+
+            is_true(isa Error.PERMISSION_DENIED(error))
+        si
+
+        // The native error code is a Win32 error on Windows and an errno
+        // elsewhere, so the same number can mean different failures.
+        // Ghul.Internal is not reachable by name from source, so this calls
+        // PROCESS_HOST through reflection.
+        @Test()
+        StartFailure_ReadsTheCodeAsTheHostPlatformsError() is
+            let process_host = (typeof Output).assembly.get_type("Ghul.Internal.PROCESS_HOST")!
+            let start_failure = process_host.get_method("start_failure", [typeof string, typeof int, typeof string, typeof bool])!
+
+            let host = (code: int, windows: bool) =>
+                cast Error(start_failure.invoke(null, ["tool", cast object(code), "described", cast object(windows)]))
+
+            is_true(isa Error.NOT_FOUND(host(2, true)))
+            is_true(isa Error.NOT_FOUND(host(3, true)))
+            is_true(isa Error.PERMISSION_DENIED(host(5, true)))
+            is_true(isa Error.OTHER(host(13, true)))
+
+            is_true(isa Error.NOT_FOUND(host(2, false)))
+            is_true(isa Error.OTHER(host(3, false)))
+            is_true(isa Error.OTHER(host(5, false)))
+            is_true(isa Error.PERMISSION_DENIED(host(13, false)))
+
+            are_equal("described", host(5, false).message)
+        si
+
+        @Test()
+        Run_Failure_IsRecoveredThroughTheErrorTrait() is
+            let error: Ghul.Error = _failed(Concurrency.run(Process.run("ghul-no-such-program", [])))
+
+            if let n: Error.NOT_FOUND = error then
+                are_equal("ghul-no-such-program", n.program)
+            else
+                fail("expected NOT_FOUND, got {error}")
+            fi
+
+            is_true(error.message.length > 0)
+        si
+
+        @Test()
+        Error_Other_GivesItsMessageThroughTheErrorTrait() is
+            let error: Ghul.Error = Error.OTHER("could not fork")
+
+            are_equal("could not fork", error.message)
+        si
+
+        @Test()
+        Run_WhileTheProgramRuns_OtherTasksGoOn() is
+            is_true(Concurrency.run(_ticks_while_running()) > 0)
+        si
+
+        @Test()
+        Run_ThroughIOProcess_WaitsForTheResult() is
+            let result = IO.Process.run("/bin/sh", ["-c", "printf out; exit 3"])
+
+            are_equal("out", result.output)
+            are_equal(3, result.exit_code)
+        si
+
+        @Test()
+        Run_MissingProgramThroughIOProcess_ThrowsFileNotFound() is
             try
                 IO.Process.run("ghul-no-such-program", [])
                 fail("expected IO.FileNotFoundException")
@@ -34,5 +113,25 @@ namespace Tests is
                 is_true(e.message.contains("ghul-no-such-program"))
             yrt
         si
+
+        _ticks_while_running() -> Concurrency.Future[int] static is
+            let running = Process.run("/bin/sh", ["-c", "sleep 0.3"])
+            let ticks mut = 0
+
+            while !running.is_completed do
+                await Concurrency.sleep(10)
+                ticks = ticks + 1
+            od
+
+            await running
+
+            return ticks
+        si
+
+        _ran(result: Ghul.Result[Output, Error]) -> Output static =>
+            if let ran: Ghul.Result.OK = result then ran.value else throw Ghul.InvalidOperationException("expected the program to run") fi
+
+        _failed(result: Ghul.Result[Output, Error]) -> Error static =>
+            if let failed: Ghul.Result.ERROR = result then failed.error else throw Ghul.InvalidOperationException("expected the program not to start") fi
     si
 si

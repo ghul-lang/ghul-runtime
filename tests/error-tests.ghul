@@ -1,0 +1,41 @@
+namespace Tests is
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    // A program's own failures, declared outside the runtime assembly.
+    union AppError: Ghul.Error is
+        MISSING(name: string)
+        REFUSED(message: string)
+    si
+
+    @TestClass()
+    class ErrorShould is
+        init() is si
+
+        @Test()
+        Be_implemented_outside_the_runtime_with_its_message_described() is
+            let error: Ghul.Error = AppError.MISSING("settings")
+
+            are_equal("AppError.MISSING(name = settings)", error.message)
+        si
+
+        @Test()
+        Be_implemented_outside_the_runtime_with_its_message_a_field() is
+            let error: Ghul.Error = AppError.REFUSED("not allowed")
+
+            are_equal("not allowed", error.message)
+        si
+
+        @Test()
+        Be_recovered_as_the_implementation_it_is() is
+            let error: Ghul.Error = AppError.MISSING("settings")
+
+            if let missing: AppError.MISSING = error then
+                are_equal("settings", missing.name)
+            else
+                fail("expected MISSING, got {error}")
+            fi
+        si
+    si
+si
