@@ -4,7 +4,10 @@ namespace Concurrency is
     // Every thread runs its asynchronous code on its own event loop: work
     // queued on the loop runs one piece at a time, and code resumed after an
     // await resumes on the thread that awaited. `run` drives the calling
-    // thread's loop until a future completes.
+    // thread's loop until a future completes. Called from code the loop is
+    // already running, `run` goes on running the loop's other work while it
+    // waits, so waits nest: the outer one returns only once the inner one
+    // has, even where what it waits for completed first.
 
     /// Runs `body` on the calling thread's event loop until the future it
     /// answers completes, and answers that future's result, or throws what
@@ -22,6 +25,24 @@ namespace Concurrency is
     /// - body: what to run
     run(body: () -> Future) is
         let future = EVENT_LOOP.drive(body)
+        future.get_awaiter().get_result()
+    si
+
+    /// Drives the calling thread's event loop until `future` completes, and
+    /// answers its result, or throws what it threw.
+    ///
+    /// - future: what to wait for
+    run[T](future: Future[T]) -> T is
+        EVENT_LOOP.drive(() => future)
+        return _result(future)
+    si
+
+    /// Drives the calling thread's event loop until `future` completes, or
+    /// throws what it threw.
+    ///
+    /// - future: what to wait for
+    run(future: Future) is
+        EVENT_LOOP.drive(() => future)
         future.get_awaiter().get_result()
     si
 
@@ -79,10 +100,13 @@ namespace Concurrency is
         si
 
         // Runs `start` with a loop installed on the calling thread, and
-        // drives the loop until the future it answers completes.
+        // drives the loop until the future it answers completes. Where the
+        // thread's loop is already running, drives that one instead.
         drive(start: () -> Future) -> Future static is
             if let running: EVENT_LOOP = System.Threading.SynchronizationContext.current then
-                throw Ghul.InvalidOperationException("run was called from code its own thread's event loop is running")
+                let future = start()
+                running._pump_until(future)
+                return future
             fi
 
             let previous = System.Threading.SynchronizationContext.current
@@ -93,6 +117,7 @@ namespace Concurrency is
             try
                 let future = start()
                 loop._pump_until(future)
+                loop._drain()
                 return future
             finally
                 System.Threading.SynchronizationContext.set_synchronization_context(previous)
@@ -109,9 +134,12 @@ namespace Concurrency is
             while !future.is_completed do
                 _queue.take()()
             od
+        si
 
-            // Work queued after the future completed, such as continuations
-            // of other futures it completed, still runs on this thread.
+        // Runs the work queued after the future completed, such as
+        // continuations of other futures it completed, before the loop is
+        // taken down, so it still runs on this thread.
+        _drain() is
             let work: () -> void mut
 
             while _queue.try_take(work ref) do

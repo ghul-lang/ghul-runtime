@@ -1,0 +1,98 @@
+namespace Tests is
+    use Ghul
+    use Ghul.Pipes
+    use Collections.LIST
+
+    use Concurrency.Future
+    use Concurrency.run
+    use Concurrency.sleep
+    use Concurrency.pause
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class EventLoopShould is
+        _log: LIST[string]
+
+        init() is
+            _log = LIST[string]()
+        si
+
+        @Test()
+        run_given_a_future_answers_its_result() is
+            are_equal(42, run(_answer()))
+            are_equal(42, _answer() |> run())
+        si
+
+        @Test()
+        run_given_a_future_waits_for_it_to_complete() is
+            run(_note("ran"))
+
+            are_equal(1, _log.count)
+            are_equal("ran", _log[0])
+        si
+
+        @Test()
+        run_given_a_future_throws_the_exception_it_threw() is
+            let thrown = InvalidOperationException("boom")
+            let caught: Exception? mut = null
+
+            try
+                run(_throw(thrown))
+            catch e: InvalidOperationException
+                caught = e
+            yrt
+
+            is_true(caught == thrown)
+        si
+
+        @Test()
+        nested_waits_complete_in_stack_order() is
+            run(() => _blocks_on_x())
+
+            are_equal(
+                "A blocks on X, B blocks on Y, X completes, Y completes, B resumes with Y, A resumes with X, Z completes, A resumes with Z",
+                _log |> join(", "))
+        si
+
+        _answer() -> Future[int] is
+            await sleep(1)
+            return 42
+        si
+
+        _note(text: string) -> Future is
+            await sleep(1)
+            _log.add(text)
+        si
+
+        _throw(thrown: Exception) -> Future[int] is
+            await sleep(1)
+            throw thrown
+        si
+
+        _after(milliseconds: int, name: string) -> Future[string] is
+            await sleep(milliseconds)
+            _log.add("{name} completes")
+            return name
+        si
+
+        _blocks_on_y() -> Future is
+            await pause()
+            _log.add("B blocks on Y")
+            let y = run(_after(30, "Y"))
+            _log.add("B resumes with {y}")
+        si
+
+        _blocks_on_x() -> Future is
+            let b = _blocks_on_y()
+            _log.add("A blocks on X")
+            let x = run(_after(5, "X"))
+            _log.add("A resumes with {x}")
+            let z = run(() => _after(1, "Z"))
+            _log.add("A resumes with {z}")
+            await b
+        si
+    si
+si

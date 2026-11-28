@@ -1019,10 +1019,19 @@ namespace Concurrency is
 
             _timers.remove_at(earliest)
 
-            while System.Environment.tick_count64 < due do
+            // The host's sleep can end early, so the clock decides.
+            let remaining mut = due - System.Environment.tick_count64
+
+            while remaining > 0L do
+                _host_sleep(if remaining < cast long(int.max_value) then cast int(remaining) else int.max_value fi)
+                remaining = due - System.Environment.tick_count64
             od
 
             state.complete()
         si
+
+        // Blocks the thread for the given milliseconds, as the host does it.
+        @intrinsic("host.sleep")
+        _host_sleep(milliseconds: int) static
     si
 si
