@@ -1,0 +1,7 @@
+{
+    "name": "process-globals",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}

@@ -1,0 +1,26 @@
+// The process's environment, arguments, path, memory and clock, and the
+// processor count, through the global functions, ending with an exit status.
+use IO.Std.write_line
+use Concurrency.run
+use Concurrency.sleep
+
+entry() is
+    let env = Ghul.environment()
+    env["PROCESS_GLOBALS_PROBE"] = "set"
+    write_line("variable: {Ghul.environment()["PROCESS_GLOBALS_PROBE"]}")
+    write_line("same environment: {env == Ghul.ENVIRONMENT.instance}")
+
+    write_line("arguments: {Process.arguments().count}")
+    write_line("path is the environment's: {Process.path() =~ Ghul.ENVIRONMENT.instance.process_path}")
+    write_line("memory is not negative: {Process.memory() >= 0L}")
+
+    let before = Time.monotonic_ms()
+    run(sleep(20))
+    write_line("the monotonic clock advanced at least 20: {Time.monotonic_ms() - before >= 20L}")
+
+    write_line("processors: {Concurrency.processor_count()}")
+
+    write_line("exiting")
+    Process.exit(3)
+    write_line("not reached")
+si
