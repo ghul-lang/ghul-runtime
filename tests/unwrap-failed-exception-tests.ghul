@@ -1,0 +1,66 @@
+namespace Tests is
+    use Microsoft.VisualStudio.TestTools.UnitTesting
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    use ProcessError = Process.Error
+
+    @TestClass()
+    class UnwrapFailedExceptionShould is
+        init() is
+        si
+
+        @Test()
+        Payload_IsWhatWasThrown() is
+            try
+                throw Ghul.UnwrapFailedException[int](42)
+            catch e: Ghul.UnwrapFailedException[int]
+                are_equal(42, e.payload)
+                are_equal("unwrap failed: the value holds 42", e.message)
+            yrt
+        si
+
+        @Test()
+        Catch_TheNonGenericBase_CatchesAnyPayloadType() is
+            let caught mut = false
+
+            try
+                throw Ghul.UnwrapFailedException[string]("elsewhere")
+            catch e: Ghul.UnwrapFailedException
+                caught = true
+            yrt
+
+            is_true(caught)
+        si
+    si
+
+    @TestClass()
+    class ErrorExceptionShould is
+        init() is
+        si
+
+        @Test()
+        Message_IsTheErrorsMessage() is
+            try
+                let error = ProcessError.NOT_FOUND("ghul-no-such-program")
+
+                throw Ghul.ErrorException(error)
+            catch e: Ghul.ErrorException
+                are_equal(ProcessError.NOT_FOUND("ghul-no-such-program").message, e.message)
+            yrt
+        si
+
+        @Test()
+        Error_IsTheErrorThatWasThrown() is
+            try
+                throw Ghul.ErrorException(ProcessError.PERMISSION_DENIED("/dev/null"))
+            catch e: Ghul.ErrorException
+                if let d: ProcessError.PERMISSION_DENIED = e.error then
+                    are_equal("/dev/null", d.program)
+                else
+                    fail("expected PERMISSION_DENIED, got {e.error}")
+                fi
+            yrt
+        si
+    si
+si

@@ -1,0 +1,46 @@
+namespace Ghul is
+    /// Thrown when `!` unwraps a union value that holds a variant other than
+    /// the default one. Catch this to handle every failed unwrap whatever the
+    /// value held; catch `UnwrapFailedException[T]` to read the value.
+    class UnwrapFailedException: Exception open is
+        /// - message: what the value held instead of the default variant
+        init(message: string) is
+            super.init(message)
+        si
+    si
+
+    /// Thrown when `!` unwraps a union value that holds a variant other than
+    /// the default one, holding what the value held instead.
+    ///
+    /// - T: the type of what the value held instead
+    class UnwrapFailedException[T]: UnwrapFailedException open is
+        _payload: T
+
+        /// What the value held instead of the default variant.
+        payload: T => _payload
+
+        /// - payload: what the value held instead
+        init(payload: T) is
+            super.init("unwrap failed: the value holds {payload}")
+
+            _payload = payload
+        si
+    si
+
+    /// Thrown when `!` unwraps a union value whose variant other than the
+    /// default one holds a `Ghul.Error`, holding that error. The message is
+    /// the error's own.
+    class ErrorException: Exception open is
+        _error: Error
+
+        /// The failure the value held.
+        error: Error => _error
+
+        /// - error: the failure the value held
+        init(error: Error) is
+            super.init(error.message)
+
+            _error = error
+        si
+    si
+si
