@@ -1,0 +1,8 @@
+{
+    "name": "inbox-handover-after-exit",
+    "targets": ["llvm"],
+    "sources": ["*.ghul"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../../.." }
+    }
+}

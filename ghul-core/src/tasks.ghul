@@ -953,17 +953,34 @@ namespace Concurrency is
             od
         si
 
+        // Tests only: whether the calling thread's scheduler, having found
+        // nothing ready and nothing in its inbox, would wait for another
+        // thread rather than give up.
+        @IF.llvm()
+        waits_on_another_thread_for_testing: bool static => _here._waits_on_another_thread()
+
         @IF.llvm()
         _take_from_inbox() -> bool => _inbox?.take(_ready) ?? false
 
-        // Whether another thread owes this one work and could still hand
-        // it over. A started thread always has the program's main thread
-        // beside it; the main thread waits only while a started thread is
-        // still running.
+        // Whether another thread has handed this one work it has not taken
+        // yet, or owes it work and could still hand it over. A started
+        // thread always has the program's main thread beside it; the main
+        // thread waits for work still owed only while a started thread is
+        // running. Whether one is running is read first: a thread stops
+        // being counted only after it has handed over everything it will,
+        // so once none is counted, the inbox holds all of it, including
+        // work that arrived after the inbox was last found empty.
         @IF.llvm()
-        _waits_on_another_thread() -> bool =>
-            (_inbox?.is_waiting ?? false) /\
-            (Ghul.Internal.THREAD_LOCALS.current.is_started_thread \/ Ghul.Internal.LIVE_THREADS.count > 0)
+        _waits_on_another_thread() -> bool is
+            let others_running =
+                Ghul.Internal.THREAD_LOCALS.current.is_started_thread \/ Ghul.Internal.LIVE_THREADS.count > 0
+
+            if let inbox = _inbox then
+                return if others_running then inbox.is_waiting else inbox.has_work fi
+            fi
+
+            return false
+        si
 
         // Waits for another thread to hand over work, or for the earliest
         // delay to fall due, completing it if it has.

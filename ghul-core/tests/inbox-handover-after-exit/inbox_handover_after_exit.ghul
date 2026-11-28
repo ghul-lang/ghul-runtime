@@ -1,0 +1,23 @@
+use default
+
+// Work a started thread hands over just before it ends can arrive after
+// this thread last found its inbox empty. With the thread gone, the work
+// waiting in the inbox is still this thread's to take, not a sign that
+// nothing can complete what it waits for. This thread runs no queued work
+// until it asks, so the work is still in the inbox when it does.
+
+let delivered = Concurrency.TASK_STATE()
+let inbox = Concurrency.SCHEDULER.expect_from_another_thread()
+
+Concurrency.start(() is
+    inbox.deliver(() is delivered.complete() si)
+si)
+
+while Ghul.Internal.LIVE_THREADS.count > 0 do
+od
+
+write_line("waits for work handed over by a thread that has ended: {Concurrency.SCHEDULER.waits_on_another_thread_for_testing}")
+
+Concurrency.SCHEDULER.run_until(delivered)
+
+write_line("the work ran: {delivered.is_completed}")

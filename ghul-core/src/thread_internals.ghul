@@ -197,6 +197,15 @@ namespace Ghul.Internal is
             _unlock(_mutex)
         si
 
+        // Whether work has been handed over that has not been taken.
+        has_work: bool is
+            _lock(_mutex)
+            let present = _work.count > 0
+            _unlock(_mutex)
+
+            return present
+        si
+
         // Whether work has been handed over that has not been taken, or is
         // still expected.
         is_waiting: bool is
