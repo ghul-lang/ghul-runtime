@@ -1,0 +1,82 @@
+// Concurrency.run given a future: its result, the exception it threw
+// rethrown as itself, and waits that nest inside code the event loop is
+// running, which complete in stack order.
+
+use default
+use Concurrency.Future
+use Concurrency.run
+use Concurrency.sleep
+use Concurrency.pause
+
+let log = LIST[string]()
+
+after(milliseconds: int, name: string) -> Future[string] is
+    await sleep(milliseconds)
+    log.add("{name} completes")
+    return name
+si
+
+answer() -> Future[int] is
+    await sleep(1)
+    return 42
+si
+
+note(text: string) -> Future is
+    await sleep(1)
+    log.add(text)
+si
+
+let thrown = Ghul.InvalidOperationException("boom")
+
+thrower() -> Future[int] is
+    await sleep(1)
+    throw thrown
+si
+
+write_line("result {run(answer())}")
+write_line("piped {answer() |> run()}")
+
+run(note("void future ran"))
+write_line(log[0])
+log.clear()
+
+try
+    run(thrower())
+catch e: Ghul.InvalidOperationException
+    write_line("caught the exception thrown: {e == thrown}")
+yrt
+
+try
+    run(() => thrower())
+catch e: Ghul.InvalidOperationException
+    write_line("caught it through a body too: {e == thrown}")
+yrt
+
+let started = System.Environment.tick_count64
+run(sleep(20))
+write_line("slept at least 20 ms: {System.Environment.tick_count64 - started >= 20L}")
+
+// A blocks on X; the loop then runs B, which blocks on Y. X completes
+// first, but A resumes only after B does.
+task_b() -> Future is
+    await pause()
+    log.add("B blocks on Y")
+    let y = run(after(30, "Y"))
+    log.add("B resumes with {y}")
+si
+
+task_a() -> Future is
+    let b = task_b()
+    log.add("A blocks on X")
+    let x = run(after(5, "X"))
+    log.add("A resumes with {x}")
+    let z = run(() => after(1, "Z"))
+    log.add("A resumes with {z}")
+    await b
+si
+
+run(() => task_a())
+
+for line in log do
+    write_line(line)
+od

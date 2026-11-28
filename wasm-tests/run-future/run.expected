@@ -1,0 +1,14 @@
+result 42
+piped 42
+void future ran
+caught the exception thrown: true
+caught it through a body too: true
+slept at least 20 ms: true
+A blocks on X
+B blocks on Y
+X completes
+Y completes
+B resumes with Y
+A resumes with X
+Z completes
+A resumes with Z

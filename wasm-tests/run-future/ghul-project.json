@@ -1,0 +1,7 @@
+{
+    "name": "run-future",
+    "targets": ["wasm", "llvm"],
+    "dependencies": {
+        "ghul-runtime": { "path": "../.." }
+    }
+}
